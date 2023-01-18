@@ -1,0 +1,17 @@
+{
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true,
+    "python.formatting.provider": "black",
+    "python.terminal.activateEnvironment": true,
+    "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/.git/subtree-cache/**": true,
+        "**/node_modules/*/**": true,
+        "**/.venv/*/**": true
+    },
+    "cSpell.words": [
+        "sqlalchemy",
+        "werkzeug"
+    ]
+}
