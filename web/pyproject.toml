@@ -2,10 +2,10 @@
 name = "flask.app"
 version = "0.1.0"
 description = ""
-authors = ["denys <denysburimov@gmail.com>"]
+authors = ["petro <xavrais312@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 Flask = "^2.1.0"
 Flask-Login = "^0.5.0"
 click = "^8.1.0"
