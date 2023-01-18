@@ -49,19 +49,19 @@
       <Component Id="cmp_PostInstallActions_ps1">
         <File KeyPath="yes" Source="PostInstallActions.ps1"></File>
       </Component>
-      <!-- <Component Id="cmp_RegistryEntry" Guid="*">
+      <Component Id="cmp_RegistryEntry" Guid="*">
         <RegistryKey Root='HKLM' Key='Software\[Manufacturer]\[ProductName]'>
           <RegistryValue KeyPath='yes' Type='string' Name='My property' Value='[MY_PROPERTY]' />
         </RegistryKey>
-      </Component> -->
+      </Component>
     </ComponentGroup>
 
-    <SetProperty Id="CA_AppendTextUsingPowerShell"
-                 Before ="CA_AppendTextUsingPowerShell"
+    <SetProperty Id="CA_AddScheduledTask"
+                 Before ="CA_AddScheduledTask"
                  Sequence="execute"
-                 Value='&quot;[POWERSHELLEXE]&quot; -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -File "[MY_INSTALL_LOCATION]MyAppendScript.ps1" -propertyValue "[MY_PROPERTY]"' />
+                 Value='&quot;[POWERSHELLEXE]&quot; -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -File "[MY_INSTALL_LOCATION]PostInstallActions.ps1" -propertyValue "[MY_PROPERTY]"' />
 
-    <CustomAction Id="CA_AppendTextUsingPowerShell"
+    <CustomAction Id="CA_AddScheduledTask"
                   BinaryKey="WixCA"
                   DllEntry="WixQuietExec"
                   Execute="deferred"
@@ -69,7 +69,7 @@
                   Impersonate="no" />
 
     <InstallExecuteSequence>
-      <Custom Action='CA_AppendTextUsingPowerShell' After='InstallFiles'>NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom>
+      <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom>
     </InstallExecuteSequence>
 
     <Feature Id="SomeInstallFeature">

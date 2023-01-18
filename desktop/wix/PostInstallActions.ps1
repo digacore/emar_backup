@@ -17,4 +17,13 @@ else
     throw "File $fileName does not exist"
 }
 
+$scriptPath = Join-Path "." TaskAction.ps1 -Resolve
+
+$action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
+  -Argument '-NoProfile -WindowStyle Hidden -ExecutionPolicy ByPass $scriptPath'
+
+$trigger =  New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Minutes 1)
+
+Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "CheckRemoteUpdate" -Description "Periodically check remote update"
+
 Pop-Location
