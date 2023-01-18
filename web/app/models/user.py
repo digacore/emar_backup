@@ -1,5 +1,4 @@
 from datetime import datetime
-import uuid
 
 from flask_login import UserMixin, AnonymousUserMixin
 from sqlalchemy import func
@@ -20,17 +19,8 @@ class User(db.Model, UserMixin, ModelMixin):
     password_hash = db.Column(db.String(256), nullable=False)
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
-    sftp_host = db.Column(db.String(128))
-    sftp_username = db.Column(db.String(64))
-    sftp_password = db.Column(db.String(128))
-    sftp_folder_path = db.Column(db.String(256))
-    client = db.Column(db.String(128))
-    location = db.Column(db.String(128))
-    folder_password = db.Column(db.String(128))
-    download_status = db.Column(db.String(64))
-    last_download_time = db.Column(db.DateTime)
+
     last_time_online = db.Column(db.DateTime)
-    identifier_key = db.Column(db.String(128), default="cc8be41a-ed17-4624-aaac-066a6ce1e930")
 
     @hybrid_property
     def password(self):

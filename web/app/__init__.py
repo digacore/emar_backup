@@ -35,6 +35,9 @@ def create_app(environment="development"):
     from app.models import (
         User,
         AnonymousUser,
+        Company,
+        Computer, ComputerView,
+        Location, LocationView,
     )
 
     # Instantiate app.
@@ -46,6 +49,9 @@ def create_app(environment="development"):
     admin = Admin(app, name='microblog', template_mode='bootstrap3')
     # Add administrative views here
     admin.add_view(ModelView(User, db.session))
+    admin.add_view(ModelView(Company, db.session))
+    admin.add_view(ComputerView(Computer, db.session))
+    admin.add_view(LocationView(Location, db.session))
 
     # Set app config.
     env = os.environ.get("FLASK_ENV", environment)
