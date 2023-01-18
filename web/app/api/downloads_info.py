@@ -2,7 +2,7 @@ import datetime
 import uuid
 from flask import jsonify
 
-from app.models import User
+from app.models import Computer
 from app.schema import GetCredentials, LastTime, DownloadStatus
 from app.views.blueprint import BlueprintApi
 from app.logger import logger
@@ -19,7 +19,7 @@ def last_time(body: LastTime):
 
     # TODO use some token to secure api routes
 
-    user: User = User.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
+    user: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
 
     if user:
         logger.info(f"Updating last download time for user: {user.sftp_username}.")
@@ -30,7 +30,7 @@ def last_time(body: LastTime):
         logger.info(f"Last download time for user {user.sftp_username} is updated.")
         return jsonify(status="success", message="Writing time to db"), 200
 
-    message = "Wrong request data. User not found."
+    message = "Wrong request data. Computer not found."
     logger.info(f"Last download time update failed. Client: {body.client}, location {body.location}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
@@ -41,7 +41,7 @@ def get_credentials(body: GetCredentials):
 
     print("body data:", body.client, body.identifier_key, body.location)
 
-    user: User = User.query.filter_by(
+    user: Computer = Computer.query.filter_by(
         identifier_key=body.identifier_key,
         client=body.client,
         location=body.location
@@ -78,7 +78,7 @@ def get_credentials(body: GetCredentials):
             identifier_key=user.identifier_key
             ), 200
 
-    message = "Wrong request data. User not found."
+    message = "Wrong request data. Computer not found."
     logger.info(f"Supplying credentials failed. Client: {body.client}, location {body.location}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
@@ -87,7 +87,7 @@ def get_credentials(body: GetCredentials):
 @logger.catch
 def download_status(body: DownloadStatus):
 
-    user: User = User.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
+    user: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
 
     if user:
         logger.info(f"Updating download status for user: {user.sftp_username}.")
@@ -98,7 +98,7 @@ def download_status(body: DownloadStatus):
 
         return jsonify(status="success", message="Writing download status to db"), 200
 
-    message = "Wrong request data. User not found."
+    message = "Wrong request data. Computer not found."
     logger.info(f"Download status update failed. Client: {body.client}, location {body.location}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
