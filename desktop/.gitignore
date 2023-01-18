@@ -1,0 +1,16 @@
+# ignore directories
+__pycache__/
+.env
+env/
+.venv/
+.pytest_cache/
+
+# ignore files
+# .env
+*.pyc
+/*.sqlite3
+
+pyapp/
+advinst/
+sftp_files/
+sftp_files_old/
