@@ -20,7 +20,7 @@ else
 $scriptPath = Join-Path "." TaskAction.ps1 -Resolve
 
 $action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
-  -Argument '-NoProfile -WindowStyle Hidden -ExecutionPolicy ByPass $scriptPath'
+  -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy ByPass \"$scriptPath\""
 
 $trigger =  New-ScheduledTaskTrigger -RepetitionInterval (New-TimeSpan -Minutes 1)
 
