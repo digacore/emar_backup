@@ -10,7 +10,7 @@ $dateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss K"
 
 if(Test-Path $fileName)
 {
-    Add-Content -Path $fileName -Value "$dateTime - $propertyValue"
+    Add-Content -Path $fileName -Value "`n$dateTime - $propertyValue"
 }
 else
 {

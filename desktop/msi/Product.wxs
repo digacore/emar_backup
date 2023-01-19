@@ -49,11 +49,14 @@
       <Component Id="cmp_PostInstallActions_ps1">
         <File KeyPath="yes" Source="PostInstallActions.ps1"></File>
       </Component>
-      <Component Id="cmp_RegistryEntry" Guid="*">
+      <Component Id="cmp_TaskActions_ps1">
+        <File KeyPath="yes" Source="TaskAction.ps1"></File>
+      </Component>
+      <!-- <Component Id="cmp_RegistryEntry" Guid="*">
         <RegistryKey Root='HKLM' Key='Software\[Manufacturer]\[ProductName]'>
           <RegistryValue KeyPath='yes' Type='string' Name='My property' Value='[MY_PROPERTY]' />
         </RegistryKey>
-      </Component>
+      </Component> -->
     </ComponentGroup>
 
     <SetProperty Id="CA_AddScheduledTask"
