@@ -1,0 +1,6 @@
+/wix.zip
+/wix/
+/*.wixobj
+/*.wixpdb
+/*.msi
+/*.log
