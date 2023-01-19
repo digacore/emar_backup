@@ -30,7 +30,8 @@ def create_app(environment="development"):
     )
     from app.api import (
         downloads_info_blueprint,
-        api_email_blueprint
+        api_email_blueprint,
+        computer_blueprint
         )
     from app.models import (
         User,
@@ -71,6 +72,7 @@ def create_app(environment="development"):
     # Register api.
     app.register_api(downloads_info_blueprint)
     app.register_api(api_email_blueprint)
+    app.register_api(computer_blueprint)
 
     # Set up flask login.
     @login_manager.user_loader
