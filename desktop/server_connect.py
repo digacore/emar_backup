@@ -6,6 +6,8 @@ import json
 import hashlib
 import requests
 from pathlib import Path
+import platform
+import socket
 
 from dotenv import load_dotenv
 from paramiko import SSHClient, AutoAddPolicy, AutoAddPolicy
@@ -22,10 +24,11 @@ logger.add(sys.stdout, format=log_format, serialize=True, level="DEBUG", coloriz
 load_dotenv()
 
 
-gclient = os.getenv("CLIENT", None)
-glocation = os.getenv("LOCATION", None)
+# gclient = os.getenv("CLIENT", None)
+# glocation = os.getenv("LOCATION", None)
 # NOTE default value. Set default in User model. Don't change. Temp measure
-gidentifier_key = "cc8be41a-ed17-4624-aaac-066a6ce1e930"
+# gidentifier_key = "cc8be41a-ed17-4624-aaac-066a6ce1e930"
+
 
 # local_path = str(Path.home())
 local_path = "C:\\backups"
@@ -38,12 +41,11 @@ manager_host = "http://localhost:5000"
 def get_credentials():
     logger.info("Recieving credentials.")
 
-    client = gclient
-    location = glocation
-    identifier_key = gidentifier_key
+    # client = gclient
+    # location = glocation
+    # identifier_key = gidentifier_key
 
     creds_file = "creds.json"
-    get_credentials_url = f"{manager_host}\get_credentials"
     local_file_path = f"{os.getcwd()}\{creds_file}"
     logger.info(f"local_file_path var is {local_file_path}")
 
@@ -53,15 +55,27 @@ def get_credentials():
             logger.info(f"Credentials recieved from {creds_file}.")
 
         print(creds_json, type(creds_json))
-        client = creds_json["client"]
+        # client = creds_json["client"]
+        computer_name = creds_json["computer_name"]
         identifier_key = creds_json["identifier_key"]
-        location = creds_json["location"]
+        # location = creds_json["location"]
 
-    response = requests.post(get_credentials_url, json={
-        "client": client,
-        "identifier_key": identifier_key,
-        "location": location,
-    })
+        response = requests.post(f"{manager_host}\get_credentials", json={
+            "computer_name": computer_name,
+            "identifier_key": identifier_key,
+        })
+
+    else:
+        # computer_name = platform.node()
+        computer_name = socket.gethostname()
+        identifier_key = "new_computer"
+        # computer_name = os.environ['COMPUTERNAME']register_computer
+
+        response = requests.post(f"{manager_host}\\register_computer", json={
+            "computer_name": computer_name,
+            "identifier_key": identifier_key,
+        })
+    
     print(type(response.json()), response.json())
     if response.json()["message"] == "Supplying credentials":
         with open(creds_file, "w") as f:
@@ -221,7 +235,7 @@ def checksum_local_remote(local_filepath, checksum_remote):
 def send_activity(last_download_time, creds):
     url = f"{manager_host}/last_time"
     requests.post(url, json={
-    "client": creds["client"],
+    "company_name": creds["company_name"],
     "identifier_key": creds["identifier_key"],
     "location": creds["location"],
     "last_download_time": str(last_download_time),
@@ -234,7 +248,7 @@ def send_activity(last_download_time, creds):
 def update_download_status(status, creds):
     url = f"{manager_host}/download_status"
     requests.post(url, json={
-    "client": creds["client"],
+    "company_name": creds["company_name"],
     "location": creds["location"],
     "download_status": status,
     "last_time_online": str(datetime.datetime.now()),
@@ -245,20 +259,20 @@ def update_download_status(status, creds):
 
 @logger.catch
 def main_func():
-    if gclient and glocation:
-        logger.info("Downloading proccess started.")
-        credentials = get_credentials()
-        if credentials:
-            last_download_time = sftp_check_files_for_update_and_load(credentials)
-            # last_download_time = datetime.datetime.now()  # for testing purpose, remove in prod
-            send_activity(last_download_time, credentials)
+    logger.info("Downloading proccess started.")
+    credentials = get_credentials()
+    if credentials["sftp_username"] and credentials["sftp_password"] and credentials["host"]:
+        last_download_time = sftp_check_files_for_update_and_load(credentials)
+        # last_download_time = datetime.datetime.now()  # for testing purpose, remove in prod
+        send_activity(last_download_time, credentials)
         logger.info("Downloading proccess finished.")
     else:
-        logger.info(f"Client and location variables were not supplied {gclient} {glocation}. Download impossible.")
+        logger.info(f"SFTP credentials were not supplied. Download impossible. Credentials: {credentials}")
         time.sleep(300)
 
-try:
-    main_func()
-except Exception as e:
-    print(f"Exception occured: {e}")
-    time.sleep(300)
+# try:
+#     main_func()
+# except Exception as e:
+#     print(f"Exception occured: {e}")
+#     time.sleep(300)
+

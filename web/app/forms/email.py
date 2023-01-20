@@ -12,7 +12,7 @@ class EmailForm(FlaskForm):
         "temp_2": ["subject 2", "body 2"],
         }
     template = SelectField('Choose email template', choices=templates)
-    from_email = StringField('From email', validators=[DataRequired(), Email()])
+    from_email = StringField('From email', validators=[Email()])
     to_addresses = StringField('To addresses', validators=[DataRequired(), Email()])
     subject = StringField('Subject', validators=[DataRequired(), Length(0, 100)], default="subject")
     body = TextAreaField('Body', validators=[DataRequired()], default="body")

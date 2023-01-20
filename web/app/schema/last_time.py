@@ -3,7 +3,7 @@ from pydantic import BaseModel
 
 
 class LastTime(BaseModel):
-    client: str
+    company_name: str
     location: str
     last_download_time: datetime
     last_time_online: datetime
