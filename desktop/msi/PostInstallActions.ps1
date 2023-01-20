@@ -5,33 +5,34 @@ param
 
 Push-Location $PSScriptRoot
 
-$fileName = "FileToInstall.txt"
-$dateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss K"
+$logFileName = "InstallLog.txt"
 
-if (-not (Test-Path $fileName))
+$DesktopPath = [Environment]::GetFolderPath("Desktop")
+$logFile = Join-Path $DesktopPath $logFileName
+if (!(Test-Path $logFile))
 {
-  throw "File $fileName does not exist"
+   New-Item -path $DesktopPath -name $logFileName -type "file"
 }
-Add-Content -Path $fileName -Value "`n$dateTime - start"
 
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - start"
 
 Unregister-ScheduledTask -TaskName "CheckRemoteUpdate" -Confirm:$false -ErrorAction SilentlyContinue
-Add-Content -Path $fileName -Value "`n$dateTime Unregister-ScheduledTask"
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Unregister-ScheduledTask"
 
-# $scriptPath = Join-Path "." TaskAction.ps1 -Resolve
-# Add-Content -Path $fileName -Value "`n$dateTime - scriptPath - [$scriptPath]"
+$scriptDir = Join-Path "." "." -Resolve
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - scriptDir - [$scriptDir]"
 
-# $action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
-#   -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy ByPass `"$scriptPath`""
-# Add-Content -Path $fileName -Value "`n$dateTime - action - [$action]"
+$action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
+  -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy ByPass .\TaskAction.ps1" `
+  -WorkingDirectory $scriptDir
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - action - [$action]"
 
-# $trigger =  New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Minutes 1) -At 0am
-# Add-Content -Path $fileName -Value "`n$dateTime - trigger - [$trigger]"
+$trigger =  New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Minutes 1) -At 0am
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - trigger - [$trigger]"
 
-# $task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "CheckRemoteUpdate" -Description "Periodically check remote update"
-schtasks.exe /Create /SC minute /mo 2 /TN "CheckRemoteUpdate" /TR "C:\Program Files\CheckRemoteUpdate\PostInstallActions.ps1"
-Add-Content -Path $fileName -Value "`n$dateTime Register-ScheduledTask - [$task]"
+$task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "CheckRemoteUpdate" -Description "Periodically check remote update"
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Register-ScheduledTask - [$task]"
 
 Pop-Location
 
-Add-Content -Path $fileName -Value "`n$dateTime - finish"
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - finish"
