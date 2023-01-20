@@ -23,7 +23,7 @@ $scriptDir = Join-Path "." "." -Resolve
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - scriptDir - [$scriptDir]"
 
 $action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
-  -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy ByPass .\TaskAction.ps1" `
+  -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy ByPass -Command .\TaskAction.ps1" `
   -WorkingDirectory $scriptDir
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - action - [$action]"
 
