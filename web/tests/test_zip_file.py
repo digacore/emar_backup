@@ -37,7 +37,7 @@ def test_zip_file_pyzipper():
     #     zf.setpassword(secret_password)
     #     my_secrets = zf.read("test.txt")
 
-    with ZipFile(file="test.zip", mode="r", compression=ZIP_BZIP2) as zf:
+    with ZipFile(file="test.zip", mode="r") as zf:
         zf.setpassword(SECRET)
         eggs_path = Path("tests") / "files" / "eggs.txt"
         with zf.open(name="files/eggs.txt", mode="r") as f:
