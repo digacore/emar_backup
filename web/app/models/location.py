@@ -25,4 +25,4 @@ class LocationView(ModelView):
     can_delete = True
     column_hide_backrefs = False
     column_list = ["id", "name", "company_name", "created_at"]
-    column_searchable_list = ["company_name"]
+    column_searchable_list = ["name", "company_name"]
