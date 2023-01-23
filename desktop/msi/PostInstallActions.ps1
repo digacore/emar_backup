@@ -5,27 +5,34 @@ param
 
 Push-Location $PSScriptRoot
 
-# $fileName = "FileToInstall.txt"
-# $dateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss K"
+$logFileName = "InstallLog.txt"
 
-# if(Test-Path $fileName)
-# {
-#     Add-Content -Path $fileName -Value "$dateTime - $propertyValue"
-# }
-# else
-# {
-#     throw "File $fileName does not exist"
-# }
+$DesktopPath = [Environment]::GetFolderPath("Desktop")
+$logFile = Join-Path $DesktopPath $logFileName
+if (!(Test-Path $logFile))
+{
+   New-Item -path $DesktopPath -name $logFileName -type "file"
+}
+
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - start"
 
 Unregister-ScheduledTask -TaskName "CheckRemoteUpdate" -Confirm:$false -ErrorAction SilentlyContinue
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Unregister-ScheduledTask"
 
-$scriptPath = Join-Path "." TaskAction.ps1 -Resolve
+$scriptDir = Join-Path "." "." -Resolve
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - scriptDir - [$scriptDir]"
 
 $action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
-  -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy ByPass `"$scriptPath`""
+  -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy ByPass -Command .\TaskAction.ps1" `
+  -WorkingDirectory $scriptDir
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - action - [$action]"
 
 $trigger =  New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Minutes 1) -At 0am
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - trigger - [$trigger]"
 
-Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "CheckRemoteUpdate" -Description "Periodically check remote update"
+$task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "CheckRemoteUpdate" -Description "Periodically check remote update"
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Register-ScheduledTask - [$task]"
 
 Pop-Location
+
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - finish"

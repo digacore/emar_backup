@@ -8,6 +8,7 @@ from werkzeug.exceptions import HTTPException
 from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
+from flask_mail import Mail
 from app.utils.sendgrid import SendGridClient
 
 
@@ -15,7 +16,11 @@ from app.utils.sendgrid import SendGridClient
 login_manager = LoginManager()
 db = SQLAlchemy()
 migration = Migrate()
-sendgrid_client = SendGridClient(sendgrid_api_key=os.getenv("SENDGRID_API_KEY"))
+
+mail = Mail()
+sendgrid_client = SendGridClient(
+    sendgrid_api_key=os.getenv("SENDGRID_API_KEY")
+)
 
 
 def create_app(environment="development"):
@@ -26,7 +31,13 @@ def create_app(environment="development"):
         auth_blueprint,
         email_blueprint,
     )
-    from app.api import downloads_info_blueprint, api_email_blueprint
+
+    from app.api import (
+        downloads_info_blueprint,
+        api_email_blueprint,
+        computer_blueprint
+        )
+
     from app.models import (
         User,
         AnonymousUser,
@@ -68,6 +79,7 @@ def create_app(environment="development"):
     # Register api.
     app.register_api(downloads_info_blueprint)
     app.register_api(api_email_blueprint)
+    app.register_api(computer_blueprint)
 
     # Set up flask login.
     @login_manager.user_loader
@@ -77,6 +89,16 @@ def create_app(environment="development"):
     login_manager.login_view = "auth.login"
     login_manager.login_message_category = "info"
     login_manager.anonymous_user = AnonymousUser
+
+    # Flask-Mail conf
+    app.config["MAIL_SERVER"]=os.environ.get("MAIL_SERVER")
+    app.config["MAIL_PORT"] = os.environ.get("MAIL_PORT")
+    app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
+    app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
+    app.config["MAIL_USE_TLS"] = False
+    app.config["MAIL_USE_SSL"] = True
+    app.config["MAIL_DEFAULT_SENDER"] = "emar@support.com"
+    mail.init_app(app)
 
     # Set up Sendgrid mailer
     sendgrid_client.init_app(app)
