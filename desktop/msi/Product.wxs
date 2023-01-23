@@ -52,6 +52,12 @@
       <Component Id="cmp_TaskActions_ps1">
         <File KeyPath="yes" Source="TaskAction.ps1"></File>
       </Component>
+      <Component Id="cmp_server_connect_exe">
+        <File KeyPath="yes" Source="..\dist\server_connect.exe"></File>
+      </Component>
+      <Component Id="cmp_config_json">
+        <File KeyPath="yes" Source="..\config.json"></File>
+      </Component>
       <!-- <Component Id="cmp_RegistryEntry" Guid="*">
         <RegistryKey Root='HKLM' Key='Software\[Manufacturer]\[ProductName]'>
           <RegistryValue KeyPath='yes' Type='string' Name='My property' Value='[MY_PROPERTY]' />
