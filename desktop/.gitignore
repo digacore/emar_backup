@@ -14,3 +14,7 @@ pyapp/
 advinst/
 sftp_files/
 sftp_files_old/
+
+/build/
+/dist/
+/server_connect.spec
