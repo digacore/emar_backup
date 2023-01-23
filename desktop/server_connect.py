@@ -1,4 +1,7 @@
 import os
+import sys
+import shutil
+import subprocess
 import stat
 import time
 import datetime
@@ -11,39 +14,26 @@ import socket
 
 from dotenv import load_dotenv
 from paramiko import SSHClient, AutoAddPolicy, AutoAddPolicy
-
-# from zip_encrypt import extract_file, list_zip_files, zip_file
-
-import sys
 from loguru import logger
 
-log_format = "{time} - {name} - {level} - {message}"
+from zip_encrypt import make_arch_7zip
 
+
+log_format = "{time} - {name} - {level} - {message}"
 logger.add(sys.stdout, format=log_format, serialize=True, level="DEBUG", colorize=True)
 
 load_dotenv()
 
-
-# gclient = os.getenv("CLIENT", None)
-# glocation = os.getenv("LOCATION", None)
-# NOTE default value. Set default in User model. Don't change. Temp measure
-# gidentifier_key = "cc8be41a-ed17-4624-aaac-066a6ce1e930"
-
-
-# local_path = str(Path.home())
-local_path = "C:\\backups"
-# if not os.path.exists(f"{local_path}/sftp_files"):
-#     os.mkdir(f"{local_path}/sftp_files")
+backups_path = "C:\\backups"
+if not os.path.exists(backups_path):
+    os.mkdir(backups_path)
+local_path = f"{backups_path}\\temp"
 manager_host = "http://localhost:5000"
 
 
 @logger.catch
 def get_credentials():
     logger.info("Recieving credentials.")
-
-    # client = gclient
-    # location = glocation
-    # identifier_key = gidentifier_key
 
     creds_file = "creds.json"
     local_file_path = f"{os.getcwd()}\{creds_file}"
@@ -55,12 +45,10 @@ def get_credentials():
             logger.info(f"Credentials recieved from {creds_file}.")
 
         print(creds_json, type(creds_json))
-        # client = creds_json["client"]
         computer_name = creds_json["computer_name"]
         identifier_key = creds_json["identifier_key"]
-        # location = creds_json["location"]
 
-        response = requests.post(f"{manager_host}\get_credentials", json={
+        response = requests.post(f"{manager_host}/get_credentials", json={
             "computer_name": computer_name,
             "identifier_key": identifier_key,
         })
@@ -71,18 +59,29 @@ def get_credentials():
         identifier_key = "new_computer"
         # computer_name = os.environ['COMPUTERNAME']register_computer
 
-        response = requests.post(f"{manager_host}\\register_computer", json={
+        response = requests.post(f"{manager_host}/register_computer", json={
             "computer_name": computer_name,
             "identifier_key": identifier_key,
         })
-    
-    print(type(response.json()), response.json())
+        print(type(response.json()), response.json())
+        logger.info(f"New computer registered. Download will start next time if credentials inserted to DB.")
+
     if response.json()["message"] == "Supplying credentials":
+        print(type(response.json()), response.json())
         with open(creds_file, "w") as f:
-            json.dump(response.json(), f)
+            json.dump(
+                {
+                    "computer_name": response.json()["computer_name"],
+                    "identifier_key": response.json()["identifier_key"]
+                },
+                f
+            )
             logger.info(f"Full credentials recieved from server and {creds_file} updated.")
 
         return response.json()
+    
+    else:
+        raise ValueError("Wrong response data. Can't proceed without correct credentials.")
 
 
 @logger.catch
@@ -112,6 +111,8 @@ def sftp_check_files_for_update_and_load(credentials):
                 print("file_lvl_1", file_lvl_1.filename, file_lvl_1.st_mode, stat.S_ISDIR(file_lvl_1.st_mode))
 
                 if not stat.S_ISDIR(file_lvl_1.st_mode):
+                    if not os.path.exists(f"{local_path}"):
+                        os.mkdir(f"{local_path}")
                     # load_files(None, file_lvl_1, credentials)
                     local_file_path = f"{local_path}\{file_lvl_1.filename}"
                     # TODO handle repeated code 
@@ -124,11 +125,11 @@ def sftp_check_files_for_update_and_load(credentials):
                         )
 
                     if checksum_result:
-                        sftp_download_and_zip(
-                            None,
-                            file_lvl_1.filename,
-                            local_file_path,
-                            credentials)
+                        sftp_download(
+                            chdir=None,
+                            filename=file_lvl_1.filename,
+                            local_file_path=local_file_path,
+                            creds=credentials)
 
                 elif stat.S_ISDIR(file_lvl_1.st_mode):
                     logger.info(f"Changing remote directory to {file_lvl_1.filename}")
@@ -141,6 +142,9 @@ def sftp_check_files_for_update_and_load(credentials):
                         logger.info(f"Creating equivalent directory on local: {file_lvl_1.filename}")
 
                     for file_lvl_2 in sftp.listdir_attr():
+                        yy = 0
+                        if yy==1:
+                            continue
                         print("file_lvl_2", file_lvl_2, file_lvl_2.st_mode, stat.S_ISDIR(file_lvl_2.st_mode))
 
                         if not stat.S_ISDIR(file_lvl_2.st_mode):
@@ -157,12 +161,12 @@ def sftp_check_files_for_update_and_load(credentials):
                                 )
 
                             if not checksum_result:
-                                sftp_download_and_zip(
-                                    file_lvl_1.filename,
-                                    file_lvl_2.filename,
-                                    local_file_path,
-                                    credentials)
-                                # load_files(file_lvl_1.filename, file_lvl_2, credentials)
+                                sftp_download(
+                                    chdir=file_lvl_1.filename,
+                                    filename=file_lvl_2.filename,
+                                    local_file_path=local_file_path,
+                                    creds=credentials)
+                                yy+=1
 
                 else:
                     logger.error(f"Something went wrong during check of {file_lvl_1.filename}")
@@ -174,18 +178,8 @@ def sftp_check_files_for_update_and_load(credentials):
     return datetime.datetime.now()
 
 
-# @logger.catch
-# def load_files(chdir, file_lvl, creds):
-#     local_file_path = f"{local_path}/{chdir}/{file_lvl.filename}" if chdir else f"{local_path}/{file_lvl.filename}"
-
-#     # NOTE check by timestap is not the most relliable way. Using checksum instead
-#     # if ((not os.path.isfile(local_file_path)) or
-#     #     (file_lvl.st_mtime > os.path.getmtime(local_file_path))):
-#     sftp_download_and_zip(chdir, file_lvl.filename, local_file_path, creds)
-
-
 @logger.catch
-def sftp_download_and_zip(chdir, filename, local_file_path, creds):
+def sftp_download(chdir, filename, local_file_path, creds):
     with SSHClient() as ssh:
         # TODO check for real key
         ssh.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
@@ -202,11 +196,8 @@ def sftp_download_and_zip(chdir, filename, local_file_path, creds):
             print("chdir", chdir)
             sftp.chdir(chdir)
             update_download_status("downloading", creds)
-            # TODO compare remote and local timestamp to avoid donloading same file
             sftp.get(filename, local_file_path)
             sftp.close()
-        # zip_file(filename, b"password")
-        # TODO remove file after zip
 
 
 @logger.catch
@@ -217,15 +208,16 @@ def checksum_local_remote(local_filepath, checksum_remote):
 
     print("local_filepath", local_filepath)
 
-    with open(local_filepath, 'rb') as file_to_check:
-        data = file_to_check.read()
-        sha256_local = hashlib.sha256(data).hexdigest()
-        # sha256_local = hashlib.sha256(data).hexdigest()
-    print("sha256_local", sha256_local)
+    if os.path.exists(local_filepath):
+        with open(local_filepath, 'rb') as file_to_check:
+            data = file_to_check.read()
+            sha256_local = hashlib.sha256(data).hexdigest()
+            # sha256_local = hashlib.sha256(data).hexdigest()
+        print("sha256_local", sha256_local)
 
-    if sha256_remote == sha256_local:
-        print("sha256 verified.")
-        return True
+        if sha256_remote == sha256_local:
+            print("sha256 verified.")
+            return True
     else:
         print("sha256 verification failed!.")
         return False
@@ -237,7 +229,7 @@ def send_activity(last_download_time, creds):
     requests.post(url, json={
     "company_name": creds["company_name"],
     "identifier_key": creds["identifier_key"],
-    "location": creds["location"],
+    "location_name": creds["location_name"],
     "last_download_time": str(last_download_time),
     "last_time_online": str(datetime.datetime.now())
     })
@@ -249,7 +241,7 @@ def update_download_status(status, creds):
     url = f"{manager_host}/download_status"
     requests.post(url, json={
     "company_name": creds["company_name"],
-    "location": creds["location"],
+    "location_name": creds["location_name"],
     "download_status": status,
     "last_time_online": str(datetime.datetime.now()),
     "identifier_key": creds["identifier_key"],
@@ -260,19 +252,34 @@ def update_download_status(status, creds):
 @logger.catch
 def main_func():
     logger.info("Downloading proccess started.")
-    credentials = get_credentials()
-    if credentials["sftp_username"] and credentials["sftp_password"] and credentials["host"]:
-        last_download_time = sftp_check_files_for_update_and_load(credentials)
-        # last_download_time = datetime.datetime.now()  # for testing purpose, remove in prod
-        send_activity(last_download_time, credentials)
-        logger.info("Downloading proccess finished.")
+    credentials = get_credentials() 
+    print("\ncredentials", credentials, "\n")
+    if credentials["status"] == "success":
+        # last_download_time = sftp_check_files_for_update_and_load(credentials)
+        # # last_download_time = datetime.datetime.now()  # for testing purpose, remove in prod
+        # send_activity(last_download_time, credentials)
+        # logger.info("Downloading proccess finished.")
+
+        zip_name = f"/temmm/backup_{time.ctime()}.zip".replace(":", "_").replace(" ", "_")
+        print("zip_name", zip_name)
+        # make_arch_7zip(local_path, zip_name, credentials["folder_password"])
+        subprs = subprocess.Popen([
+                'C:\\Program Files (x86)\\7-Zip\\7z.exe',
+                'a',
+                f'C:{zip_name}',
+                f'{local_path}',
+                f'-p{credentials["folder_password"]}'
+            ])
+        subprs.communicate()
+        print(f"make_arch_7zip returncode: {subprs.returncode}")
+        logger.info("Files zipped.")
     else:
         logger.info(f"SFTP credentials were not supplied. Download impossible. Credentials: {credentials}")
-        time.sleep(300)
+        time.sleep(60)
 
-# try:
-#     main_func()
-# except Exception as e:
-#     print(f"Exception occured: {e}")
-#     time.sleep(300)
+try:
+    main_func()
+except Exception as e:
+    print(f"Exception occured: {e}")
+    time.sleep(300)
 

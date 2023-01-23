@@ -18,7 +18,10 @@ def register_computer(body: ComputerRegInfo):
 
     # TODO use some token to secure api routes
 
-    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first()
+    computer: Computer = Computer.query.filter_by(
+            identifier_key=body.identifier_key,
+            computer_name=body.computer_name
+        ).first()
 
     if computer:
         message = "Wrong request data. Such computer already exists"
@@ -26,7 +29,7 @@ def register_computer(body: ComputerRegInfo):
         return jsonify(status="fail", message=message), 404
 
     elif body.identifier_key == "new_computer":
-        new_identifier_key = uuid.uuid4()
+        new_identifier_key = str(uuid.uuid4())
         logger.info(f"Registering computer. ID = {new_identifier_key}.")
         
         new_computer = Computer(
@@ -36,7 +39,7 @@ def register_computer(body: ComputerRegInfo):
         new_computer.save()
         logger.info(f"Computer registered. ID = {new_identifier_key}.")
         return jsonify(
-            status="success",
+            status="registered",
             message="Supplying credentials",
             host="",
             company_name="",
@@ -46,6 +49,7 @@ def register_computer(body: ComputerRegInfo):
             sftp_folder_path="",
             identifier_key=new_computer.identifier_key,
             computer_name=new_computer.computer_name,
+            folder_password=""
             ), 200
 
     else:

@@ -31,7 +31,7 @@ def last_time(body: LastTime):
         return jsonify(status="success", message="Writing time to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Last download time update failed. company_name: {body.company_name}, location {body.location}. Reason: {message}")
+    logger.info(f"Last download time update failed. company_name: {computer.company_name}, location {computer.location_name}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 
@@ -49,14 +49,14 @@ def get_credentials(body: GetCredentials):
     if computer:
         logger.info(f"Supplying credentials for computer {computer.sftp_username}.")
         computer.last_time_online = datetime.datetime.now()
-        computer.identifier_key = uuid.uuid4()
+        computer.identifier_key = str(uuid.uuid4())
         computer.update()
         logger.info(f"Updated identifier_key for computer {computer.sftp_username}.")
 
         print("computer data:",
             computer.sftp_host,
             computer.company_name,
-            computer.location,
+            computer.location_name,
             computer.sftp_username,
             computer.sftp_password,
             computer.sftp_folder_path,
@@ -68,16 +68,17 @@ def get_credentials(body: GetCredentials):
             message="Supplying credentials",
             host=computer.sftp_host,
             company_name=computer.company_name,
-            location=computer.location,
+            location_name=computer.location_name,
             sftp_username=computer.sftp_username,
             sftp_password=computer.sftp_password,
             sftp_folder_path=computer.sftp_folder_path,
             identifier_key=computer.identifier_key,
             computer_name=computer.computer_name,
+            folder_password=computer.folder_password
             ), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Supplying credentials failed. company_name: {body.company_name}, location {body.location}. Reason: {message}")
+    logger.info(f"Supplying credentials failed. computer: {computer.computer_name}, id {computer.identifier_key}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 
@@ -97,7 +98,7 @@ def download_status(body: DownloadStatus):
         return jsonify(status="success", message="Writing download status to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Download status update failed. company_name: {body.company_name}, location {body.location}. Reason: {message}")
+    logger.info(f"Download status update failed. company_name: {computer.company_name}, location {computer.location_name}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 
