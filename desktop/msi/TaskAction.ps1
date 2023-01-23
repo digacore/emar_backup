@@ -5,6 +5,9 @@ param
 
 Push-Location $PSScriptRoot
 
+# Run python updater
+.\server_connect.exe 
+
 $logFileName = "InstallLog.txt"
 
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
