@@ -5,16 +5,18 @@ param
 
 Push-Location $PSScriptRoot
 
-$fileName = "FileToInstall.txt"
-$dateTime = Get-Date -Format "yyyy-MM-dd HH:mm:ss K"
+$logFileName = "InstallLog.txt"
 
-if(Test-Path $fileName)
+$DesktopPath = [Environment]::GetFolderPath("Desktop")
+$logFile = Join-Path $DesktopPath $logFileName
+
+if(Test-Path $logFile)
 {
-    Add-Content -Path $fileName -Value "`n$dateTime - $propertyValue"
+    Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - Action - $propertyValue"
 }
 else
 {
-    throw "File $fileName does not exist"
+    throw "File $logFile does not exist"
 }
 
 Pop-Location
