@@ -16,7 +16,7 @@ class Computer(db.Model, ModelMixin):
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
 
     location = relationship("Location", passive_deletes=True)
-    location_name = db.Column(db.String, db.ForeignKey("locations.name", ondelete="CASCADE"), nullable=False)
+    location_name = db.Column(db.String, db.ForeignKey("locations.name", ondelete="CASCADE"))
 
     type = db.Column(db.String(128))
     alert_status = db.Column(db.String(128))
@@ -32,10 +32,10 @@ class Computer(db.Model, ModelMixin):
     download_status = db.Column(db.String(64))
     last_download_time = db.Column(db.DateTime)
     last_time_online = db.Column(db.DateTime)
-    identifier_key = db.Column(db.String(128), default="cc8be41a-ed17-4624-aaac-066a6ce1e930")
+    identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
 
     company = relationship("Company", passive_deletes=True)
-    company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"), nullable=False)
+    company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"))
 
 
 class ComputerView(ModelView):

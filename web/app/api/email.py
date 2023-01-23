@@ -14,7 +14,8 @@ api_email_blueprint = BlueprintApi("/api_email", __name__)
 def api_email_alert(body: EmailSchema):
     # TODO add some token to secure route
 
-    if some_key:
+    # if some_key:
+    if body:
         html_body = body.html_body if body.html_body else None
         reply_to_address = body.reply_to_address if body.reply_to_address else None
 

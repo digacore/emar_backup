@@ -19,19 +19,19 @@ def last_time(body: LastTime):
 
     # TODO use some token to secure api routes
 
-    user: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
+    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
 
-    if user:
-        logger.info(f"Updating last download time for user: {user.sftp_username}.")
-        # TODO convert to Datetime object. Looks like str(datetime) from local user is ok
-        user.last_download_time = body.last_download_time
-        user.last_time_online = body.last_time_online
-        user.update()
-        logger.info(f"Last download time for user {user.sftp_username} is updated.")
+    if computer:
+        logger.info(f"Updating last download time for computer: {computer.sftp_username}.")
+        # TODO convert to Datetime object. Looks like str(datetime) from local computer is ok
+        computer.last_download_time = body.last_download_time
+        computer.last_time_online = body.last_time_online
+        computer.update()
+        logger.info(f"Last download time for computer {computer.sftp_username} is updated.")
         return jsonify(status="success", message="Writing time to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Last download time update failed. Client: {body.client}, location {body.location}. Reason: {message}")
+    logger.info(f"Last download time update failed. company_name: {body.company_name}, location {body.location}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 
@@ -39,47 +39,45 @@ def last_time(body: LastTime):
 @logger.catch
 def get_credentials(body: GetCredentials):
 
-    print("body data:", body.client, body.identifier_key, body.location)
-
-    user: Computer = Computer.query.filter_by(
+    computer: Computer = Computer.query.filter_by(
         identifier_key=body.identifier_key,
-        client=body.client,
-        location=body.location
+        computer_name=body.computer_name
         ).first() if body.identifier_key else None
     
-    print("user: ", user)
+    print("computer: ", computer)
 
-    if user:
-        logger.info(f"Supplying credentials for user {user.sftp_username}.")
-        user.last_time_online = datetime.datetime.now()
-        user.identifier_key = uuid.uuid4()
-        user.update()
-        logger.info(f"Updated identifier_key for user {user.sftp_username}.")
+    if computer:
+        logger.info(f"Supplying credentials for computer {computer.sftp_username}.")
+        computer.last_time_online = datetime.datetime.now()
+        computer.identifier_key = uuid.uuid4()
+        computer.update()
+        logger.info(f"Updated identifier_key for computer {computer.sftp_username}.")
 
-        print("user data:",
-            user.sftp_host,
-            user.client,
-            user.location,
-            user.sftp_username,
-            user.sftp_password,
-            user.sftp_folder_path,
-            user.identifier_key
+        print("computer data:",
+            computer.sftp_host,
+            computer.company_name,
+            computer.location,
+            computer.sftp_username,
+            computer.sftp_password,
+            computer.sftp_folder_path,
+            computer.identifier_key
         )
 
         return jsonify(
             status="success",
             message="Supplying credentials",
-            host=user.sftp_host,
-            client=user.client,
-            location=user.location,
-            sftp_username=user.sftp_username,
-            sftp_password=user.sftp_password,
-            sftp_folder_path=user.sftp_folder_path,
-            identifier_key=user.identifier_key
+            host=computer.sftp_host,
+            company_name=computer.company_name,
+            location=computer.location,
+            sftp_username=computer.sftp_username,
+            sftp_password=computer.sftp_password,
+            sftp_folder_path=computer.sftp_folder_path,
+            identifier_key=computer.identifier_key,
+            computer_name=computer.computer_name,
             ), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Supplying credentials failed. Client: {body.client}, location {body.location}. Reason: {message}")
+    logger.info(f"Supplying credentials failed. company_name: {body.company_name}, location {body.location}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 
@@ -87,19 +85,19 @@ def get_credentials(body: GetCredentials):
 @logger.catch
 def download_status(body: DownloadStatus):
 
-    user: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
+    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
 
-    if user:
-        logger.info(f"Updating download status for user: {user.sftp_username}.")
-        user.last_time_online = datetime.datetime.now()
-        user.download_status = body.download_status
-        user.update()
-        logger.info(f"Download status for user {user.sftp_username} is updated to {body.download_status}.")
+    if computer:
+        logger.info(f"Updating download status for computer: {computer.sftp_username}.")
+        computer.last_time_online = datetime.datetime.now()
+        computer.download_status = body.download_status
+        computer.update()
+        logger.info(f"Download status for computer {computer.sftp_username} is updated to {body.download_status}.")
 
         return jsonify(status="success", message="Writing download status to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Download status update failed. Client: {body.client}, location {body.location}. Reason: {message}")
+    logger.info(f"Download status update failed. company_name: {body.company_name}, location {body.location}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 

@@ -1,33 +1,60 @@
-version: "3.8"
+version: "3"
 
 services:
   db:
-    image: postgres:12
+    image: postgres:13
     restart: unless-stopped
-    volumes:
-      - db_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
-      PGDATABASE: ${POSTGRES_DB}
-      PGPASSWORD: ${POSTGRES_PASSWORD}
-      PGUSER: ${POSTGRES_USER}
+      POSTGRES_USER: ${POSTGRES_USER}
+
     ports:
       - 127.0.0.1:${LOCAL_DB_PORT}:5432
 
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./${BACKUP_DIR}:/db_dump
+
   app:
-    build: .
     restart: unless-stopped
-    command: bash ./start_server.sh
-    env_file:
-      - .env
+    build: .
     environment:
-      FLASK_ENV: production
+      - FLASK_ENV=production
+      - FLASK_APP=wsgi:app
+      - FLASK_DEBUG=1
+      - FLASK_PORT=${FLASK_PORT}
+    ports:
+      - 127.0.0.1:${FLASK_PORT}:${FLASK_PORT}
+    entrypoint: "bash start_server.sh"
+
     depends_on:
       - db
+
+  celery_worker:
+    container_name: "celery_worker"
+    restart: unless-stopped
+    build: .
+    environment:
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REDIS_ADDR=redis:${REDIS_PORT}
+      - BACKUP_DIR=${BACKUP_DIR}
+    depends_on:
+      - db
+    command: >
+      celery -A worker worker -B --loglevel=INFO
+
+  redis:
+    restart: unless-stopped
+    image: redis:alpine
     ports:
-      - 127.0.0.1:${LOCAL_WEB_PORT}:5000
+      - 127.0.0.1:6379:6379
+    environment:
+      - REDIS_PASSWORD=redis
+    command: >
+      --requirepass redis
 
 volumes:
-  db_data:
+  db-data:
+  db_dump:

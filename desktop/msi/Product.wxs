@@ -75,7 +75,7 @@
                   DllEntry="WixQuietExec"
                   Execute="deferred"
                   Return="check"
-                  Impersonate="no" />
+                  Impersonate="yes" />
 
     <InstallExecuteSequence>
       <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom>
