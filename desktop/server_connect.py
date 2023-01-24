@@ -1,6 +1,5 @@
 import os
 import sys
-import shutil
 import subprocess
 import stat
 import time
@@ -12,23 +11,40 @@ from pathlib import Path
 import platform
 import socket
 
-from dotenv import load_dotenv
 from paramiko import SSHClient, AutoAddPolicy, AutoAddPolicy
 from loguru import logger
-
-from zip_encrypt import make_arch_7zip
 
 
 log_format = "{time} - {name} - {level} - {message}"
 logger.add(sys.stdout, format=log_format, serialize=True, level="DEBUG", colorize=True)
+# TODO for prod write to desktop
+# logger.add(sink=Path().home().joinpath("Desktop"), format=log_format, serialize=True, level="DEBUG", colorize=True)
 
-load_dotenv()
+# load_dotenv()
 
-backups_path = "C:\\backups"
-if not os.path.exists(backups_path):
-    os.mkdir(backups_path)
-local_path = f"{backups_path}\\temp"
-manager_host = "http://localhost:5000"
+def mknewdir(pathstr):
+    if not os.path.exists(pathstr):
+        os.mkdir(pathstr)
+
+if os.path.isfile(Path("config.json").absolute()):
+        with open("config.json", "r") as f:
+            config_json = json.load(f)
+        try:
+            backups_path = config_json["backups_path"]
+            manager_host = config_json["manager_host"]
+        except Exception as e:
+            logger.warning(f"Failed to get info from config.json. Proceeding with default. Error: {e}")
+else:
+    backups_path = Path("C:") / "backups"
+    manager_host = "http://localhost:5000"
+
+mknewdir(backups_path)
+
+timestr = f"backup_{time.ctime()}".replace(":", "_").replace(" ", "_")
+# local_path = f"{backups_path}\\{timestr}"
+local_path = Path(backups_path) / timestr
+
+mknewdir(local_path)
 
 
 @logger.catch
@@ -36,10 +52,10 @@ def get_credentials():
     logger.info("Recieving credentials.")
 
     creds_file = "creds.json"
-    local_file_path = f"{os.getcwd()}\{creds_file}"
-    logger.info(f"local_file_path var is {local_file_path}")
+    local_creds_json = f"{os.getcwd()}\{creds_file}"
+    logger.info(f"local_creds_json var is {local_creds_json}")
 
-    if os.path.isfile(local_file_path):
+    if os.path.isfile(local_creds_json):
         with open(creds_file, "r") as f:
             creds_json = json.load(f)
             logger.info(f"Credentials recieved from {creds_file}.")
@@ -103,6 +119,9 @@ def sftp_check_files_for_update_and_load(credentials):
         with ssh.open_sftp() as sftp:
             # TODO recursive loop, rewrite
             for file_lvl_1 in sftp.listdir_attr():
+                yy = 0
+                if yy > 1:
+                    break
                 # TODO is it reasonable to update_download_status in loop? May cause a lot of post requests
                 update_download_status("comparing files", credentials)
                 # chdir to be on top dir level
@@ -111,9 +130,9 @@ def sftp_check_files_for_update_and_load(credentials):
                 print("file_lvl_1", file_lvl_1.filename, file_lvl_1.st_mode, stat.S_ISDIR(file_lvl_1.st_mode))
 
                 if not stat.S_ISDIR(file_lvl_1.st_mode):
-                    if not os.path.exists(f"{local_path}"):
-                        os.mkdir(f"{local_path}")
-                    # load_files(None, file_lvl_1, credentials)
+                    # if not os.path.exists(f"{local_path}"):
+                    #     os.mkdir(f"{local_path}")
+
                     local_file_path = f"{local_path}\{file_lvl_1.filename}"
                     # TODO handle repeated code 
                     stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
@@ -136,15 +155,14 @@ def sftp_check_files_for_update_and_load(credentials):
                     sftp.chdir(file_lvl_1.filename)
 
                     if not os.path.exists(f"{local_path}\{file_lvl_1.filename}"):
-                        if not os.path.exists(f"{local_path}"):
-                            os.mkdir(f"{local_path}")
+                        # if not os.path.exists(f"{local_path}"):
+                        #     os.mkdir(f"{local_path}")
                         os.mkdir(f"{local_path}\{file_lvl_1.filename}")
                         logger.info(f"Creating equivalent directory on local: {file_lvl_1.filename}")
 
                     for file_lvl_2 in sftp.listdir_attr():
-                        yy = 0
-                        if yy==1:
-                            continue
+                        if yy > 1:
+                            break
                         print("file_lvl_2", file_lvl_2, file_lvl_2.st_mode, stat.S_ISDIR(file_lvl_2.st_mode))
 
                         if not stat.S_ISDIR(file_lvl_2.st_mode):
@@ -161,12 +179,14 @@ def sftp_check_files_for_update_and_load(credentials):
                                 )
 
                             if not checksum_result:
+                                yy += 1  # TODO remove
                                 sftp_download(
                                     chdir=file_lvl_1.filename,
                                     filename=file_lvl_2.filename,
                                     local_file_path=local_file_path,
                                     creds=credentials)
-                                yy+=1
+                                
+                    yy += 1  # TODO remove
 
                 else:
                     logger.error(f"Something went wrong during check of {file_lvl_1.filename}")
@@ -255,31 +275,49 @@ def main_func():
     credentials = get_credentials() 
     print("\ncredentials", credentials, "\n")
     if credentials["status"] == "success":
-        # last_download_time = sftp_check_files_for_update_and_load(credentials)
-        # # last_download_time = datetime.datetime.now()  # for testing purpose, remove in prod
-        # send_activity(last_download_time, credentials)
-        # logger.info("Downloading proccess finished.")
+        last_download_time = sftp_check_files_for_update_and_load(credentials)
+        # last_download_time = datetime.datetime.now()  # TODO for testing purpose, remove in prod
+        send_activity(last_download_time, credentials)
+        logger.info("Downloading proccess finished.")
 
-        zip_name = f"/temmm/backup_{time.ctime()}.zip".replace(":", "_").replace(" ", "_")
+        mknewdir(Path("C:") / "zip_backups")
+
+        zip_name = Path("C:") / "zip_backups" / "emar_backups.zip"
         print("zip_name", zip_name)
         # make_arch_7zip(local_path, zip_name, credentials["folder_password"])
         subprs = subprocess.Popen([
-                'C:\\Program Files (x86)\\7-Zip\\7z.exe',
-                'a',
-                f'C:{zip_name}',
-                f'{local_path}',
+                Path("C:") / "Program Files (x86)" / "7-Zip" / "7z.exe",
+                "a",
+                zip_name,
+                local_path,
                 f'-p{credentials["folder_password"]}'
             ])
         subprs.communicate()
+        
         print(f"make_arch_7zip returncode: {subprs.returncode}")
         logger.info("Files zipped.")
+
+        from win32com.client import Dispatch
+
+        path = r"C:\\Users\\Puser\\Desktop\\EMAR.lnk"  #This is where the shortcut will be created
+        target = r"C:\\zip_backups\\emar_backups.zip" # directory to which the shortcut is created
+        wDir = r"C:\\zip_backups"
+
+        shell = Dispatch('WScript.Shell')
+        shortcut = shell.CreateShortCut(path)
+        shortcut.WorkingDirectory = wDir
+        shortcut.Targetpath = target
+        shortcut.save()
+
     else:
         logger.info(f"SFTP credentials were not supplied. Download impossible. Credentials: {credentials}")
         time.sleep(60)
 
 try:
     main_func()
+    print("Task finishhed")
+    time.sleep(10)
 except Exception as e:
     print(f"Exception occured: {e}")
-    time.sleep(300)
+    time.sleep(120)
 

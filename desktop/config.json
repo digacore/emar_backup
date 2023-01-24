@@ -1,1 +1,2 @@
-{}
+{"manager_host": "http://localhost:5000",
+"backups_path": "C:\\backups"}

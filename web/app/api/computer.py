@@ -22,9 +22,18 @@ def register_computer(body: ComputerRegInfo):
             identifier_key=body.identifier_key,
             computer_name=body.computer_name
         ).first()
+    
+    computer_name: Computer = Computer.query.filter_by(
+            computer_name=body.computer_name
+        ).first()
 
     if computer:
         message = "Wrong request data. Such computer already exists"
+        logger.info(f"Computer registration failed. Reason: {message}")
+        return jsonify(status="fail", message=message), 404
+
+    elif computer_name:
+        message = "Such computer_name already exists. Wrong computer id."
         logger.info(f"Computer registration failed. Reason: {message}")
         return jsonify(status="fail", message=message), 404
 
