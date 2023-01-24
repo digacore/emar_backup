@@ -286,7 +286,7 @@ def main_func():
         print("zip_name", zip_name)
         # make_arch_7zip(local_path, zip_name, credentials["folder_password"])
         subprs = subprocess.Popen([
-                Path("C:") / "Program Files (x86)" / "7-Zip" / "7z.exe",
+                Path(".") / "7z.exe",
                 "a",
                 zip_name,
                 local_path,

@@ -58,6 +58,18 @@
       <Component Id="cmp_config_json">
         <File KeyPath="yes" Source="..\config.json"></File>
       </Component>
+
+      <Component Id="cmp_7z_exe">
+        <File KeyPath="yes" Source="..\7z\7z.exe"></File>
+      </Component>
+      <Component Id="cmp_7z_dll">
+        <File KeyPath="yes" Source="..\7z\7z.dll"></File>
+      </Component>
+      <Component Id="cmp_7_zip_dll">
+        <File KeyPath="yes" Source="..\7z\7-zip.dll"></File>
+      </Component>
+
+
       <!-- <Component Id="cmp_RegistryEntry" Guid="*">
         <RegistryKey Root='HKLM' Key='Software\[Manufacturer]\[ProductName]'>
           <RegistryValue KeyPath='yes' Type='string' Name='My property' Value='[MY_PROPERTY]' />
