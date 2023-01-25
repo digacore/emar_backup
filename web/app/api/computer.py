@@ -65,3 +65,17 @@ def register_computer(body: ComputerRegInfo):
         message = "Wrong request data."
         logger.info(f"Computer registration failed. Reason: {message}")
         return jsonify(status="fail", message=message), 404
+
+
+@computer_blueprint.get("/get_computers")
+@logger.catch
+def get_computers():
+    # TODO use some token to secure api routes
+
+    computers: Computer = Computer.query.all()
+
+    response = {i.computer_name: {"last_download_time": i.last_download_time, "last_time_online": i.last_time_online} for i in computers}
+
+    return jsonify(
+        response
+        ), 200

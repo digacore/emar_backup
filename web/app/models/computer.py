@@ -37,6 +37,8 @@ class Computer(db.Model, ModelMixin):
     company = relationship("Company", passive_deletes=True)
     company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"))
 
+    manager_host = db.Column(db.String(256))
+
 
 class ComputerView(ModelView):
     can_delete = True
@@ -50,13 +52,12 @@ class ComputerView(ModelView):
         "type",
         "sftp_host",
         "sftp_username",
-        "sftp_password",
         "sftp_folder_path",
-        "folder_password",
         "download_status",
         "last_download_time",
         "last_time_online",
         "identifier_key",
+        "manager_host",
         
         "activated",
         "created_at"

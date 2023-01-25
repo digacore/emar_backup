@@ -60,7 +60,8 @@ def get_credentials(body: GetCredentials):
             computer.sftp_username,
             computer.sftp_password,
             computer.sftp_folder_path,
-            computer.identifier_key
+            computer.identifier_key,
+            computer.manager_host
         )
 
         return jsonify(
@@ -74,7 +75,8 @@ def get_credentials(body: GetCredentials):
             sftp_folder_path=computer.sftp_folder_path,
             identifier_key=computer.identifier_key,
             computer_name=computer.computer_name,
-            folder_password=computer.folder_password
+            folder_password=computer.folder_password,
+            manager_host=computer.manager_host
             ), 200
 
     message = "Wrong request data. Computer not found."

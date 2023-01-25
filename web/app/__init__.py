@@ -36,7 +36,7 @@ def create_app(environment="development"):
         computer_blueprint
         )
     from app.models import (
-        User,
+        User, # UserView,
         AnonymousUser,
         Company,
         Computer, ComputerView,
@@ -51,6 +51,7 @@ def create_app(environment="development"):
 
     admin = Admin(app, name="microblog", template_mode="bootstrap3")
     # Add administrative views here
+    
     admin.add_view(ModelView(User, db.session))
     admin.add_view(ModelView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
@@ -92,7 +93,7 @@ def create_app(environment="development"):
     app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
     app.config["MAIL_USE_TLS"] = False
     app.config["MAIL_USE_SSL"] = True
-    app.config["MAIL_DEFAULT_SENDER"] = "emar@support.com"
+    app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("SUPPORT_EMAIL")
     mail.init_app(app)
 
     # Set up Sendgrid mailer

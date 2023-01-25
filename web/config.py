@@ -1,4 +1,8 @@
 import os
+from dotenv import load_dotenv
+
+
+load_dotenv()
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -13,6 +17,10 @@ class BaseConfig(object):
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = False
+
+    ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
+
+    MAIL_ALERTS = os.environ.get("MAIL_ALERTS")
 
     @staticmethod
     def configure(app):
@@ -47,7 +55,7 @@ class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "sqlite:///" + os.path.join(base_dir, "database.sqlite3")
     )
-    WTF_CSRF_ENABLED = True # TODO validation fails when wtf csrf enabled
+    WTF_CSRF_ENABLED = True  # TODO validation fails when wtf csrf enabled
 
 
 config = dict(

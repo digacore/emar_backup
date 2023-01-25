@@ -24,9 +24,9 @@ def email_alert():
         msg = Message(
             subject=form.subject.data,
             body=form.body.data,
-            recipients = [form.to_addresses.data],
+            recipients=[form.to_addresses.data],
             html=html_body)
-        
+
         if form.from_email.data:
             msg.sender = form.from_email.data
 
