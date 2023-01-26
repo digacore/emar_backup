@@ -128,9 +128,9 @@ def check_and_alert():
 @app.cli.command()
 def create_superuser():
     user = models.User(
-            username="emar_superuser",
-            email="emar@email.com",
-            password="b8273cd9-c53f-4838-98c3-d478",
+            username="emarsuperuser",
+            email="emarsup@email.com",
+            password=CFG.SUPERPASS,
         )
     user.save()
     print("Superuser created")
