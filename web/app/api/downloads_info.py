@@ -22,12 +22,12 @@ def last_time(body: LastTime):
     computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
 
     if computer:
-        logger.info(f"Updating last download time for computer: {computer.sftp_username}.")
+        logger.info(f"Updating last download time for computer: {computer.company_name}.")
         # TODO convert to Datetime object. Looks like str(datetime) from local computer is ok
         computer.last_download_time = body.last_download_time
         computer.last_time_online = body.last_time_online
         computer.update()
-        logger.info(f"Last download time for computer {computer.sftp_username} is updated.")
+        logger.info(f"Last download time for computer {computer.company_name} is updated.")
         return jsonify(status="success", message="Writing time to db"), 200
 
     message = "Wrong request data. Computer not found."
@@ -43,10 +43,9 @@ def get_credentials(body: GetCredentials):
         identifier_key=body.identifier_key,
         computer_name=body.computer_name
         ).first() if body.identifier_key else None
-    
-    print("computer: ", computer)
 
     if computer:
+        print("computer: ", computer)
         logger.info(f"Supplying credentials for computer {computer.sftp_username}.")
         computer.last_time_online = datetime.datetime.now()
         computer.identifier_key = str(uuid.uuid4())

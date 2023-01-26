@@ -25,8 +25,7 @@ def mknewdir(pathstr):
         os.mkdir(pathstr)
 
 
-backups_path = Path("C:") / "backups"
-manager_host = "http://localhost:5000"
+
 
 
 if os.path.isfile(Path("config.json").absolute()):
@@ -34,10 +33,12 @@ if os.path.isfile(Path("config.json").absolute()):
         config_json = json.load(f)
     try:
         backups_path = config_json["backups_path"]
-        manager_host = config_json["manager_host"]
+        g_manager_host = config_json["manager_host"]
     except Exception as e:
         logger.warning(f"Failed to get info from config.json. Proceeding with default. Error: {e}")
 
+backups_path = Path("C:") / "backups"
+g_manager_host = "http://localhost:5000"
 
 mknewdir(backups_path)
 
@@ -63,27 +64,25 @@ def get_credentials():
 
         print(creds_json, type(creds_json))
         computer_name = creds_json["computer_name"]
-        identifier_key = creds_json["identifier_key"],
-        manager_host = creds_json["manager_host"]
+        identifier_key = creds_json["identifier_key"]
+        manager_host = creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
 
         response = requests.post(f"{manager_host}/get_credentials", json={
             "computer_name": computer_name,
-            "identifier_key": identifier_key,
+            "identifier_key": str(identifier_key),
         })
 
     else:
-        # computer_name = platform.node()
         computer_name = socket.gethostname()
         identifier_key = "new_computer"
-        # computer_name = os.environ['COMPUTERNAME']register_computer
 
-        response = requests.post(f"{manager_host}/register_computer", json={
+        response = requests.post(f"{g_manager_host}/register_computer", json={
             "computer_name": computer_name,
             "identifier_key": identifier_key,
         })
         print(type(response.json()), response.json())
         logger.info(f"New computer registered. Download will start next time if credentials inserted to DB.")
-
+    print(response.json())
     if response.json()["message"] == "Supplying credentials":
         print(type(response.json()), response.json())
         with open(creds_file, "w") as f:
@@ -242,7 +241,9 @@ def send_activity(last_download_time, creds):
         with open(creds_file, "r") as f:
             creds_json = json.load(f)
             logger.info(f"Credentials recieved from {creds_file}.")
-        manager_host = creds_json["manager_host"]
+        manager_host = creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
+    else:
+        manager_host = g_manager_host
 
     url = f"{manager_host}/last_time"
     requests.post(url, json={
@@ -261,7 +262,9 @@ def update_download_status(status, creds):
         with open(creds_file, "r") as f:
             creds_json = json.load(f)
             logger.info(f"Credentials recieved from {creds_file}.")
-        manager_host = creds_json["manager_host"]
+        manager_host = creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
+    else:
+        manager_host = g_manager_host
 
     url = f"{manager_host}/download_status"
     requests.post(url, json={
@@ -289,7 +292,6 @@ def main_func():
 
         zip_name = Path("C:") / "zip_backups" / "emar_backups.zip"
         print("zip_name", zip_name)
-        # make_arch_7zip(local_path, zip_name, credentials["folder_password"])
         subprs = subprocess.Popen([
                 Path(".") / "7z.exe",
                 "a",
