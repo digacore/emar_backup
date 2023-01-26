@@ -1,6 +1,6 @@
 from flask import jsonify
 
-from app import sendgrid_client, mail
+from app import mail
 from app.schema import EmailSchema
 from flask_mail import Message
 from app.views.blueprint import BlueprintApi
