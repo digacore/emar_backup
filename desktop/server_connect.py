@@ -24,17 +24,20 @@ def mknewdir(pathstr):
     if not os.path.exists(pathstr):
         os.mkdir(pathstr)
 
+
+backups_path = Path("C:") / "backups"
+manager_host = "http://localhost:5000"
+
+
 if os.path.isfile(Path("config.json").absolute()):
-        with open("config.json", "r") as f:
-            config_json = json.load(f)
-        try:
-            backups_path = config_json["backups_path"]
-            manager_host = config_json["manager_host"]
-        except Exception as e:
-            logger.warning(f"Failed to get info from config.json. Proceeding with default. Error: {e}")
-else:
-    backups_path = Path("C:") / "backups"
-    manager_host = "http://localhost:5000"
+    with open("config.json", "r") as f:
+        config_json = json.load(f)
+    try:
+        backups_path = config_json["backups_path"]
+        manager_host = config_json["manager_host"]
+    except Exception as e:
+        logger.warning(f"Failed to get info from config.json. Proceeding with default. Error: {e}")
+
 
 mknewdir(backups_path)
 
