@@ -25,7 +25,8 @@ def mknewdir(pathstr):
         os.mkdir(pathstr)
 
 
-
+backups_path = Path("C:") / "backups"
+g_manager_host = "http://localhost:5000"
 
 
 if os.path.isfile(Path("config.json").absolute()):
@@ -37,8 +38,6 @@ if os.path.isfile(Path("config.json").absolute()):
     except Exception as e:
         logger.warning(f"Failed to get info from config.json. Proceeding with default. Error: {e}")
 
-backups_path = Path("C:") / "backups"
-g_manager_host = "http://localhost:5000"
 
 mknewdir(backups_path)
 
