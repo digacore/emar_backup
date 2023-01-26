@@ -57,7 +57,7 @@ class ProductionConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "sqlite:///" + os.path.join(base_dir, "database.sqlite3")
     )
-    WTF_CSRF_ENABLED = False  # TODO validation fails when wtf csrf enabled
+    WTF_CSRF_ENABLED = True  # TODO validation fails when wtf csrf enabled
 
 
 config = dict(
