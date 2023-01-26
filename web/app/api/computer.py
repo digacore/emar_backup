@@ -1,4 +1,3 @@
-import datetime
 import uuid
 from flask import jsonify
 
@@ -22,7 +21,7 @@ def register_computer(body: ComputerRegInfo):
             identifier_key=body.identifier_key,
             computer_name=body.computer_name
         ).first()
-    
+
     computer_name: Computer = Computer.query.filter_by(
             computer_name=body.computer_name
         ).first()
@@ -40,7 +39,7 @@ def register_computer(body: ComputerRegInfo):
     elif body.identifier_key == "new_computer":
         new_identifier_key = str(uuid.uuid4())
         logger.info(f"Registering computer. ID = {new_identifier_key}.")
-        
+
         new_computer = Computer(
             identifier_key=new_identifier_key,
             computer_name=body.computer_name,
@@ -49,7 +48,7 @@ def register_computer(body: ComputerRegInfo):
         logger.info(f"Computer registered. ID = {new_identifier_key}.")
         return jsonify(
             status="registered",
-            message="Supplying credentials",
+            message="Computer registered",
             host="",
             company_name="",
             location="",
@@ -58,7 +57,8 @@ def register_computer(body: ComputerRegInfo):
             sftp_folder_path="",
             identifier_key=new_computer.identifier_key,
             computer_name=new_computer.computer_name,
-            folder_password=""
+            folder_password="",
+            computer=computer.manager_host
             ), 200
 
     else:
@@ -74,7 +74,9 @@ def get_computers():
 
     computers: Computer = Computer.query.all()
 
-    response = {i.computer_name: {"last_download_time": i.last_download_time, "last_time_online": i.last_time_online} for i in computers}
+    response = {i.computer_name: {
+        "last_download_time": i.last_download_time, "last_time_online": i.last_time_online
+        } for i in computers}
 
     return jsonify(
         response

@@ -19,7 +19,8 @@ def last_time(body: LastTime):
 
     # TODO use some token to secure api routes
 
-    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
+    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if \
+        body.identifier_key else None
 
     if computer:
         logger.info(f"Updating last download time for computer: {computer.company_name}.")
@@ -31,7 +32,8 @@ def last_time(body: LastTime):
         return jsonify(status="success", message="Writing time to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Last download time update failed. company_name: {computer.company_name}, location {computer.location_name}. Reason: {message}")
+    logger.info(f"Last download time update failed. company_name: {computer.company_name}, \
+        location {computer.location_name}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 
@@ -79,7 +81,8 @@ def get_credentials(body: GetCredentials):
             ), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Supplying credentials failed. computer: {computer.computer_name}, id {computer.identifier_key}. Reason: {message}")
+    logger.info(f"Supplying credentials failed. computer: {computer.computer_name}, \
+        id {computer.identifier_key}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 
@@ -87,7 +90,8 @@ def get_credentials(body: GetCredentials):
 @logger.catch
 def download_status(body: DownloadStatus):
 
-    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if body.identifier_key else None
+    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if \
+        body.identifier_key else None
 
     if computer:
         logger.info(f"Updating download status for computer: {computer.sftp_username}.")
@@ -99,7 +103,8 @@ def download_status(body: DownloadStatus):
         return jsonify(status="success", message="Writing download status to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Download status update failed. company_name: {computer.company_name}, location {computer.location_name}. Reason: {message}")
+    logger.info(f"Download status update failed. company_name: {computer.computer_name}, \
+        location {computer.location_name}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 

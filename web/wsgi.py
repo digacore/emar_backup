@@ -33,6 +33,7 @@ def check_and_alert():
 
             if last_download_time < datetime.now() - timedelta(seconds=43200):
                 # TODO put support email here to send and receive emails
+                logger.warning(f"Computer {computer.computer_name} 12 hours alert.")
                 requests.post(alert_url, json={
                     "alerted_target": computer.computer_name,
                     "alert_status": "red",
@@ -43,7 +44,14 @@ def check_and_alert():
                     "html_body": "",
                     "reply_to_address": ""
                     })
-                logger.info(f"Computer {computer.computer_name} 12 hours alert sent.")
+
+                computer.alert_status = "red"
+                computer.update()
+                logger.warning(f"Computer {computer.computer_name} 12 hours alert sent and alert status updated.")
+            else:
+                computer.alert_status = "green"
+                computer.update()
+
             if last_download_time < datetime.now() - timedelta(seconds=7200):
                 no_update_files_2h += 1
 
@@ -53,6 +61,7 @@ def check_and_alert():
 
             if last_time_online < datetime.now() - timedelta(seconds=43200):
                 # TODO put support email here to send and receive emails
+                logger.warning(f"Computer {computer.computer_name} 12 hours offline alert.")
                 requests.post(alert_url, json={
                     "alerted_target": computer.computer_name,
                     "alert_status": "red",
@@ -63,13 +72,21 @@ def check_and_alert():
                     "html_body": "",
                     "reply_to_address": ""
                     })
-                logger.info(f"Computer {computer.computer_name} 12 hours offline alert sent.")
+
+                computer.alert_status = "red"
+                computer.update()
+                logger.warning(f"Computer {computer.computer_name} 12 hours offline alert sent \
+                    and alert status updated.")
+            else:
+                computer.alert_status = "green"
+                computer.update()
 
             if last_time_online < datetime.now() - timedelta(seconds=1800):
                 off_30_min_computers += 1
 
     if off_30_min_computers == len(computers):
         # TODO put support email here to send and receive emails
+        logger.warning("All computers offline 30 min alert.")
         requests.post(alert_url, json={
             "alerted_target": "all",
             "alert_status": "red",
@@ -80,10 +97,15 @@ def check_and_alert():
             "html_body": "",
             "reply_to_address": ""
             })
-        logger.info("All computers offline 30 min alert sent.")
+
+        for computer in computers:
+            computer.alert_status = "red"
+            computer.update()
+        logger.warning("All computers offline 30 min alert sents and alert statuses updated.")
 
     if no_update_files_2h == len(computers):
         # TODO put support email here to send and receive emails
+        logger.warning("No new files over 2 h alert.")
         requests.post(alert_url, json={
             "alerted_target": "all",
             "alert_status": "red",
@@ -94,7 +116,11 @@ def check_and_alert():
             "html_body": "",
             "reply_to_address": ""
             })
-        logger.info("No new files over 2 h alert sent.")
+
+        for computer in computers:
+            computer.alert_status = "red"
+            computer.update()
+        logger.info("No new files over 2 h alert sent and alert statuses updated.")
 
 
 if __name__ == "__main__":
