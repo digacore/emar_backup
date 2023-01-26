@@ -22,6 +22,8 @@ def check_and_alert():
     computers: list[models.Computer] = models.Computer.query.all()
     alert_url = CFG.MAIL_ALERTS
     time_format = "%Y-%m-%d %H:%M:%S"
+    from_email = CFG.SUPPORT_EMAIL
+    to_addresses = CFG.TO_ADDRESSES
 
     off_30_min_computers = 0
     no_update_files_2h = 0
@@ -37,8 +39,8 @@ def check_and_alert():
                 requests.post(alert_url, json={
                     "alerted_target": computer.computer_name,
                     "alert_status": "red",
-                    "from_email": "sup_send@eamil.com",
-                    "to_addresses": "sup_receive@eamil.com",
+                    "from_email": from_email,
+                    "to_addresses": to_addresses,
                     "subject": f"Computer {computer.computer_name} 12 hours alert!",
                     "body": f"Computer {computer.computer_name} had not download files for more then 12 hours.",
                     "html_body": "",
@@ -65,8 +67,8 @@ def check_and_alert():
                 requests.post(alert_url, json={
                     "alerted_target": computer.computer_name,
                     "alert_status": "red",
-                    "from_email": "sup_send@eamil.com",
-                    "to_addresses": "sup_receive@eamil.com",
+                    "from_email": from_email,
+                    "to_addresses": to_addresses,
                     "subject": f"Computer {computer.computer_name} 12 hours offline alert!",
                     "body": f"Computer {computer.computer_name} had not been online for more then 12 hours.",
                     "html_body": "",
@@ -90,8 +92,8 @@ def check_and_alert():
         requests.post(alert_url, json={
             "alerted_target": "all",
             "alert_status": "red",
-            "from_email": "sup_send@eamil.com",
-            "to_addresses": "sup_receive@eamil.com",
+            "from_email": from_email,
+            "to_addresses": to_addresses,
             "subject": "All computers offline 30 min alert!",
             "body": "All computers are offline more then 30 minutes.",
             "html_body": "",
@@ -109,8 +111,8 @@ def check_and_alert():
         requests.post(alert_url, json={
             "alerted_target": "all",
             "alert_status": "red",
-            "from_email": "sup_send@eamil.com",
-            "to_addresses": "sup_receive@eamil.com",
+            "from_email": from_email,
+            "to_addresses": to_addresses,
             "subject": "No new files over 2 h alert!",
             "body": "No new files were downloaded by all computers for over 2 hours.",
             "html_body": "",

@@ -9,7 +9,6 @@ from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.contrib.sqla import ModelView
 from flask_mail import Mail
-from app.utils.sendgrid import SendGridClient
 
 
 # instantiate extensions
@@ -17,9 +16,6 @@ login_manager = LoginManager()
 db = SQLAlchemy()
 migration = Migrate()
 mail = Mail()
-sendgrid_client = SendGridClient(
-    sendgrid_api_key=os.getenv("SENDGRID_API_KEY")
-)
 
 
 def create_app(environment="development"):
@@ -36,7 +32,7 @@ def create_app(environment="development"):
         computer_blueprint
         )
     from app.models import (
-        User, # UserView,
+        User,  # UserView,
         AnonymousUser,
         Company,
         Computer, ComputerView,
@@ -51,7 +47,7 @@ def create_app(environment="development"):
 
     admin = Admin(app, name="microblog", template_mode="bootstrap3")
     # Add administrative views here
-    
+
     admin.add_view(ModelView(User, db.session))
     admin.add_view(ModelView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
@@ -87,7 +83,7 @@ def create_app(environment="development"):
     login_manager.anonymous_user = AnonymousUser
 
     # Flask-Mail conf
-    app.config["MAIL_SERVER"]=os.environ.get("MAIL_SERVER")
+    app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER")
     app.config["MAIL_PORT"] = os.environ.get("MAIL_PORT")
     app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
     app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
@@ -95,9 +91,6 @@ def create_app(environment="development"):
     app.config["MAIL_USE_SSL"] = True
     app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("SUPPORT_EMAIL")
     mail.init_app(app)
-
-    # Set up Sendgrid mailer
-    sendgrid_client.init_app(app)
 
     # Error handlers.
     @app.errorhandler(HTTPException)

@@ -21,6 +21,8 @@ class BaseConfig(object):
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
 
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS")
+    SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
+    TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
 
     @staticmethod
     def configure(app):
