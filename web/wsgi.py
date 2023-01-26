@@ -21,44 +21,52 @@ def check_and_alert():
     """Get all computers from DB."""
     computers: list[models.Computer] = models.Computer.query.all()
     alert_url = CFG.MAIL_ALERTS
+    time_format = "%Y-%m-%d %H:%M:%S"
 
     off_30_min_computers = 0
     no_update_files_2h = 0
 
     for computer in computers:
-        if computer.last_download_time < datetime.now() - timedelta(seconds=43200):
-            # TODO put support email here to send and receive emails
-            requests.post(alert_url, json={
-                "alerted_target": computer.computer_name,
-                "alert_status": "red",
-                "from_email": "sup_send@eamil.com",
-                "to_addresses": "sup_receive@eamil.com",
-                "subject": f"Computer {computer.computer_name} 12 hours alert!",
-                "body": f"Computer {computer.computer_name} had not download files for more then 12 hours.",
-                "html_body": "",
-                "reply_to_address": ""
-                })
-            logger.info(f"Computer {computer.computer_name} 12 hours alert sent.")
+        if computer.last_download_time:
+            last_download_time = datetime.strptime(computer.last_download_time, time_format) if \
+                isinstance(computer.last_download_time, str) else computer.last_download_time
 
-        if computer.last_time_online < datetime.now() - timedelta(seconds=43200):
-            # TODO put support email here to send and receive emails
-            requests.post(alert_url, json={
-                "alerted_target": computer.computer_name,
-                "alert_status": "red",
-                "from_email": "sup_send@eamil.com",
-                "to_addresses": "sup_receive@eamil.com",
-                "subject": f"Computer {computer.computer_name} 12 hours offline alert!",
-                "body": f"Computer {computer.computer_name} had not been online for more then 12 hours.",
-                "html_body": "",
-                "reply_to_address": ""
-                })
-            logger.info(f"Computer {computer.computer_name} 12 hours offline alert sent.")
+            if last_download_time < datetime.now() - timedelta(seconds=43200):
+                # TODO put support email here to send and receive emails
+                requests.post(alert_url, json={
+                    "alerted_target": computer.computer_name,
+                    "alert_status": "red",
+                    "from_email": "sup_send@eamil.com",
+                    "to_addresses": "sup_receive@eamil.com",
+                    "subject": f"Computer {computer.computer_name} 12 hours alert!",
+                    "body": f"Computer {computer.computer_name} had not download files for more then 12 hours.",
+                    "html_body": "",
+                    "reply_to_address": ""
+                    })
+                logger.info(f"Computer {computer.computer_name} 12 hours alert sent.")
+            if last_download_time < datetime.now() - timedelta(seconds=7200):
+                no_update_files_2h += 1
 
-        if computer.last_time_online < datetime.now() - timedelta(seconds=1800):
-            off_30_min_computers += 1
+        if computer.last_time_online:
+            last_time_online = datetime.strptime(computer.last_time_online, time_format) if \
+                isinstance(computer.last_time_online, str) else computer.last_time_online
 
-        if computer.last_download_time < datetime.now() - timedelta(seconds=7200):
-            no_update_files_2h += 1
+            if last_time_online < datetime.now() - timedelta(seconds=43200):
+                # TODO put support email here to send and receive emails
+                requests.post(alert_url, json={
+                    "alerted_target": computer.computer_name,
+                    "alert_status": "red",
+                    "from_email": "sup_send@eamil.com",
+                    "to_addresses": "sup_receive@eamil.com",
+                    "subject": f"Computer {computer.computer_name} 12 hours offline alert!",
+                    "body": f"Computer {computer.computer_name} had not been online for more then 12 hours.",
+                    "html_body": "",
+                    "reply_to_address": ""
+                    })
+                logger.info(f"Computer {computer.computer_name} 12 hours offline alert sent.")
+
+            if last_time_online < datetime.now() - timedelta(seconds=1800):
+                off_30_min_computers += 1
 
     if off_30_min_computers == len(computers):
         # TODO put support email here to send and receive emails
