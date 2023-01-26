@@ -125,5 +125,15 @@ def check_and_alert():
         logger.info("No new files over 2 h alert sent and alert statuses updated.")
 
 
+@app.cli.command()
+def create_superuser():
+    user = models.User(
+            username="emar_superuser",
+            email="emar@email.com",
+            password="b8273cd9-c53f-4838-98c3-d478",
+        )
+    user.save()
+    print("Superuser created")
+
 if __name__ == "__main__":
     app.run()
