@@ -8,7 +8,6 @@ import json
 import hashlib
 import requests
 from pathlib import Path
-import platform
 import socket
 
 from paramiko import SSHClient, AutoAddPolicy, AutoAddPolicy
@@ -20,7 +19,6 @@ logger.add(sys.stdout, format=log_format, serialize=True, level="DEBUG", coloriz
 # TODO for prod write to desktop
 # logger.add(sink=Path().home().joinpath("Desktop"), format=log_format, serialize=True, level="DEBUG", colorize=True)
 
-# load_dotenv()
 
 def mknewdir(pathstr):
     if not os.path.exists(pathstr):
@@ -46,14 +44,14 @@ local_path = Path(backups_path) / timestr
 
 mknewdir(local_path)
 
+creds_file = "creds.json"
+local_creds_json = f"{os.getcwd()}\{creds_file}"
+logger.info(f"local_creds_json var is {local_creds_json}")
+
 
 @logger.catch
 def get_credentials():
     logger.info("Recieving credentials.")
-
-    creds_file = "creds.json"
-    local_creds_json = f"{os.getcwd()}\{creds_file}"
-    logger.info(f"local_creds_json var is {local_creds_json}")
 
     if os.path.isfile(local_creds_json):
         with open(creds_file, "r") as f:
@@ -62,7 +60,8 @@ def get_credentials():
 
         print(creds_json, type(creds_json))
         computer_name = creds_json["computer_name"]
-        identifier_key = creds_json["identifier_key"]
+        identifier_key = creds_json["identifier_key"],
+        manager_host = creds_json["manager_host"]
 
         response = requests.post(f"{manager_host}/get_credentials", json={
             "computer_name": computer_name,
@@ -88,7 +87,8 @@ def get_credentials():
             json.dump(
                 {
                     "computer_name": response.json()["computer_name"],
-                    "identifier_key": response.json()["identifier_key"]
+                    "identifier_key": response.json()["identifier_key"],
+                    "manager_host": response.json()["manager_host"]
                 },
                 f
             )
@@ -119,9 +119,7 @@ def sftp_check_files_for_update_and_load(credentials):
         with ssh.open_sftp() as sftp:
             # TODO recursive loop, rewrite
             for file_lvl_1 in sftp.listdir_attr():
-                yy = 0
-                if yy > 1:
-                    break
+
                 # TODO is it reasonable to update_download_status in loop? May cause a lot of post requests
                 update_download_status("comparing files", credentials)
                 # chdir to be on top dir level
@@ -130,8 +128,6 @@ def sftp_check_files_for_update_and_load(credentials):
                 print("file_lvl_1", file_lvl_1.filename, file_lvl_1.st_mode, stat.S_ISDIR(file_lvl_1.st_mode))
 
                 if not stat.S_ISDIR(file_lvl_1.st_mode):
-                    # if not os.path.exists(f"{local_path}"):
-                    #     os.mkdir(f"{local_path}")
 
                     local_file_path = f"{local_path}\{file_lvl_1.filename}"
                     # TODO handle repeated code 
@@ -155,14 +151,11 @@ def sftp_check_files_for_update_and_load(credentials):
                     sftp.chdir(file_lvl_1.filename)
 
                     if not os.path.exists(f"{local_path}\{file_lvl_1.filename}"):
-                        # if not os.path.exists(f"{local_path}"):
-                        #     os.mkdir(f"{local_path}")
                         os.mkdir(f"{local_path}\{file_lvl_1.filename}")
                         logger.info(f"Creating equivalent directory on local: {file_lvl_1.filename}")
 
                     for file_lvl_2 in sftp.listdir_attr():
-                        if yy > 1:
-                            break
+
                         print("file_lvl_2", file_lvl_2, file_lvl_2.st_mode, stat.S_ISDIR(file_lvl_2.st_mode))
 
                         if not stat.S_ISDIR(file_lvl_2.st_mode):
@@ -179,14 +172,11 @@ def sftp_check_files_for_update_and_load(credentials):
                                 )
 
                             if not checksum_result:
-                                yy += 1  # TODO remove
                                 sftp_download(
                                     chdir=file_lvl_1.filename,
                                     filename=file_lvl_2.filename,
                                     local_file_path=local_file_path,
                                     creds=credentials)
-                                
-                    yy += 1  # TODO remove
 
                 else:
                     logger.error(f"Something went wrong during check of {file_lvl_1.filename}")
@@ -245,6 +235,12 @@ def checksum_local_remote(local_filepath, checksum_remote):
 
 @logger.catch
 def send_activity(last_download_time, creds):
+    if os.path.isfile(local_creds_json):
+        with open(creds_file, "r") as f:
+            creds_json = json.load(f)
+            logger.info(f"Credentials recieved from {creds_file}.")
+        manager_host = creds_json["manager_host"]
+
     url = f"{manager_host}/last_time"
     requests.post(url, json={
     "company_name": creds["company_name"],
@@ -258,6 +254,12 @@ def send_activity(last_download_time, creds):
 
 @logger.catch
 def update_download_status(status, creds):
+    if os.path.isfile(local_creds_json):
+        with open(creds_file, "r") as f:
+            creds_json = json.load(f)
+            logger.info(f"Credentials recieved from {creds_file}.")
+        manager_host = creds_json["manager_host"]
+
     url = f"{manager_host}/download_status"
     requests.post(url, json={
     "company_name": creds["company_name"],
@@ -299,9 +301,15 @@ def main_func():
 
         from win32com.client import Dispatch
 
-        path = r"C:\\Users\\Puser\\Desktop\\EMAR.lnk"  #This is where the shortcut will be created
-        target = r"C:\\zip_backups\\emar_backups.zip" # directory to which the shortcut is created
-        wDir = r"C:\\zip_backups"
+        import getpass
+        user = getpass.getuser()
+
+        progs = "Program Files (x86)" if os.path.exists("C:\\Program Files (x86)") else "Program Files"
+
+        path = fr"C:\\Users\\{user}\\Desktop\\EMAR.lnk"  #This is where the shortcut will be created
+        target = fr"C:\\{progs}\\CheckRemoteUpdate\\zip_backups\\emar_backups.zip" # directory to which the shortcut is created
+        wDir = fr"C:\\{progs}\\CheckRemoteUpdate\\zip_backups"
+
 
         shell = Dispatch('WScript.Shell')
         shortcut = shell.CreateShortCut(path)
