@@ -16,7 +16,7 @@ services:
       - 127.0.0.1:${LOCAL_DB_PORT}:5432
 
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - db-data0:/var/lib/postgresql/data
 
   app:
     restart: unless-stopped
@@ -57,4 +57,4 @@ services:
       --requirepass redis
 
 volumes:
-  db-data:
+  db-data0:
