@@ -6,6 +6,7 @@ from flask_admin.contrib.sqla import ModelView
 
 from app import db
 from app.models.utils import ModelMixin
+from app.controllers import MyModelView
 
 
 class Location(db.Model, ModelMixin):
@@ -21,7 +22,7 @@ class Location(db.Model, ModelMixin):
     def __repr__(self):
         return self.name
 
-class LocationView(ModelView):
+class LocationView(MyModelView):
     can_delete = True
     column_hide_backrefs = False
     column_list = ["id", "name", "company_name", "created_at"]

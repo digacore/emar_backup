@@ -3,7 +3,7 @@ import os
 from flask import render_template
 from flask_openapi3 import OpenAPI
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from werkzeug.exceptions import HTTPException
 from flask_migrate import Migrate
 from flask_admin import Admin
@@ -39,6 +39,10 @@ def create_app(environment="development"):
         Location, LocationView,
     )
 
+    from app.controllers import (
+        MyModelView
+    )
+
     # Instantiate app.
     app = OpenAPI(__name__)
 
@@ -48,8 +52,8 @@ def create_app(environment="development"):
     admin = Admin(app, name="microblog", template_mode="bootstrap3")
     # Add administrative views here
 
-    admin.add_view(ModelView(User, db.session))
-    admin.add_view(ModelView(Company, db.session))
+    admin.add_view(MyModelView(User, db.session))
+    admin.add_view(MyModelView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
     admin.add_view(LocationView(Location, db.session))
 

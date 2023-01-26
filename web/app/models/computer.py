@@ -6,6 +6,7 @@ from flask_admin.contrib.sqla import ModelView
 
 from app import db
 from app.models.utils import ModelMixin
+from app.controllers import MyModelView
 
 
 class Computer(db.Model, ModelMixin):
@@ -40,7 +41,7 @@ class Computer(db.Model, ModelMixin):
     manager_host = db.Column(db.String(256))
 
 
-class ComputerView(ModelView):
+class ComputerView(MyModelView):
     can_delete = True
     column_hide_backrefs = False
     column_list = [
