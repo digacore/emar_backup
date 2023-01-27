@@ -328,7 +328,7 @@ def main_func():
 try:
     main_func()
     print("Task finishhed")
-    time.sleep(10)
+    time.sleep(60)
 except Exception as e:
     print(f"Exception occured: {e}")
     time.sleep(120)

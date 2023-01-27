@@ -1,5 +1,5 @@
 import uuid
-from flask import jsonify
+from flask import jsonify, request
 
 from app.models import Computer
 from app.schema import ComputerRegInfo
@@ -43,6 +43,7 @@ def register_computer(body: ComputerRegInfo):
         new_computer = Computer(
             identifier_key=new_identifier_key,
             computer_name=body.computer_name,
+            manager_host=request.url
         )
         new_computer.save()
         logger.info(f"Computer registered. ID = {new_identifier_key}.")
