@@ -41,6 +41,9 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - REDIS_ADDR=redis:${REDIS_PORT}
       - BACKUP_DIR=${BACKUP_DIR}
+      - FLASK_ENV=production
+      - FLASK_APP=wsgi:app
+      - FLASK_DEBUG=1
     depends_on:
       - db
     command: >
