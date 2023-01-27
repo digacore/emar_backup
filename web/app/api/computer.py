@@ -59,7 +59,7 @@ def register_computer(body: ComputerRegInfo):
             identifier_key=new_computer.identifier_key,
             computer_name=new_computer.computer_name,
             folder_password="",
-            computer=computer.manager_host
+            computer=new_computer.manager_host
             ), 200
 
     else:
