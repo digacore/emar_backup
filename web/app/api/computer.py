@@ -61,7 +61,7 @@ def register_computer(body: ComputerRegInfo):
             identifier_key=new_computer.identifier_key,
             computer_name=new_computer.computer_name,
             folder_password="",
-            computer=BSG.APP_HOST_URL
+            manager_host=BSG.APP_HOST_URL
             ), 200
 
     else:

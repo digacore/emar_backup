@@ -82,7 +82,7 @@ def get_credentials():
         print(type(response.json()), response.json())
         logger.info(f"New computer registered. Download will start next time if credentials inserted to DB.")
     print(response.json())
-    if response.json()["message"] == "Supplying credentials":
+    if response.json()["message"] == "Supplying credentials" or response.json()["message"] == "Computer registered":
         print(type(response.json()), response.json())
         with open(creds_file, "w") as f:
             json.dump(
@@ -320,6 +320,9 @@ def main_func():
         shortcut.WorkingDirectory = wDir
         shortcut.Targetpath = target
         shortcut.save()
+    
+    elif credentials["status"] == "registered":
+        logger.info("New computer registered. Download will start next time if credentials available in DB.")
 
     else:
         logger.info(f"SFTP credentials were not supplied. Download impossible. Credentials: {credentials}")
