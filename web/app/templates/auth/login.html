@@ -8,6 +8,7 @@
     </div>
     <div class="card-body">
       <form class="form" role="form" action="{{ url_for('auth.login') }}" method="post">
+        {{ form.csrf_token }}
         <div class="form-group">
           {{form.user_id.label}}
           {{form.user_id(class='form-control')}}

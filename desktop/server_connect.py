@@ -134,7 +134,7 @@ def sftp_check_files_for_update_and_load(credentials):
                     # TODO handle repeated code 
                     stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
                     checksum = stdout.read()
-                    print("sha256_remote", checksum)
+                    print("sha256sum lvl1", checksum)
                     checksum_result = checksum_local_remote(
                         f"{local_path}\{file_lvl_1.filename}",
                         checksum
@@ -163,10 +163,10 @@ def sftp_check_files_for_update_and_load(credentials):
                             local_file_path = f"{local_path}\{file_lvl_1.filename}\{file_lvl_2.filename}"
 
                             # TODO handle repeated code
-                            print(f"sha256sum {file_lvl_1.filename}\{file_lvl_2.filename}")
+                            print(f"lvl2 path: {file_lvl_1.filename}\{file_lvl_2.filename}")
                             stdin, stdout, stderr = ssh.exec_command(f"sha256sum /{file_lvl_1.filename}/{file_lvl_2.filename}")
                             checksum = stdout.read()
-                            print("sha256_remote", checksum)
+                            print("sha256sum lvl2", checksum)
                             checksum_result = checksum_local_remote(
                                 f"{local_path}\{file_lvl_1.filename}\{file_lvl_2.filename}",
                                 checksum
@@ -214,9 +214,6 @@ def sftp_download(chdir, filename, local_file_path, creds):
 @logger.catch
 def checksum_local_remote(local_filepath, checksum_remote):
     sha256_remote = str(checksum_remote).split()[0].lstrip("b'").lower()
-    print(str(checksum_remote).split())
-    print("sha256_remote: ", sha256_remote)
-
     print("local_filepath", local_filepath)
 
     if os.path.exists(local_filepath):
@@ -287,7 +284,7 @@ def main_func():
         send_activity(last_download_time, credentials)
         logger.info("Downloading proccess finished.")
 
-        mknewdir(Path("C:") / "zip_backups")
+        # mknewdir(Path("C:") / "zip_backups")
 
         zip_name = Path("C:") / "zip_backups" / "emar_backups.zip"
         print("zip_name", zip_name)
