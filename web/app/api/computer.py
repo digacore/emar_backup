@@ -6,6 +6,8 @@ from app.schema import ComputerRegInfo
 from app.views.blueprint import BlueprintApi
 from app.logger import logger
 
+from config import BaseConfig as BSG
+
 
 computer_blueprint = BlueprintApi("/computer", __name__)
 
@@ -59,7 +61,7 @@ def register_computer(body: ComputerRegInfo):
             identifier_key=new_computer.identifier_key,
             computer_name=new_computer.computer_name,
             folder_password="",
-            computer=new_computer.manager_host
+            computer=BSG.APP_HOST_URL
             ), 200
 
     else:

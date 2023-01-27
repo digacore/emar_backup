@@ -18,6 +18,8 @@ class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = False
 
+    APP_HOST_URL = os.environ.get("APP_HOST_URL")
+
     SUPERPASS = os.environ.get("SUPERPASS")
 
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
