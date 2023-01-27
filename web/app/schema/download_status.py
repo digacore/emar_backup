@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -8,3 +9,5 @@ class DownloadStatus(BaseModel):
     download_status: str
     last_time_online: datetime
     identifier_key: str
+    last_downloaded: Optional[str]
+

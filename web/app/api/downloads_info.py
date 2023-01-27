@@ -97,6 +97,8 @@ def download_status(body: DownloadStatus):
         logger.info(f"Updating download status for computer: {computer.sftp_username}.")
         computer.last_time_online = datetime.datetime.now()
         computer.download_status = body.download_status
+        if body.last_downloaded:
+            computer.last_downloaded = body.last_downloaded
         computer.update()
         logger.info(f"Download status for computer {computer.sftp_username} is updated to {body.download_status}.")
 

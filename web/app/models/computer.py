@@ -39,6 +39,7 @@ class Computer(db.Model, ModelMixin):
     company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"))
 
     manager_host = db.Column(db.String(256))
+    last_downloaded = db.Column(db.String(256))
 
 
 class ComputerView(MyModelView):
@@ -64,3 +65,9 @@ class ComputerView(MyModelView):
         "created_at"
         ]
     column_searchable_list = ["company_name", "location_name"]
+
+    form_widget_args = {
+        'last_download_time':{'readonly':True},
+        'last_time_online':{'readonly':True},
+        'identifier_key':{'readonly':True},
+    }
