@@ -45,7 +45,7 @@ def register_computer(body: ComputerRegInfo):
         new_computer = Computer(
             identifier_key=new_identifier_key,
             computer_name=body.computer_name,
-            manager_host=request.url
+            manager_host=BSG.APP_HOST_URL
         )
         new_computer.save()
         logger.info(f"Computer registered. ID = {new_identifier_key}.")
