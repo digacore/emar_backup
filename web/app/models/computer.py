@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import JSON
 from sqlalchemy.orm import relationship
 
 from flask_admin.contrib.sqla import ModelView
@@ -40,6 +41,7 @@ class Computer(db.Model, ModelMixin):
 
     manager_host = db.Column(db.String(256))
     last_downloaded = db.Column(db.String(256))
+    files_checksum = db.Column(JSON)
 
 
 class ComputerView(MyModelView):

@@ -1,5 +1,4 @@
 import os
-import sys
 import subprocess
 import stat
 import time
@@ -8,13 +7,8 @@ import json
 import hashlib
 import requests
 from pathlib import Path
-import socket
 import tempfile
 
-# from zipfile import ZipFile
-# file_name = "XYZ.zip"
-# with ZipFile(file_name, "r") as zip:
-#     zip.extractall(path="uncompressed", pwd="password".encode("utf-8"))
 from paramiko import SSHClient, AutoAddPolicy, AutoAddPolicy
 from loguru import logger
 
@@ -30,27 +24,15 @@ def mknewdir(pathstr):
         os.mkdir(pathstr)
 
 
-backups_path = Path("C:") / "backups"
 g_manager_host = "http://localhost:5000"
-
 
 if os.path.isfile(Path("config.json").absolute()):
     with open("config.json", "r") as f:
         config_json = json.load(f)
     try:
-        backups_path = config_json["backups_path"]
         g_manager_host = config_json["manager_host"]
     except Exception as e:
         logger.warning(f"Failed to get info from config.json. Proceeding with default. Error: {e}")
-
-
-mknewdir(backups_path)
-
-timestr = f"backup_{time.ctime()}".replace(":", "_").replace(" ", "_")
-# local_path = f"{backups_path}\\{timestr}"
-local_path = Path(backups_path) / timestr
-
-mknewdir(local_path)
 
 creds_file = "creds.json"
 local_creds_json = f"{os.getcwd()}\{creds_file}"
@@ -76,14 +58,37 @@ def get_credentials():
         })
 
     else:
+        import socket
+        import platform
+
         computer_name = socket.gethostname()
+        logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
+        if not isinstance(computer_name, str):
+            computer_name = platform.node()
+            logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
+        if not isinstance(computer_name, str):
+            raise(ValueError("Can't get computer name. Name {}, type {}", computer_name, type(computer_name)))
         identifier_key = "new_computer"
 
         response = requests.post(f"{g_manager_host}/register_computer", json={
             "computer_name": computer_name,
             "identifier_key": identifier_key,
         })
-        logger.info(f"New computer registered. Download will start next time if credentials inserted to DB.")
+
+        logger.debug("response.request.method on /register_computer {}", response.request.method)
+        if response.request.method == "GET":
+            logger.warning("Instead of POST method we have GET on /register_computer. Retry with allow_redirects=False")
+            response = requests.post(f"{g_manager_host}/register_computer", allow_redirects=False,  json={
+                "computer_name": computer_name,
+                "identifier_key": identifier_key,
+            })
+            print("response.history", response.history)
+            logger.debug("Retry response.request.method on /register_computer. Method = {}", response.request.method)
+
+        if response.status_code == 200:
+            logger.info("New computer registered. Download will start next time if credentials inserted to DB.")
+        else:
+            logger.warning("Something went wrong. Response status code = {}", response.status_code)
     print(response.json())
     if response.json()["message"] == "Supplying credentials" or response.json()["message"] == "Computer registered":
         with open(creds_file, "w") as f:
@@ -108,6 +113,8 @@ def sftp_check_files_for_update_and_load(credentials):
 
     # key = directory, value = file
     download_paths = {}
+    files_cheksum = {}
+    print('credentials["files_checksum"]', credentials["files_checksum"], type(credentials["files_checksum"]))
 
     with SSHClient() as ssh:
         # TODO check for real key
@@ -125,10 +132,8 @@ def sftp_check_files_for_update_and_load(credentials):
 
         with ssh.open_sftp() as sftp:
             # TODO recursive loop, rewrite
+            update_download_status("comparing files", credentials)
             for file_lvl_1 in sftp.listdir_attr():
-
-                # TODO is it reasonable to update_download_status in loop? May cause a lot of post requests
-                # update_download_status("comparing files", credentials)
                 # chdir to be on top dir level
                 # logger.debug(f"Changing remote directory to start directory.")
                 print("Changing remote directory to start directory.")
@@ -136,97 +141,57 @@ def sftp_check_files_for_update_and_load(credentials):
                 print("file_lvl_1", file_lvl_1.filename, file_lvl_1.st_mode, stat.S_ISDIR(file_lvl_1.st_mode))
 
                 if not stat.S_ISDIR(file_lvl_1.st_mode):
-
-                    # local_file_path = f"{local_path}\{file_lvl_1.filename}"
-                    # # TODO handle repeated code 
-                    # stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
-                    # checksum = stdout.read()
-                    # print("sha256sum lvl1", checksum)
-                    # checksum_result = checksum_local_remote(
-                    #     f"{local_path}\{file_lvl_1.filename}",
-                    #     checksum
-                    #     )
-                    # TODO is it possible? Can't repeat
+                    # TODO handle repeated code 
                     if None in download_paths:
-                        download_paths[file_lvl_1.filename].append(file_lvl_2.filename)
+                        download_paths[None].append(file_lvl_1.filename)
+                        stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
+                        checksum = stdout.read()
+                        files_cheksum[None][file_lvl_1.filename] = checksum
                     else:
-                        download_paths[file_lvl_1.filename] = [file_lvl_2.filename]
-                    # if checksum_result:
-                    #     sftp_download(
-                    #         chdir=None,
-                    #         filename=file_lvl_1.filename,
-                    #         local_file_path=local_file_path,
-                    #         creds=credentials)
+                        download_paths[None] = [file_lvl_1.filename]
+                        stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
+                        checksum = stdout.read()
+                        files_cheksum[None] = {file_lvl_1.filename: checksum}
 
                 elif stat.S_ISDIR(file_lvl_1.st_mode):
                     # logger.info(f"Changing remote directory to {file_lvl_1.filename}")
                     print(f"Changing remote directory to {file_lvl_1.filename}")
                     sftp.chdir(file_lvl_1.filename)
 
-                    # if not os.path.exists(f"{local_path}\{file_lvl_1.filename}"):
-                    #     os.mkdir(f"{local_path}\{file_lvl_1.filename}")
-                    #     logger.info(f"Creating equivalent directory on local: {file_lvl_1.filename}")
-
                     for file_lvl_2 in sftp.listdir_attr():
-
-                        # print("file_lvl_2", file_lvl_2, file_lvl_2.st_mode, stat.S_ISDIR(file_lvl_2.st_mode))
-
                         if not stat.S_ISDIR(file_lvl_2.st_mode):
-                            # local_file_path = f"{local_path}\{file_lvl_1.filename}\{file_lvl_2.filename}"
-
-                            # TODO handle repeated code
-                            # print(f"lvl2 path: {file_lvl_1.filename}\{file_lvl_2.filename}")
-                            # stdin, stdout, stderr = ssh.exec_command(f"sha256sum /{file_lvl_1.filename}/{file_lvl_2.filename}")
-                            # checksum = stdout.read()
-                            # print("sha256sum lvl2", checksum)
-                            # checksum_result = checksum_local_remote(
-                            #     f"{local_path}\{file_lvl_1.filename}\{file_lvl_2.filename}",
-                            #     checksum
-                            #     )
+                            # TODO handle repeated code 
                             if file_lvl_1.filename in download_paths:
                                 download_paths[file_lvl_1.filename].append(file_lvl_2.filename)
+                                stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_2.filename}")
+                                checksum = stdout.read().decode()
+                                print(f"{file_lvl_2.filename} checksum", checksum)
+                                files_cheksum[file_lvl_1.filename][file_lvl_2.filename] = checksum
                             else:
                                 download_paths[file_lvl_1.filename] = [file_lvl_2.filename]
-
-                            # if not checksum_result:
-                            #     sftp_download(
-                            #         chdir=file_lvl_1.filename,
-                            #         filename=file_lvl_2.filename,
-                            #         local_file_path=local_file_path,
-                            #         creds=credentials)
+                                stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_2.filename}")
+                                checksum = stdout.read().decode()
+                                print(f"{file_lvl_2.filename} checksum", checksum)
+                                files_cheksum[file_lvl_1.filename] = {file_lvl_2.filename: checksum}
 
                 else:
                     logger.error(f"Something went wrong during check of {file_lvl_1.filename}")
                     continue
-        
+        update_download_status("files compared", credentials)
+        response = requests.post(f"{credentials['manager_host']}/files_checksum", json={
+            "files_checksum": files_cheksum,
+            "identifier_key": str(credentials['identifier_key']),
+            "last_time_online": str(datetime.datetime.now())
+        })
+        print("files_cheksum", files_cheksum, type(files_cheksum))
+        logger.debug("files_cheksum sent to server. Response status code = {}", response.status_code)
+
         sftp_check_download(
             download_paths=download_paths,
             credentials=credentials
         )
 
     return datetime.datetime.now()
-
-
-@logger.catch
-def sftp_download(chdir, filename, local_file_path, creds):
-    with SSHClient() as ssh:
-        # TODO check for real key
-        ssh.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
-        ssh.set_missing_host_key_policy(AutoAddPolicy())
-        ssh.load_system_host_keys()
-        ssh.connect(
-            creds["host"],
-            username=creds["sftp_username"],
-            password=creds["sftp_password"],
-            timeout=10,
-            auth_timeout=10
-        )
-        with ssh.open_sftp() as sftp:
-            print("chdir", chdir)
-            sftp.chdir(chdir)
-            update_download_status("downloading", creds)
-            sftp.get(filename, local_file_path)
-            sftp.close()
 
 
 def sftp_check_download(download_paths: dict, credentials: dict):
@@ -247,17 +212,16 @@ def sftp_check_download(download_paths: dict, credentials: dict):
         )
         with ssh.open_sftp() as sftp:
             update_download_status("downloading", credentials)
-            yy = 0
             prefix=f"backup_{time.ctime()}_".replace(":", "_").replace(" ", "_")
+
             with tempfile.TemporaryDirectory(prefix=prefix) as tempdir:
+                files_loaded = 0
                 for dirname in download_paths:
-                    if yy == 1:
-                        break
                     sftp.chdir(None)
-                    print("chdir", dirname)
-                    sftp.chdir(dirname)
 
                     if dirname:
+                        print("chdir", dirname)
+                        sftp.chdir(dirname)
                         local_temp_emar_dir = os.path.join(tempdir, dirname)
                         print("local_temp_emar_dir", local_temp_emar_dir)
                         if not os.path.exists(local_temp_emar_dir):
@@ -267,27 +231,40 @@ def sftp_check_download(download_paths: dict, credentials: dict):
 
                         if isinstance(download_paths[dirname], list):
                             for filename in download_paths[dirname]:
-                                print("downloading", dirname, filename)
-                                sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
-                                print("downloaded", dirname, filename)
+                                print("checking: {}/{}", dirname, filename)
+                                stdin, stdout, stderr = ssh.exec_command(f"sha256sum {filename}")
+                                checksum = stdout.read().decode()
+                                if not checksum == credentials["files_checksum"][dirname][filename]:
+                                    sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
+                                    print("downloaded: {}/{}", dirname, filename)
+                                    files_loaded += 1
+                                else:
+                                    print("NOT downloaded: {}/{} file is not changed", dirname, filename)
                     else:
-                        print("downloading", dirname, download_paths[dirname])
-                        sftp.get(download_paths[dirname], local_temp_emar_dir)
-                    yy += 1
+                        if not checksum == credentials["files_checksum"][None][download_paths[dirname]]:
+                            print("checking: {}/{}", dirname, download_paths[dirname])
+                            sftp.get(download_paths[dirname], local_temp_emar_dir)
+                            files_loaded += 1
+                        else:
+                            print("NOT downloaded: {}/{} file is not changed", dirname, download_paths[dirname])
 
                 sftp.close()
                 
-                zip_name = Path("C:") / "zip_backups" / "emar_backups.zip"
-                print("zip_name", zip_name)
-                subprs = subprocess.Popen([
-                        Path(".") / "7z.exe",
-                        "a",
-                        zip_name,
-                        tempdir,
-                        f'-p{credentials["folder_password"]}'
-                    ])
-                subprs.communicate()
-                logger.info("Files zipped.")
+                if files_loaded > 0:
+                    zip_name = Path("C:") / "zip_backups" / "emar_backups.zip"
+                    print("zip_name", zip_name)
+                    subprs = subprocess.Popen([
+                            Path(".") / "7z.exe",
+                            "a",
+                            zip_name,
+                            tempdir,
+                            f'-p{credentials["folder_password"]}'
+                        ])
+                    subprs.communicate()
+                    logger.info("Files zipped.")
+                else:
+                    logger.info("Nothing to zip.")
+
                 update_download_status("downloaded", credentials, last_downloaded=str(tempdir))
 
 @logger.catch

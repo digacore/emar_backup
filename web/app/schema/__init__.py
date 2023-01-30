@@ -4,3 +4,4 @@ from .last_time import LastTime
 from .download_status import DownloadStatus
 from .email import EmailSchema
 from .computer import ComputerRegInfo
+from .files_checksum import FilesChecksum

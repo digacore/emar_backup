@@ -1,38 +1,36 @@
 import datetime
 import uuid
+import json
 from flask import jsonify
 
 from app.models import Computer
-from app.schema import GetCredentials, LastTime, DownloadStatus
+from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
 from app.views.blueprint import BlueprintApi
 from app.logger import logger
 
 
 downloads_info_blueprint = BlueprintApi("/downloads_info", __name__)
-# downloads_info_blueprint = Blueprint("downloads_info", __name__)
 
 
 @downloads_info_blueprint.post("/last_time")
 @logger.catch
 def last_time(body: LastTime):
-    # TODO set local user password here or on another route?
-
     # TODO use some token to secure api routes
 
     computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if \
         body.identifier_key else None
 
     if computer:
-        logger.info(f"Updating last download time for computer: {computer.company_name}.")
+        logger.info(f"Updating last download time for computer: {computer.computer_name}.")
         # TODO convert to Datetime object. Looks like str(datetime) from local computer is ok
         computer.last_download_time = body.last_download_time
         computer.last_time_online = body.last_time_online
         computer.update()
-        logger.info(f"Last download time for computer {computer.company_name} is updated.")
+        logger.info(f"Last download time for computer {computer.computer_name} is updated.")
         return jsonify(status="success", message="Writing time to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Last download time update failed. company_name: {computer.company_name}, \
+    logger.info(f"Last download time update failed. computer_name: {computer.computer_name}, \
         location {computer.location_name}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
@@ -47,12 +45,12 @@ def get_credentials(body: GetCredentials):
         ).first() if body.identifier_key else None
 
     if computer:
-        print("computer: ", computer)
-        logger.info(f"Supplying credentials for computer {computer.sftp_username}.")
+        print("computer: ", computer, computer.computer_name)
+        logger.info(f"Supplying credentials for computer {computer.computer_name}.")
         computer.last_time_online = datetime.datetime.now()
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
-        logger.info(f"Updated identifier_key for computer {computer.sftp_username}.")
+        logger.info(f"Updated identifier_key for computer {computer.computer_name}.")
 
         print("computer data:",
             computer.sftp_host,
@@ -77,7 +75,8 @@ def get_credentials(body: GetCredentials):
             identifier_key=computer.identifier_key,
             computer_name=computer.computer_name,
             folder_password=computer.folder_password,
-            manager_host=computer.manager_host
+            manager_host=computer.manager_host,
+            files_checksum=json.loads(computer.files_checksum)
             ), 200
 
     message = "Wrong request data. Computer not found."
@@ -94,22 +93,39 @@ def download_status(body: DownloadStatus):
         body.identifier_key else None
 
     if computer:
-        logger.info(f"Updating download status for computer: {computer.sftp_username}.")
+        logger.info(f"Updating download status for computer: {computer.computer_name}.")
         computer.last_time_online = datetime.datetime.now()
         computer.download_status = body.download_status
         if body.last_downloaded:
             computer.last_downloaded = body.last_downloaded
         computer.update()
-        logger.info(f"Download status for computer {computer.sftp_username} is updated to {body.download_status}.")
+        logger.info(f"Download status for computer {computer.computer_name} is updated to {body.download_status}.")
 
         return jsonify(status="success", message="Writing download status to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Download status update failed. company_name: {computer.computer_name}, \
+    logger.info(f"Download status update failed. computer_name: {computer.computer_name}, \
         location {computer.location_name}. Reason: {message}")
     return jsonify(status="fail", message=message), 404
 
 
-# TODO Email alert
-# @route or func??
-# def email_alert()
+@downloads_info_blueprint.post("/files_checksum")
+@logger.catch
+def files_checksum(body: FilesChecksum):
+
+    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if \
+        body.identifier_key else None
+
+    if computer:
+        logger.info(f"Updating files checksum for computer: {computer.computer_name}.")
+        computer.last_time_online = datetime.datetime.now()
+        computer.files_checksum = json.dumps(body.files_checksum)
+        computer.update()
+        logger.info(f"Files checksum for computer {computer.computer_name} is updated to {body.files_checksum}.")
+
+        return jsonify(status="success", message="Writing files checksum to db"), 200
+
+    message = "Wrong request data. Computer not found."
+    logger.info(f"Files checksum update failed. computer_name: {computer.computer_name}, \
+        location {computer.location_name}. Reason: {message}")
+    return jsonify(status="fail", message=message), 404
