@@ -32,7 +32,7 @@ def last_time(body: LastTime):
     message = "Wrong request data. Computer not found."
     logger.info(f"Last download time update failed. computer_name: {computer.computer_name}, \
         location {computer.location_name}. Reason: {message}")
-    return jsonify(status="fail", message=message), 404
+    return jsonify(status="fail", message=message), 400
 
 
 @downloads_info_blueprint.post("/get_credentials")
@@ -46,11 +46,11 @@ def get_credentials(body: GetCredentials):
 
     if computer:
         print("computer: ", computer, computer.computer_name)
-        logger.info(f"Supplying credentials for computer {computer.computer_name}.")
         computer.last_time_online = datetime.datetime.now()
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
         logger.info(f"Updated identifier_key for computer {computer.computer_name}.")
+        logger.info(f"Supplying credentials for computer {computer.computer_name}.")
 
         print("computer data:",
             computer.sftp_host,
@@ -60,7 +60,8 @@ def get_credentials(body: GetCredentials):
             computer.sftp_password,
             computer.sftp_folder_path,
             computer.identifier_key,
-            computer.manager_host
+            computer.manager_host,
+            computer.files_checksum
         )
 
         return jsonify(
@@ -76,13 +77,13 @@ def get_credentials(body: GetCredentials):
             computer_name=computer.computer_name,
             folder_password=computer.folder_password,
             manager_host=computer.manager_host,
-            files_checksum=json.loads(computer.files_checksum)
+            files_checksum=json.loads(str(computer.files_checksum))
             ), 200
 
     message = "Wrong request data. Computer not found."
     logger.info(f"Supplying credentials failed. computer: {computer.computer_name}, \
         id {computer.identifier_key}. Reason: {message}")
-    return jsonify(status="fail", message=message), 404
+    return jsonify(status="fail", message=message), 400
 
 
 @downloads_info_blueprint.post("/download_status")
@@ -106,7 +107,7 @@ def download_status(body: DownloadStatus):
     message = "Wrong request data. Computer not found."
     logger.info(f"Download status update failed. computer_name: {computer.computer_name}, \
         location {computer.location_name}. Reason: {message}")
-    return jsonify(status="fail", message=message), 404
+    return jsonify(status="fail", message=message), 400
 
 
 @downloads_info_blueprint.post("/files_checksum")
@@ -128,4 +129,4 @@ def files_checksum(body: FilesChecksum):
     message = "Wrong request data. Computer not found."
     logger.info(f"Files checksum update failed. computer_name: {computer.computer_name}, \
         location {computer.location_name}. Reason: {message}")
-    return jsonify(status="fail", message=message), 404
+    return jsonify(status="fail", message=message), 400

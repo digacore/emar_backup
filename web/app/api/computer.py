@@ -31,12 +31,12 @@ def register_computer(body: ComputerRegInfo):
     if computer:
         message = "Wrong request data. Such computer already exists"
         logger.info(f"Computer registration failed. Reason: {message}")
-        return jsonify(status="fail", message=message), 404
+        return jsonify(status="fail", message=message), 409
 
     elif computer_name:
         message = "Such computer_name already exists. Wrong computer id."
         logger.info(f"Computer registration failed. Reason: {message}")
-        return jsonify(status="fail", message=message), 404
+        return jsonify(status="fail", message=message), 409
 
     elif body.identifier_key == "new_computer":
         new_identifier_key = str(uuid.uuid4())
@@ -67,7 +67,7 @@ def register_computer(body: ComputerRegInfo):
     else:
         message = "Wrong request data."
         logger.info(f"Computer registration failed. Reason: {message}")
-        return jsonify(status="fail", message=message), 404
+        return jsonify(status="fail", message=message), 400
 
 
 @computer_blueprint.get("/get_computers")

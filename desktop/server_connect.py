@@ -1,5 +1,5 @@
 import os
-import subprocess
+from subprocess import Popen, PIPE
 import stat
 import time
 import datetime
@@ -16,7 +16,7 @@ from loguru import logger
 log_format = "{time} - {name} - {level} - {message}"
 # logger.add(sys.stdout, format=log_format, serialize=True, level="DEBUG", colorize=True)
 # TODO for prod write to desktop
-logger.add(sink=Path().home().joinpath("Desktop/emar_backup.txt"), format=log_format, serialize=True, level="DEBUG", colorize=True)
+logger.add(sink=Path(".").absolute(), format=log_format, serialize=True, level="DEBUG", colorize=True)
 
 
 def mknewdir(pathstr):
@@ -42,7 +42,6 @@ logger.info(f"local_creds_json var is {local_creds_json}")
 @logger.catch
 def get_credentials():
     logger.info("Recieving credentials.")
-
     if os.path.isfile(local_creds_json):
         with open(creds_file, "r") as f:
             creds_json = json.load(f)
@@ -56,6 +55,7 @@ def get_credentials():
             "computer_name": computer_name,
             "identifier_key": str(identifier_key),
         })
+        print("if response.json()", response.json())
 
     else:
         import socket
@@ -89,7 +89,8 @@ def get_credentials():
             logger.info("New computer registered. Download will start next time if credentials inserted to DB.")
         else:
             logger.warning("Something went wrong. Response status code = {}", response.status_code)
-    print(response.json())
+
+        print("else response.json()", response.json())
     if response.json()["message"] == "Supplying credentials" or response.json()["message"] == "Computer registered":
         with open(creds_file, "w") as f:
             json.dump(
@@ -212,9 +213,10 @@ def sftp_check_download(download_paths: dict, credentials: dict):
         )
         with ssh.open_sftp() as sftp:
             update_download_status("downloading", credentials)
-            prefix=f"backup_{time.ctime()}_".replace(":", "_").replace(" ", "_")
+            prefix=f"backup_{time.ctime()}_".replace(":", "-").replace(" ", "_")
+            suffix=f"_timestamp{datetime.datetime.now().timestamp()}"
 
-            with tempfile.TemporaryDirectory(prefix=prefix) as tempdir:
+            with tempfile.TemporaryDirectory(prefix=prefix, suffix=suffix) as tempdir:
                 files_loaded = 0
                 for dirname in download_paths:
                     sftp.chdir(None)
@@ -234,14 +236,23 @@ def sftp_check_download(download_paths: dict, credentials: dict):
                                 print("checking: {}/{}", dirname, filename)
                                 stdin, stdout, stderr = ssh.exec_command(f"sha256sum {filename}")
                                 checksum = stdout.read().decode()
-                                if not checksum == credentials["files_checksum"][dirname][filename]:
+
+                                if dirname not in credentials["files_checksum"]:
+                                    sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
+                                    print("downloaded: {}/{}", dirname, filename)
+                                    files_loaded += 1
+                                elif not checksum == credentials["files_checksum"][dirname][filename]:
                                     sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
                                     print("downloaded: {}/{}", dirname, filename)
                                     files_loaded += 1
                                 else:
                                     print("NOT downloaded: {}/{} file is not changed", dirname, filename)
                     else:
-                        if not checksum == credentials["files_checksum"][None][download_paths[dirname]]:
+                        if None not in credentials["files_checksum"]:
+                            sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
+                            print("downloaded: {}/{}", dirname, filename)
+                            files_loaded += 1
+                        elif not checksum == credentials["files_checksum"][None][download_paths[dirname]]:
                             print("checking: {}/{}", dirname, download_paths[dirname])
                             sftp.get(download_paths[dirname], local_temp_emar_dir)
                             files_loaded += 1
@@ -251,9 +262,9 @@ def sftp_check_download(download_paths: dict, credentials: dict):
                 sftp.close()
                 
                 if files_loaded > 0:
-                    zip_name = Path("C:") / "zip_backups" / "emar_backups.zip"
+                    zip_name = Path("C:/") / "zip_backups" / "emar_backups.zip"
                     print("zip_name", zip_name)
-                    subprs = subprocess.Popen([
+                    subprs = Popen([
                             Path(".") / "7z.exe",
                             "a",
                             zip_name,
@@ -261,7 +272,37 @@ def sftp_check_download(download_paths: dict, credentials: dict):
                             f'-p{credentials["folder_password"]}'
                         ])
                     subprs.communicate()
+
                     logger.info("Files zipped.")
+                    from pprint import pprint
+
+                    proc = Popen([Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name], stdout=PIPE)
+                    files = [l.split('Path = ')[1] for l in proc.stdout.read().decode().splitlines() if l.startswith('Path = ')]
+                    dirs = [i for i in files if "\\" not in i]
+                    pprint(dirs)
+                    dirs.sort(key = lambda x: x.split("timestamp")[1])
+
+                    # TODO should we make this configurable?
+                    if len(dirs) > 12:
+                        diff = len(dirs) - 12
+                        for dir_index in range(diff):
+                            subprs = Popen([
+                                    Path(".") / "7z.exe",
+                                    "d",
+                                    zip_name,
+                                    dirs[dir_index],
+                                    "-r",
+                                    f'-p{credentials["folder_password"]}'
+                                ])
+                            subprs.communicate()
+
+                    pprint(f"dirs:\n{dirs}")
+
+                    proc = Popen([Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name], stdout=PIPE)
+                    files = [l.split('Path = ')[1] for l in proc.stdout.read().decode().splitlines() if l.startswith('Path = ')]
+                    dirs = [i for i in files if "\\" not in i]
+                    pprint(f"after d dirs:\n{dirs}")
+                    
                 else:
                     logger.info("Nothing to zip.")
 
@@ -335,6 +376,9 @@ def main_func():
     logger.info("Downloading proccess started.")
     credentials = get_credentials() 
     print("\ncredentials", credentials, "\n")
+    if not credentials:
+        raise ValueError("Credentials not supplayed. Can't continue.")
+
     if credentials["status"] == "success":
         last_download_time = sftp_check_files_for_update_and_load(credentials)
         # last_download_time = datetime.datetime.now()  # TODO for testing purpose, remove in prod
