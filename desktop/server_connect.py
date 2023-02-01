@@ -24,19 +24,58 @@ def mknewdir(pathstr):
         os.mkdir(pathstr)
 
 
-g_manager_host = "http://localhost:5000"
-
 if os.path.isfile(Path("config.json").absolute()):
     with open("config.json", "r") as f:
         config_json = json.load(f)
     try:
         g_manager_host = config_json["manager_host"]
     except Exception as e:
-        logger.warning(f"Failed to get info from config.json. Proceeding with default. Error: {e}")
+        logger.warning(f"Failed to get info from config.json. Error: {e}")
+        raise Exception("Can't find manager_host in config.json. Check that field and file exist.")
+else:
+    raise FileNotFoundError("Can't find config.json file. Check if file exists.")
+
 
 creds_file = "creds.json"
 local_creds_json = f"{os.getcwd()}\{creds_file}"
 logger.info(f"local_creds_json var is {local_creds_json}")
+
+
+def register_computer():
+    import socket
+    import platform
+
+    computer_name = socket.gethostname()
+    logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
+    if not isinstance(computer_name, str):
+        computer_name = platform.node()
+        logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
+    if not isinstance(computer_name, str):
+        raise(ValueError("Can't get computer name. Name {}, type {}", computer_name, type(computer_name)))
+    identifier_key = "new_computer"
+
+    response = requests.post(f"{g_manager_host}/register_computer", json={
+        "computer_name": computer_name,
+        "identifier_key": identifier_key,
+    })
+
+    logger.debug("response.request.method on /register_computer {}", response.request.method)
+
+    if response.request.method == "GET":
+        logger.warning("Instead of POST method we have GET on /register_computer. Retry with allow_redirects=False")
+        response = requests.post(f"{g_manager_host}/register_computer", allow_redirects=False,  json={
+            "computer_name": computer_name,
+            "identifier_key": identifier_key,
+        })
+        print("response.history", response.history)
+        logger.debug("Retry response.request.method on /register_computer. Method = {}", response.request.method)
+
+    if response.status_code == 200:
+        logger.info("New computer registered. Download will start next time if credentials inserted to DB.")
+    else:
+        logger.warning("Something went wrong. Response status code = {}", response.status_code)
+
+    print("else response.json()", response.json())
 
 
 @logger.catch
@@ -57,40 +96,15 @@ def get_credentials():
         })
         print("if response.json()", response.json())
 
+        if "rmcreds" in response.json():
+            if os.path.isfile(local_creds_json):
+                os.remove(local_creds_json)
+                logger.warning("Remote server can't find computer {}. Deleting creds.json and registering current computer.", computer_name)
+                register_computer()
+
     else:
-        import socket
-        import platform
-
-        computer_name = socket.gethostname()
-        logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
-        if not isinstance(computer_name, str):
-            computer_name = platform.node()
-            logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
-        if not isinstance(computer_name, str):
-            raise(ValueError("Can't get computer name. Name {}, type {}", computer_name, type(computer_name)))
-        identifier_key = "new_computer"
-
-        response = requests.post(f"{g_manager_host}/register_computer", json={
-            "computer_name": computer_name,
-            "identifier_key": identifier_key,
-        })
-
-        logger.debug("response.request.method on /register_computer {}", response.request.method)
-        if response.request.method == "GET":
-            logger.warning("Instead of POST method we have GET on /register_computer. Retry with allow_redirects=False")
-            response = requests.post(f"{g_manager_host}/register_computer", allow_redirects=False,  json={
-                "computer_name": computer_name,
-                "identifier_key": identifier_key,
-            })
-            print("response.history", response.history)
-            logger.debug("Retry response.request.method on /register_computer. Method = {}", response.request.method)
-
-        if response.status_code == 200:
-            logger.info("New computer registered. Download will start next time if credentials inserted to DB.")
-        else:
-            logger.warning("Something went wrong. Response status code = {}", response.status_code)
-
-        print("else response.json()", response.json())
+        register_computer()
+        
     if response.json()["message"] == "Supplying credentials" or response.json()["message"] == "Computer registered":
         with open(creds_file, "w") as f:
             json.dump(
@@ -262,7 +276,7 @@ def sftp_check_download(download_paths: dict, credentials: dict):
                 sftp.close()
                 
                 if files_loaded > 0:
-                    zip_name = Path("C:/") / "zip_backups" / "emar_backups.zip"
+                    zip_name = Path(".") / "zip_backups" / "emar_backups.zip"
                     print("zip_name", zip_name)
                     subprs = Popen([
                             Path(".") / "7z.exe",
