@@ -12,11 +12,17 @@ import tempfile
 from paramiko import SSHClient, AutoAddPolicy, AutoAddPolicy
 from loguru import logger
 
+storage_path = os.path.join(os.environ.get("APPDATA"), Path("EmarDir"))
 
 log_format = "{time} - {name} - {level} - {message}"
 # logger.add(sys.stdout, format=log_format, serialize=True, level="DEBUG", colorize=True)
 # TODO for prod write to desktop
-logger.add(sink=Path("./emar_log.txt").absolute(), format=log_format, serialize=True, level="DEBUG", colorize=True)
+logger.add(
+    sink=os.path.join(storage_path, "emar_log.txt"),
+    format=log_format,
+    serialize=True,
+    level="DEBUG",
+    colorize=True)
 
 
 def mknewdir(pathstr):
@@ -39,7 +45,8 @@ else:
 
 
 creds_file = "creds.json"
-local_creds_json = f"{os.getcwd()}\{creds_file}"
+# local_creds_json = f"{os.getcwd()}\{creds_file}"
+local_creds_json = os.path.join(storage_path, creds_file)
 logger.info(f"local_creds_json var is {local_creds_json}")
 
 
@@ -84,15 +91,16 @@ def register_computer():
         logger.warning("Something went wrong. Response status code = {}", response.status_code)
 
     print("else response.json()", response.json())
+    return response
 
 
 @logger.catch
 def get_credentials():
     logger.info("Recieving credentials.")
     if os.path.isfile(local_creds_json):
-        with open(creds_file, "r") as f:
+        with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
-            logger.info(f"Credentials recieved from {creds_file}.")
+            logger.info(f"Credentials recieved from {local_creds_json}.")
 
         computer_name = creds_json["computer_name"]
         identifier_key = creds_json["identifier_key"]
@@ -111,10 +119,10 @@ def get_credentials():
                 register_computer()
 
     else:
-        register_computer()
+        response = register_computer()
         
     if response.json()["message"] == "Supplying credentials" or response.json()["message"] == "Computer registered":
-        with open(creds_file, "w") as f:
+        with open(local_creds_json, "w") as f:
             json.dump(
                 {
                     "computer_name": response.json()["computer_name"],
@@ -123,7 +131,7 @@ def get_credentials():
                 },
                 f
             )
-            logger.info(f"Full credentials recieved from server and {creds_file} updated.")
+            logger.info(f"Full credentials recieved from server and {local_creds_json} updated.")
 
         return response.json()
     
@@ -305,7 +313,7 @@ def sftp_check_download(download_paths: dict, credentials: dict):
                 sftp.close()
                 
                 if files_loaded > 0:
-                    zip_name = Path(".") / "zip_backups" / "emar_backups.zip"
+                    zip_name = os.path.join(storage_path, "emar_backups.zip")
                     print("zip_name", zip_name)
                     subprs = Popen([
                             Path(".") / "7z.exe",
@@ -355,9 +363,9 @@ def sftp_check_download(download_paths: dict, credentials: dict):
 @logger.catch
 def send_activity(last_download_time, creds):
     if os.path.isfile(local_creds_json):
-        with open(creds_file, "r") as f:
+        with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
-            logger.info(f"Credentials recieved from {creds_file}.")
+            logger.info(f"Credentials recieved from {local_creds_json}.")
         manager_host = creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
     else:
         manager_host = g_manager_host
@@ -376,9 +384,9 @@ def send_activity(last_download_time, creds):
 @logger.catch
 def update_download_status(status, creds, last_downloaded=""):
     if os.path.isfile(local_creds_json):
-        with open(creds_file, "r") as f:
+        with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
-            logger.info(f"Credentials recieved from {creds_file}.")
+            logger.info(f"Credentials recieved from {local_creds_json}.")
         manager_host = creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
     else:
         manager_host = g_manager_host
