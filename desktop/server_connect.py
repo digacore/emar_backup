@@ -273,7 +273,8 @@ def sftp_check_files_for_update_and_load(credentials):
 
         sftp_check_download(
             download_paths=download_paths,
-            credentials=credentials
+            credentials=credentials,
+            use_sha256sum=use_sha256sum
         )
 
     return datetime.datetime.now()
