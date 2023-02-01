@@ -56,6 +56,8 @@ def get_credentials(body: GetCredentials):
         logger.info(f"Updated identifier_key for computer {computer.computer_name}.")
         logger.info(f"Supplying credentials for computer {computer.computer_name}.")
 
+        remote_files_checksum = computer.files_checksum if computer.files_checksum else {}
+
         print("computer data:",
             computer.sftp_host,
             computer.company_name,
@@ -81,7 +83,7 @@ def get_credentials(body: GetCredentials):
             computer_name=computer.computer_name,
             folder_password=computer.folder_password,
             manager_host=computer.manager_host,
-            files_checksum=json.loads(str(computer.files_checksum))
+            files_checksum=json.loads(str(remote_files_checksum))
             ), 200
     
     elif computer_name:
