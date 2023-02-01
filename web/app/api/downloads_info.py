@@ -44,6 +44,10 @@ def get_credentials(body: GetCredentials):
         computer_name=body.computer_name
         ).first() if body.identifier_key else None
 
+    computer_name: Computer = Computer.query.filter_by(
+            computer_name=body.computer_name
+        ).first()
+
     if computer:
         print("computer: ", computer, computer.computer_name)
         computer.last_time_online = datetime.datetime.now()
@@ -79,11 +83,17 @@ def get_credentials(body: GetCredentials):
             manager_host=computer.manager_host,
             files_checksum=json.loads(str(computer.files_checksum))
             ), 200
+    
+    elif computer_name:
+        message = "Wrong id."
+        logger.info(f"Supplying credentials failed. computer: {body.computer_name}, \
+            id {body.identifier_key}. Reason: {message}")
+        return jsonify(status="fail", message=message), 400
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Supplying credentials failed. computer: {computer.computer_name}, \
-        id {computer.identifier_key}. Reason: {message}")
-    return jsonify(status="fail", message=message), 400
+    logger.info(f"Supplying credentials failed. computer: {body.computer_name}, \
+        id {body.identifier_key}. Reason: {message}. Removing local credentials.")
+    return jsonify(status="fail", message=message, rmcreds="rmcreds"), 400
 
 
 @downloads_info_blueprint.post("/download_status")

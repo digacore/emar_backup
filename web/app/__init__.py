@@ -32,7 +32,7 @@ def create_app(environment="development"):
         computer_blueprint
         )
     from app.models import (
-        User,  # UserView,
+        User,  UserView,
         AnonymousUser,
         Company,
         Computer, ComputerView,
@@ -52,7 +52,7 @@ def create_app(environment="development"):
     admin = Admin(app, name="microblog", template_mode="bootstrap3")
     # Add administrative views here
 
-    admin.add_view(MyModelView(User, db.session))
+    admin.add_view(UserView(User, db.session))
     admin.add_view(MyModelView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
     admin.add_view(LocationView(Location, db.session))

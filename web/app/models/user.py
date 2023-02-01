@@ -9,6 +9,7 @@ from flask_admin.contrib.sqla import ModelView
 
 from app import db
 from app.models.utils import ModelMixin
+from app.controllers import MyModelView
 
 
 class User(db.Model, UserMixin, ModelMixin):
@@ -20,7 +21,7 @@ class User(db.Model, UserMixin, ModelMixin):
     email = db.Column(db.String(256), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     activated = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.now())
     # TODO permission field. Global or company or location.
     asociated_with = db.Column(db.String(128), default="Global") 
 
@@ -79,3 +80,34 @@ class AnonymousUser(AnonymousUserMixin):
 #             company.name for company in company_atr
 #             ]
 #     }
+
+# NOTE option 1: set hashed password through model (flask-admin field only)
+class UserView(MyModelView):
+
+    column_list = [
+        "id",
+        "username",
+        "email",
+        "asociated_with",
+        "activated",
+        "last_time_online",
+        "created_at"
+    ]
+
+    def on_model_change(self, form, model, is_created):
+        model.password_hash = generate_password_hash(model.password_hash)
+        # # as another example
+        # if is_created:
+        #     model.created_at = datetime.now()  
+
+
+# NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)
+# from sqlalchemy import event
+# from werkzeug.security import generate_password_hash
+
+
+# @event.listens_for(User.password, 'set', retval=True)
+# def hash_user_password(target, value, oldvalue, initiator):
+#     if value != oldvalue:
+#         return generate_password_hash(value)
+#     return value
