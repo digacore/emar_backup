@@ -182,13 +182,25 @@ def sftp_check_files_for_update_and_load(credentials):
                     # TODO handle repeated code 
                     if download_directory in download_paths:
                         download_paths[download_directory].append(file_lvl_1.filename)
-                        stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
-                        checksum = stdout.read().decode()
+                        try:
+                            stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
+                            checksum = stdout.read().decode()
+                        except Exception as e:
+                            logger.warning("sha256sum command doesn't work. Using ls. Error message {}", e)
+                            stdin, stdout, stderr = ssh.exec_command(f"ls -l {download_directory}/{file_lvl_1.filename}")
+                            checksum = stdout.read().decode()
+                        
                         files_cheksum[download_directory][file_lvl_1.filename] = checksum
                     else:
                         download_paths[download_directory] = [file_lvl_1.filename]
-                        stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
-                        checksum = stdout.read().decode()
+                        try:
+                            stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_1.filename}")
+                            checksum = stdout.read().decode()
+                        except Exception as e:
+                            logger.warning("sha256sum command doesn't work. Using ls. Error message {}", e)
+                            stdin, stdout, stderr = ssh.exec_command(f"ls -l {download_directory}/{file_lvl_1.filename}")
+                            checksum = stdout.read().decode()
+                        
                         files_cheksum[download_directory] = {file_lvl_1.filename: checksum}
 
                 elif stat.S_ISDIR(file_lvl_1.st_mode):
@@ -196,19 +208,31 @@ def sftp_check_files_for_update_and_load(credentials):
                     print(f"Changing remote directory to {file_lvl_1.filename}")
                     sftp.chdir(file_lvl_1.filename)
 
-                    for file_lvl_2 in sftp.listdir_attr():
+                    for file_lvl_2 in sftp.listdir_attr(list_dir_path):
                         if not stat.S_ISDIR(file_lvl_2.st_mode):
                             # TODO handle repeated code 
                             if file_lvl_1.filename in download_paths:
                                 download_paths[file_lvl_1.filename].append(file_lvl_2.filename)
-                                stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_2.filename}")
-                                checksum = stdout.read().decode()
+                                try:
+                                    stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_2.filename}")
+                                    checksum = stdout.read().decode()
+                                except Exception as e:
+                                    logger.warning("sha256sum command doesn't work. Using ls. Error message {}", e)
+                                    stdin, stdout, stderr = ssh.exec_command(f"ls -l {file_lvl_1.filename}/{file_lvl_2.filename}")
+                                    checksum = stdout.read().decode()
+                                
                                 print(f"{file_lvl_2.filename} checksum", checksum)
                                 files_cheksum[file_lvl_1.filename][file_lvl_2.filename] = checksum
                             else:
                                 download_paths[file_lvl_1.filename] = [file_lvl_2.filename]
-                                stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_2.filename}")
-                                checksum = stdout.read().decode()
+                                try:
+                                    stdin, stdout, stderr = ssh.exec_command(f"sha256sum {file_lvl_2.filename}")
+                                    checksum = stdout.read().decode()
+                                except Exception as e:
+                                    logger.warning("sha256sum command doesn't work. Using ls. Error message {}", e)
+                                    stdin, stdout, stderr = ssh.exec_command(f"ls -l {file_lvl_1.filename}/{file_lvl_2.filename}")
+                                    checksum = stdout.read().decode()
+                                
                                 print(f"{file_lvl_2.filename} checksum", checksum)
                                 files_cheksum[file_lvl_1.filename] = {file_lvl_2.filename: checksum}
 
@@ -279,8 +303,13 @@ def sftp_check_download(download_paths: dict, credentials: dict):
                             # TODO handle repeated code
                             for filename in download_paths[dirname]:
                                 print("checking: {}/{}", dirname, filename)
-                                stdin, stdout, stderr = ssh.exec_command(f"sha256sum {filename}")
-                                checksum = stdout.read().decode()
+                                try:
+                                    stdin, stdout, stderr = ssh.exec_command(f"sha256sum {filename}")
+                                    checksum = stdout.read().decode()
+                                except Exception as e:
+                                    logger.warning("sha256sum command doesn't work. Using ls. Error message {}", e)
+                                    stdin, stdout, stderr = ssh.exec_command(f"ls -l {dirname}/{filename}")
+                                    checksum = stdout.read().decode()
 
                                 if dirname not in credentials["files_checksum"]:
                                     sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
@@ -296,8 +325,13 @@ def sftp_check_download(download_paths: dict, credentials: dict):
                         # TODO handle repeated code
                         for filename in download_paths[dirname]:
                             print("checking: {}/{}", dirname, filename)
-                            stdin, stdout, stderr = ssh.exec_command(f"sha256sum {filename}")
-                            checksum = stdout.read().decode()
+                            try:
+                                stdin, stdout, stderr = ssh.exec_command(f"sha256sum {filename}")
+                                checksum = stdout.read().decode()
+                            except Exception as e:
+                                logger.warning("sha256sum command doesn't work. Using ls. Error message {}", e)
+                                stdin, stdout, stderr = ssh.exec_command(f"ls -l {dirname}/{filename}")
+                                checksum = stdout.read().decode()
 
                             if dirname not in credentials["files_checksum"]:
                                 sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
