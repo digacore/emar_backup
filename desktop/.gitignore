@@ -15,6 +15,14 @@ advinst/
 sftp_files/
 sftp_files_old/
 
+/msi/build/
 /build/
 /dist/
 /server_connect.spec
+
+# archives
+*.zip
+
+# executable
+*.exe
+*.dll

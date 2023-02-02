@@ -1,6 +1,6 @@
 import os
 from subprocess import Popen, PIPE
-import stat
+from stat import S_ISDIR, S_ISREG
 import time
 import datetime
 import json
@@ -14,7 +14,8 @@ from loguru import logger
 
 import pprint
 
-storage_path = os.path.join(os.environ.get("APPDATA"), Path("EmarDir"))
+# storage_path = os.path.join(os.environ.get("APPDATA"), Path("EmarDir"))
+storage_path = os.path.join(Path("C:\\"), Path("EmarDir"))
 
 log_format = "{time} - {name} - {level} - {message}"
 logger.add(
@@ -31,6 +32,7 @@ def mknewdir(pathstr):
         return False
     return True
 
+mknewdir(storage_path)
 
 if os.path.isfile(Path("config.json").absolute()):
     with open("config.json", "r") as f:
@@ -146,7 +148,7 @@ def sftp_check_files_for_update_and_load(credentials):
     files_cheksum = {}
     print('credentials["files_checksum"]', type(credentials["files_checksum"]))
     pprint.pprint(credentials["files_checksum"])
-    download_directory = credentials["sftp_folder_path"] if credentials["sftp_folder_path"] else "."
+    download_directory = credentials["sftp_folder_path"] if credentials["sftp_folder_path"] else None
 
     with SSHClient() as ssh:
         # TODO check for real key
@@ -166,33 +168,41 @@ def sftp_check_files_for_update_and_load(credentials):
 
         with ssh.open_sftp() as sftp:
             # get list of all files and folders on sftp server
-            findin, findout, finderr = ssh.exec_command(f"find .")
-            str_content_paths: str = findout.read().decode()
-            if str_content_paths:
-                list_content_paths: list = str_content_paths.split("\r\n")
-                print("\nlist_content_paths:")
-                pprint.pprint(list_content_paths)
-                # get checksum of all aplicable files
-                for content in list_content_paths:
-                    print("content", content)
-                    content_to_checksum = content if download_directory in content else None
-                    print("content_to_checksum", content_to_checksum)
-                    if content_to_checksum:
-                        shain, shaout, shaerr = ssh.exec_command(f'sha256sum {content}')
-                        str_err = shaerr.read().decode()
-                        str_sha: str = shaout.read().decode() if not str_err else ""
-                        print("str_sha", str_sha)
-                        print("str_err", str_err)
-
-                        if str_sha:
-                            files_cheksum[content] = str_sha.split()[0]
-
-                print(f"\nfiles_cheksum: {type(files_cheksum)}")
-                pprint.pprint(files_cheksum)
+            if download_directory:
+                list_dirs = sftp.listdir_attr(download_directory) if download_directory else sftp.listdir_attr()
+                dir_names = [f"./{download_directory}/{i.filename}" for i in list_dirs if S_ISDIR(i.st_mode)]
+                file_paths = {f"./{download_directory}/{i.filename}": "-".join(i.longname.split()[4:8]) for i in list_dirs if S_ISREG(i.st_mode)}
 
             else:
-                str_error: str = finderr.read().decode()
-                print(f"\nstr_error: {str_error}\n")
+                list_dirs = sftp.listdir_attr()
+                dir_names = [i.filename for i in list_dirs if S_ISDIR(i.st_mode)]
+                file_paths = {f"./{i.filename}": "-".join(i.longname.split()[4:8]) for i in list_dirs if S_ISREG(i.st_mode)}
+
+            while len(dir_names) > 0:
+                lvl_ins_dir_names = []
+                lvl_ins_file_paths = {}
+
+                for objname in dir_names:
+                    sanitized_objname = objname.lstrip("./")
+                    inside_dirs = sftp.listdir_attr(sanitized_objname)
+                    ins_dir_names = [f"./{sanitized_objname}/{i.filename}" for i in inside_dirs if S_ISDIR(i.st_mode)]
+                    ins_file_paths = {f"./{sanitized_objname}/{i.filename}": "-".join(i.longname.split()[4:8]) for i in inside_dirs if S_ISREG(i.st_mode)}
+                    lvl_ins_dir_names.extend(ins_dir_names)
+                    lvl_ins_file_paths.update(ins_file_paths)
+
+                print(f"\lvl_ins_dir_names: ")
+                pprint.pprint(lvl_ins_dir_names)
+                print(f"\lvl_ins_file_paths: ")
+                pprint.pprint(lvl_ins_file_paths)
+                dir_names.clear()
+                dir_names.extend(lvl_ins_dir_names)
+                file_paths.update(lvl_ins_file_paths)
+            
+            print(f"\nfile_paths: ")
+            pprint.pprint(file_paths)
+            files_cheksum.update(file_paths)
+            print(f"\dir_names: ")
+            pprint.pprint(dir_names)
 
             update_download_status("downloading", credentials)
             prefix=f"backup_{time.ctime()}_".replace(":", "-").replace(" ", "_")
