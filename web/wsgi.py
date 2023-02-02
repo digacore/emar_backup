@@ -44,7 +44,6 @@ def check_and_alert():
                     "subject": f"Computer {computer.computer_name} 12 hours alert!",
                     "body": f"Computer {computer.computer_name} had not download files for more then 12 hours.",
                     "html_body": "",
-                    "reply_to_address": ""
                     })
 
                 computer.alert_status = "red"
@@ -72,7 +71,6 @@ def check_and_alert():
                     "subject": f"Computer {computer.computer_name} 12 hours offline alert!",
                     "body": f"Computer {computer.computer_name} had not been online for more then 12 hours.",
                     "html_body": "",
-                    "reply_to_address": ""
                     })
 
                 computer.alert_status = "red"
@@ -97,7 +95,6 @@ def check_and_alert():
             "subject": "All computers offline 30 min alert!",
             "body": "All computers are offline more then 30 minutes.",
             "html_body": "",
-            "reply_to_address": ""
             })
 
         for computer in computers:
@@ -116,7 +113,6 @@ def check_and_alert():
             "subject": "No new files over 2 h alert!",
             "body": "No new files were downloaded by all computers for over 2 hours.",
             "html_body": "",
-            "reply_to_address": ""
             })
 
         for computer in computers:

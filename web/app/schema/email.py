@@ -8,6 +8,5 @@ class EmailSchema(BaseModel):
     subject: str
     body: str
     html_body: Optional[str]
-    reply_to_address: Optional[str]
     alerted_target: str
     alert_status: str

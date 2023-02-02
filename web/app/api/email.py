@@ -39,7 +39,6 @@ def api_email_alert(body: EmailSchema):
     # if some_key:
     if body:
         html_body = body.html_body if body.html_body else ""
-        # reply_to_address = body.reply_to_address if body.reply_to_address else ""
 
         msg = Message(
             subject=body.subject,
@@ -52,14 +51,6 @@ def api_email_alert(body: EmailSchema):
 
         mail.send(msg)
 
-        # sendgrid_client.send_email(
-        #     body.from_email,
-        #     body.to_addresses,
-        #     body.subject,
-        #     body.body,
-        #     html_body=html_body,
-        #     reply_to_address=reply_to_address
-        # )
         logger.info(f"Email sent from {body.from_email} to {body.to_addresses}. Subject: {body.subject}")
         return jsonify(status="success", message="Email alert sent from API"), 200
 
