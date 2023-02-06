@@ -5,21 +5,17 @@ param
 
 Push-Location $PSScriptRoot
 
+
+$logFileName = "UpdateLog.txt"
+
+$DataDir = Join-Path $ENV:AppData "Emar"
+New-Item -ItemType Directory -Path $DataDir -Force
+$logFile = Join-Path  $DataDir $logFileName
+
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - Run update by user: $env:UserName"
+
 # Run python updater
 .\server_connect.exe 
 
-$logFileName = "InstallLog.txt"
-
-$DesktopPath = [Environment]::GetFolderPath("Desktop")
-$logFile = Join-Path $DesktopPath $logFileName
-
-if(Test-Path $logFile)
-{
-    Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - Action - $propertyValue"
-}
-else
-{
-    throw "File $logFile does not exist"
-}
 
 Pop-Location

@@ -1,1 +1,1 @@
-msiexec  /l* install.log /i Product.msi /quiet /qn
+msiexec  /l* install.log /i Product.msi /quiet

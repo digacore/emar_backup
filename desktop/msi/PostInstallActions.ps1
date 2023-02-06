@@ -40,8 +40,9 @@ Push-Location $PSScriptRoot
 
 $logFileName = "InstallLog.txt"
 
-$DesktopPath = [Environment]::GetFolderPath("Desktop")
-$logFile = Join-Path $DesktopPath $logFileName
+$DataDir = Join-Path $ENV:AppData "Emar"
+New-Item -ItemType Directory -Path $DataDir -Force
+$logFile = Join-Path  $DataDir $logFileName
 if (!(Test-Path $logFile))
 {
    New-Item -path $DesktopPath -name $logFileName -type "file"
