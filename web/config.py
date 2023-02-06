@@ -1,10 +1,22 @@
 import os
+import datetime
 from dotenv import load_dotenv
 
 
 load_dotenv()
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
+
+
+class EST(datetime.tzinfo):
+    def utcoffset(self, dt):
+        return datetime.timedelta(hours = -5)
+
+    def tzname(self, dt):
+        return "EST"
+
+    def dst(self, dt):
+        return datetime.timedelta(0)
 
 
 class BaseConfig(object):

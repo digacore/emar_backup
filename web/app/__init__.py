@@ -1,14 +1,19 @@
 import os
 
-from flask import render_template
+from flask import render_template, url_for
 from flask_openapi3 import OpenAPI
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, current_user
 from werkzeug.exceptions import HTTPException
 from flask_migrate import Migrate
 from flask_admin import Admin
-from flask_admin.contrib.sqla import ModelView
+from flask_admin.menu import MenuLink
 from flask_mail import Mail
+
+
+class MainIndexLink(MenuLink):
+    def get_url(self):
+        return url_for("main.index")
 
 
 # instantiate extensions
@@ -52,6 +57,7 @@ def create_app(environment="development"):
     admin = Admin(app, name="microblog", template_mode="bootstrap3")
     # Add administrative views here
 
+    admin.add_link(MainIndexLink(name="Main Page"))
     admin.add_view(UserView(User, db.session))
     admin.add_view(MyModelView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))

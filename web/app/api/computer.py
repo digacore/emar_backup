@@ -30,17 +30,17 @@ def register_computer(body: ComputerRegInfo):
 
     if computer:
         message = "Wrong request data. Such computer already exists"
-        logger.info(f"Computer registration failed. Reason: {message}")
+        logger.info("Computer registration failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 409
 
     elif computer_name:
-        message = "Such computer_name already exists. Wrong computer id."
-        logger.info(f"Computer registration failed. Reason: {message}")
+        message = f"Such computer_name: {body.computer_name} already exists. Wrong computer id."
+        logger.info("Computer registration failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 409
 
     elif body.identifier_key == "new_computer":
         new_identifier_key = str(uuid.uuid4())
-        logger.info(f"Registering computer. ID = {new_identifier_key}.")
+        logger.info("Registering computer. ID = {}.", new_identifier_key)
 
         new_computer = Computer(
             identifier_key=new_identifier_key,
@@ -48,7 +48,7 @@ def register_computer(body: ComputerRegInfo):
             manager_host=BSG.APP_HOST_URL
         )
         new_computer.save()
-        logger.info(f"Computer registered. ID = {new_identifier_key}.")
+        logger.info("Computer registered. ID = {}.", new_identifier_key)
         return jsonify(
             status="registered",
             message="Computer registered",
@@ -66,7 +66,7 @@ def register_computer(body: ComputerRegInfo):
 
     else:
         message = "Wrong request data."
-        logger.info(f"Computer registration failed. Reason: {message}")
+        logger.info("Computer registration failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 400
 
 
