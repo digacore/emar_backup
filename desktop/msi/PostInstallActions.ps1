@@ -1,10 +1,10 @@
 param
 (
-    [Parameter(Mandatory=$false)][string]$propertyValue
+  [Parameter(Mandatory = $false)][string]$propertyValue
 )
 
 function Test-Credential {
-    <#
+  <#
     .SYNOPSIS
         Takes a PSCredential object and validates it against the local machine.
 
@@ -15,25 +15,25 @@ function Test-Credential {
         A boolean, indicating whether the credentials were successfully validated.
 
     #>
-    param(
-        [parameter(Mandatory=$true, ValueFromPipeline=$true)]
-        [System.Management.Automation.PSCredential]$credential
-    )
-    begin {
-        Add-Type -assemblyname system.DirectoryServices.accountmanagement
-        $DS = New-Object System.DirectoryServices.AccountManagement.PrincipalContext([System.DirectoryServices.AccountManagement.ContextType]::Machine) 
-    }
-    process {
-        $DS.ValidateCredentials($credential.UserName, $credential.GetNetworkCredential().password)
-    }
+  param(
+    [parameter(Mandatory = $true, ValueFromPipeline = $true)]
+    [System.Management.Automation.PSCredential]$credential
+  )
+  begin {
+    Add-Type -assemblyname system.DirectoryServices.accountmanagement
+    $DS = New-Object System.DirectoryServices.AccountManagement.PrincipalContext([System.DirectoryServices.AccountManagement.ContextType]::Machine) 
+  }
+  process {
+    $password = $credential.GetNetworkCredential().password
+    $DS.ValidateCredentials($credential.UserName, "$password")
+  }
 }
 
-Function MsgBox($Message, $Title)
-{
-# ApplicationModal, DefaultButton1, OkOnly, OkCancel, AbortRetryIgnore, YesNoCancel, YesNo, RetryCancel, Critical, Question, Exclamation, Information, 
-# DefaultButton2, DefaultButton3, SystemModal, MsgBoxHelp, MsgBoxSetForeground, MsgBoxRight, MsgBoxRtlReading
-   [void][System.Reflection.Assembly]::LoadWithPartialName("Microsoft.VisualBasic")
-   [Microsoft.VisualBasic.Interaction]::MsgBox($Message, "SystemModal,Critical", $Title)
+Function MsgBox($Message, $Title) {
+  # ApplicationModal, DefaultButton1, OkOnly, OkCancel, AbortRetryIgnore, YesNoCancel, YesNo, RetryCancel, Critical, Question, Exclamation, Information, 
+  # DefaultButton2, DefaultButton3, SystemModal, MsgBoxHelp, MsgBoxSetForeground, MsgBoxRight, MsgBoxRtlReading
+  [void][System.Reflection.Assembly]::LoadWithPartialName("Microsoft.VisualBasic")
+  [Microsoft.VisualBasic.Interaction]::MsgBox($Message, "SystemModal,Critical", $Title)
 }
 
 Push-Location $PSScriptRoot
@@ -43,9 +43,8 @@ $logFileName = "InstallLog.txt"
 $DataDir = Join-Path $ENV:AppData "Emar"
 New-Item -ItemType Directory -Path $DataDir -Force
 $logFile = Join-Path  $DataDir $logFileName
-if (!(Test-Path $logFile))
-{
-   New-Item -path $DesktopPath -name $logFileName -type "file"
+if (!(Test-Path $logFile)) {
+  New-Item -path $DesktopPath -name $logFileName -type "file"
 }
 
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - start"
@@ -70,7 +69,7 @@ $action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
   -WorkingDirectory $scriptDir
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - action - [$action]"
 
-$trigger =  New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Hours 1) -At 0am
+$trigger = New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Hours 1) -At 0am
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - trigger - [$trigger]"
 
 $task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "CheckRemoteUpdate" -Description "Periodically check remote update" -User $username -Password $password
