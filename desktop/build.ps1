@@ -1,6 +1,7 @@
 pyinstaller --noconfirm --onefile --console `
-    --collect-all "paramiko" `
-    --collect-all "requests" `
-    --collect-all "python-dotenv" `
-    --collect-all "loguru" `
-    server_connect.py
+--distpath "." `
+--collect-all "paramiko" `
+--collect-all "requests" `
+--collect-all "loguru" `
+--collect-all "win32com" `
+server_connect.py
