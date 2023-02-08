@@ -1,5 +1,4 @@
-param
-(
+param(
   [Parameter(Mandatory = $false)][string]$propertyValue
 )
 
@@ -44,7 +43,7 @@ $DataDir = Join-Path $ENV:AppData "Emar"
 New-Item -ItemType Directory -Path $DataDir -Force
 $logFile = Join-Path  $DataDir $logFileName
 if (!(Test-Path $logFile)) {
-  New-Item -path $DesktopPath -name $logFileName -type "file"
+  New-Item -path $DataDir -name $logFileName -type "file"
 }
 
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - start"
