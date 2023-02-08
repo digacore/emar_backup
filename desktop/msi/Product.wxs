@@ -53,7 +53,7 @@
         <File KeyPath="yes" Source="TaskAction.ps1"></File>
       </Component>
       <Component Id="cmp_server_connect_exe">
-        <File KeyPath="yes" Source="..\dist\server_connect.exe"></File>
+        <File KeyPath="yes" Source="..\server_connect.exe"></File>
       </Component>
       <Component Id="cmp_config_json">
         <File KeyPath="yes" Source="..\config.json"></File>
@@ -80,7 +80,7 @@
     <SetProperty Id="CA_AddScheduledTask"
                  Before ="CA_AddScheduledTask"
                  Sequence="execute"
-                 Value='&quot;[POWERSHELLEXE]&quot; -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -File "[MY_INSTALL_LOCATION]PostInstallActions.ps1" -propertyValue "[MY_PROPERTY]"' />
+                 Value='&quot;[POWERSHELLEXE]&quot; -ExecutionPolicy Bypass -File "[MY_INSTALL_LOCATION]PostInstallActions.ps1" -propertyValue "[MY_PROPERTY]"' />
 
     <CustomAction Id="CA_AddScheduledTask"
                   BinaryKey="WixCA"

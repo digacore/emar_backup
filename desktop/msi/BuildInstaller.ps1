@@ -1,4 +1,4 @@
-$wixFolder = Join-Path $PSScriptRoot -ChildPath 'wix/'
+$wixFolder = Join-Path $PSScriptRoot -ChildPath 'wix\'
 $candleToolPath = Join-Path $wixFolder -ChildPath candle.exe
 $lightToolPath = Join-Path $wixFolder -ChildPath light.exe
 

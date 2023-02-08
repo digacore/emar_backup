@@ -47,12 +47,17 @@ if (!(Test-Path $logFile)) {
 }
 
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - start"
-Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - Get User Creds"
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - Get User Creds. User: [$env:UserName]"
 $cred = Get-Credential  -Message "Please enter credatials for scheduled backup update" -UserName $env:UserName
+# $cred = $host.ui.PromptForCredential("Need credentials", "Please enter credatials for scheduled backup update.", "$env:UserName", "NetBiosUserName")
+# $comp_name = [System.Net.Dns]::GetHostName()
+# $cred = Invoke-Command -ComputerName $comp_name {Get-Credential Domain01\User02}
 $username = $cred.username
 $password = $cred.GetNetworkCredential().password
 
-if ( -not (Test-Credential $cred) ) {
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - Test Creds for user: [$username]"
+
+if ( (-not $cred) -or (-not (Test-Credential $cred) ) ) {
   MsgBox "Wrong Credentials" "Installation canceled"
   exit 1
 }
