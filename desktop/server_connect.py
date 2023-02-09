@@ -25,7 +25,6 @@ class EST(datetime.tzinfo):
     def dst(self, dt):
         return datetime.timedelta(0)
 
-# storage_path = os.path.join(os.environ.get("APPDATA"), Path("EmarDir"))
 storage_path = os.path.join(Path("C:\\"), Path("EmarDir"))
 
 log_format = "{time} - {name} - {level} - {message}"
@@ -58,7 +57,6 @@ else:
 
 
 creds_file = "creds.json"
-# local_creds_json = f"{os.getcwd()}\{creds_file}"
 local_creds_json = os.path.join(storage_path, creds_file)
 logger.info(f"local_creds_json var is {local_creds_json}")
 
@@ -324,8 +322,11 @@ def send_activity(last_download_time, creds):
     else:
         manager_host = g_manager_host
 
-    url = f"{manager_host}/last_time"
+    m_host = manager_host if "manager_host" not in creds else creds["manager_host"]
+
+    url = f"{m_host}/last_time"
     requests.post(url, json={
+    "computer_name": creds["computer_name"],
     "company_name": creds["company_name"],
     "identifier_key": creds["identifier_key"],
     "location_name": creds["location_name"],
@@ -345,7 +346,9 @@ def update_download_status(status, creds, last_downloaded=""):
     else:
         manager_host = g_manager_host
 
-    url = f"{manager_host}/download_status"
+    m_host = manager_host if "manager_host" not in creds else creds["manager_host"]
+
+    url = f"{m_host}/download_status"
     requests.post(url, json={
     "company_name": creds["company_name"],
     "location_name": creds["location_name"],
