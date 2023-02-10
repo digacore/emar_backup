@@ -42,15 +42,17 @@ def check_and_alert():
                     "to_addresses": to_addresses,
                     "subject": f"Computer {computer.computer_name} 12 hours alert!",
                     "body": f"Computer {computer.computer_name} had not download files for more then 12 hours.",
-                    "html_body": "",
+                    "html_body": ""
                     })
 
                 computer.alert_status = "red"
                 computer.update()
                 logger.warning(f"Computer {computer.computer_name} 12 hours alert sent and alert status updated.")
-            else:
+            elif last_download_time > datetime.now() - timedelta(seconds=43200):
                 computer.alert_status = "green"
                 computer.update()
+            else:
+                logger.warning(f"Computer {computer.computer_name} 12 hours alert sent and alert status updated.")
 
             if last_download_time < datetime.now() - timedelta(seconds=7200):
                 no_update_files_2h += 1
@@ -68,16 +70,19 @@ def check_and_alert():
                     "to_addresses": to_addresses,
                     "subject": f"Computer {computer.computer_name} 12 hours offline alert!",
                     "body": f"Computer {computer.computer_name} had not been online for more then 12 hours.",
-                    "html_body": "",
+                    "html_body": ""
                     })
 
                 computer.alert_status = "red"
                 computer.update()
                 logger.warning(f"Computer {computer.computer_name} 12 hours offline alert sent \
                     and alert status updated.")
-            else:
+            elif last_download_time > datetime.now() - timedelta(seconds=43200):
                 computer.alert_status = "green"
                 computer.update()
+            else:
+                logger.warning(f"Computer {computer.computer_name} 12 hours offline alert sent \
+                    and alert status updated.")
 
             if last_time_online < datetime.now() - timedelta(seconds=1800):
                 off_30_min_computers += 1
@@ -91,7 +96,7 @@ def check_and_alert():
             "to_addresses": to_addresses,
             "subject": "All computers offline 30 min alert!",
             "body": "All computers are offline more then 30 minutes.",
-            "html_body": "",
+            "html_body": ""
             })
 
         for computer in computers:
@@ -108,7 +113,7 @@ def check_and_alert():
             "to_addresses": to_addresses,
             "subject": "No new files over 2 h alert!",
             "body": "No new files were downloaded by all computers for over 2 hours.",
-            "html_body": "",
+            "html_body": ""
             })
 
         for computer in computers:
