@@ -33,8 +33,7 @@ def check_and_alert():
             last_download_time = datetime.strptime(computer.last_download_time, time_format) if \
                 isinstance(computer.last_download_time, str) else computer.last_download_time
 
-            if last_download_time < datetime.now() - timedelta(seconds=43200):
-                # TODO put support email here to send and receive emails
+            if last_download_time < datetime.now() - timedelta(seconds=43200) and computer.alert_status != "red":
                 logger.warning(f"Computer {computer.computer_name} 12 hours alert.")
                 requests.post(alert_url, json={
                     "alerted_target": computer.computer_name,
@@ -60,8 +59,7 @@ def check_and_alert():
             last_time_online = datetime.strptime(computer.last_time_online, time_format) if \
                 isinstance(computer.last_time_online, str) else computer.last_time_online
 
-            if last_time_online < datetime.now() - timedelta(seconds=43200):
-                # TODO put support email here to send and receive emails
+            if last_time_online < datetime.now() - timedelta(seconds=43200) and computer.alert_status != "red":
                 logger.warning(f"Computer {computer.computer_name} 12 hours offline alert.")
                 requests.post(alert_url, json={
                     "alerted_target": computer.computer_name,
@@ -85,7 +83,6 @@ def check_and_alert():
                 off_30_min_computers += 1
 
     if off_30_min_computers == len(computers):
-        # TODO put support email here to send and receive emails
         logger.warning("All computers offline 30 min alert.")
         requests.post(alert_url, json={
             "alerted_target": "all",
@@ -103,7 +100,6 @@ def check_and_alert():
         logger.warning("All computers offline 30 min alert sents and alert statuses updated.")
 
     if no_update_files_2h == len(computers):
-        # TODO put support email here to send and receive emails
         logger.warning("No new files over 2 h alert.")
         requests.post(alert_url, json={
             "alerted_target": "all",
