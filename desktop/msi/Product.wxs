@@ -53,10 +53,16 @@
         <File KeyPath="yes" Source="TaskAction.ps1"></File>
       </Component>
       <Component Id="cmp_server_connect_exe">
-        <File KeyPath="yes" Source="..\server_connect.exe"></File>
+        <File KeyPath="yes" Source="dist\server_connect.exe"></File>
+      </Component>
+      <Component Id="cmp_heartbeat_exe">
+        <File KeyPath="yes" Source="dist\heartbeat.exe"></File>
+      </Component>
+      <Component Id="cmp_Heartbeat_ps1">
+        <File KeyPath="yes" Source="Heartbeat.ps1"></File>
       </Component>
       <Component Id="cmp_config_json">
-        <File KeyPath="yes" Source="..\config.json"></File>
+        <File KeyPath="yes" Source="dist\config.json"></File>
       </Component>
 
       <Component Id="cmp_7z_exe">
