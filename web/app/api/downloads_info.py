@@ -24,15 +24,17 @@ def last_time(body: LastTime):
     if computer:
         logger.info(f"Updating last download time for computer: {computer.computer_name}.")
         # TODO convert to Datetime object. Looks like str(datetime) from local computer is ok
+        computer.last_time_online = body.last_time_online
+        field = "online"
         if body.last_download_time:
             computer.last_download_time = body.last_download_time
-        computer.last_time_online = body.last_time_online
+            field = "download/online"
         computer.update()
-        logger.info(f"Last download time for computer {computer.computer_name} is updated.")
+        logger.info(f"Last {field} time for computer {computer.computer_name} is updated.")
         return jsonify(status="success", message="Writing time to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Last download time update failed. computer_name: {body.computer_name}, \
+    logger.info(f"Last download/online time update failed. computer_name: {body.computer_name}, \
         location {body.location_name}. Reason: {message}")
     return jsonify(status="fail", message=message), 400
 
