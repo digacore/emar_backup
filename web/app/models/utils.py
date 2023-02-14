@@ -15,4 +15,9 @@ class ModelMixin(object):
         return self
 
 
-# Add your own utility classes and functions here.
+class RowActionListMixin(object):
+
+    list_template = 'admin/list.html'
+
+    def allow_row_action(self, action, model):
+        return True

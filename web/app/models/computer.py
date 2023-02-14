@@ -6,13 +6,17 @@ from sqlalchemy import JSON
 from sqlalchemy.orm import relationship
 
 # from flask_login import current_user
-# from flask_admin.contrib.sqla.fields import Select2Widget, QuerySelectField
+from flask_admin.contrib.sqla.fields import Select2Widget, QuerySelectField
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
+from flask_admin.model.form import InlineFormAdmin
+from flask_admin.model.template import EditRowAction, DeleteRowAction
+from flask_login import current_user
 
 from app import db
 from .location import Location
+from .company import Company
 
-from app.models.utils import ModelMixin
+from app.models.utils import ModelMixin, RowActionListMixin
 from app.controllers import MyModelView
 
 
@@ -41,7 +45,7 @@ class Computer(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
 
-    location = relationship("Location", passive_deletes=True)
+    location = relationship("Location", passive_deletes=True, backref='computers', lazy='select')
     location_name = db.Column(db.String, db.ForeignKey("locations.name", ondelete="CASCADE"))
 
     type = db.Column(db.String(128))
@@ -60,7 +64,7 @@ class Computer(db.Model, ModelMixin):
     last_time_online = db.Column(db.DateTime)
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
 
-    company = relationship("Company", passive_deletes=True)
+    company = relationship("Company", passive_deletes=True, backref='computers', lazy='select')
     company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"))
 
     manager_host = db.Column(db.String(256))
@@ -68,7 +72,7 @@ class Computer(db.Model, ModelMixin):
     files_checksum = db.Column(JSON)
 
 
-class ComputerView(MyModelView):
+class ComputerView(RowActionListMixin, MyModelView):
 
     # TODO use when define the permissions for user
     # can_create = False
@@ -77,18 +81,18 @@ class ComputerView(MyModelView):
 
     column_hide_backrefs = False
     column_list = [
-        "id",
         "computer_name",
         "alert_status",
-        "company_name",
-        "location_name",
-        "type",
-        "sftp_host",
-        "sftp_username",
-        "sftp_folder_path",
+        "company",
+        "location",
         "download_status",
         "last_download_time",
         "last_time_online",
+        "sftp_host",
+        "sftp_username",
+        "sftp_folder_path",
+        "type",
+        
         "identifier_key",
         "manager_host",
 
@@ -96,6 +100,16 @@ class ComputerView(MyModelView):
         "created_at"
         ]
     column_searchable_list = ["company_name", "location_name"]
+    column_editable_list = [
+        # "computer_name",
+        "company",
+        # "location",
+        # "type",
+        # "sftp_host",
+        # "sftp_username",
+        # "sftp_folder_path",
+        # "manager_host",
+    ]
 
     form_widget_args = {
         "last_download_time": {"readonly": True},
@@ -108,9 +122,35 @@ class ComputerView(MyModelView):
         # "files_checksum":{"readonly":True},
     }
 
+    def _can_edit(self, model):
+        # return True to allow edit
+        print("current_user", current_user.username, current_user.asociated_with)
+        if current_user.asociated_with == "global-full":
+            return True
+        else:
+            return False
+
+    def _can_delete(self, model):
+        print("current_user", current_user.username, current_user.asociated_with)
+        if current_user.asociated_with == "global-full":
+            return True
+        else:
+            return False
+
+    def allow_row_action(self, action, model):
+
+        if isinstance(action, EditRowAction):
+            return self._can_edit(model)
+
+        if isinstance(action, DeleteRowAction):
+            return self._can_delete(model)
+
+        # otherwise whatever the inherited method returns
+        return super().allow_row_action(action, model)
+
     ###################################################
 
-    # NOTE this example is good if you want to show certain fields depending on some list
+    # NOTE this example is good if you want to show certain fields depending on some array
     # general_product_attributes = ['name']
     # # company_locations = {i.company_name: [j.location_name for j in i] for i in Location.query.all()}
     # # company_name_index = 2
@@ -136,28 +176,6 @@ class ComputerView(MyModelView):
     #                                 fields=['name'], filters=["company_name=Dro Ltc"])
     # }
 
-    ########################################################
-
-    # NOTE working decision, but you should first choose a company, save, press edit and choose location
-    # def edit_form(self, obj):
-    #     form = super(ComputerView, self).edit_form(obj)
-
-    #     query = self.session.query(Location).filter(Location.company == obj.company)
-
-    #     form.location.query = query
-    #     return form
-
-    ###############################################
-
-    # form_ajax_refs = {
-    #     "computer": {
-    #         "fields": ("location"),
-    #         "placeholder": "Please select",
-    #         "page_size": 10,
-    #         "minimum_input_length": 0,
-    #     }
-    # }
-
     ##############################################
 
     # NOTE This one works as filter. You start to type company name in location field and
@@ -175,18 +193,44 @@ class ComputerView(MyModelView):
             minimum_input_length=0,
         )
     }
+    print(form_ajax_refs, form_ajax_refs["location"])
+
+    ########################################################
+
+    # NOTE working decision, but you should first choose a company, save, press edit and choose location
+    # def edit_form(self, obj):
+    #     form = super(ComputerView, self).edit_form(obj)
+    #     query = self.session.query(Location).filter(Location.company == obj.company)
+    #     form.location.query = query
+    #     return form
+
+    ###############################################
+
+    # form_ajax_refs = {
+    #     "location": {
+    #         "fields": ("company_name", ),
+    #         "placeholder": "Please select",
+    #         "page_size": 10,
+    #         "minimum_input_length": 0,
+    #     }
+    # }
+
+    # form_ajax_refs = {'location': {
+    #     'fields': (Location.company_name, 'company_name'),
+    #     "minimum_input_length": 0,
+    #     }
+    # }
 
     ################################################
 
-    # column_hide_backrefs = False
     # form_extra_fields = {
-    #     "location": QuerySelectField(
-    #         label="Location",
+    #     "location_name": QuerySelectField(
+    #         label="Location_name",
     #         query_factory=lambda: Location.query.all(),
-    #         widget=Select2Widget()
+    #         widget=Select2Widget().
     #     )
     # }
-    # column_list = ("name", "pod", "clan")
+    # column_list = ("company_name", "locations", "computers")
 
 
 ########################################################

@@ -39,7 +39,7 @@ def create_app(environment="development"):
     from app.models import (
         User,  UserView,
         AnonymousUser,
-        Company,
+        Company, CompanyView,
         Computer, ComputerView,
         Location, LocationView,
     )
@@ -59,7 +59,7 @@ def create_app(environment="development"):
 
     admin.add_link(MainIndexLink(name="Main Page"))
     admin.add_view(UserView(User, db.session))
-    admin.add_view(MyModelView(Company, db.session))
+    admin.add_view(CompanyView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
     admin.add_view(LocationView(Location, db.session))
 

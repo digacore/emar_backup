@@ -5,10 +5,12 @@ from sqlalchemy import func
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from flask_login import current_user
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.model.template import EditRowAction, DeleteRowAction
 
 from app import db
-from app.models.utils import ModelMixin
+from app.models.utils import ModelMixin, RowActionListMixin
 from app.controllers import MyModelView
 
 
@@ -23,7 +25,7 @@ class User(db.Model, UserMixin, ModelMixin):
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     # TODO permission field. Global or company or location.
-    asociated_with = db.Column(db.String(128), default="Global") 
+    asociated_with = db.Column(db.String(64), default="global") 
 
     last_time_online = db.Column(db.DateTime)
 
@@ -51,38 +53,10 @@ class AnonymousUser(AnonymousUserMixin):
     pass
 
 
-# class UserView(ModelView):
-#     company_atr = list()
-#     location_atr = list()
-
-#     def __init__(self, company: list, location: list) -> None:
-#         self.company = company
-#         self.location = location
-#         # super().__init__()
-
-#     can_delete = True
-#     column_hide_backrefs = False
-#     column_searchable_list = ["company_name", "location_name"]
-
-#     @staticmethod
-#     def query_com_loc(self):
-#         # companies = self.company.query.all()
-#         # locations = self.location.query.all()
-#         setattr(self, "company_atr", self.company)
-#         setattr(self, "location_atr", self.location)
-
-#     form_choices = {
-#         'asociated_with': [
-#             "Global"
-#             ] + [
-#             location.name for location in location_atr
-#             ] + [
-#             company.name for company in company_atr
-#             ]
-#     }
+PERMISSIONS = [('Global-full', 'Global-full'), ('Global-view', 'Global-view'),]
 
 # NOTE option 1: set hashed password through model (flask-admin field only)
-class UserView(MyModelView):
+class UserView(RowActionListMixin, MyModelView):
 
     column_list = [
         "id",
@@ -94,11 +68,40 @@ class UserView(MyModelView):
         "created_at"
     ]
 
+    form_choices = {
+        'asociated_with': PERMISSIONS
+    }
     def on_model_change(self, form, model, is_created):
         model.password_hash = generate_password_hash(model.password_hash)
         # # as another example
         # if is_created:
-        #     model.created_at = datetime.now()  
+        #     model.created_at = datetime.now()
+
+    def _can_edit(self, model):
+        # return True to allow edit
+        print("current_user", current_user.username, current_user.asociated_with)
+        if current_user.asociated_with == "global-full":
+            return True
+        else:
+            return False
+
+    def _can_delete(self, model):
+        print("current_user", current_user.username, current_user.asociated_with)
+        if current_user.asociated_with == "global-full":
+            return True
+        else:
+            return False
+
+    def allow_row_action(self, action, model):
+
+        if isinstance(action, EditRowAction):
+            return self._can_edit(model)
+
+        if isinstance(action, DeleteRowAction):
+            return self._can_delete(model)
+
+        # otherwise whatever the inherited method returns
+        return super().allow_row_action(action, model)
 
 
 # NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)
