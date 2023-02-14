@@ -8,17 +8,6 @@ load_dotenv()
 base_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-class EST(datetime.tzinfo):
-    def utcoffset(self, dt):
-        return datetime.timedelta(hours = -5)
-
-    def tzname(self, dt):
-        return "EST"
-
-    def dst(self, dt):
-        return datetime.timedelta(0)
-
-
 class BaseConfig(object):
     """Base configuration."""
 
@@ -39,6 +28,18 @@ class BaseConfig(object):
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
     TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
+
+    def offset_to_est(dt_now: datetime.datetime):
+        """Offset to EST time
+
+        Args:
+            dt_now (datetime.datetime): datetime.datetime.now()
+
+        Returns:
+            datetime.datetime: EST datetime
+        """
+        est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+        return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
     def configure(app):

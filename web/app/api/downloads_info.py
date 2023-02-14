@@ -7,7 +7,7 @@ from app.models import Computer
 from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
 from app.views.blueprint import BlueprintApi
 from app.logger import logger
-from config import EST
+from config import BaseConfig as BCG
 
 
 downloads_info_blueprint = BlueprintApi("/downloads_info", __name__)
@@ -54,25 +54,13 @@ def get_credentials(body: GetCredentials):
 
     if computer:
         print("computer: ", computer, computer.computer_name)
-        computer.last_time_online = datetime.datetime.now(EST())
+        computer.last_time_online = BCG.offset_to_est(datetime.datetime.now())
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
         logger.info(f"Updated identifier_key for computer {computer.computer_name}.")
         logger.info(f"Supplying credentials for computer {computer.computer_name}.")
 
         remote_files_checksum = computer.files_checksum if computer.files_checksum else {}
-
-        print("computer data:",
-            computer.sftp_host,
-            computer.company_name,
-            computer.location_name,
-            computer.sftp_username,
-            computer.sftp_password,
-            computer.sftp_folder_path,
-            computer.identifier_key,
-            computer.manager_host,
-            computer.files_checksum
-        )
 
         return jsonify(
             status="success",
@@ -111,7 +99,7 @@ def download_status(body: DownloadStatus):
 
     if computer:
         logger.info(f"Updating download status for computer: {computer.computer_name}.")
-        computer.last_time_online = datetime.datetime.now(EST())
+        computer.last_time_online = BCG.offset_to_est(datetime.datetime.now())
         computer.download_status = body.download_status
         if body.last_downloaded:
             computer.last_downloaded = body.last_downloaded
@@ -135,7 +123,7 @@ def files_checksum(body: FilesChecksum):
 
     if computer:
         logger.info(f"Updating files checksum for computer: {computer.computer_name}.")
-        computer.last_time_online = datetime.datetime.now(EST())
+        computer.last_time_online = BCG.offset_to_est(datetime.datetime.now())
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()
         logger.info(f"Files checksum for computer {computer.computer_name} is updated to {body.files_checksum}.")

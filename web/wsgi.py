@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import requests
 from app import create_app, db, models, forms
 from app.logger import logger
-from config import BaseConfig as CFG
+from config import BaseConfig as BCG
 
 
 app = create_app()
@@ -38,9 +38,9 @@ def send_mail(
         alert_type (str): alert type to log
     """
 
-    alert_url = CFG.MAIL_ALERTS
-    from_email = CFG.SUPPORT_EMAIL
-    to_addresses = CFG.TO_ADDRESSES
+    alert_url = BCG.MAIL_ALERTS
+    from_email = BCG.SUPPORT_EMAIL
+    to_addresses = BCG.TO_ADDRESSES
 
     alert_hours = 12
     alerts_time = timedelta(seconds=60*60*alert_hours)
@@ -95,10 +95,10 @@ def check_and_alert():
     Send email and change status if something went wrong.
     """
     computers: list[models.Computer] = models.Computer.query.all()
-    alert_url = CFG.MAIL_ALERTS
+    alert_url = BCG.MAIL_ALERTS
     time_format = "%Y-%m-%d %H:%M:%S"
-    from_email = CFG.SUPPORT_EMAIL
-    to_addresses = CFG.TO_ADDRESSES
+    from_email = BCG.SUPPORT_EMAIL
+    to_addresses = BCG.TO_ADDRESSES
 
     off_30_min_computers = 0
     no_update_files_2h = 0
@@ -179,7 +179,7 @@ def create_superuser():
     user = models.User(
             username="emarsuperuser",
             email="emarsup@email.com",
-            password=CFG.SUPERPASS,
+            password=BCG.SUPERPASS,
         )
     user.save()
     logger.info("Superuser created")

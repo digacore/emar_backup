@@ -15,15 +15,17 @@ from loguru import logger
 import pprint
 
 
-class EST(datetime.tzinfo):
-    def utcoffset(self, dt):
-        return datetime.timedelta(hours = -5)
+def offset_to_est(dt_now: datetime.datetime):
+    """Offset to EST time
 
-    def tzname(self, dt):
-        return "EST"
+    Args:
+        dt_now (datetime.datetime): datetime.datetime.now()
 
-    def dst(self, dt):
-        return datetime.timedelta(0)
+    Returns:
+        datetime.datetime: EST datetime
+    """
+    est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+    return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 storage_path = os.path.join(Path("C:\\"), Path("EmarDir"))
 
@@ -214,8 +216,9 @@ def sftp_check_files_for_update_and_load(credentials):
             pprint.pprint(dir_names)
 
             update_download_status("downloading", credentials)
-            prefix=f"backup_{datetime.datetime.now(EST()).strftime('%Y-%b-%d %H_%M')}_"
-            suffix=f"_timestamp{datetime.datetime.now(EST()).timestamp()}"
+            est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.now()))
+            prefix=f"backup_{est_datetime.strftime('%Y-%b-%d %H_%M')}_"
+            suffix=f"_timestamp{est_datetime.timestamp()}"
 
             with tempfile.TemporaryDirectory(prefix=prefix, suffix=suffix) as tempdir:
                 files_loaded = 0
@@ -305,11 +308,11 @@ def sftp_check_files_for_update_and_load(credentials):
         response = requests.post(f"{credentials['manager_host']}/files_checksum", json={
                     "files_checksum": files_cheksum,
                     "identifier_key": str(credentials['identifier_key']),
-                    "last_time_online": str(datetime.datetime.now(EST()))
+                    "last_time_online": str(offset_to_est(datetime.datetime.now()))
                 })
         logger.debug("files_cheksum sent to server. Response status code = {}", response.status_code)
 
-    return datetime.datetime.now(EST())
+    return offset_to_est(datetime.datetime.now())
 
 
 @logger.catch
@@ -331,7 +334,7 @@ def send_activity(last_download_time, creds):
     "identifier_key": creds["identifier_key"],
     "location_name": creds["location_name"],
     "last_download_time": str(last_download_time),
-    "last_time_online": str(datetime.datetime.now(EST()))
+    "last_time_online": str(offset_to_est(datetime.datetime.now()))
     })
     logger.info("User last time download sent.")
 
@@ -353,7 +356,7 @@ def update_download_status(status, creds, last_downloaded=""):
     "company_name": creds["company_name"],
     "location_name": creds["location_name"],
     "download_status": status,
-    "last_time_online": str(datetime.datetime.now(EST())),
+    "last_time_online": str(offset_to_est(datetime.datetime.now())),
     "identifier_key": creds["identifier_key"],
     "last_downloaded": last_downloaded
     })
@@ -370,13 +373,13 @@ def main_func():
 
     if credentials["status"] == "success":
         last_download_time = sftp_check_files_for_update_and_load(credentials)
-        # last_download_time = datetime.datetime.now(EST())  # TODO for testing purpose, remove in prod
+        # last_download_time = offset_to_est(datetime.datetime.now())  # TODO for testing purpose, remove in prod
         send_activity(last_download_time, credentials)
         logger.info("Downloading proccess finished.")
 
-        user = getpass.getuser()
+        # user = getpass.getuser()
 
-        path = fr"C:\\Users\\{user}\\Desktop\\EMAR.lnk"  #This is where the shortcut will be created
+        path = fr"C:\\Users\\Public\\Public Desktop\\EMAR.lnk"  #This is where the shortcut will be created
 
         if not os.path.exists(path):
 

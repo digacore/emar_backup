@@ -6,17 +6,18 @@ import requests
 from loguru import logger
 
 
-class EST(datetime.tzinfo):
-    def utcoffset(self, dt):
-        return datetime.timedelta(hours = -5)
+def offset_to_est(dt_now: datetime.datetime):
+    """Offset to EST time
 
-    def tzname(self, dt):
-        return "EST"
+    Args:
+        dt_now (datetime.datetime): datetime.datetime.now()
 
-    def dst(self, dt):
-        return datetime.timedelta(0)
+    Returns:
+        datetime.datetime: EST datetime
+    """
+    est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+    return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
-# storage_path = os.path.join(os.environ.get("APPDATA"), Path("EmarDir"))
 storage_path = os.path.join(Path("C:\\"), Path("EmarDir"))
 
 log_format = "{time} - {name} - {level} - {message}"
@@ -59,19 +60,19 @@ def send_activity():
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
-            logger.info(f"Credentials recieved from {local_creds_json}.")
         manager_host = creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
     else:
         manager_host = g_manager_host
 
     if creds_json:
         url = f"{manager_host}/last_time"
+        last_time_online = offset_to_est(datetime.datetime.now())
         requests.post(url, json={
         "computer_name": creds_json["computer_name"],
         "identifier_key": creds_json["identifier_key"],
-        "last_time_online": str(datetime.datetime.now(EST()))
+        "last_time_online": last_time_online
         })
-        logger.info("User last time online sent.")
+        logger.info("User last time online {} sent.", last_time_online)
     else:
         logger.error("Heartbeat app can not find creds.json file.")
 

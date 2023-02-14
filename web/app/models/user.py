@@ -10,7 +10,6 @@ from flask_admin.contrib.sqla import ModelView
 from app import db
 from app.models.utils import ModelMixin
 from app.controllers import MyModelView
-from config import EST
 
 
 class User(db.Model, UserMixin, ModelMixin):
@@ -22,7 +21,7 @@ class User(db.Model, UserMixin, ModelMixin):
     email = db.Column(db.String(256), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     activated = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.now(EST()))
+    created_at = db.Column(db.DateTime, default=datetime.now)
     # TODO permission field. Global or company or location.
     asociated_with = db.Column(db.String(128), default="Global") 
 
