@@ -6,12 +6,13 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
 
 from flask_login import current_user
-from flask_admin.contrib.sqla import ModelView
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.controllers import MyModelView
+
+from config import BaseConfig as BCG
 
 
 class User(db.Model, UserMixin, ModelMixin):
@@ -25,7 +26,7 @@ class User(db.Model, UserMixin, ModelMixin):
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     # TODO permission field. Global or company or location.
-    asociated_with = db.Column(db.String(64), default="global") 
+    asociated_with = db.Column(db.String(64), default="global")
 
     last_time_online = db.Column(db.DateTime)
 
@@ -53,8 +54,6 @@ class AnonymousUser(AnonymousUserMixin):
     pass
 
 
-PERMISSIONS = [('Global-full', 'Global-full'), ('Global-view', 'Global-view'),]
-
 # NOTE option 1: set hashed password through model (flask-admin field only)
 class UserView(RowActionListMixin, MyModelView):
 
@@ -69,8 +68,9 @@ class UserView(RowActionListMixin, MyModelView):
     ]
 
     form_choices = {
-        'asociated_with': PERMISSIONS
+        'asociated_with': BCG.USER_PERMISSIONS
     }
+
     def on_model_change(self, form, model, is_created):
         model.password_hash = generate_password_hash(model.password_hash)
         # # as another example
@@ -79,11 +79,12 @@ class UserView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        print("current_user", current_user.username, current_user.asociated_with)
-        if current_user.asociated_with == "global-full":
-            return True
-        else:
-            return False
+        return True
+        # print("current_user", current_user.username, current_user.asociated_with)
+        # if current_user.asociated_with == "global-full":
+        #     return True
+        # else:
+        #     return False
 
     def _can_delete(self, model):
         print("current_user", current_user.username, current_user.asociated_with)

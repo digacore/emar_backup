@@ -29,6 +29,8 @@ class BaseConfig(object):
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
     TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
 
+    USER_PERMISSIONS = [('Global-full', 'Global-full'), ('Global-view', 'Global-view'),]
+
     def offset_to_est(dt_now: datetime.datetime):
         """Offset to EST time
 

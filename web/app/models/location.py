@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import or_
 from sqlalchemy.orm import relationship
 
 from flask_login import current_user
@@ -25,6 +26,7 @@ class Location(db.Model, ModelMixin):
     def __repr__(self):
         return self.name
 
+
 class LocationView(RowActionListMixin, MyModelView):
     can_delete = True
     column_hide_backrefs = False
@@ -49,11 +51,12 @@ class LocationView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        print("current_user", current_user.username, current_user.asociated_with)
-        if current_user.asociated_with == "global-full":
-            return True
-        else:
-            return False
+        return True
+        # print("current_user", current_user.username, current_user.asociated_with)
+        # if current_user.asociated_with == "global-full":
+        #     return True
+        # else:
+        #     return False
 
     def _can_delete(self, model):
         print("current_user", current_user.username, current_user.asociated_with)
@@ -72,3 +75,21 @@ class LocationView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    # list rows depending on current user permissions
+    def get_query(self):
+        print("location get_query current_user", current_user, current_user.asociated_with)
+        if current_user:
+            user_permission: str = current_user.asociated_with
+            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
+                result_query = self.session.query(self.model)
+            else:
+                result_query = self.session.query(self.model).filter(
+                    or_(
+                        self.model.name == user_permission,
+                        self.model.company_name == user_permission
+                    )
+                )
+        else:
+            result_query = self.session.query(self.model).filter(self.model.computer_name == "None")
+        return result_query

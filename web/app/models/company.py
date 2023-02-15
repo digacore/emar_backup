@@ -42,11 +42,12 @@ class CompanyView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        print("current_user", current_user.username, current_user.asociated_with)
-        if current_user.asociated_with == "global-full":
-            return True
-        else:
-            return False
+        return True
+        # print("current_user", current_user.username, current_user.asociated_with)
+        # if current_user.asociated_with == "global-full":
+        #     return True
+        # else:
+        #     return False
 
     def _can_delete(self, model):
         print("current_user", current_user.username, current_user.asociated_with)
@@ -65,3 +66,16 @@ class CompanyView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    # list rows depending on current user permissions
+    def get_query(self):
+        print("company get_query current_user", current_user, current_user.asociated_with)
+        if current_user:
+            user_permission: str = current_user.asociated_with
+            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
+                result_query = self.session.query(self.model)
+            else:
+                result_query = self.session.query(self.model).filter(self.model.name == user_permission)
+        else:
+            result_query = self.session.query(self.model).filter(self.model.computer_name == "None")
+        return result_query

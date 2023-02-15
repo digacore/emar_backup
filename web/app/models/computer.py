@@ -2,19 +2,19 @@ from datetime import datetime
 
 # import psycopg2
 
-from sqlalchemy import JSON
+from sqlalchemy import JSON, or_
 from sqlalchemy.orm import relationship
 
 # from flask_login import current_user
-from flask_admin.contrib.sqla.fields import Select2Widget, QuerySelectField
+# from flask_admin.contrib.sqla.fields import Select2Widget, QuerySelectField
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
-from flask_admin.model.form import InlineFormAdmin
+# from flask_admin.model.form import InlineFormAdmin
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 from flask_login import current_user
 
 from app import db
 from .location import Location
-from .company import Company
+# from .company import Company
 
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.controllers import MyModelView
@@ -92,7 +92,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "sftp_username",
         "sftp_folder_path",
         "type",
-        
+
         "identifier_key",
         "manager_host",
 
@@ -148,6 +148,24 @@ class ComputerView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
+    # list rows depending on current user permissions
+    def get_query(self):
+        print("computer get_query current_user", current_user, current_user.asociated_with)
+        if current_user:
+            user_permission: str = current_user.asociated_with
+            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
+                result_query = self.session.query(self.model)
+            else:
+                result_query = self.session.query(self.model).filter(
+                    or_(
+                        self.model.location_name == user_permission,
+                        self.model.company_name == user_permission
+                    )
+                )
+        else:
+            result_query = self.session.query(self.model).filter(self.model.computer_name == "None")
+        return result_query
+
     ###################################################
 
     # NOTE this example is good if you want to show certain fields depending on some array
@@ -193,7 +211,6 @@ class ComputerView(RowActionListMixin, MyModelView):
             minimum_input_length=0,
         )
     }
-    print(form_ajax_refs, form_ajax_refs["location"])
 
     ########################################################
 
