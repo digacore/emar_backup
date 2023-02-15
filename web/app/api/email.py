@@ -51,12 +51,12 @@ def api_email_alert(body: EmailSchema):
 
         mail.send(msg)
 
-        logger.info(f"Email sent from {body.from_email} to {body.to_addresses}. Subject: {body.subject}")
+        logger.info("Email sent from {} to {}. Subject: {}", body.from_email, body.to_addresses, body.subject)
         return jsonify(status="success", message="Email alert sent from API"), 200
 
     message = "Wrong request data."
     logger.info(
-        f"Failed to send email from {body.from_email} to {body.to_addresses}. \
-        Subject: {body.subject}. Reason: {message}"
+        "Failed to send email from {} to {}. Subject: {}. Reason: {}",
+        body.from_email, body.to_addresses, body.subject, message
         )
     return jsonify(status="fail", message=message), 404

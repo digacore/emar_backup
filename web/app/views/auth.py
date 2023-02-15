@@ -7,24 +7,6 @@ from app.forms import LoginForm  # , RegistrationForm
 auth_blueprint = Blueprint("auth", __name__)
 
 
-# @auth_blueprint.route("/register", methods=["GET", "POST"])
-# def register():
-#     form = RegistrationForm(request.form)
-#     if form.validate_on_submit():
-#         user = User(
-#             username=form.username.data,
-#             email=form.email.data,
-#             password=form.password.data,
-#         )
-#         user.save()
-#         login_user(user)
-#         flash("Registration successful. You are logged in.", "success")
-#         return redirect(url_for("main.index"))
-#     elif form.is_submitted():
-#         flash("The given data was invalid.", "danger")
-#     return render_template("auth/register.html", form=form)
-
-
 @auth_blueprint.route("/login", methods=["GET", "POST"])
 def login():
     form = LoginForm(request.form)

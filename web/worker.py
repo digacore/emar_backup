@@ -34,7 +34,6 @@ def check_and_alert():
     flask_proc.communicate()
 
 
-
 # @app.task
 # def do_backup():
 #     all_backups = [f for f in os.listdir(BACKUP_DIR) if (Path(BACKUP_DIR) / f).is_file()]

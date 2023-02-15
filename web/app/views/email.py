@@ -32,7 +32,7 @@ def email_alert():
 
         mail.send(msg)
 
-        logger.info(f"Email sent to {form.to_addresses.data}. Subject: {form.subject.data}")
+        logger.info("Email sent to {}. Subject: {}", form.to_addresses.data, form.subject.data)
         flash("Email sent.", "success")
         return redirect(url_for("main.index"))
     elif form.is_submitted():

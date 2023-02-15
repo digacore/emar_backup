@@ -2,7 +2,7 @@ from datetime import datetime
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
-from app.controllers import MyModelView
+from app.utils import MyModelView
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
@@ -42,16 +42,16 @@ class CompanyView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        return True
+        return True  # TODO temporary. Remove this line and uncomment code below
         # print("current_user", current_user.username, current_user.asociated_with)
-        # if current_user.asociated_with == "global-full":
+        # if str(current_user.asociated_with).lower() == "global-full":
         #     return True
         # else:
         #     return False
 
     def _can_delete(self, model):
         print("current_user", current_user.username, current_user.asociated_with)
-        if current_user.asociated_with == "global-full":
+        if str(current_user.asociated_with).lower() == "global-full":
             return True
         else:
             return False

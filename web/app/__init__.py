@@ -42,10 +42,10 @@ def create_app(environment="development"):
         Company, CompanyView,
         Computer, ComputerView,
         Location, LocationView,
-        Alert
+        Alert, AlertView
     )
 
-    from app.controllers import (
+    from app.utils import (
         MyModelView
     )
 
@@ -63,7 +63,7 @@ def create_app(environment="development"):
     admin.add_view(CompanyView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
     admin.add_view(LocationView(Location, db.session))
-    admin.add_view(MyModelView(Alert, db.session))
+    admin.add_view(AlertView(Alert, db.session))
 
     # Set app config.
     env = os.environ.get("FLASK_ENV", environment)

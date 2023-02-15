@@ -3,4 +3,4 @@ from .user import User, AnonymousUser, UserView
 from .company import Company, CompanyView
 from .computer import Computer, ComputerView
 from .location import Location, LocationView
-from .alert import Alert
+from .alert import Alert, AlertView

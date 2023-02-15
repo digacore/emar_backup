@@ -1,14 +1,11 @@
 from datetime import datetime
 
-# from sqlalchemy import or_
-# from sqlalchemy.orm import relationship
-
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
-from app.controllers import MyModelView
+from app.utils import MyModelView
 
 from .user import UserView
 
@@ -24,7 +21,6 @@ class Alert(db.Model, ModelMixin):
     subject = db.Column(db.String(128))
     body = db.Column(db.String(512))
     html_body = db.Column(db.String(512))
-    # alerted_target = db.Column(db.String(128))
     alert_status = db.Column(db.String(64))
     created_at = db.Column(db.DateTime, default=datetime.now)
 

@@ -1,10 +1,9 @@
-from datetime import datetime
 from pydantic import BaseModel
 
 
 class ComputerFullInfo(BaseModel):
     computer_name: str
-    location_name:str
+    location_name: str
 
     type: str
     alert_status: str

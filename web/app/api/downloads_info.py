@@ -22,20 +22,19 @@ def last_time(body: LastTime):
         body.identifier_key else None
 
     if computer:
-        logger.info(f"Updating last download time for computer: {computer.computer_name}.")
-        # TODO convert to Datetime object. Looks like str(datetime) from local computer is ok
+        logger.info("Updating last download time for computer: {}.", computer.computer_name)
         computer.last_time_online = body.last_time_online
         field = "online"
         if body.last_download_time:
             computer.last_download_time = body.last_download_time
             field = "download/online"
         computer.update()
-        logger.info(f"Last {field} time for computer {computer.computer_name} is updated.")
+        logger.info("Last {} time for computer {} is updated.", field, computer.computer_name)
         return jsonify(status="success", message="Writing time to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Last download/online time update failed. computer_name: {body.computer_name}, \
-        location {body.location_name}. Reason: {message}")
+    logger.info("Last download/online time update failed. computer_name: {}, \
+        location {}. Reason: {}", body.computer_name, body.location_name, message)
     return jsonify(status="fail", message=message), 400
 
 
@@ -57,8 +56,8 @@ def get_credentials(body: GetCredentials):
         computer.last_time_online = BCG.offset_to_est(datetime.datetime.now())
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
-        logger.info(f"Updated identifier_key for computer {computer.computer_name}.")
-        logger.info(f"Supplying credentials for computer {computer.computer_name}.")
+        logger.info("Updated identifier_key for computer {}.", computer.computer_name)
+        logger.info("Supplying credentials for computer {}.", computer.computer_name)
 
         remote_files_checksum = computer.files_checksum if computer.files_checksum else {}
 
@@ -77,16 +76,16 @@ def get_credentials(body: GetCredentials):
             manager_host=computer.manager_host,
             files_checksum=json.loads(str(remote_files_checksum))
             ), 200
-    
+
     elif computer_name:
         message = "Wrong id."
-        logger.info(f"Supplying credentials failed. computer: {body.computer_name}, \
-            id {body.identifier_key}. Reason: {message}")
+        logger.info("Supplying credentials failed. computer: {}, \
+            id {}. Reason: {}", body.computer_name, body.identifier_key, message)
         return jsonify(status="fail", message=message), 400
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Supplying credentials failed. computer: {body.computer_name}, \
-        id {body.identifier_key}. Reason: {message}. Removing local credentials.")
+    logger.info("Supplying credentials failed. computer: {}, id {}. \
+        Reason: {}. Removing local credentials.", body.computer_name, body.identifier_key, message)
     return jsonify(status="fail", message=message, rmcreds="rmcreds"), 400
 
 
@@ -98,19 +97,19 @@ def download_status(body: DownloadStatus):
         body.identifier_key else None
 
     if computer:
-        logger.info(f"Updating download status for computer: {computer.computer_name}.")
+        logger.info("Updating download status for computer: {}.", computer.computer_name)
         computer.last_time_online = BCG.offset_to_est(datetime.datetime.now())
         computer.download_status = body.download_status
         if body.last_downloaded:
             computer.last_downloaded = body.last_downloaded
         computer.update()
-        logger.info(f"Download status for computer {computer.computer_name} is updated to {body.download_status}.")
+        logger.info("Download status for computer {} is updated to {}.", computer.computer_name, body.download_status)
 
         return jsonify(status="success", message="Writing download status to db"), 200
 
     message = "Wrong request data. Computer not found."
-    logger.info(f"Download status update failed. company_name: {body.company_name}, \
-        location {body.location_name}. Reason: {message}")
+    logger.info("Download status update failed. company_name: {}, \
+        location {}. Reason: {}", body.company_name, body.location_name, message)
     return jsonify(status="fail", message=message), 400
 
 
@@ -122,11 +121,11 @@ def files_checksum(body: FilesChecksum):
         body.identifier_key else None
 
     if computer:
-        logger.info(f"Updating files checksum for computer: {computer.computer_name}.")
+        logger.info("Updating files checksum for computer: {}.", computer.computer_name)
         computer.last_time_online = BCG.offset_to_est(datetime.datetime.now())
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()
-        logger.info(f"Files checksum for computer {computer.computer_name} is updated to {body.files_checksum}.")
+        logger.info("Files checksum for computer {} is updated to {}.", computer.computer_name, body.files_checksum)
 
         return jsonify(status="success", message="Writing files checksum to db"), 200
 

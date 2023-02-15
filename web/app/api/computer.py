@@ -1,5 +1,5 @@
 import uuid
-from flask import jsonify, request
+from flask import jsonify
 
 from app.models import Computer
 from app.schema import ComputerRegInfo

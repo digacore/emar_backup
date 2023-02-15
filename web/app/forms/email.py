@@ -17,6 +17,4 @@ class EmailForm(FlaskForm):
     subject = StringField('Subject', validators=[DataRequired(), Length(0, 100)], default="subject")
     body = TextAreaField('Body', validators=[DataRequired()], default="body")
     html_body = TextAreaField('HTML body')
-    # reply_to_address = StringField('Reply to address', validators=[Email()])
-    # reply_to_address = StringField('Reply to address')
     submit = SubmitField('Send Email')

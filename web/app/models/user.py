@@ -10,7 +10,7 @@ from flask_admin.model.template import EditRowAction, DeleteRowAction
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
-from app.controllers import MyModelView
+from app.utils import MyModelView
 
 from config import BaseConfig as BCG
 

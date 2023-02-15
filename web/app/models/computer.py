@@ -17,7 +17,7 @@ from .location import Location
 # from .company import Company
 
 from app.models.utils import ModelMixin, RowActionListMixin
-from app.controllers import MyModelView
+from app.utils import MyModelView
 
 
 # TODO add to all models secure form? csrf
@@ -28,6 +28,7 @@ from app.controllers import MyModelView
 #     form_base_class = SecureForm
 
 
+# NOTE 1 rest of code below
 # check if tables were created
 # con = psycopg2.connect("postgresql://postgres:postgres@localhost:5432/db")
 # cur = con.cursor()
@@ -128,14 +129,14 @@ class ComputerView(RowActionListMixin, MyModelView):
     def _can_edit(self, model):
         # return True to allow edit
         print("current_user", current_user.username, current_user.asociated_with)
-        if current_user.asociated_with == "global-full":
+        if str(current_user.asociated_with).lower() == "global-full":
             return True
         else:
             return False
 
     def _can_delete(self, model):
         print("current_user", current_user.username, current_user.asociated_with)
-        if current_user.asociated_with == "global-full":
+        if str(current_user.asociated_with).lower() == "global-full":
             return True
         else:
             return False
@@ -171,7 +172,7 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     ###################################################
 
-    # NOTE this example is good if you want to show certain fields depending on some array
+    # NOTE 1 this example is good if you want to show certain fields depending on some array
     # general_product_attributes = ['name']
     # # company_locations = {i.company_name: [j.location_name for j in i] for i in Location.query.all()}
     # # company_name_index = 2
@@ -199,8 +200,8 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     ##############################################
 
-    # NOTE This one works as filter. You start to type company name in location field and
-    # NOTE and get list of aplicable locations
+    # NOTE 2 This one works as filter. You start to type company name in location field and
+    # NOTE 2 and get list of aplicable locations
     # Setup AJAX lazy-loading for the ImageType inside the inline model
     form_ajax_refs = {
         "location": QueryAjaxModelLoader(
@@ -217,7 +218,7 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     ########################################################
 
-    # NOTE working decision, but you should first choose a company, save, press edit and choose location
+    # NOTE 3 working decision, but you should first choose a company, save, press edit and choose location
     # def edit_form(self, obj):
     #     form = super(ComputerView, self).edit_form(obj)
     #     query = self.session.query(Location).filter(Location.company == obj.company)
