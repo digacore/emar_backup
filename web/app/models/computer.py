@@ -71,6 +71,9 @@ class Computer(db.Model, ModelMixin):
     last_downloaded = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
 
+    def __repr__(self):
+        return self.computer_name
+
 
 class ComputerView(RowActionListMixin, MyModelView):
 

@@ -3,7 +3,7 @@ import os
 from flask import render_template, url_for
 from flask_openapi3 import OpenAPI
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager
 from werkzeug.exceptions import HTTPException
 from flask_migrate import Migrate
 from flask_admin import Admin
@@ -42,6 +42,7 @@ def create_app(environment="development"):
         Company, CompanyView,
         Computer, ComputerView,
         Location, LocationView,
+        Alert
     )
 
     from app.controllers import (
@@ -62,6 +63,7 @@ def create_app(environment="development"):
     admin.add_view(CompanyView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
     admin.add_view(LocationView(Location, db.session))
+    admin.add_view(MyModelView(Alert, db.session))
 
     # Set app config.
     env = os.environ.get("FLASK_ENV", environment)
