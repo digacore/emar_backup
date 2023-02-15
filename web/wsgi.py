@@ -119,8 +119,8 @@ def check_and_alert():
     for computer in computers:
 
         # check last_download_time
-        if computer.last_download_time and "no_download_12" in alert_names:
-            no_download_12: models.Alert = models.Alert.query.filter_by(name="no_download_12").first()
+        if computer.last_download_time and "no_download_12h" in alert_names:
+            no_download_12h: models.Alert = models.Alert.query.filter_by(name="no_download_12h").first()
             last_download_time = datetime.strptime(computer.last_download_time, time_format) if \
                 isinstance(computer.last_download_time, str) else computer.last_download_time
 
@@ -128,15 +128,15 @@ def check_and_alert():
                 last_time=last_download_time,
                 computer=computer,
                 alert_type="download",
-                alert_obj=no_download_12
+                alert_obj=no_download_12h
             )
 
             if last_download_time < datetime.now() - timedelta(seconds=7200):
                 no_update_files_2h += 1
 
         # check last_time_online
-        if computer.last_time_online and "not_offline_12" in alert_names:
-            not_offline_12: models.Alert = models.Alert.query.filter_by(name="not_offline_12").first()
+        if computer.last_time_online and "offline_12h" in alert_names:
+            offline_12h: models.Alert = models.Alert.query.filter_by(name="offline_12h").first()
             last_time_online = datetime.strptime(computer.last_time_online, time_format) if \
                 isinstance(computer.last_time_online, str) else computer.last_time_online
 
@@ -144,7 +144,7 @@ def check_and_alert():
                 last_time=last_download_time,
                 computer=computer,
                 alert_type="offline",
-                alert_obj=not_offline_12
+                alert_obj=offline_12h
             )
 
             if last_time_online < datetime.now() - timedelta(seconds=1800):
