@@ -4,12 +4,12 @@ from stat import S_ISDIR, S_ISREG
 import time
 import datetime
 import json
-import getpass
+# import getpass
 from pathlib import Path
 import tempfile
 
 import requests
-from paramiko import SSHClient, AutoAddPolicy, AutoAddPolicy
+from paramiko import SSHClient, AutoAddPolicy
 from loguru import logger
 
 import pprint
@@ -27,6 +27,7 @@ def offset_to_est(dt_now: datetime.datetime):
     est_norm_datetime = dt_now - datetime.timedelta(hours=5)
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
+
 storage_path = os.path.join(Path("C:\\"), Path("EmarDir"))
 
 log_format = "{time} - {name} - {level} - {message}"
@@ -43,6 +44,7 @@ def mknewdir(pathstr):
         os.mkdir(pathstr)
         return False
     return True
+
 
 mknewdir(storage_path)
 
@@ -79,7 +81,7 @@ def register_computer():
         computer_name = platform.node()
         logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
     if not isinstance(computer_name, str):
-        raise(ValueError("Can't get computer name. Name {}, type {}", computer_name, type(computer_name)))
+        raise (ValueError("Can't get computer name. Name {}, type {}", computer_name, type(computer_name)))
     identifier_key = "new_computer"
 
     response = requests.post(f"{g_manager_host}/register_computer", json={
@@ -133,7 +135,7 @@ def get_credentials():
 
     else:
         response = register_computer()
-        
+
     if response.json()["message"] == "Supplying credentials" or response.json()["message"] == "Computer registered":
         with open(local_creds_json, "w") as f:
             json.dump(
@@ -147,7 +149,7 @@ def get_credentials():
             logger.info(f"Full credentials recieved from server and {local_creds_json} updated.")
 
         return response.json()
-    
+
     else:
         raise ValueError("Wrong response data. Can't proceed without correct credentials.")
 
@@ -201,66 +203,65 @@ def sftp_check_files_for_update_and_load(credentials):
                     lvl_ins_dir_names.extend(ins_dir_names)
                     lvl_ins_file_paths.update(ins_file_paths)
 
-                print(f"\lvl_ins_dir_names: ")
+                print("\nlvl_ins_dir_names: ")
                 pprint.pprint(lvl_ins_dir_names)
-                print(f"\lvl_ins_file_paths: ")
+                print("\nlvl_ins_file_paths: ")
                 pprint.pprint(lvl_ins_file_paths)
                 dir_names.clear()
                 dir_names.extend(lvl_ins_dir_names)
                 file_paths.update(lvl_ins_file_paths)
-            
-            print(f"\nfile_paths: ")
+
+            print("\nfile_paths: ")
             pprint.pprint(file_paths)
             files_cheksum.update(file_paths)
-            print(f"\dir_names: ")
+            print("\ndir_names: ")
             pprint.pprint(dir_names)
 
             update_download_status("downloading", credentials)
             est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.now()))
-            prefix=f"backup_{est_datetime.strftime('%Y-%b-%d %H_%M')}_"
-            suffix=f"_timestamp{est_datetime.timestamp()}"
+            prefix = f"backup_{est_datetime.strftime('%Y-%b-%d %H_%M')}_"
+            suffix = f"_timestamp{est_datetime.timestamp()}"
 
             with tempfile.TemporaryDirectory(prefix=prefix, suffix=suffix) as tempdir:
-                files_loaded = 0
+                trigger_download = False
                 for filepath in files_cheksum:
-                    # chdir to be on top dir level
-                    sftp.chdir(None)
-                    # if download_directory != ".":
-                    #     sftp.chdir(download_directory)
-                    print(f"filepath: {filepath}")
-                    dirpath: list = filepath.split("/")[1:-1]
-                    print(f"dirpath: {dirpath}")
-                    filename: str = filepath.split("/")[-1]
-                    print(f"filename: {filename}")
-                    dirname = "/".join(dirpath)
-                    print(f"checking: {dirname}/{filename}")
-
-                    # get and create local temp directory if not exists
-                    local_temp_emar_dir = os.path.join(tempdir, Path(dirname)) if dirname else tempdir
-                    if not os.path.exists(local_temp_emar_dir):
-                        os.mkdir(local_temp_emar_dir)
-                    print("local_temp_emar_dir", local_temp_emar_dir)
-
-                    # get file from sftp server if it was changed
-                    # TODO what if file in the root
-                    print("files_cheksum[filepath]", files_cheksum[filepath])
                     if filepath not in credentials["files_checksum"]:
-                        sftp.chdir(dirname)
-                        sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
-                        print(f"downloaded: {dirname}/{filename}\n")
-                        files_loaded += 1
+                        trigger_download = True
                     elif files_cheksum[filepath] not in credentials["files_checksum"][filepath]:
+                        trigger_download = True
                         print('credentials["files_checksum"][filepath]', credentials["files_checksum"][filepath])
+                if not trigger_download:
+                    print("Files were NOT downloaded. Reason: no changes noticed.\n")
+                else:
+                    for filepath in files_cheksum:
+                        # chdir to be on top dir level
+                        sftp.chdir(None)
+                        # if download_directory != ".":
+                        #     sftp.chdir(download_directory)
+                        print(f"filepath: {filepath}")
+                        dirpath: list = filepath.split("/")[1:-1]
+                        print(f"dirpath: {dirpath}")
+                        filename: str = filepath.split("/")[-1]
+                        print(f"filename: {filename}")
+                        dirname = "/".join(dirpath)
+                        print(f"checking: {dirname}/{filename}")
+
+                        # get and create local temp directory if not exists
+                        local_temp_emar_dir = os.path.join(tempdir, Path(dirname)) if dirname else tempdir
+                        if not os.path.exists(local_temp_emar_dir):
+                            os.mkdir(local_temp_emar_dir)
+                        print("local_temp_emar_dir", local_temp_emar_dir)
+
+                        # get file from sftp server if it was changed
+                        # TODO what if file in the root
+                        print("files_cheksum[filepath]", files_cheksum[filepath])
                         sftp.chdir(dirname)
                         sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
                         print(f"downloaded: {dirname}/{filename}\n")
-                        files_loaded += 1
-                    else:
-                        print(f"NOT downloaded: {dirname}/{filename} file is not changed\n")
 
                 sftp.close()
-                
-                if files_loaded > 0:
+
+                if trigger_download:
                     zip_name = os.path.join(storage_path, "emar_backups.zip")
                     print("zip_name", zip_name)
                     subprs = Popen([
@@ -277,7 +278,7 @@ def sftp_check_files_for_update_and_load(credentials):
                     proc = Popen([Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name], stdout=PIPE)
                     files = [l.split('Path = ')[1] for l in proc.stdout.read().decode().splitlines() if l.startswith('Path = ')]
                     dirs = [i for i in files if "\\" not in i]
-                    dirs.sort(key = lambda x: x.split("timestamp")[1])
+                    dirs.sort(key=lambda x: x.split("timestamp")[1])
                     pprint.pprint(f"dirs:\n{dirs}")
 
                     # TODO should we make this configurable?
@@ -297,9 +298,9 @@ def sftp_check_files_for_update_and_load(credentials):
                     proc = Popen([Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name], stdout=PIPE)
                     files = [l.split('Path = ')[1] for l in proc.stdout.read().decode().splitlines() if l.startswith('Path = ')]
                     ddirs = [i for i in files if "\\" not in i]
-                    ddirs.sort(key = lambda x: x.split("timestamp")[1])
+                    ddirs.sort(key=lambda x: x.split("timestamp")[1])
                     pprint.pprint(f"after delete dirs:\n{ddirs}")
-                    
+
                 else:
                     logger.info("Nothing to zip.")
 
@@ -329,12 +330,12 @@ def send_activity(last_download_time, creds):
 
     url = f"{m_host}/last_time"
     requests.post(url, json={
-    "computer_name": creds["computer_name"],
-    "company_name": creds["company_name"],
-    "identifier_key": creds["identifier_key"],
-    "location_name": creds["location_name"],
-    "last_download_time": str(last_download_time),
-    "last_time_online": str(offset_to_est(datetime.datetime.now()))
+        "computer_name": creds["computer_name"],
+        "company_name": creds["company_name"],
+        "identifier_key": creds["identifier_key"],
+        "location_name": creds["location_name"],
+        "last_download_time": str(last_download_time),
+        "last_time_online": str(offset_to_est(datetime.datetime.now()))
     })
     logger.info("User last time download sent.")
 
@@ -353,12 +354,12 @@ def update_download_status(status, creds, last_downloaded=""):
 
     url = f"{m_host}/download_status"
     requests.post(url, json={
-    "company_name": creds["company_name"],
-    "location_name": creds["location_name"],
-    "download_status": status,
-    "last_time_online": str(offset_to_est(datetime.datetime.now())),
-    "identifier_key": creds["identifier_key"],
-    "last_downloaded": last_downloaded
+        "company_name": creds["company_name"],
+        "location_name": creds["location_name"],
+        "download_status": status,
+        "last_time_online": str(offset_to_est(datetime.datetime.now())),
+        "identifier_key": creds["identifier_key"],
+        "last_downloaded": last_downloaded
     })
     logger.info(f"Download status: {status}.")
 
@@ -366,7 +367,7 @@ def update_download_status(status, creds, last_downloaded=""):
 @logger.catch
 def main_func():
     logger.info("Downloading proccess started.")
-    credentials = get_credentials() 
+    credentials = get_credentials()
     print("\ncredentials", credentials, "\n")
     if not credentials:
         raise ValueError("Credentials not supplayed. Can't continue.")
@@ -379,13 +380,13 @@ def main_func():
 
         # user = getpass.getuser()
 
-        path = fr"C:\\Users\\Public\\Public Desktop\\EMAR.lnk"  #This is where the shortcut will be created
+        path = r"C:\\Users\\Public\\Public Desktop\\EMAR.lnk"  # This is where the shortcut will be created
 
         if not os.path.exists(path):
 
             from win32com.client import Dispatch
 
-            target = fr"{os.path.join(storage_path, 'emar_backups.zip')}" # directory to which the shortcut is created
+            target = fr"{os.path.join(storage_path, 'emar_backups.zip')}"  # directory to which the shortcut is created
             wDir = fr"{storage_path}"
 
             shell = Dispatch('WScript.Shell')
@@ -393,7 +394,7 @@ def main_func():
             shortcut.WorkingDirectory = wDir
             shortcut.Targetpath = target
             shortcut.save()
-    
+
     elif credentials["status"] == "registered":
         logger.info("New computer registered. Download will start next time if credentials available in DB.")
 
@@ -401,11 +402,11 @@ def main_func():
         logger.info(f"SFTP credentials were not supplied. Download impossible. Credentials: {credentials}")
         time.sleep(60)
 
+
 try:
     main_func()
     print("Task finished")
-    time.sleep(60)
+    time.sleep(20)
 except Exception as e:
     print(f"Exception occured: {e}")
     time.sleep(120)
-
