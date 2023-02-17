@@ -71,6 +71,19 @@ if not ssh_exists:
     open(os.path.join(Path().home(), Path(".ssh/known_hosts")), 'a').close()
 
 
+def self_update(storage_path, credentials):
+    response = requests.post(f"{g_manager_host}/msi_download_to_local", json={
+        "name": "custompass", # TODO is this required?
+        "version": credentials["msi_version"],
+        "flag": credentials["msi_version"],
+        "identifier_key": credentials["identifier_key"],
+    })
+    print(response.headers["Content-disposition"].split("=")[1])
+    with open(Path(storage_path) / response.headers["Content-disposition"].split("=")[1], "wb") as msi:
+        msi.write(response.content)
+    print(response.status_code)
+
+
 def register_computer():
     import socket
     import platform
@@ -142,7 +155,8 @@ def get_credentials():
                 {
                     "computer_name": response.json()["computer_name"],
                     "identifier_key": response.json()["identifier_key"],
-                    "manager_host": response.json()["manager_host"]
+                    "manager_host": response.json()["manager_host"],
+                    "msi_version": response.json()["msi_version"]
                 },
                 f
             )
@@ -380,7 +394,7 @@ def main_func():
 
         # user = getpass.getuser()
 
-        path = r"C:\\Users\\Public\\Public Desktop\\EMAR.lnk"  # This is where the shortcut will be created
+        path = r"C:\\Users\\Public\\Desktop\\EMAR.lnk"  # This is where the shortcut will be created
 
         if not os.path.exists(path):
 
@@ -394,6 +408,8 @@ def main_func():
             shortcut.WorkingDirectory = wDir
             shortcut.Targetpath = target
             shortcut.save()
+
+        self_update(storage_path, credentials)
 
     elif credentials["status"] == "registered":
         logger.info("New computer registered. Download will start next time if credentials available in DB.")
