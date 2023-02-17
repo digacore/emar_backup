@@ -66,7 +66,7 @@ def send_activity():
 
     if creds_json:
         url = f"{manager_host}/last_time"
-        last_time_online = offset_to_est(datetime.datetime.now())
+        last_time_online = offset_to_est(datetime.datetime.utcnow())
         requests.post(url, json={
         "computer_name": creds_json["computer_name"],
         "identifier_key": creds_json["identifier_key"],

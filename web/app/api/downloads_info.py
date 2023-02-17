@@ -34,7 +34,7 @@ def last_time(body: LastTime):
 
     message = "Wrong request data. Computer not found."
     logger.info("Last download/online time update failed. computer_name: {}, \
-        location {}. Reason: {}", body.computer_name, body.location_name, message)
+                Reason: {}", body.computer_name, body.location_name, message)
     return jsonify(status="fail", message=message), 400
 
 

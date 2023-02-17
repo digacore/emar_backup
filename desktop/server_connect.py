@@ -19,7 +19,7 @@ def offset_to_est(dt_now: datetime.datetime):
     """Offset to EST time
 
     Args:
-        dt_now (datetime.datetime): datetime.datetime.now()
+        dt_now (datetime.datetime): datetime.datetime.utcnow()
 
     Returns:
         datetime.datetime: EST datetime
@@ -232,7 +232,7 @@ def sftp_check_files_for_update_and_load(credentials):
             pprint.pprint(dir_names)
 
             update_download_status("downloading", credentials)
-            est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.now()))
+            est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.utcnow()))
             prefix = f"backup_{est_datetime.strftime('%Y-%b-%d %H_%M')}_"
             suffix = f"_timestamp{est_datetime.timestamp()}"
 
@@ -323,11 +323,11 @@ def sftp_check_files_for_update_and_load(credentials):
         response = requests.post(f"{credentials['manager_host']}/files_checksum", json={
                     "files_checksum": files_cheksum,
                     "identifier_key": str(credentials['identifier_key']),
-                    "last_time_online": str(offset_to_est(datetime.datetime.now()))
+                    "last_time_online": str(offset_to_est(datetime.datetime.utcnow()))
                 })
         logger.debug("files_cheksum sent to server. Response status code = {}", response.status_code)
 
-    return offset_to_est(datetime.datetime.now())
+    return offset_to_est(datetime.datetime.utcnow())
 
 
 @logger.catch
@@ -349,7 +349,7 @@ def send_activity(last_download_time, creds):
         "identifier_key": creds["identifier_key"],
         "location_name": creds["location_name"],
         "last_download_time": str(last_download_time),
-        "last_time_online": str(offset_to_est(datetime.datetime.now()))
+        "last_time_online": str(offset_to_est(datetime.datetime.utcnow()))
     })
     logger.info("User last time download sent.")
 
@@ -371,7 +371,7 @@ def update_download_status(status, creds, last_downloaded=""):
         "company_name": creds["company_name"],
         "location_name": creds["location_name"],
         "download_status": status,
-        "last_time_online": str(offset_to_est(datetime.datetime.now())),
+        "last_time_online": str(offset_to_est(datetime.datetime.utcnow())),
         "identifier_key": creds["identifier_key"],
         "last_downloaded": last_downloaded
     })
@@ -388,7 +388,7 @@ def main_func():
 
     if credentials["status"] == "success":
         last_download_time = sftp_check_files_for_update_and_load(credentials)
-        # last_download_time = offset_to_est(datetime.datetime.now())  # TODO for testing purpose, remove in prod
+        # last_download_time = offset_to_est(datetime.datetime.utcnow())  # TODO for testing purpose, remove in prod
         send_activity(last_download_time, credentials)
         logger.info("Downloading proccess finished.")
 

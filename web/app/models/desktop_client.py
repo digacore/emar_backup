@@ -39,7 +39,8 @@ class DesktopClientView(RowActionListMixin, MyModelView):
     #     "name": {"readonly": True},
     # }
 
-    column_exclude_list = ("blob", "mimetype")
+    # column_exclude_list = ("blob", "mimetype")
+    column_list = ("name", "version",  "flag_name", "description", "filename", "download")
     form_excluded_columns = ("mimetype", "size", "filename")
 
     form_extra_fields = {"blob": BlobUploadField(

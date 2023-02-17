@@ -52,7 +52,8 @@ def check_computer_send_mail(
         requests.post(alert_url, json={
             "alerted_target": computer.computer_name,
             "alert_status": alert_obj.alert_status,
-            "from_email": alert_obj.from_email,  # TODO Is this going to be configurable or take from BCG? Most likely yes
+            # TODO Is from_email going to be configurable or take from BCG? Most likely yes
+            "from_email": alert_obj.from_email,
             "to_addresses": alert_obj.to_addresses,
             "subject": f"{computer.computer_name} {alert_obj.subject}",
             "body": f"{computer.computer_name} {alert_obj.body}",
@@ -104,9 +105,9 @@ def check_and_alert():
     Send email and change status if something went wrong.
     """
     computers: list[models.Computer] = models.Computer.query.all()
-    # alerts: list[models.Alert] = models.Alert.query.all() # TODO loop for all CUSTOM alerts to send email
-    alert_url = BCG.MAIL_ALERTS
-    alert_names = [i.name for i in alert_url]
+    # TODO loop for all CUSTOM alerts to send email
+    alerts: list[models.Alert] = models.Alert.query.all()
+    alert_names = [i.name for i in alerts]
     time_format = "%Y-%m-%d %H:%M:%S"
 
     off_30_min_computers = 0
