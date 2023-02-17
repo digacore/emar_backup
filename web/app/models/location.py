@@ -12,6 +12,8 @@ from app.utils import MyModelView
 
 from .user import UserView
 
+from app.logger import logger
+
 
 class Location(db.Model, ModelMixin):
 
@@ -19,7 +21,7 @@ class Location(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
-    company = relationship("Company", passive_deletes=True, backref='locations', lazy='select')
+    company = relationship("Company", passive_deletes=True, backref="locations", lazy="select")
     company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
@@ -31,18 +33,19 @@ class LocationView(RowActionListMixin, MyModelView):
     column_hide_backrefs = False
     column_list = ["id", "name", "company_name", "created_at"]
     column_searchable_list = ["name", "company_name"]
+    action_disallowed_list = ["delete"]
 
     def edit_form(self, obj):
         form = super(LocationView, self).edit_form(obj)
 
         query_res = self.session.query(Location).all()
 
-        permissions = [i[0] for i in UserView.form_choices['asociated_with']]
+        permissions = [i[0] for i in UserView.form_choices["asociated_with"]]
         for location in [i.name for i in query_res]:
             if location in permissions:
                 break
             print(f"{location} added")
-            UserView.form_choices['asociated_with'].append((location, f"Location-{location}"))
+            UserView.form_choices["asociated_with"].append((location, f"Location-{location}"))
         print(f"permissions updated {permissions}")
 
         form.name.query = query_res
@@ -50,15 +53,12 @@ class LocationView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        return True  # TODO temporary. Remove this line and uncomment code below
-        # print("current_user", current_user.username, current_user.asociated_with)
-        # if str(current_user.asociated_with).lower() == "global-full":
-        #     return True
-        # else:
-        #     return False
+        if str(current_user.asociated_with).lower() == "global-full":
+            return True
+        else:
+            return False
 
     def _can_delete(self, model):
-        print("current_user", current_user.username, current_user.asociated_with)
         if str(current_user.asociated_with).lower() == "global-full":
             return True
         else:
@@ -77,10 +77,25 @@ class LocationView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
-        print("location get_query current_user", current_user, current_user.asociated_with)
+
         if current_user:
-            user_permission: str = current_user.asociated_with
-            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
+            if str(current_user.asociated_with).lower() == "global-full":
+                if "delete" in self.action_disallowed_list:
+                    self.action_disallowed_list.remove("delete")
+                self.can_create = True
+            else:
+                if "delete" not in self.action_disallowed_list:
+                    self.action_disallowed_list.append("delete")
+                self.can_create = False
+
+        logger.debug(
+            "location.py get_query() current_user={}, asociated_with={}",
+            current_user,
+            current_user.asociated_with
+        )
+        if current_user:
+            user_permission = str(current_user.asociated_with).lower()
+            if user_permission == "global-full" or user_permission == "global-view":
                 result_query = self.session.query(self.model)
             else:
                 result_query = self.session.query(self.model).filter(

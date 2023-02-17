@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class ComputerFullInfo(BaseModel):
+class ComputerFullInfo(BaseModel):  # TODO remove if unused
     computer_name: str
     location_name: str
 

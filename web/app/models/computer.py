@@ -46,7 +46,7 @@ class Computer(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
 
-    location = relationship("Location", passive_deletes=True, backref='computers', lazy='select')
+    location = relationship("Location", passive_deletes=True, backref="computers", lazy="select")
     location_name = db.Column(db.String, db.ForeignKey("locations.name", ondelete="CASCADE"))
 
     type = db.Column(db.String(128))
@@ -64,8 +64,9 @@ class Computer(db.Model, ModelMixin):
     last_download_time = db.Column(db.DateTime)
     last_time_online = db.Column(db.DateTime)
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
+    msi_version = db.Column(db.String(64))
 
-    company = relationship("Company", passive_deletes=True, backref='computers', lazy='select')
+    company = relationship("Company", passive_deletes=True, backref="computers", lazy="select")
     company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"))
 
     manager_host = db.Column(db.String(256))
@@ -78,7 +79,7 @@ class Computer(db.Model, ModelMixin):
 
 class ComputerView(RowActionListMixin, MyModelView):
 
-    # TODO use when define the permissions for user
+    # NOTE could be useful when define the permissions
     # can_create = False
     # can_edit = False
     # can_delete = False
@@ -92,6 +93,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "download_status",
         "last_download_time",
         "last_time_online",
+        "msi_version",
         "sftp_host",
         "sftp_username",
         "sftp_folder_path",
@@ -104,38 +106,44 @@ class ComputerView(RowActionListMixin, MyModelView):
         "created_at"
         ]
     column_searchable_list = ["company_name", "location_name"]
-    column_editable_list = [
-        # "computer_name",
-        "company",
-        # "location",
-        # "type",
-        # "sftp_host",
-        # "sftp_username",
-        # "sftp_folder_path",
-        # "manager_host",
-    ]
+
+    # allows edit in list view, but has troubles with permissions
+    # column_editable_list = [
+    #     # "computer_name",
+    #     "company",
+    #     # "location",
+    #     # "type",
+    #     # "sftp_host",
+    #     # "sftp_username",
+    #     # "sftp_folder_path",
+    #     # "manager_host",
+    # ]
 
     form_widget_args = {
         "last_download_time": {"readonly": True},
         "last_time_online": {"readonly": True},
         "identifier_key": {"readonly": True},
         "created_at": {"readonly": True},
-        # "alert_status":{"readonly":True},
-        # "download_status":{"readonly":True},
-        # "last_downloaded":{"readonly":True},
-        # "files_checksum":{"readonly":True},
+        "alert_status": {"readonly": True},
+        "download_status": {"readonly": True},
+        "last_downloaded": {"readonly": True},
+        # "files_checksum": {"readonly": True},
     }
+
+    form_choices = {
+        "msi_version": [("stable", "stable"), ("latest", "latest")]
+    }
+
+    action_disallowed_list = ["delete"]
 
     def _can_edit(self, model):
         # return True to allow edit
-        print("current_user", current_user.username, current_user.asociated_with)
         if str(current_user.asociated_with).lower() == "global-full":
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        print("current_user", current_user.username, current_user.asociated_with)
         if str(current_user.asociated_with).lower() == "global-full":
             return True
         else:
@@ -154,10 +162,19 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
-        print("computer get_query current_user", current_user, current_user.asociated_with)
         if current_user:
-            user_permission: str = current_user.asociated_with
-            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
+            if str(current_user.asociated_with).lower() == "global-full":
+                if "delete" in self.action_disallowed_list:
+                    self.action_disallowed_list.remove("delete")
+                self.can_create = True
+            else:
+                if "delete" not in self.action_disallowed_list:
+                    self.action_disallowed_list.append("delete")
+                self.can_create = False
+
+        if current_user:
+            user_permission = str(current_user.asociated_with).lower()
+            if user_permission == "global-full" or user_permission == "global-view":
                 result_query = self.session.query(self.model)
             else:
                 result_query = self.session.query(self.model).filter(

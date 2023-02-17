@@ -9,6 +9,8 @@ from flask_admin.model.template import EditRowAction, DeleteRowAction
 
 from .user import UserView
 
+from app.logger import logger
+
 
 class Company(db.Model, ModelMixin):
 
@@ -24,17 +26,19 @@ class Company(db.Model, ModelMixin):
 
 class CompanyView(RowActionListMixin, MyModelView):
 
+    action_disallowed_list = ["delete"]
+
     def edit_form(self, obj):
         form = super(CompanyView, self).edit_form(obj)
 
         query_res = self.session.query(Company).all()
 
-        permissions = [i[0] for i in UserView.form_choices['asociated_with']]
+        permissions = [i[0] for i in UserView.form_choices["asociated_with"]]
         for company in [i.name for i in query_res]:
             if company in permissions:
                 break
             print(f"{company} added")
-            UserView.form_choices['asociated_with'].append((company, f"Company-{company}"))
+            UserView.form_choices["asociated_with"].append((company, f"Company-{company}"))
         print(f"permissions updated {permissions}")
 
         form.name.query = query_res
@@ -42,15 +46,12 @@ class CompanyView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        return True  # TODO temporary. Remove this line and uncomment code below
-        # print("current_user", current_user.username, current_user.asociated_with)
-        # if str(current_user.asociated_with).lower() == "global-full":
-        #     return True
-        # else:
-        #     return False
+        if str(current_user.asociated_with).lower() == "global-full":
+            return True
+        else:
+            return False
 
     def _can_delete(self, model):
-        print("current_user", current_user.username, current_user.asociated_with)
         if str(current_user.asociated_with).lower() == "global-full":
             return True
         else:
@@ -69,10 +70,24 @@ class CompanyView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
-        print("company get_query current_user", current_user, current_user.asociated_with)
         if current_user:
-            user_permission: str = current_user.asociated_with
-            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
+            if str(current_user.asociated_with).lower() == "global-full":
+                if "delete" in self.action_disallowed_list:
+                    self.action_disallowed_list.remove("delete")
+                self.can_create = True
+            else:
+                if "delete" not in self.action_disallowed_list:
+                    self.action_disallowed_list.append("delete")
+                self.can_create = False
+
+        logger.debug(
+            "company.py get_query() current_user={}, asociated_with={}",
+            current_user,
+            current_user.asociated_with
+        )
+        if current_user:
+            user_permission = str(current_user.asociated_with).lower()
+            if user_permission == "global-full" or user_permission == "global-view":
                 result_query = self.session.query(self.model)
             else:
                 result_query = self.session.query(self.model).filter(self.model.name == user_permission)

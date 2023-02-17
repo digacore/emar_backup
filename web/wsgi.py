@@ -33,8 +33,6 @@ def check_computer_send_mail(
     """
 
     alert_url = BCG.MAIL_ALERTS
-    # from_email = BCG.SUPPORT_EMAIL
-    # to_addresses = BCG.TO_ADDRESSES
 
     alert_hours = 12
     alerts_time = timedelta(seconds=60*60*alert_hours)
@@ -54,7 +52,7 @@ def check_computer_send_mail(
         requests.post(alert_url, json={
             "alerted_target": computer.computer_name,
             "alert_status": alert_obj.alert_status,
-            "from_email": alert_obj.from_email,  # TODO Is this going to be configurable? Most likely yes
+            "from_email": alert_obj.from_email,  # TODO Is this going to be configurable or take from BCG? Most likely yes
             "to_addresses": alert_obj.to_addresses,
             "subject": f"{computer.computer_name} {alert_obj.subject}",
             "body": f"{computer.computer_name} {alert_obj.body}",
@@ -110,8 +108,6 @@ def check_and_alert():
     alert_url = BCG.MAIL_ALERTS
     alert_names = [i.name for i in alert_url]
     time_format = "%Y-%m-%d %H:%M:%S"
-    # from_email = BCG.SUPPORT_EMAIL
-    # to_addresses = BCG.TO_ADDRESSES
 
     off_30_min_computers = 0
     no_update_files_2h = 0
@@ -186,6 +182,7 @@ def create_superuser():
             username="emarsuperuser",
             email="emarsup@email.com",
             password=BCG.SUPERPASS,
+            asociated_with="global-full"
         )
     user.save()
     logger.info("Superuser created")

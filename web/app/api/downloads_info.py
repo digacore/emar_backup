@@ -74,7 +74,8 @@ def get_credentials(body: GetCredentials):
             computer_name=computer.computer_name,
             folder_password=computer.folder_password,
             manager_host=computer.manager_host,
-            files_checksum=json.loads(str(remote_files_checksum))
+            files_checksum=json.loads(str(remote_files_checksum)),
+            msi_version=computer.msi_version
             ), 200
 
     elif computer_name:

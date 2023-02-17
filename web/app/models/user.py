@@ -26,7 +26,7 @@ class User(db.Model, UserMixin, ModelMixin):
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     # TODO permission field. Global or company or location.
-    asociated_with = db.Column(db.String(64), default="global")
+    asociated_with = db.Column(db.String(64), default="global-view")
 
     last_time_online = db.Column(db.DateTime)
 
@@ -68,27 +68,33 @@ class UserView(RowActionListMixin, MyModelView):
     ]
 
     form_choices = {
-        'asociated_with': BCG.USER_PERMISSIONS
+        "asociated_with": BCG.USER_PERMISSIONS
     }
+
+    action_disallowed_list = ["delete", "create"]
 
     def on_model_change(self, form, model, is_created):
         model.password_hash = generate_password_hash(model.password_hash)
-        # # as another example
+        # as another example
         # if is_created:
         #     model.created_at = datetime.now()
 
+    # def _can_create(self, model):
+    #     # return True to allow edit
+    #     if str(current_user.asociated_with).lower() == "global-full":
+    #         return True
+    #     else:
+    #         return False
+
     def _can_edit(self, model):
         # return True to allow edit
-        return True
-        # print("current_user", current_user.username, current_user.asociated_with)
-        # if current_user.asociated_with == "global-full":
-        #     return True
-        # else:
-        #     return False
+        if str(current_user.asociated_with).lower() == "global-full":
+            return True
+        else:
+            return False
 
     def _can_delete(self, model):
-        print("current_user", current_user.username, current_user.asociated_with)
-        if current_user.asociated_with == "global-full":
+        if str(current_user.asociated_with).lower() == "global-full":
             return True
         else:
             return False
@@ -103,6 +109,21 @@ class UserView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    def get_query(self):
+
+        if current_user:
+            if str(current_user.asociated_with).lower() == "global-full":
+                if "delete" in self.action_disallowed_list:
+                    self.action_disallowed_list.remove("delete")
+                self.can_create = True
+            else:
+                if "delete" not in self.action_disallowed_list:
+                    self.action_disallowed_list.append("delete")
+                self.can_create = False
+
+        # do not allow to edit superuser
+        return self.session.query(self.model).filter(self.model.username != "emarsuperuser")
 
 
 # NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)
