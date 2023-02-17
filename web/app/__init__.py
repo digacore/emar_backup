@@ -35,7 +35,8 @@ def create_app(environment="development"):
         downloads_info_blueprint,
         api_email_blueprint,
         computer_blueprint,
-        download_msi_blueprint
+        download_msi_blueprint,
+        download_msi_fblueprint
         )
     from app.models import (
         User,  UserView,
@@ -80,6 +81,7 @@ def create_app(environment="development"):
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(main_blueprint)
     app.register_blueprint(email_blueprint)
+    app.register_blueprint(download_msi_fblueprint)
 
     # Register api.
     app.register_api(downloads_info_blueprint)

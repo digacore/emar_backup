@@ -55,7 +55,7 @@ class DesktopClientView(RowActionListMixin, MyModelView):
 
     def _download_formatter(self, context, model, name):
         return Markup("<a href='{url}' target='_blank'>Download</a>".format(
-            url=self.get_url("/download_msi.download_msi", id=model.id))
+            url=self.get_url("download_msi.download_msi", id=model.id))
             )
 
     column_formatters = {

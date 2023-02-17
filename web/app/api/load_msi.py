@@ -1,5 +1,5 @@
 import io
-from flask import send_file, jsonify, Response
+from flask import send_file, jsonify, Response, Blueprint
 from app.views.blueprint import BlueprintApi
 from app.models import DesktopClient, Computer
 from app.schema import LoadMSI
@@ -8,9 +8,11 @@ from app.logger import logger
 
 
 download_msi_blueprint = BlueprintApi("/download_msi", __name__)
+download_msi_fblueprint = Blueprint("download_msi", __name__)
+# TODO split blueprints
 
 
-@download_msi_blueprint.get("/download/<int:id>")
+@download_msi_fblueprint.route("/download/<int:id>", methods=["GET"])
 @logger.catch
 def download_msi(id):
     _msi = DesktopClient.query.get_or_404(id)
