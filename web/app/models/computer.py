@@ -173,8 +173,8 @@ class ComputerView(RowActionListMixin, MyModelView):
                 self.can_create = False
 
         if current_user:
-            user_permission = str(current_user.asociated_with).lower()
-            if user_permission == "global-full" or user_permission == "global-view":
+            user_permission: str = current_user.asociated_with
+            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
                 result_query = self.session.query(self.model)
             else:
                 result_query = self.session.query(self.model).filter(
