@@ -6,7 +6,7 @@ log_format = "{time} - {name} - {level} - {message}"
 home_log = Path.home() / "emar_server_logs.txt"
 
 logger.add(
-    Path.home(),
+    home_log,
     format=log_format,
     serialize=True,
     level="DEBUG",
