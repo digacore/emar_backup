@@ -33,9 +33,9 @@ class Alert(db.Model, ModelMixin):
 class AlertView(RowActionListMixin, MyModelView):
     # column_list = ["id", "name", "company_name", "created_at"]
     column_searchable_list = ["name", "from_email", "to_addresses"]
-    form_widget_args = {
-        "name": {"readonly": True},
-    }
+    # form_widget_args = {
+    #     "name": {"readonly": True},
+    # }
 
     action_disallowed_list = ["delete"]
 

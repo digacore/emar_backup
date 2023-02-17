@@ -26,7 +26,7 @@ class User(db.Model, UserMixin, ModelMixin):
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     # TODO permission field. Global or company or location.
-    asociated_with = db.Column(db.String(64), default="global-view")
+    asociated_with = db.Column(db.String(64))
 
     last_time_online = db.Column(db.DateTime)
 
