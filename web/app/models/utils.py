@@ -9,7 +9,6 @@ from app import db
 
 
 class ModelMixin(object):
-
     def save(self):
         # Save this model to the database.
         db.session.add(self)
@@ -22,9 +21,9 @@ class ModelMixin(object):
         return self
 
 
-class RowActionListMixin(object):
+class RowActionListMixin:
 
-    list_template = 'admin/list.html'
+    list_template = "admin/list.html"
 
     def allow_row_action(self, action, model):
         return True
@@ -54,25 +53,27 @@ class BlobUploadField(fields.StringField):
 
     def is_file_allowed(self, filename):
         """
-            Check if file extension is allowed.
+        Check if file extension is allowed.
 
-            :param filename:
-                File name to check
+        :param filename:
+            File name to check
         """
         if not self.allowed_extensions:
             return True
 
-        return ('.' in filename and
-                filename.rsplit('.', 1)[1].lower() in
-                map(lambda x: x.lower(), self.allowed_extensions))
+        return "." in filename and filename.rsplit(".", 1)[1].lower() in map(
+            lambda x: x.lower(), self.allowed_extensions
+        )
 
     def _is_uploaded_file(self, data):
-        return (data and isinstance(data, FileStorage) and data.filename)
+        return data and isinstance(data, FileStorage) and data.filename
 
     def pre_validate(self, form):
         super(BlobUploadField, self).pre_validate(form)
-        if self._is_uploaded_file(self.data) and not self.is_file_allowed(self.data.filename):
-            raise ValidationError(gettext('Invalid file extension'))
+        if self._is_uploaded_file(self.data) and not self.is_file_allowed(
+            self.data.filename
+        ):
+            raise ValidationError(gettext("Invalid file extension"))
 
     def process_formdata(self, valuelist):
         if valuelist:

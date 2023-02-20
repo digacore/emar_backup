@@ -21,6 +21,8 @@ login_manager = LoginManager()
 db = SQLAlchemy()
 migration = Migrate()
 mail = Mail()
+# admin = Admin(app, name=app.config["APP_NAME"], template_mode="bootstrap3")
+admin = Admin()
 
 
 def create_app(environment="development"):
@@ -36,36 +38,28 @@ def create_app(environment="development"):
         api_email_blueprint,
         computer_blueprint,
         download_msi_blueprint,
-        download_msi_fblueprint
-        )
+        download_msi_fblueprint,
+    )
     from app.models import (
-        User,  UserView,
+        User,
+        UserView,
         AnonymousUser,
-        Company, CompanyView,
-        Computer, ComputerView,
-        Location, LocationView,
-        Alert, AlertView,
-        DesktopClient, DesktopClientView,
-        ClientVersion, ClientVersionView,
+        Company,
+        CompanyView,
+        Computer,
+        ComputerView,
+        Location,
+        LocationView,
+        Alert,
+        AlertView,
+        DesktopClient,
+        DesktopClientView,
+        ClientVersion,
+        ClientVersionView,
     )
 
     # Instantiate app.
     app = OpenAPI(__name__)
-
-    # set optional bootswatch theme
-    app.config["FLASK_ADMIN_SWATCH"] = "cerulean"
-
-    admin = Admin(app, name="microblog", template_mode="bootstrap3")
-    # Add administrative views here
-
-    admin.add_link(MainIndexLink(name="Main Page"))
-    admin.add_view(UserView(User, db.session))
-    admin.add_view(CompanyView(Company, db.session))
-    admin.add_view(ComputerView(Computer, db.session))
-    admin.add_view(LocationView(Location, db.session))
-    admin.add_view(AlertView(Alert, db.session))
-    admin.add_view(DesktopClientView(DesktopClient, db.session))
-    admin.add_view(ClientVersionView(ClientVersion, db.session))
 
     # Set app config.
     env = os.environ.get("FLASK_ENV", environment)
@@ -98,15 +92,24 @@ def create_app(environment="development"):
     login_manager.login_message_category = "info"
     login_manager.anonymous_user = AnonymousUser
 
-    # Flask-Mail conf
-    app.config["MAIL_SERVER"] = os.environ.get("MAIL_SERVER")
-    app.config["MAIL_PORT"] = os.environ.get("MAIL_PORT")
-    app.config["MAIL_USERNAME"] = os.environ.get("MAIL_USERNAME")
-    app.config["MAIL_PASSWORD"] = os.environ.get("MAIL_PASSWORD")
-    app.config["MAIL_USE_TLS"] = False
-    app.config["MAIL_USE_SSL"] = True
-    app.config["MAIL_DEFAULT_SENDER"] = os.environ.get("SUPPORT_EMAIL")
+    # Flask-Mail
     mail.init_app(app)
+
+    # Flask-Admin
+    admin.init_app(
+        app,
+    )
+    admin.name = app.config["APP_NAME"]
+    admin.template_mode = "bootstrap3"
+    # Add administrative views here
+    admin.add_link(MainIndexLink(name="Main Page"))
+    admin.add_view(UserView(User, db.session))
+    admin.add_view(CompanyView(Company, db.session))
+    admin.add_view(ComputerView(Computer, db.session))
+    admin.add_view(LocationView(Location, db.session))
+    admin.add_view(AlertView(Alert, db.session))
+    admin.add_view(DesktopClientView(DesktopClient, db.session))
+    admin.add_view(ClientVersionView(ClientVersion, db.session))
 
     # Error handlers.
     @app.errorhandler(HTTPException)

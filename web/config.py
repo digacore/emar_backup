@@ -29,6 +29,18 @@ class BaseConfig(object):
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
     TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
 
+    # set optional bootswatch theme
+    FLASK_ADMIN_SWATCH = "cerulean"
+
+    # flask-mail config
+    MAIL_SERVER = os.environ.get("MAIL_SERVER")
+    MAIL_PORT = int(os.environ.get("MAIL_PORT", 465))
+    MAIL_USERNAME = os.environ.get("MAIL_USERNAME")
+    MAIL_PASSWORD = os.environ.get("MAIL_PASSWORD")
+    MAIL_USE_TLS = False
+    MAIL_USE_SSL = True
+    MAIL_DEFAULT_SENDER = os.environ.get("SUPPORT_EMAIL")
+
     USER_PERMISSIONS = [
         ("Global-full", "Global-full"),
         ("Global-view", "Global-view"),

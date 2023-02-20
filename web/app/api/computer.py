@@ -6,7 +6,7 @@ from app.schema import ComputerRegInfo
 from app.views.blueprint import BlueprintApi
 from app.logger import logger
 
-from config import BaseConfig as BSG
+from config import BaseConfig as CFG
 
 
 computer_blueprint = BlueprintApi("/computer", __name__)
@@ -20,13 +20,12 @@ def register_computer(body: ComputerRegInfo):
     # TODO use some token to secure api routes
 
     computer: Computer = Computer.query.filter_by(
-            identifier_key=body.identifier_key,
-            computer_name=body.computer_name
-        ).first()
+        identifier_key=body.identifier_key, computer_name=body.computer_name
+    ).first()
 
     computer_name: Computer = Computer.query.filter_by(
-            computer_name=body.computer_name
-        ).first()
+        computer_name=body.computer_name
+    ).first()
 
     if computer:
         message = "Wrong request data. Such computer already exists"
@@ -45,24 +44,27 @@ def register_computer(body: ComputerRegInfo):
         new_computer = Computer(
             identifier_key=new_identifier_key,
             computer_name=body.computer_name,
-            manager_host=BSG.APP_HOST_URL
+            manager_host=CFG.APP_HOST_URL,
         )
         new_computer.save()
         logger.info("Computer registered. ID = {}.", new_identifier_key)
-        return jsonify(
-            status="registered",
-            message="Computer registered",
-            host="",
-            company_name="",
-            location="",
-            sftp_username="",
-            sftp_password="",
-            sftp_folder_path="",
-            identifier_key=new_computer.identifier_key,
-            computer_name=new_computer.computer_name,
-            folder_password="",
-            manager_host=BSG.APP_HOST_URL
-            ), 200
+        return (
+            jsonify(
+                status="registered",
+                message="Computer registered",
+                host="",
+                company_name="",
+                location="",
+                sftp_username="",
+                sftp_password="",
+                sftp_folder_path="",
+                identifier_key=new_computer.identifier_key,
+                computer_name=new_computer.computer_name,
+                folder_password="",
+                manager_host=CFG.APP_HOST_URL,
+            ),
+            200,
+        )
 
     else:
         message = "Wrong request data."
@@ -77,10 +79,12 @@ def get_computers():
 
     computers: Computer = Computer.query.all()
 
-    response = {i.computer_name: {
-        "last_download_time": i.last_download_time, "last_time_online": i.last_time_online
-        } for i in computers}
+    response = {
+        i.computer_name: {
+            "last_download_time": i.last_download_time,
+            "last_time_online": i.last_time_online,
+        }
+        for i in computers
+    }
 
-    return jsonify(
-        response
-        ), 200
+    return jsonify(response), 200
