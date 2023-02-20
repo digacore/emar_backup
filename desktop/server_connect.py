@@ -73,15 +73,15 @@ if not ssh_exists:
 
 def self_update(storage_path, credentials):
     response = requests.post(f"{g_manager_host}/msi_download_to_local", json={
-        "name": "custompass", # TODO is this required?
+        "name": "custompass",  # TODO is this required?
         "version": credentials["msi_version"],
         "flag": credentials["msi_version"],
         "identifier_key": credentials["identifier_key"],
     })
-    print(response.headers["Content-disposition"].split("=")[1])
+    logger.debug("server_connect.py self_update() response.status_code: {}", response.status_code)
+    logger.info("MSI file loaded: {}", response.headers["Content-disposition"].split("=")[1])
     with open(Path(storage_path) / response.headers["Content-disposition"].split("=")[1], "wb") as msi:
         msi.write(response.content)
-    print(response.status_code)
 
 
 def register_computer():
@@ -150,13 +150,14 @@ def get_credentials():
         response = register_computer()
 
     if response.json()["message"] == "Supplying credentials" or response.json()["message"] == "Computer registered":
+        msi_version = response.json()["msi_version"] if "msi_version" in response.json() else "stable"
         with open(local_creds_json, "w") as f:
             json.dump(
                 {
                     "computer_name": response.json()["computer_name"],
                     "identifier_key": response.json()["identifier_key"],
                     "manager_host": response.json()["manager_host"],
-                    "msi_version": response.json()["msi_version"]
+                    "msi_version": msi_version
                 },
                 f
             )
@@ -290,7 +291,7 @@ def sftp_check_files_for_update_and_load(credentials):
                     logger.info("Files zipped.")
 
                     proc = Popen([Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name], stdout=PIPE)
-                    files = [l.split('Path = ')[1] for l in proc.stdout.read().decode().splitlines() if l.startswith('Path = ')]
+                    files = [f.split('Path = ')[1] for f in proc.stdout.read().decode().splitlines() if f.startswith('Path = ')]
                     dirs = [i for i in files if "\\" not in i]
                     dirs.sort(key=lambda x: x.split("timestamp")[1])
                     pprint.pprint(f"dirs:\n{dirs}")
@@ -310,7 +311,7 @@ def sftp_check_files_for_update_and_load(credentials):
                             subprs.communicate()
 
                     proc = Popen([Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name], stdout=PIPE)
-                    files = [l.split('Path = ')[1] for l in proc.stdout.read().decode().splitlines() if l.startswith('Path = ')]
+                    files = [f.split('Path = ')[1] for f in proc.stdout.read().decode().splitlines() if f.startswith('Path = ')]
                     ddirs = [i for i in files if "\\" not in i]
                     ddirs.sort(key=lambda x: x.split("timestamp")[1])
                     pprint.pprint(f"after delete dirs:\n{ddirs}")

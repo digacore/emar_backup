@@ -18,6 +18,7 @@ def offset_to_est(dt_now: datetime.datetime):
     est_norm_datetime = dt_now - datetime.timedelta(hours=5)
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
+
 storage_path = os.path.join(Path("C:\\"), Path("EmarDir"))
 
 log_format = "{time} - {name} - {level} - {message}"
@@ -53,6 +54,7 @@ else:
 creds_file = "creds.json"
 local_creds_json = os.path.join(storage_path, creds_file)
 
+
 @logger.catch
 def send_activity():
     creds_json = None
@@ -68,12 +70,13 @@ def send_activity():
         url = f"{manager_host}/last_time"
         last_time_online = offset_to_est(datetime.datetime.utcnow())
         requests.post(url, json={
-        "computer_name": creds_json["computer_name"],
-        "identifier_key": creds_json["identifier_key"],
-        "last_time_online": last_time_online
+            "computer_name": creds_json["computer_name"],
+            "identifier_key": creds_json["identifier_key"],
+            "last_time_online": last_time_online
         })
         logger.info("User last time online {} sent.", last_time_online)
     else:
         logger.error("Heartbeat app can not find creds.json file.")
+
 
 send_activity()
