@@ -21,7 +21,9 @@ class BaseConfig(object):
 
     APP_HOST_URL = os.environ.get("APP_HOST_URL")
 
-    SUPERPASS = os.environ.get("SUPERPASS")
+    SUPER_USER_PASS = os.environ.get("SUPERPASS")
+    SUPER_USER_NAME = os.environ.get("SUPER_USER_NAME", "emarsuperuser")
+    SUPER_USER_MAIL = os.environ.get("SUPERPASS", "emarsup@email.com")
 
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
 
