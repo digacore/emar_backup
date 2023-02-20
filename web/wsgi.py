@@ -62,15 +62,19 @@ def check_computer_send_mail(
 
         computer.alert_status = "red"
         computer.update()
-        logger.warning("Computer {} {} hours {} alert sent and alert status updated.",
+        logger.warning("Computer {} {} hours {} alert sent and alert status updated to red.",
                        computer.computer_name, alert_hours, alert_type)
     elif last_time < BCG.offset_to_est(datetime.now()) - alerts_time and computer.alert_status == "red":
         # TODO think of which color means one alert and which means repited alerts for 1 comp
         computer.alert_status = "yellow"
         computer.update()
+        logger.warning("Computer {} {} hours {} alert status updated to yellow due to repeated red condition.",
+                       computer.computer_name, alert_hours, alert_type)
     elif last_time > BCG.offset_to_est(datetime.now()) - alerts_time:
         computer.alert_status = "green"
         computer.update()
+        logger.info("Computer {} {} hours {} alert status updated to green.",
+                    computer.computer_name, alert_hours, alert_type)
     else:
         logger.info("Computer {} {} hours {} alert was already sent and updated.",
                     computer.computer_name, alert_hours, alert_type)
