@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import requests
 from app import create_app, db, models, forms
 from app.logger import logger
-from config import BaseConfig as BCG
+from config import BaseConfig as CFG
 
 
 app = create_app()
@@ -17,10 +17,8 @@ def get_context():
 
 
 def check_computer_send_mail(
-        last_time: datetime,
-        computer: models.Computer,
-        alert_type: str,
-        alert_obj):
+    last_time: datetime, computer: models.Computer, alert_type: str, alert_obj
+):
     """Send email to support if last time online/download > alert_hours.
     If not - make status green
     Dont send repeatedly.
@@ -32,38 +30,48 @@ def check_computer_send_mail(
         alert_obj (sqlalchemy.query): sqlalchemy.query object of some model
     """
 
-    alert_url = BCG.MAIL_ALERTS
+    alert_url = CFG.MAIL_ALERTS
 
     alert_hours = 12
-    alerts_time = timedelta(seconds=60*60*alert_hours)
+    alerts_time = timedelta(seconds=60 * 60 * alert_hours)
 
     if not last_time and not computer:
-        requests.post(alert_url, json={
+        requests.post(
+            alert_url,
+            json={
                 "alerted_target": "all",
                 "alert_status": alert_obj.alert_status,
                 "from_email": alert_obj.from_email,
                 "to_addresses": alert_obj.to_addresses,
                 "subject": alert_obj.subject,
                 "body": alert_obj.body,
-                "html_body": alert_obj.html_body
-                })
+                "html_body": alert_obj.html_body,
+            },
+        )
 
     elif last_time < datetime.now() - alerts_time and computer.alert_status != "red":
-        requests.post(alert_url, json={
-            "alerted_target": computer.computer_name,
-            "alert_status": alert_obj.alert_status,
-            # TODO Is from_email going to be configurable or take from BCG? Most likely yes
-            "from_email": alert_obj.from_email,
-            "to_addresses": alert_obj.to_addresses,
-            "subject": f"{computer.computer_name} {alert_obj.subject}",
-            "body": f"{computer.computer_name} {alert_obj.body}",
-            "html_body": alert_obj.html_body
-            })
+        requests.post(
+            alert_url,
+            json={
+                "alerted_target": computer.computer_name,
+                "alert_status": alert_obj.alert_status,
+                # TODO Is from_email going to be configurable or take from BCG? Most likely yes
+                "from_email": alert_obj.from_email,
+                "to_addresses": alert_obj.to_addresses,
+                "subject": f"{computer.computer_name} {alert_obj.subject}",
+                "body": f"{computer.computer_name} {alert_obj.body}",
+                "html_body": alert_obj.html_body,
+            },
+        )
 
         computer.alert_status = "red"
         computer.update()
-        logger.warning("Computer {} {} hours {} alert sent and alert status updated.",
-                       computer.computer_name, alert_hours, alert_type)
+        logger.warning(
+            "Computer {} {} hours {} alert sent and alert status updated.",
+            computer.computer_name,
+            alert_hours,
+            alert_type,
+        )
     elif last_time < datetime.now() - alerts_time and computer.alert_status == "red":
         # TODO think of which color means one alert and which means repited alerts for 1 comp
         computer.alert_status = "yellow"
@@ -72,8 +80,12 @@ def check_computer_send_mail(
         computer.alert_status = "green"
         computer.update()
     else:
-        logger.info("Computer {} {} hours {} alert was already sent and updated.",
-                    computer.computer_name, alert_hours, alert_type)
+        logger.info(
+            "Computer {} {} hours {} alert was already sent and updated.",
+            computer.computer_name,
+            alert_hours,
+            alert_type,
+        )
 
 
 def alert_status_red(computers: list[models.Computer]):
@@ -117,15 +129,20 @@ def check_and_alert():
 
         # check last_download_time
         if computer.last_download_time and "no_download_12h" in alert_names:
-            no_download_12h: models.Alert = models.Alert.query.filter_by(name="no_download_12h").first()
-            last_download_time = datetime.strptime(computer.last_download_time, time_format) if \
-                isinstance(computer.last_download_time, str) else computer.last_download_time
+            no_download_12h: models.Alert = models.Alert.query.filter_by(
+                name="no_download_12h"
+            ).first()
+            last_download_time = (
+                datetime.strptime(computer.last_download_time, time_format)
+                if isinstance(computer.last_download_time, str)
+                else computer.last_download_time
+            )
 
             check_computer_send_mail(
                 last_time=last_download_time,
                 computer=computer,
                 alert_type="download",
-                alert_obj=no_download_12h
+                alert_obj=no_download_12h,
             )
 
             if last_download_time < datetime.now() - timedelta(seconds=7200):
@@ -133,15 +150,20 @@ def check_and_alert():
 
         # check last_time_online
         if computer.last_time_online and "offline_12h" in alert_names:
-            offline_12h: models.Alert = models.Alert.query.filter_by(name="offline_12h").first()
-            last_time_online = datetime.strptime(computer.last_time_online, time_format) if \
-                isinstance(computer.last_time_online, str) else computer.last_time_online
+            offline_12h: models.Alert = models.Alert.query.filter_by(
+                name="offline_12h"
+            ).first()
+            last_time_online = (
+                datetime.strptime(computer.last_time_online, time_format)
+                if isinstance(computer.last_time_online, str)
+                else computer.last_time_online
+            )
 
             check_computer_send_mail(
                 last_time=last_download_time,
                 computer=computer,
                 alert_type="offline",
-                alert_obj=offline_12h
+                alert_obj=offline_12h,
             )
 
             if last_time_online < datetime.now() - timedelta(seconds=1800):
@@ -151,27 +173,29 @@ def check_and_alert():
         logger.warning("All computers offline 30 min alert.")
 
         if alert_status_red(computers) != len(computers):
-            all_offline: models.Alert = models.Alert.query.filter_by(name="all_offline").first() \
-                                            if "all_offline" in alert_names else None
-            check_computer_send_mail(
-                last_time=None,
-                computer=None,
-                alert_type="",
-                alert_obj=all_offline
+            all_offline: models.Alert = (
+                models.Alert.query.filter_by(name="all_offline").first()
+                if "all_offline" in alert_names
+                else None
             )
-            logger.warning("All computers offline 30 min alert sent and alert statuses updated.")
+            check_computer_send_mail(
+                last_time=None, computer=None, alert_type="", alert_obj=all_offline
+            )
+            logger.warning(
+                "All computers offline 30 min alert sent and alert statuses updated."
+            )
 
     if no_update_files_2h == len(computers):
         logger.warning("No new files over 2 h alert.")
 
         if alert_status_red(computers) != len(computers):
-            no_files_2h: models.Alert = models.Alert.query.filter_by(name="no_files_2h").first() \
-                                            if "no_files_2h" in alert_names else None
+            no_files_2h: models.Alert = (
+                models.Alert.query.filter_by(name="no_files_2h").first()
+                if "no_files_2h" in alert_names
+                else None
+            )
             check_computer_send_mail(
-                last_time=None,
-                computer=None,
-                alert_type="",
-                alert_obj=no_files_2h
+                last_time=None, computer=None, alert_type="", alert_obj=no_files_2h
             )
 
             logger.info("No new files over 2 h alert sent and alert statuses updated.")
@@ -180,11 +204,11 @@ def check_and_alert():
 @app.cli.command()
 def create_superuser():
     user = models.User(
-            username="emarsuperuser",
-            email="emarsup@email.com",
-            password=BCG.SUPERPASS,
-            asociated_with="global-full"
-        )
+        username="emarsuperuser",
+        email="emarsup@email.com",
+        password=CFG.SUPERPASS,
+        asociated_with="global-full",
+    )
     user.save()
     logger.info("Superuser created")
 

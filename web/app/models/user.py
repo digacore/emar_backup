@@ -12,7 +12,7 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
-from config import BaseConfig as BCG
+from config import BaseConfig as CFG
 
 
 class User(db.Model, UserMixin, ModelMixin):
@@ -41,7 +41,10 @@ class User(db.Model, UserMixin, ModelMixin):
     @classmethod
     def authenticate(cls, user_id, password):
         user = cls.query.filter(
-            db.or_(func.lower(cls.username) == func.lower(user_id), func.lower(cls.email) == func.lower(user_id))
+            db.or_(
+                func.lower(cls.username) == func.lower(user_id),
+                func.lower(cls.email) == func.lower(user_id),
+            )
         ).first()
         if user is not None and check_password_hash(user.password, password):
             return user
@@ -64,12 +67,10 @@ class UserView(RowActionListMixin, MyModelView):
         "asociated_with",
         "activated",
         "last_time_online",
-        "created_at"
+        "created_at",
     ]
 
-    form_choices = {
-        "asociated_with": BCG.USER_PERMISSIONS
-    }
+    form_choices = {"asociated_with": CFG.USER_PERMISSIONS}
 
     action_disallowed_list = ["delete", "create"]
 
@@ -123,7 +124,9 @@ class UserView(RowActionListMixin, MyModelView):
                 self.can_create = False
 
         # do not allow to edit superuser
-        return self.session.query(self.model).filter(self.model.username != "emarsuperuser")
+        return self.session.query(self.model).filter(
+            self.model.username != "emarsuperuser"
+        )
 
 
 # NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)

@@ -25,11 +25,14 @@ class BaseConfig(object):
 
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
 
-    MAIL_ALERTS = os.environ.get("MAIL_ALERTS")
+    MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
     TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
 
-    USER_PERMISSIONS = [('Global-full', 'Global-full'), ('Global-view', 'Global-view'),]
+    USER_PERMISSIONS = [
+        ("Global-full", "Global-full"),
+        ("Global-view", "Global-view"),
+    ]
 
     def offset_to_est(dt_now: datetime.datetime):
         """Offset to EST time
