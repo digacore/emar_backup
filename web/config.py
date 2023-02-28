@@ -11,7 +11,7 @@ base_dir = os.path.dirname(os.path.abspath(__file__))
 class BaseConfig(object):
     """Base configuration."""
 
-    APP_NAME = "Management Flask App"
+    APP_NAME = "eMAR Vault"
     DEBUG_TB_ENABLED = False
     SECRET_KEY = os.environ.get(
         "SECRET_KEY", "Ensure you set a secret key, this is important!"
@@ -48,16 +48,19 @@ class BaseConfig(object):
         ("Global-view", "Global-view"),
     ]
 
-    def offset_to_est(dt_now: datetime.datetime):
+    def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 
         Args:
             dt_now (datetime.datetime): datetime.datetime.now()
+            datetime_obj (bool): define what we need to return: str or datetime
 
         Returns:
             datetime.datetime: EST datetime
         """
         est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+        if datetime_obj:
+            return est_norm_datetime
         return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod

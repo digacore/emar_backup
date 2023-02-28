@@ -44,7 +44,6 @@ def last_time(body: LastTime):
         "Last download/online time update failed. computer_name: {}, \
                 Reason: {}",
         body.computer_name,
-        body.location_name,
         message,
     )
     return jsonify(status="fail", message=message), 400
@@ -68,7 +67,8 @@ def get_credentials(body: GetCredentials):
 
     if computer:
         print("computer: ", computer, computer.computer_name)
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())  # TODO couses error in tests but works ok on server
+        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
         logger.info("Updated identifier_key for computer {}.", computer.computer_name)
@@ -134,7 +134,8 @@ def download_status(body: DownloadStatus):
         logger.info(
             "Updating download status for computer: {}.", computer.computer_name
         )
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())  # TODO couses error in tests but works ok on server
+        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
         computer.download_status = body.download_status
         if body.last_downloaded:
             computer.last_downloaded = body.last_downloaded
@@ -170,7 +171,8 @@ def files_checksum(body: FilesChecksum):
 
     if computer:
         logger.info("Updating files checksum for computer: {}.", computer.computer_name)
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())  # TODO couses error in tests but works ok on server
+        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()
         logger.info(
