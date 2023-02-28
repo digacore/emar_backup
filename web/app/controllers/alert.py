@@ -41,7 +41,7 @@ def check_computer_send_mail(
             },
         )
 
-    elif last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time and computer.alert_status != "red":
+    elif last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time and computer.alert_status == "green":
         requests.post(
             alert_url,
             json={
