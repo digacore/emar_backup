@@ -23,6 +23,9 @@ class Location(db.Model, ModelMixin):
     name = db.Column(db.String(64), unique=True, nullable=False)
     company = relationship("Company", passive_deletes=True, backref="locations", lazy="select")
     company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"))
+    computers_per_location = db.Column(db.Integer)
+    computers_online = db.Column(db.Integer)
+    computers_offline = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     def __repr__(self):
@@ -31,8 +34,16 @@ class Location(db.Model, ModelMixin):
 
 class LocationView(RowActionListMixin, MyModelView):
     column_hide_backrefs = False
-    column_list = ["id", "name", "company_name", "created_at"]
+    column_list = [
+        "name",
+        "company_name",
+        "computers_per_location",
+        "computers_online",
+        "computers_offline",
+    ]
     column_searchable_list = ["name", "company_name"]
+    column_filters = column_list
+    column_sortable_list = column_list
     action_disallowed_list = ["delete"]
 
     def edit_form(self, obj):

@@ -18,6 +18,10 @@ class Company(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
+    locations_per_company = db.Column(db.Integer)
+    total_computers = db.Column(db.Integer)
+    computers_online = db.Column(db.Integer)
+    computers_offline = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     def __repr__(self):
@@ -25,6 +29,14 @@ class Company(db.Model, ModelMixin):
 
 
 class CompanyView(RowActionListMixin, MyModelView):
+
+    column_list = [
+        "name",
+        "locations_per_company",
+        "total_computers",
+        "computers_online",
+        "computers_offline",
+    ]
 
     action_disallowed_list = ["delete"]
 

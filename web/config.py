@@ -48,6 +48,11 @@ class BaseConfig(object):
         ("Global-view", "Global-view"),
     ]
 
+    DEFAULT_SFTP_HOST = os.environ.get("DEFAULT_SFTP_HOST", "")
+    DEFAULT_SFTP_USERNAME = os.environ.get("DEFAULT_SFTP_USERNAME", "Username")
+    DEFAULT_SFTP_PASSWORD = os.environ.get("DEFAULT_SFTP_PASSWORD", "password")
+    DEFAULT_FOLDER_PASSWORD = os.environ.get("DEFAULT_FOLDER_PASSWORD", "password")
+
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 

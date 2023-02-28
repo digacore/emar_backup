@@ -14,10 +14,12 @@ from flask_login import current_user
 
 from app import db
 from .location import Location
-# from .company import Company
+from .company import Company
 
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
+
+from config import BaseConfig as CFG
 
 
 # TODO add to all models secure form? csrf
@@ -54,12 +56,12 @@ class Computer(db.Model, ModelMixin):
     activated = db.Column(db.Boolean, default=False)  # TODO do we need this one? Could computer be deactivated?
     created_at = db.Column(db.DateTime, default=datetime.now)
 
-    sftp_host = db.Column(db.String(128))
-    sftp_username = db.Column(db.String(64))
-    sftp_password = db.Column(db.String(128))
+    sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
+    sftp_username = db.Column(db.String(64), default=CFG.DEFAULT_SFTP_USERNAME)
+    sftp_password = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_PASSWORD)
     sftp_folder_path = db.Column(db.String(256))
 
-    folder_password = db.Column(db.String(128))
+    folder_password = db.Column(db.String(128), default=CFG.DEFAULT_FOLDER_PASSWORD)
     download_status = db.Column(db.String(64))
     last_download_time = db.Column(db.DateTime)
     last_time_online = db.Column(db.DateTime)
@@ -88,8 +90,8 @@ class ComputerView(RowActionListMixin, MyModelView):
     column_list = [
         "computer_name",
         "alert_status",
-        "company",
-        "location",
+        "company_name",
+        "location_name",
         "download_status",
         "last_download_time",
         "last_time_online",
@@ -99,13 +101,12 @@ class ComputerView(RowActionListMixin, MyModelView):
         "sftp_folder_path",
         "type",
 
-        "identifier_key",
         "manager_host",
 
         "activated",
-        "created_at"
         ]
     column_searchable_list = ["company_name", "location_name"]
+    column_sortable_list = column_list
 
     # allows edit in list view, but has troubles with permissions
     # column_editable_list = [
@@ -241,6 +242,42 @@ class ComputerView(RowActionListMixin, MyModelView):
     #     query = self.session.query(Location).filter(Location.company == obj.company)
     #     form.location.query = query
     #     return form
+
+    def edit_form(self, obj):
+        form = super(ComputerView, self).edit_form(obj)
+
+        computers = [
+            {
+                "location": comp.location_name,
+                "company": comp.company_name
+            } for comp in Computer.query.all()
+        ]
+        computers = Computer.query.all()
+        computer_location = [loc.location_name for loc in computers]
+        computer_company = [co.company_name for co in computers]
+        computers_status = [stat.alert_status for stat in computers]
+        # update number of computers in locations
+        locations = Location.query.all()
+        location_company = [loc.company_name for loc in locations]
+        if locations:
+            for location in locations:
+                location.computers_per_location = computer_location.count(location.name)
+                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
+                computers_online = computers_status.count("green")
+                location.computers_online = computers_online
+                location.computers_offline = len(computers_status) - computers_online
+
+        # update number of locations and computers in companies
+        companies = Company.query.all()
+        if companies:
+            for company in companies:
+                company.total_computers = computer_company.count(company.name)
+                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
+                computers_online = computers_status.count("green")
+                company.computers_online = computers_online
+                company.computers_offline = len(computers_status) - computers_online
+                company.locations_per_company = location_company.count(company.name)
+        return form
 
     ###############################################
 
