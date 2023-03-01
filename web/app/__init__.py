@@ -22,7 +22,7 @@ db = SQLAlchemy()
 migration = Migrate()
 mail = Mail()
 # admin = Admin(app, name=app.config["APP_NAME"], template_mode="bootstrap3")
-admin = Admin()
+admin = Admin(template_mode="bootstrap4")
 
 
 def create_app(environment="development"):
@@ -92,6 +92,15 @@ def create_app(environment="development"):
     login_manager.login_message_category = "info"
     login_manager.anonymous_user = AnonymousUser
 
+    # set optional bootswatch theme
+    # NOTE flatly and litera - green one, good one
+    # NOTE pulse and simplex,  yeti - white-black, distinct
+    # NOTE sandstone - grey and green text, distinct
+    # NOTE spacelab - grey and blue text, distinct
+    # NOTE superhero - grey backround and white text, distinct
+    # NOTE united - cherry navbar and red and black text, distinct
+    app.config["FLASK_ADMIN_SWATCH"] = "sandstone"
+
     # Flask-Mail
     mail.init_app(app)
 
@@ -100,7 +109,6 @@ def create_app(environment="development"):
         app,
     )
     admin.name = app.config["APP_NAME"]
-    admin.template_mode = "bootstrap3"
     # Add administrative views here
     admin.add_link(MainIndexLink(name="Main Page"))
     admin.add_view(UserView(User, db.session))
