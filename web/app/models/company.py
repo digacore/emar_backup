@@ -38,7 +38,17 @@ class CompanyView(RowActionListMixin, MyModelView):
         "computers_offline",
     ]
 
+    column_searchable_list = column_list
+
     action_disallowed_list = ["delete"]
+
+    def search_placeholder(self):
+        """Defines what text will be displayed in Search input field
+
+        Returns:
+            str: text to display in search
+        """
+        return "Search by all text columns"
 
     def edit_form(self, obj):
         form = super(CompanyView, self).edit_form(obj)

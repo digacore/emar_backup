@@ -70,7 +70,17 @@ class UserView(RowActionListMixin, MyModelView):
         "created_at",
     ]
 
+    column_searchable_list = column_list
+
     form_choices = {"asociated_with": CFG.USER_PERMISSIONS}
+
+    def search_placeholder(self):
+        """Defines what text will be displayed in Search input field
+
+        Returns:
+            str: text to display in search
+        """
+        return "Search by all text columns"
 
     action_disallowed_list = ["delete", "create"]
 

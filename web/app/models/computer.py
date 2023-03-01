@@ -105,7 +105,8 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         "activated",
         ]
-    column_searchable_list = ["company_name", "location_name"]
+
+    column_searchable_list = column_list
     column_sortable_list = column_list
 
     # allows edit in list view, but has troubles with permissions
@@ -136,6 +137,14 @@ class ComputerView(RowActionListMixin, MyModelView):
     }
 
     action_disallowed_list = ["delete"]
+
+    def search_placeholder(self):
+        """Defines what text will be displayed in Search input field
+
+        Returns:
+            str: text to display in search
+        """
+        return "Search by all text columns"
 
     def _can_edit(self, model):
         # return True to allow edit
@@ -307,5 +316,4 @@ class ComputerView(RowActionListMixin, MyModelView):
     # }
     # column_list = ("company_name", "locations", "computers")
 
-
-########################################################
+    ########################################################
