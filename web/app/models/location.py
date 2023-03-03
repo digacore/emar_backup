@@ -33,6 +33,9 @@ class Location(db.Model, ModelMixin):
 
 
 class LocationView(RowActionListMixin, MyModelView):
+
+    list_template = 'import-admin-list-to-dashboard.html'
+
     column_hide_backrefs = False
     column_list = [
         "name",

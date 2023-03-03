@@ -34,6 +34,9 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
 
 
 class DesktopClientView(RowActionListMixin, MyModelView):
+
+    list_template = 'import-admin-list-to-dashboard.html'
+
     column_searchable_list = ["name", "version", "flag_name"]
     # form_widget_args = {
     #     "name": {"readonly": True},

@@ -81,6 +81,8 @@ class Computer(db.Model, ModelMixin):
 
 class ComputerView(RowActionListMixin, MyModelView):
 
+    list_template = 'import-computer-to-dashboard.html'
+
     # NOTE could be useful when define the permissions
     # can_create = False
     # can_edit = False

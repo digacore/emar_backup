@@ -30,6 +30,8 @@ class Company(db.Model, ModelMixin):
 
 class CompanyView(RowActionListMixin, MyModelView):
 
+    list_template = 'import-admin-list-to-dashboard.html'
+
     column_list = [
         "name",
         "locations_per_company",

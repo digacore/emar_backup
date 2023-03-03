@@ -60,6 +60,8 @@ class AnonymousUser(AnonymousUserMixin):
 # NOTE option 1: set hashed password through model (flask-admin field only)
 class UserView(RowActionListMixin, MyModelView):
 
+    list_template = 'import-admin-list-to-dashboard.html'
+
     column_list = [
         "id",
         "username",

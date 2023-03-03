@@ -1,0 +1,24 @@
+{% extends admin_base_template %}
+{% import 'admin/layout.html' as layout with context -%}
+
+{% block page_body %}
+  <div class="container{%if config.get('FLASK_ADMIN_FLUID_LAYOUT', False) %}-fluid{% endif %}">
+
+    <!-- Nav section removed -->
+
+    {% block messages %}
+    {{ layout.messages() }}
+    {% endblock %}
+
+    {# store the jinja2 context for form_rules rendering logic #}
+    {% set render_ctx = h.resolve_ctx() %}
+
+    {% block body %}{% endblock %}
+  </div>
+{% endblock %}
+<!-- using this way of inserting custom css, because path + swatch is not working -->
+
+{% block head_css %}
+{{ super() }}
+<link href="{{ url_for('static', filename='emar.min.css') }}" rel="stylesheet">
+{% endblock %}
