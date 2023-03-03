@@ -1,2 +1,4 @@
-{"manager_host": "http://localhost:5000",
-"backups_path": "C:\\backups"}
+{
+    "manager_host": "https://emarbackups.mytechwebsite.com/",
+    "backups_path": "C:\\backups"
+}
