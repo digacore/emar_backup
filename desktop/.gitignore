@@ -18,6 +18,7 @@ sftp_files_old/
 /msi/build/
 /build/
 /dist/
+/msi/dist/
 /server_connect.spec
 
 # archives
@@ -26,3 +27,4 @@ sftp_files_old/
 # executable
 *.exe
 *.dll
+/*.spec
