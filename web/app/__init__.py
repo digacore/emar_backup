@@ -99,7 +99,8 @@ def create_app(environment="development"):
     # NOTE spacelab - grey and blue text, distinct
     # NOTE superhero - grey backround and white text, distinct
     # NOTE united - cherry navbar and red and black text, distinct
-    app.config["FLASK_ADMIN_SWATCH"] = "sandstone"
+    # app.config["FLASK_ADMIN_SWATCH"] = "emar"
+    app.config["FLASK_ADMIN_FLUID_LAYOUT"] = True
 
     # Flask-Mail
     mail.init_app(app)

@@ -21,6 +21,9 @@ class ClientVersion(db.Model, ModelMixin):
 
 
 class ClientVersionView(RowActionListMixin, MyModelView):
+
+    list_template = 'import-admin-list-to-dashboard.html'
+
     form_choices = {
         "name": [("stable", "stable"), ("latest", "latest")]
     }
