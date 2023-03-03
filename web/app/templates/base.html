@@ -152,19 +152,27 @@
         </div>
       </li>
 
-      {% block sidebar %}
-      {% endblock %}
+      {% if current_user.is_authenticated %}
+        <!-- Nav Item - Email Alert -->
+        <li class="nav-item active">
+          <a class="nav-link" href="{{ url_for('email.email_alert') }}" style="color: lawngreen;">
+            <i class="fas fa-fw fa-pen"></i>
+            <span>Email Alert</span></a>
+        </li>
+      {% endif %}
 
       <!-- Divider -->
       <hr class="sidebar-divider d-none d-md-block">
 
       <!-- Sidebar Toggler (Sidebar) -->
-      {% if 'admin' in url_for(request.endpoint) %}
-      <script>
-        window.onload=function(){
-        $("#sidebarToggle").click();
-        }
-      </script>
+      {% if 'static' not in request.endpoint %}
+        {% if 'admin' in url_for(request.endpoint) %}
+        <script>
+          window.onload=function(){
+          $("#sidebarToggle").click();
+          }
+        </script>
+        {% endif %}
       {% endif %}
 
       <div class="text-center d-none d-md-inline">
@@ -224,21 +232,23 @@
             </li>
 
             <!-- Login/Logout -->
-            {% if current_user.is_authenticated and 'admin' in url_for(request.endpoint) %}
-            <!-- prettier-ignore -->
-            <a class="nav-item d-flex align-items-center nav-link" href="/admin/company/" >
-              Company
-            </a>
-            <a class="nav-item d-flex align-items-center nav-link" href="/admin/computer/" >
-              Computer
-            </a>
-            <a class="nav-item d-flex align-items-center nav-link" href="/admin/location/" >
-              Location
-            </a>
-            <a class="nav-item d-flex align-items-center nav-link" href="/admin/alert/" >
-              Alert
-            </a>
-            <!-- prettier-ignore -->
+            {% if 'static' not in request.endpoint %}
+              {% if current_user.is_authenticated and 'admin' in url_for(request.endpoint) %}
+              <!-- prettier-ignore -->
+              <a class="nav-item d-flex align-items-center nav-link" href="/admin/company/" >
+                Company
+              </a>
+              <a class="nav-item d-flex align-items-center nav-link" href="/admin/computer/" >
+                Computer
+              </a>
+              <a class="nav-item d-flex align-items-center nav-link" href="/admin/location/" >
+                Location
+              </a>
+              <a class="nav-item d-flex align-items-center nav-link" href="/admin/alert/" >
+                Alert
+              </a>
+              <!-- prettier-ignore -->
+              {% endif %}
             {% endif %}
 
             <!-- Nav Item - Alerts -->
