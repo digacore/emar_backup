@@ -39,6 +39,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "computers_online",
         "computers_offline",
     ]
+    column_filters = column_list
 
     column_searchable_list = column_list
 
