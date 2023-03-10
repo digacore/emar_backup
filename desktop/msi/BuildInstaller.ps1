@@ -17,17 +17,17 @@ try
 
     $wxsFileName = "Product.wxs"
     $wixobjFileName = "Product.wixobj"
-    $msiFileName = "Product.msi"
+    $msiFileName = "agent.msi"
 
     # compiling wxs file into wixobj
-    & "$candleToolPath" $wxsFileName -out $wixobjFileName
+    & "$candleToolPath" $wxsFileName -out obj\$wixobjFileName -arch x86 -ext wix\WixUtilExtension.dll
     if($LASTEXITCODE -ne 0)
     {
         throw "Compilation of $wxsFileName failed with exit code $LASTEXITCODE"
     }
 
     # linking wixobj into msi
-    & "$lightToolPath" $wixobjFileName -ext WixUtilExtension -out $msiFileName
+    & "$lightToolPath" obj\$wixobjFileName -ext WixUtilExtension -out bin\$msiFileName -pdbout bin\agent.wixpdb
     if($LASTEXITCODE -ne 0)
     {
         throw "Linking of $wixobjFileName failed with exit code $LASTEXITCODE"

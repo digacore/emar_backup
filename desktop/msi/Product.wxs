@@ -5,7 +5,7 @@
            Manufacturer="Simple2B"
            Name="CheckRemoteUpdate"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.0.0">
+           Version="1.0.1.0">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -75,12 +75,6 @@
         <File KeyPath="yes" Source="..\7z\7-zip.dll"></File>
       </Component>
 
-
-      <!-- <Component Id="cmp_RegistryEntry" Guid="*">
-        <RegistryKey Root='HKLM' Key='Software\[Manufacturer]\[ProductName]'>
-          <RegistryValue KeyPath='yes' Type='string' Name='My property' Value='[MY_PROPERTY]' />
-        </RegistryKey>
-      </Component> -->
     </ComponentGroup>
 
     <SetProperty Id="CA_AddScheduledTask"
@@ -102,6 +96,9 @@
     <Feature Id="SomeInstallFeature">
       <ComponentGroupRef Id="ProductComponentGroup" />
     </Feature>
+
+    <Icon Id="icon.ico" SourceFile="img\MainIcon.ico"/>
+    <Property Id="ARPPRODUCTICON" Value="icon.ico" />
 
   </Product>
 </Wix>

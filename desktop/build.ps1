@@ -1,4 +1,7 @@
-Remove-Item .\msi\dist -Recurse
+
+if(Test-Path '.\msi\dist') {
+    Remove-Item .\msi\dist -Recurse
+}
 
 pyinstaller --noconfirm --onefile --console `
 --distpath "msi/dist" `
