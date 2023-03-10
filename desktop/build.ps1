@@ -3,6 +3,8 @@ if(Test-Path '.\msi\dist') {
     Remove-Item .\msi\dist -Recurse
 }
 
+.\Inc-Version.ps1
+
 pyinstaller --noconfirm --onefile --console `
 --distpath "msi/dist" `
 --collect-all "paramiko" `
@@ -18,3 +20,5 @@ pyinstaller --noconfirm --onefile --console `
 heartbeat.py
 
 copy .\config.json .\msi\dist\
+
+.\msi\BuildInstaller.ps1

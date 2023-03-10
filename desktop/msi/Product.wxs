@@ -5,7 +5,7 @@
            Manufacturer="Simple2B"
            Name="CheckRemoteUpdate"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.2.59516">
+           Version="1.0.5.59526">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
