@@ -1,4 +1,5 @@
 {
+    "version": "1.0.1.0",
     "manager_host": "https://emarbackups.mytechwebsite.com/",
     "backups_path": "C:\\backups"
 }

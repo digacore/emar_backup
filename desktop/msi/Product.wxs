@@ -43,8 +43,8 @@
     </Directory>
 
     <ComponentGroup Directory="MY_INSTALL_LOCATION" Id="ProductComponentGroup">
-      <Component Id="cmp_FileToInstall_txt">
-        <File KeyPath="yes" Source="FileToInstall.txt"></File>
+      <Component Id="cmp_version_txt">
+        <File KeyPath="yes" Source="version.txt"></File>
       </Component>
       <Component Id="cmp_PostInstallActions_ps1">
         <File KeyPath="yes" Source="PostInstallActions.ps1"></File>
