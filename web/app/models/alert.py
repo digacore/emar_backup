@@ -7,8 +7,6 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
-from .user import UserView
-
 from app.logger import logger
 
 
@@ -29,10 +27,23 @@ class Alert(db.Model, ModelMixin):
     def __repr__(self):
         return self.name
 
+    def _cols(self):
+        return [
+            "name",
+            "from_email",
+            "to_addresses",
+            "subject",
+            "body",
+            "html_body",
+            "alert_status",
+        ]
+
 
 class AlertView(RowActionListMixin, MyModelView):
+    def __repr__(self):
+        return "AlertView"
 
-    list_template = 'import-admin-list-to-dashboard.html'
+    # list_template = 'import-admin-list-to-dashboard.html'
 
     # column_list = ["id", "name", "company_name", "created_at"]
     column_searchable_list = ["name", "from_email", "to_addresses"]
@@ -41,22 +52,6 @@ class AlertView(RowActionListMixin, MyModelView):
     # }
 
     action_disallowed_list = ["delete"]
-
-    def edit_form(self, obj):
-        form = super(AlertView, self).edit_form(obj)
-
-        query_res = self.session.query(Alert).all()
-
-        permissions = [i[0] for i in UserView.form_choices['asociated_with']]
-        for location in [i.name for i in query_res]:
-            if location in permissions:
-                break
-            logger.debug("alert.py edit_form() location {} added", location)
-            UserView.form_choices['asociated_with'].append((location, f"Location-{location}"))
-        logger.debug("alert.py edit_form() permissions updated {}", permissions)
-
-        form.name.query = query_res
-        return form
 
     def _can_edit(self, model):
         # return True to allow edit
@@ -89,7 +84,7 @@ class AlertView(RowActionListMixin, MyModelView):
         logger.debug(
             "alert.py get_query() current_user={}, asociated_with={}",
             current_user,
-            current_user.asociated_with
+            current_user.asociated_with,
         )
         if current_user:
             if str(current_user.asociated_with).lower() == "global-full":
@@ -101,7 +96,11 @@ class AlertView(RowActionListMixin, MyModelView):
                 if "delete" not in self.action_disallowed_list:
                     self.action_disallowed_list.append("delete")
                 self.can_create = False
-                result_query = self.session.query(self.model).filter(self.model.name == "None")
+                result_query = self.session.query(self.model).filter(
+                    self.model.name == "None"
+                )
         else:
-            result_query = self.session.query(self.model).filter(self.model.name == "None")
+            result_query = self.session.query(self.model).filter(
+                self.model.name == "None"
+            )
         return result_query

@@ -1,5 +1,54 @@
 {% extends 'admin/model/list.html' %}
+{% import 'model_layout.html' as single_layout with context %}
 
+{% block model_menu_bar %}
+<ul class="nav nav-tabs">
+    <li class="nav-item">
+        <a href="javascript:void(0)" class="nav-link active">{{ _gettext('List') }}{% if count %} ({{ count }}){% endif %}</a>
+    </li>
+
+    {% if admin_view.can_create %}
+    <li class="nav-item">
+        {%- if admin_view.create_modal -%}
+        {{ lib.add_modal_button(url=get_url('.create_view', url=return_url, modal=True), btn_class='nav-link', title=_gettext('Create New Record'), content=_gettext('Create')) }}
+        {% else %}
+        <a href="{{ get_url('.create_view', url=return_url) }}" title="{{ _gettext('Create New Record') }}" class="nav-link">{{ _gettext('Create') }}</a>
+        {%- endif -%}
+    </li>
+    {% endif %}
+
+    {% if admin_view.can_export %}
+        {{ model_layout.export_options() }}
+    {% endif %}
+
+    {% block model_menu_bar_before_filters %}{% endblock %}
+
+    {% if filters %}
+    <li class="nav-item dropdown">
+        {{ model_layout.filter_options() }}
+    </li>
+    {% endif %}
+
+    {% if can_set_page_size %}
+    <li class="nav-item dropdown">
+        {{ model_layout.page_size_form(page_size_url) }}
+    </li>
+    {% endif %}
+
+    {% if actions %}
+    <li class="nav-item dropdown">
+        {{ actionlib.dropdown(actions) }}
+    </li>
+    {% endif %}
+
+    {% if search_supported %}
+    <li class="nav-item ml-2">
+        {{ single_layout.single_search_form() }}
+    </li>
+    {% endif %}
+    {% block model_menu_bar_after_filters %}{% endblock %}
+</ul>
+{% endblock %}
 
 {% block model_list_table %}
 <div class="table-responsive">
@@ -26,16 +75,34 @@
                                 {{ name }}
                                 {% if sort_desc %}
                                     <span class="fa fa-chevron-up glyphicon glyphicon-chevron-up"></span>
-                                    <input type="checkbox" onchange="window.location.href='{{ sort_url(column, True) }}'" checked />
+                                    <div class="form-inline">
+                                        <input class="form-control {{ input_class }}" size="30" type="text" name="search" value=""
+                                                placeholder="{{ _gettext('%(placeholder)s', placeholder=search_placeholder) }}">
+                                    </div>
                                 {% else %}
                                     <span class="fa fa-chevron-down glyphicon glyphicon-chevron-down"></span>
-                                    <input type="checkbox" onchange="window.location.href='{{ sort_url(column, True) }}'" checked />
+                                    <div class="form-inline">
+                                        <input class="form-control {{ input_class }}" size="30" type="text" name="search" value=""
+                                                placeholder="{{ _gettext('%(placeholder)s', placeholder=search_placeholder) }}">
+                                    </div>
                                 {% endif %}
                             </a>
                             
                         {% else %}
-                            <a href= title="{{ _gettext('Sort by %(name)s', name=name) }}">{{ name }}</a>
-                            <input type="checkbox" onchange="window.location.href='{{ sort_url(column, True) }}'" />
+                        <a href="{{ sort_url(column, True) }}" title="{{ _gettext('Sort by %(name)s', name=name) }}">{{ name }}</a>
+
+                        <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"  
+                            role="search">
+                            <div class="form-inline">
+                                <input class="single-search-cls" size="20" type="text" name="search" value=""
+                                placeholder="Search" id="single-search-{{c}}"
+                                style="
+                                all: initial;
+                                border: none;
+                                border-bottom: 2px solid;
+                                ">
+                            </div>
+                        </form>
                         {% endif %}
                     {% else %}
                         {{ name }}
@@ -111,4 +178,21 @@
 {{ lib.simple_pager(page, data|length == page_size, pager_url) }}
 {% endif %}
 {% endblock %}
+{% endblock %}
+
+{% block tail %}
+    {{ super() }}
+
+    {% if filter_groups %}
+      <div id="filter-groups-data" style="display:none;">{{ filter_groups|tojson|safe }}</div>
+      <div id="active-filters-data" style="display:none;">{{ active_filters|tojson|safe }}</div>
+    {% endif %}
+    {{ lib.form_js() }}
+    <script src="{{ admin_static.url(filename='admin/js/bs4_modal.js', v='1.0.0') }}"></script>
+    <script src="{{ admin_static.url(filename='admin/js/bs4_filters.js', v='1.0.0') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js')}}"></script>
+
+    {{ actionlib.script(_gettext('Please select at least one record.'),
+                        actions,
+                        actions_confirmation) }}
 {% endblock %}

@@ -23,9 +23,7 @@ def download_msi(id):
 
     if msi:
         return send_file(
-            io.BytesIO(msi.blob),
-            download_name=msi.filename,
-            mimetype=msi.mimetype
+            io.BytesIO(msi.blob), download_name=msi.filename, mimetype=msi.mimetype
         )
     else:
         return jsonify(status="fail", message="Wrong request data."), 400
@@ -34,25 +32,45 @@ def download_msi(id):
 @download_msi_blueprint.post("/msi_download_to_local")
 @logger.catch
 def msi_download_to_local(body: LoadMSI):
-    computer: Computer = Computer.query.filter_by(identifier_key=body.identifier_key).first() if \
-                         body.identifier_key else None
+    computer: Computer = (
+        Computer.query.filter_by(identifier_key=body.identifier_key).first()
+        if body.identifier_key
+        else None
+    )
 
     if computer:
         if body.flag == "stable" or body.flag == "latest":
-            msi: DesktopClient = DesktopClient.query.filter_by(flag_name=body.flag).first()
+
+            msi: DesktopClient = DesktopClient.query.filter_by(
+                flag_name=body.flag
+            ).first()
+
+            msi = (
+                msi
+                if msi
+                else DesktopClient.query.filter_by(version=body.version).first()
+            )
         else:
-            msi: DesktopClient = DesktopClient.query.filter_by(version=body.version).first()
+            msi: DesktopClient = DesktopClient.query.filter_by(
+                version=body.version
+            ).first()
 
         if msi:
-            logger.info("Giving file {} to computer {}.", msi.name, computer.computer_name)
+            logger.info(
+                "Giving file {} to computer {}.", msi.name, computer.computer_name
+            )
             return Response(
                 msi.blob,
                 mimetype=msi.mimetype,
-                headers={"Content-disposition": f"attachment; filename={msi.filename}"}
+                headers={"Content-disposition": f"attachment; filename={msi.filename}"},
             )
         else:
             message = "Wrong request data. Wrong or empty version."
-            logger.info("MSI download failed. computer_name: {}. Reason: {}", computer.computer_name, message)
+            logger.info(
+                "MSI download failed. computer_name: {}. Reason: {}",
+                computer.computer_name,
+                message,
+            )
             return jsonify(status="fail", message=message), 400
 
     message = "Wrong request data. Computer not found."

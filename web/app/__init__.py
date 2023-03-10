@@ -21,7 +21,6 @@ login_manager = LoginManager()
 db = SQLAlchemy()
 migration = Migrate()
 mail = Mail()
-# admin = Admin(app, name=app.config["APP_NAME"], template_mode="bootstrap3")
 admin = Admin(template_mode="bootstrap4")
 
 
@@ -39,6 +38,7 @@ def create_app(environment="development"):
         computer_blueprint,
         download_msi_blueprint,
         download_msi_fblueprint,
+        search_column_blueprint,
     )
     from app.models import (
         User,
@@ -82,6 +82,7 @@ def create_app(environment="development"):
     app.register_api(api_email_blueprint)
     app.register_api(computer_blueprint)
     app.register_api(download_msi_blueprint)
+    app.register_api(search_column_blueprint)
 
     # Set up flask login.
     @login_manager.user_loader
