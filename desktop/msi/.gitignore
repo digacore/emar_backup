@@ -4,3 +4,6 @@
 /*.wixpdb
 /*.msi
 /*.log
+/.vs/
+/bin/
+/obj/
