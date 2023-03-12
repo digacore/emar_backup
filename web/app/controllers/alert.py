@@ -41,7 +41,10 @@ def check_computer_send_mail(
             },
         )
 
-    elif last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time and computer.alert_status == "green":
+    elif (
+        last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time
+        and computer.alert_status == "green"
+    ):
         requests.post(
             alert_url,
             json={
@@ -56,23 +59,26 @@ def check_computer_send_mail(
             },
         )
 
-        computer.alert_status = "red"
-        computer.update()
-        logger.warning(
-            "Computer {} {} hours {} alert sent and alert status updated to red.",
-            computer.computer_name,
-            alert_hours,
-            alert_type
-        )
-    elif last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time and computer.alert_status == "red":
-        # TODO think of which color means one alert and which means repited alerts for 1 comp
         computer.alert_status = "yellow"
         computer.update()
         logger.warning(
-            "Computer {} {} hours {} alert status updated to yellow due to repeated red condition.",
+            "Computer {} {} hours {} alert sent and alert status updated to yellow.",
             computer.computer_name,
             alert_hours,
-            alert_type
+            alert_type,
+        )
+    elif (
+        last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time
+        and computer.alert_status == "yellow"
+    ):
+        # TODO think of which color means one alert and which means repited alerts for 1 comp
+        computer.alert_status = "red"
+        computer.update()
+        logger.warning(
+            "Computer {} {} hours {} alert status updated to red due to repeated yellow condition.",
+            computer.computer_name,
+            alert_hours,
+            alert_type,
         )
     elif last_time > CFG.offset_to_est(datetime.now(), True) - alerts_time:
         computer.alert_status = "green"
@@ -81,7 +87,7 @@ def check_computer_send_mail(
             "Computer {} {} hours {} alert status updated to green.",
             computer.computer_name,
             alert_hours,
-            alert_type
+            alert_type,
         )
     else:
         logger.info(
@@ -148,7 +154,9 @@ def check_and_alert():
                 alert_obj=no_download_12h,
             )
 
-            if last_download_time < CFG.offset_to_est(datetime.now(), True) - timedelta(seconds=7200):
+            if last_download_time < CFG.offset_to_est(datetime.now(), True) - timedelta(
+                seconds=7200
+            ):
                 no_update_files_2h += 1
 
         # check last_time_online
@@ -167,7 +175,9 @@ def check_and_alert():
                 alert_obj=offline_12h,
             )
 
-            if last_time_online < CFG.offset_to_est(datetime.now(), True) - timedelta(seconds=1800):
+            if last_time_online < CFG.offset_to_est(datetime.now(), True) - timedelta(
+                seconds=1800
+            ):
                 off_30_min_computers += 1
 
     if off_30_min_computers == len(computers):
