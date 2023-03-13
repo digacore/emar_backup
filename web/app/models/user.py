@@ -12,7 +12,10 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
-from config import BaseConfig as CFG
+from .company import Company
+from .location import Location
+
+from logger import logger
 
 
 class User(db.Model, UserMixin, ModelMixin):
@@ -53,6 +56,27 @@ class User(db.Model, UserMixin, ModelMixin):
         return f"<User: {self.username}>"
 
 
+def asociated_with_query_factory():
+    USER_PERMISSIONS = [
+        ("Global-full", "Global-full"),
+        ("Global-view", "Global-view"),
+    ]
+
+    try:
+        locations = db.session.query(Location).all()
+        companies = db.session.query(Company).all()
+
+        for location in locations:
+            USER_PERMISSIONS.append((location, f"Location-{location}"))
+
+        for company in companies:
+            USER_PERMISSIONS.append((company, f"Company-{company}"))
+    except RuntimeError as err:
+        logger.debug("Encountered error most likely during launch. Message {}", err)
+
+    return USER_PERMISSIONS
+
+
 class AnonymousUser(AnonymousUserMixin):
     pass
 
@@ -75,8 +99,9 @@ class UserView(RowActionListMixin, MyModelView):
     ]
 
     column_searchable_list = column_list
+    column_filters = column_list
 
-    form_choices = {"asociated_with": CFG.USER_PERMISSIONS}
+    form_choices = {"asociated_with": asociated_with_query_factory()}
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field

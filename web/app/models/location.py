@@ -10,8 +10,6 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
-from .user import UserView
-
 from app.logger import logger
 
 
@@ -34,6 +32,15 @@ class Location(db.Model, ModelMixin):
 
     def __repr__(self):
         return self.name
+
+    def _cols(self):
+        return [
+            "name",
+            "company_name",
+            "computers_per_location",
+            "computers_online",
+            "computers_offline",
+        ]
 
 
 class LocationView(RowActionListMixin, MyModelView):

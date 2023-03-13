@@ -67,6 +67,7 @@ class DesktopClientView(RowActionListMixin, MyModelView):
         )
     }
 
+    column_filters = ("name", "version",  "flag_name", "description", "filename",)
     action_disallowed_list = ["delete"]
 
     def _download_formatter(self, context, model, name):

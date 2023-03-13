@@ -1,13 +1,11 @@
 from datetime import datetime
 
-from app import db
-from app.models.utils import ModelMixin, RowActionListMixin
-from app.utils import MyModelView
-
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
-from .user import UserView
+from app import db
+from app.models.utils import ModelMixin, RowActionListMixin
+from app.utils import MyModelView
 
 from app.logger import logger
 
@@ -27,6 +25,15 @@ class Company(db.Model, ModelMixin):
     def __repr__(self):
         return self.name
 
+    def _cols(self):
+        return [
+            "name",
+            "locations_per_company",
+            "total_computers",
+            "computers_online",
+            "computers_offline",
+        ]
+
 
 class CompanyView(RowActionListMixin, MyModelView):
     def __repr__(self):
@@ -41,6 +48,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "computers_online",
         "computers_offline",
     ]
+    column_filters = column_list
 
     column_searchable_list = column_list
 
