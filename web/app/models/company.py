@@ -36,8 +36,10 @@ class Company(db.Model, ModelMixin):
 
 
 class CompanyView(RowActionListMixin, MyModelView):
+    def __repr__(self):
+        return "CompanyView"
 
-    list_template = 'import-admin-list-to-dashboard.html'
+    list_template = "import-admin-list-to-dashboard.html"
 
     column_list = [
         "name",
@@ -59,6 +61,24 @@ class CompanyView(RowActionListMixin, MyModelView):
             str: text to display in search
         """
         return "Search by all text columns"
+
+    def edit_form(self, obj):
+        form = super(CompanyView, self).edit_form(obj)
+
+        query_res = self.session.query(Company).all()
+
+        permissions = [i[0] for i in UserView.form_choices["asociated_with"]]
+        for company in [i.name for i in query_res]:
+            if company in permissions:
+                break
+            print(f"{company} added")
+            UserView.form_choices["asociated_with"].append(
+                (company, f"Company-{company}")
+            )
+        print(f"permissions updated {permissions}")
+
+        form.name.query = query_res
+        return form
 
     def _can_edit(self, model):
         # return True to allow edit
@@ -99,14 +119,21 @@ class CompanyView(RowActionListMixin, MyModelView):
         logger.debug(
             "company.py get_query() current_user={}, asociated_with={}",
             current_user,
-            current_user.asociated_with
+            current_user.asociated_with,
         )
         if current_user:
             user_permission: str = current_user.asociated_with
-            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
+            if (
+                user_permission.lower() == "global-full"
+                or user_permission.lower() == "global-view"
+            ):
                 result_query = self.session.query(self.model)
             else:
-                result_query = self.session.query(self.model).filter(self.model.name == user_permission)
+                result_query = self.session.query(self.model).filter(
+                    self.model.name == user_permission
+                )
         else:
-            result_query = self.session.query(self.model).filter(self.model.computer_name == "None")
+            result_query = self.session.query(self.model).filter(
+                self.model.computer_name == "None"
+            )
         return result_query

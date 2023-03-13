@@ -48,6 +48,8 @@ class BaseConfig(object):
         ("Global-view", "Global-view"),
     ]
 
+    CLIENT_VERSIONS = [("stable", "stable"), ("latest", "latest")]
+
     DEFAULT_SFTP_HOST = os.environ.get("DEFAULT_SFTP_HOST", "")
     DEFAULT_SFTP_USERNAME = os.environ.get("DEFAULT_SFTP_USERNAME", "Username")
     DEFAULT_SFTP_PASSWORD = os.environ.get("DEFAULT_SFTP_PASSWORD", "password")

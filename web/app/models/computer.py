@@ -1,21 +1,28 @@
 from datetime import datetime
 
 # import psycopg2
+# from flask import request, url_for
 
 from sqlalchemy import JSON, or_
 from sqlalchemy.orm import relationship
+from flask_admin.contrib.sqla import form, filters as sqla_filters, tools
 
 # from flask_login import current_user
 # from flask_admin.contrib.sqla.fields import Select2Widget, QuerySelectField
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
+
 # from flask_admin.model.form import InlineFormAdmin
 from flask_admin.model.template import EditRowAction, DeleteRowAction
+
 from flask_login import current_user
 
 from app import db
 from .location import Location
 from .company import Company
 
+# from .desktop_client import DesktopClient
+
+# from app.forms import SearchForm
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
@@ -48,12 +55,18 @@ class Computer(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
 
-    location = relationship("Location", passive_deletes=True, backref="computers", lazy="select")
-    location_name = db.Column(db.String, db.ForeignKey("locations.name", ondelete="CASCADE"))
+    location = relationship(
+        "Location", passive_deletes=True, backref="computers", lazy="select"
+    )
+    location_name = db.Column(
+        db.String, db.ForeignKey("locations.name", ondelete="CASCADE")
+    )
 
     type = db.Column(db.String(128))
     alert_status = db.Column(db.String(128))
-    activated = db.Column(db.Boolean, default=False)  # TODO do we need this one? Could computer be deactivated?
+    activated = db.Column(
+        db.Boolean, default=False
+    )  # TODO do we need this one? Could computer be deactivated?
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
@@ -68,8 +81,12 @@ class Computer(db.Model, ModelMixin):
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
     msi_version = db.Column(db.String(64))
 
-    company = relationship("Company", passive_deletes=True, backref="computers", lazy="select")
-    company_name = db.Column(db.String, db.ForeignKey("companies.name", ondelete="CASCADE"))
+    company = relationship(
+        "Company", passive_deletes=True, backref="computers", lazy="select"
+    )
+    company_name = db.Column(
+        db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
+    )
 
     manager_host = db.Column(db.String(256))
     last_downloaded = db.Column(db.String(256))
@@ -78,10 +95,30 @@ class Computer(db.Model, ModelMixin):
     def __repr__(self):
         return self.computer_name
 
+    def _cols(self):
+        return [
+            "computer_name",
+            "alert_status",
+            "company_name",
+            "location_name",
+            "download_status",
+            "last_download_time",
+            "last_time_online",
+            "msi_version",
+            "sftp_host",
+            "sftp_username",
+            "sftp_folder_path",
+            "type",
+            "manager_host",
+            "activated",
+        ]
+
 
 class ComputerView(RowActionListMixin, MyModelView):
+    def __repr__(self):
+        return "ComputerView"
 
-    list_template = 'import-computer-to-dashboard.html'
+    list_template = "import-computer-to-dashboard.html"
 
     # NOTE could be useful when define the permissions
     # can_create = False
@@ -102,11 +139,9 @@ class ComputerView(RowActionListMixin, MyModelView):
         "sftp_username",
         "sftp_folder_path",
         "type",
-
         "manager_host",
-
         "activated",
-        ]
+    ]
 
     column_searchable_list = column_list
     column_sortable_list = column_list
@@ -135,9 +170,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         # "files_checksum": {"readonly": True},
     }
 
-    form_choices = {
-        "msi_version": [("stable", "stable"), ("latest", "latest")]
-    }
+    form_choices = {"msi_version": CFG.CLIENT_VERSIONS}
 
     action_disallowed_list = ["delete"]
 
@@ -175,6 +208,9 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
+
+        self.form_choices = CFG.CLIENT_VERSIONS
+
         if current_user:
             if str(current_user.asociated_with).lower() == "global-full":
                 if "delete" in self.action_disallowed_list:
@@ -187,17 +223,22 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         if current_user:
             user_permission: str = current_user.asociated_with
-            if user_permission.lower() == "global-full" or user_permission.lower() == "global-view":
+            if (
+                user_permission.lower() == "global-full"
+                or user_permission.lower() == "global-view"
+            ):
                 result_query = self.session.query(self.model)
             else:
                 result_query = self.session.query(self.model).filter(
                     or_(
                         self.model.location_name == user_permission,
-                        self.model.company_name == user_permission
+                        self.model.company_name == user_permission,
                     )
                 )
         else:
-            result_query = self.session.query(self.model).filter(self.model.computer_name == "None")
+            result_query = self.session.query(self.model).filter(
+                self.model.computer_name == "None"
+            )
         return result_query
 
     ###################################################
@@ -259,10 +300,8 @@ class ComputerView(RowActionListMixin, MyModelView):
         form = super(ComputerView, self).edit_form(obj)
 
         computers = [
-            {
-                "location": comp.location_name,
-                "company": comp.company_name
-            } for comp in Computer.query.all()
+            {"location": comp.location_name, "company": comp.company_name}
+            for comp in Computer.query.all()
         ]
         computers = Computer.query.all()
         computer_location = [loc.location_name for loc in computers]

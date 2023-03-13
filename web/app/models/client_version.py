@@ -21,12 +21,12 @@ class ClientVersion(db.Model, ModelMixin):
 
 
 class ClientVersionView(RowActionListMixin, MyModelView):
+    def __repr__(self):
+        return "ClientVersionView"
 
-    list_template = 'import-admin-list-to-dashboard.html'
+    list_template = "import-admin-list-to-dashboard.html"
 
-    form_choices = {
-        "name": [("stable", "stable"), ("latest", "latest")]
-    }
+    form_choices = {"name": [("stable", "stable"), ("latest", "latest")]}
 
     action_disallowed_list = ["delete"]
 
@@ -65,7 +65,11 @@ class ClientVersionView(RowActionListMixin, MyModelView):
                 if "delete" not in self.action_disallowed_list:
                     self.action_disallowed_list.append("delete")
                 self.can_create = False
-                result_query = self.session.query(self.model).filter(self.model.name == "None")
+                result_query = self.session.query(self.model).filter(
+                    self.model.name == "None"
+                )
         else:
-            result_query = self.session.query(self.model).filter(self.model.name == "None")
+            result_query = self.session.query(self.model).filter(
+                self.model.name == "None"
+            )
         return result_query
