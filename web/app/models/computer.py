@@ -110,6 +110,7 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     column_searchable_list = column_list
     column_sortable_list = column_list
+    column_filters = column_list
 
     # allows edit in list view, but has troubles with permissions
     # column_editable_list = [

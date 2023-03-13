@@ -73,6 +73,7 @@ class UserView(RowActionListMixin, MyModelView):
     ]
 
     column_searchable_list = column_list
+    column_filters = column_list
 
     form_choices = {"asociated_with": CFG.USER_PERMISSIONS}
 
