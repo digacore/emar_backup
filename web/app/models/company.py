@@ -1,13 +1,11 @@
 from datetime import datetime
 
-from app import db
-from app.models.utils import ModelMixin, RowActionListMixin
-from app.utils import MyModelView
-
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
-from .user import UserView
+from app import db
+from app.models.utils import ModelMixin, RowActionListMixin
+from app.utils import MyModelView
 
 from app.logger import logger
 
@@ -26,6 +24,15 @@ class Company(db.Model, ModelMixin):
 
     def __repr__(self):
         return self.name
+
+    def _cols(self):
+        return [
+            "name",
+            "locations_per_company",
+            "total_computers",
+            "computers_online",
+            "computers_offline",
+        ]
 
 
 class CompanyView(RowActionListMixin, MyModelView):
@@ -52,22 +59,6 @@ class CompanyView(RowActionListMixin, MyModelView):
             str: text to display in search
         """
         return "Search by all text columns"
-
-    def edit_form(self, obj):
-        form = super(CompanyView, self).edit_form(obj)
-
-        query_res = self.session.query(Company).all()
-
-        permissions = [i[0] for i in UserView.form_choices["asociated_with"]]
-        for company in [i.name for i in query_res]:
-            if company in permissions:
-                break
-            print(f"{company} added")
-            UserView.form_choices["asociated_with"].append((company, f"Company-{company}"))
-        print(f"permissions updated {permissions}")
-
-        form.name.query = query_res
-        return form
 
     def _can_edit(self, model):
         # return True to allow edit
