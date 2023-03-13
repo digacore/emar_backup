@@ -75,21 +75,14 @@
                                 {{ name }}
                                 {% if sort_desc %}
                                     <span class="fa fa-chevron-up glyphicon glyphicon-chevron-up"></span>
-                                    <div class="form-inline">
-                                        <input class="form-control {{ input_class }}" size="30" type="text" name="search" value=""
-                                                placeholder="{{ _gettext('%(placeholder)s', placeholder=search_placeholder) }}">
-                                    </div>
                                 {% else %}
                                     <span class="fa fa-chevron-down glyphicon glyphicon-chevron-down"></span>
-                                    <div class="form-inline">
-                                        <input class="form-control {{ input_class }}" size="30" type="text" name="search" value=""
-                                                placeholder="{{ _gettext('%(placeholder)s', placeholder=search_placeholder) }}">
-                                    </div>
                                 {% endif %}
                             </a>
                             
                         {% else %}
                         <a href="{{ sort_url(column, True) }}" title="{{ _gettext('Sort by %(name)s', name=name) }}">{{ name }}</a>
+                        {% endif %}
 
                         <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"  
                             role="search">
@@ -103,7 +96,7 @@
                                 ">
                             </div>
                         </form>
-                        {% endif %}
+
                     {% else %}
                         {{ name }}
                     {% endif %}
