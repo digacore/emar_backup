@@ -32,7 +32,11 @@ def search_column(body: ColumnSearch):
         if not model_view.column_list:
             continue
 
-        if body.col_name == "all":
+        if body.col_name in model_view.column_list:
+            old_column_searchable_list = model_view.column_searchable_list
+            model_view.column_searchable_list = [body.col_name]
+            model_view.init_search()
+        elif body.col_name == "all":
             old_column_searchable_list = model_view.column_searchable_list
             try:
                 model_view.column_searchable_list = model_view.column_list
@@ -40,10 +44,6 @@ def search_column(body: ColumnSearch):
             except AttributeError:
                 model_view.column_searchable_list = model_view.column_filters
                 model_view.init_search()
-        elif body.col_name in model_view.column_list:
-            old_column_searchable_list = model_view.column_searchable_list
-            model_view.column_searchable_list = [body.col_name]
-            model_view.init_search()
 
             return (
                 jsonify(
