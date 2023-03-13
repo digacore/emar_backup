@@ -31,7 +31,16 @@ def search_column(body: ColumnSearch):
             continue
         if not model_view.column_list:
             continue
-        if body.col_name in model_view.column_list:
+
+        if body.col_name == "all":
+            old_column_searchable_list = model_view.column_searchable_list
+            try:
+                model_view.column_searchable_list = model_view.column_list
+                model_view.init_search()
+            except AttributeError:
+                model_view.column_searchable_list = model_view.column_filters
+                model_view.init_search()
+        elif body.col_name in model_view.column_list:
             old_column_searchable_list = model_view.column_searchable_list
             model_view.column_searchable_list = [body.col_name]
             model_view.init_search()

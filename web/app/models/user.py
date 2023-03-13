@@ -15,7 +15,7 @@ from app.utils import MyModelView
 from .company import Company
 from .location import Location
 
-from logger import logger
+from app.logger import logger
 
 
 class User(db.Model, UserMixin, ModelMixin):
