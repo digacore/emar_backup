@@ -459,8 +459,16 @@
   </div>
 
   <!-- Bootstrap core JavaScript-->
-  <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+  {% if 'static' not in request.endpoint %}
+    {% if 'admin' not in url_for(request.endpoint) %}
+      <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
+      <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+      <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+      <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+    {% endif %}
+  {% endif %}
   <script src="{{ url_for('static', filename='/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/bootstrap/js/bootstrap.bundle.min.js.map') }}"></script>
 
   <!-- Core plugin JavaScript-->
   <script src="{{ url_for('static', filename='/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
