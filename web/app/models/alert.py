@@ -43,23 +43,18 @@ class AlertView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "AlertView"
 
-    # list_template = 'import-admin-list-to-dashboard.html'
+    list_template = "import-admin-list-to-dashboard.html"
 
-    # column_list = ["id", "name", "company_name", "created_at"]
     column_searchable_list = ["name", "from_email", "to_addresses"]
-    # form_widget_args = {
-    #     "name": {"readonly": True},
-    # }
 
     action_disallowed_list = ["delete"]
 
     def _can_edit(self, model):
         # return True to allow edit
-        return True  # TODO temporary. Remove this line and uncomment code below
-        # if str(current_user.asociated_with).lower() == "global-full":
-        #     return True
-        # else:
-        #     return False
+        if str(current_user.asociated_with).lower() == "global-full":
+            return True
+        else:
+            return False
 
     def _can_delete(self, model):
         if str(current_user.asociated_with).lower() == "global-full":

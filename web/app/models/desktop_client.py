@@ -8,7 +8,6 @@ from markupsafe import Markup
 
 from app import db
 
-# from app.models import ComputerView
 from app.models.utils import ModelMixin, RowActionListMixin, BlobMixin, BlobUploadField
 from app.utils import MyModelView
 
@@ -47,11 +46,7 @@ class DesktopClientView(RowActionListMixin, MyModelView):
     list_template = "import-admin-list-to-dashboard.html"
 
     column_searchable_list = ["name", "version", "flag_name"]
-    # form_widget_args = {
-    #     "name": {"readonly": True},
-    # }
 
-    # column_exclude_list = ("blob", "mimetype")
     column_list = (
         "name",
         "version",
@@ -97,6 +92,7 @@ class DesktopClientView(RowActionListMixin, MyModelView):
         query_res = self.session.query(DesktopClient).all()
 
         # TODO check wich option works better
+        # from app.models import ComputerView
         # msi_versions = [i[0] for i in ComputerView.form_choices["msi_version"]]
         # for version in [i.version for i in query_res]:
         #     if version in msi_versions:

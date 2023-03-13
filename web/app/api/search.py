@@ -27,7 +27,6 @@ def search_column(body: ColumnSearch):
     model_views: List[MyModelView] = app.admin._views
 
     for model_view in model_views:
-        # if model_view.__repr__() == "ComputerView":
         if not hasattr(model_view, "column_list"):
             continue
         if not model_view.column_list:
