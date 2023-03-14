@@ -29,11 +29,11 @@ def offset_to_est(dt_now: datetime.datetime):
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
-storage_path = os.path.join(Path("C:\\"), Path("EmarDir"))
+STORAGE_PATH = os.path.join(Path("C:\\"), Path("EmarDir"))
 
 log_format = "{time} - {name} - {level} - {message}"
 logger.add(
-    sink=os.path.join(storage_path, "emar_log.txt"),
+    sink=os.path.join(STORAGE_PATH, "emar_log.txt"),
     format=log_format,
     serialize=True,
     level="DEBUG",
@@ -48,7 +48,7 @@ def mknewdir(pathstr):
     return True
 
 
-mknewdir(storage_path)
+mknewdir(STORAGE_PATH)
 
 if os.path.isfile(Path("config.json").absolute()):
     with open("config.json", "r") as f:
@@ -66,7 +66,7 @@ else:
 
 
 creds_file = "creds.json"
-local_creds_json = os.path.join(storage_path, creds_file)
+local_creds_json = os.path.join(STORAGE_PATH, creds_file)
 logger.info(f"local_creds_json var is {local_creds_json}")
 
 
@@ -76,22 +76,37 @@ if not ssh_exists:
     open(os.path.join(Path().home(), Path(".ssh/known_hosts")), "a").close()
 
 
-def self_update(storage_path, credentials):
-    response = requests.post(
-        f"{g_manager_host}/msi_download_to_local",
-        json={
-            "name": "custompass",  # TODO is this required?
-            "version": credentials["msi_version"],
-            "flag": credentials["msi_version"],
-            "identifier_key": credentials["identifier_key"],
-        },
-    )
-    print(response.headers["Content-disposition"].split("=")[1])
-    with open(
-        Path(storage_path) / response.headers["Content-disposition"].split("=")[1], "wb"
-    ) as msi:
-        msi.write(response.content)
-    print(response.status_code)
+def self_update(STORAGE_PATH, credentials, old_credentials):
+    if credentials["msi_version"] != old_credentials["msi_version"]:
+        response = requests.post(
+            f"{g_manager_host}/msi_download_to_local",
+            json={
+                "name": "custompass",  # TODO is this required?
+                "version": credentials["msi_version"],
+                "flag": credentials["msi_version"],
+                "identifier_key": credentials["identifier_key"],
+            },
+        )
+        # TODO launch install.cmd
+        print(response.headers["Content-disposition"].split("=")[1])
+        with open(
+            Path(STORAGE_PATH) / response.headers["Content-disposition"].split("=")[1],
+            "wb",
+        ) as msi:
+            msi.write(response.content)
+        print(response.status_code)
+        # run agent.msi through install.cmd
+        install_path = Path(STORAGE_PATH) / "install.cmd"
+        if not os.path.isfile(install_path):
+            with open(install_path, "w") as f:
+                f.write(f"msiexec  /l* install.log /i {STORAGE_PATH}\\agent.msi")
+
+        Popen([install_path])
+        logger.debug(
+            "New msi version installed. From {} to {}",
+            credentials["msi_version"],
+            old_credentials["msi_version"],
+        )
 
 
 def register_computer():
@@ -212,7 +227,7 @@ def get_credentials():
                 f"Full credentials recieved from server and {local_creds_json} updated."
             )
 
-        return response.json()
+        return response.json(), creds_json
 
     else:
         raise ValueError(
@@ -222,7 +237,6 @@ def get_credentials():
 
 @logger.catch
 def sftp_check_files_for_update_and_load(credentials):
-
     # key = path, value = checksum
     files_cheksum = {}
     print('credentials["files_checksum"]', type(credentials["files_checksum"]))
@@ -368,7 +382,7 @@ def sftp_check_files_for_update_and_load(credentials):
                 sftp.close()
 
                 if trigger_download:
-                    zip_name = os.path.join(storage_path, "emar_backups.zip")
+                    zip_name = os.path.join(STORAGE_PATH, "emar_backups.zip")
                     print("zip_name", zip_name)
                     subprs = Popen(
                         [
@@ -509,7 +523,7 @@ def update_download_status(status, creds, last_downloaded=""):
 @logger.catch
 def main_func():
     logger.info("Downloading proccess started.")
-    credentials = get_credentials()
+    credentials, old_credentials = get_credentials()
     print("\ncredentials", credentials, "\n")
     if not credentials:
         raise ValueError("Credentials not supplayed. Can't continue.")
@@ -525,12 +539,11 @@ def main_func():
         path = r"C:\\Users\\Public\\Desktop\\EMAR.lnk"
 
         if not os.path.exists(path):
-
             from win32com.client import Dispatch
 
             # directory to which the shortcut leads
-            target = rf"{os.path.join(storage_path, 'emar_backups.zip')}"
-            wDir = rf"{storage_path}"
+            target = rf"{os.path.join(STORAGE_PATH, 'emar_backups.zip')}"
+            wDir = rf"{STORAGE_PATH}"
 
             shell = Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(path)
@@ -538,7 +551,7 @@ def main_func():
             shortcut.Targetpath = target
             shortcut.save()
 
-        self_update(storage_path, credentials)
+        self_update(STORAGE_PATH, credentials, old_credentials)
 
     elif credentials["status"] == "registered":
         logger.info(
