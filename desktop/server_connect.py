@@ -77,7 +77,17 @@ if not ssh_exists:
 
 
 def self_update(STORAGE_PATH, credentials, old_credentials):
+    logger.debug(
+        "Compare version in self_update. {} ?= {}",
+        credentials["msi_version"],
+        old_credentials["msi_version"],
+    )
     if credentials["msi_version"] != old_credentials["msi_version"]:
+        logger.info(
+            "Updating EmarVault client to new version. From {} to {}",
+            credentials["msi_version"],
+            old_credentials["msi_version"],
+        )
         response = requests.post(
             f"{g_manager_host}/msi_download_to_local",
             json={
@@ -87,25 +97,27 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
                 "identifier_key": credentials["identifier_key"],
             },
         )
-        # TODO launch install.cmd
-        print(response.headers["Content-disposition"].split("=")[1])
+
+        filepath = (
+            Path(STORAGE_PATH) / response.headers["Content-disposition"].split("=")[1]
+        )
+        print(filepath)
         with open(
-            Path(STORAGE_PATH) / response.headers["Content-disposition"].split("=")[1],
+            filepath,
             "wb",
         ) as msi:
             msi.write(response.content)
         print(response.status_code)
         # run agent.msi through install.cmd
         install_path = Path(STORAGE_PATH) / "install.cmd"
-        if not os.path.isfile(install_path):
-            with open(install_path, "w") as f:
-                f.write(f"msiexec  /l* install.log /i {STORAGE_PATH}\\agent.msi")
+        with open(install_path, "w") as f:
+            f.write(f"msiexec  /l* install.log /i {filepath}")
 
         Popen([install_path])
         logger.debug(
             "New msi version installed. From {} to {}",
-            credentials["msi_version"],
             old_credentials["msi_version"],
+            credentials["msi_version"],
         )
 
 
