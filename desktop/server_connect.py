@@ -361,9 +361,14 @@ def sftp_check_files_for_update_and_load(credentials):
                             credentials["files_checksum"][filepath],
                         )
                 if not trigger_download:
-                    print("Files were NOT downloaded. Reason: no changes noticed.\n")
+                    logger.debug(
+                        "Files were NOT downloaded. Reason: no changes noticed."
+                    )
                 else:
                     for filepath in files_cheksum:
+                        # NOTE avoid download of "receipt.txt". The file is empty
+                        if "receipt.txt" in filepath:
+                            continue
                         # chdir to be on top dir level
                         sftp.chdir(None)
                         # if download_directory != ".":
@@ -380,6 +385,9 @@ def sftp_check_files_for_update_and_load(credentials):
                         local_temp_emar_dir = (
                             os.path.join(tempdir, Path(dirname)) if dirname else tempdir
                         )
+                        # NOTE avoid creating directories inside main directory
+                        local_temp_emar_dir = tempdir
+
                         if not os.path.exists(local_temp_emar_dir):
                             os.mkdir(local_temp_emar_dir)
                         print("local_temp_emar_dir", local_temp_emar_dir)
@@ -388,8 +396,16 @@ def sftp_check_files_for_update_and_load(credentials):
                         # TODO what if file in the root
                         print("files_cheksum[filepath]", files_cheksum[filepath])
                         sftp.chdir(dirname)
-                        sftp.get(filename, os.path.join(local_temp_emar_dir, filename))
-                        print(f"downloaded: {dirname}/{filename}\n")
+                        local_filename = (
+                            dirname.replace("/", "-") + ".zip"
+                            if len(dirname) > 0
+                            else filename
+                        )
+                        sftp.get(
+                            filename,
+                            os.path.join(local_temp_emar_dir, local_filename),
+                        )
+                        print(f"downloaded: {dirname}/{filename} -- {local_filename}\n")
 
                 sftp.close()
 
