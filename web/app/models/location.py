@@ -19,9 +19,7 @@ class Location(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
-    company = relationship(
-        "Company", passive_deletes=True, backref="locations", lazy="select"
-    )
+    company = relationship("Company", passive_deletes=True, lazy="select")
     company_name = db.Column(
         db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
     )
