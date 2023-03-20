@@ -19,9 +19,7 @@ class Location(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
-    company = relationship(
-        "Company", passive_deletes=True, backref="locations", lazy="select"
-    )
+    company = relationship("Company", passive_deletes=True, lazy="select")
     company_name = db.Column(
         db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
     )
@@ -69,24 +67,6 @@ class LocationView(RowActionListMixin, MyModelView):
             str: text to display in search
         """
         return "Search by all text columns"
-
-    def edit_form(self, obj):
-        form = super(LocationView, self).edit_form(obj)
-
-        query_res = self.session.query(Location).all()
-
-        permissions = [i[0] for i in UserView.form_choices["asociated_with"]]
-        for location in [i.name for i in query_res]:
-            if location in permissions:
-                break
-            print(f"{location} added")
-            UserView.form_choices["asociated_with"].append(
-                (location, f"Location-{location}")
-            )
-        print(f"permissions updated {permissions}")
-
-        form.name.query = query_res
-        return form
 
     def _can_edit(self, model):
         # return True to allow edit

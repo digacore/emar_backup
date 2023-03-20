@@ -62,24 +62,6 @@ class CompanyView(RowActionListMixin, MyModelView):
         """
         return "Search by all text columns"
 
-    def edit_form(self, obj):
-        form = super(CompanyView, self).edit_form(obj)
-
-        query_res = self.session.query(Company).all()
-
-        permissions = [i[0] for i in UserView.form_choices["asociated_with"]]
-        for company in [i.name for i in query_res]:
-            if company in permissions:
-                break
-            print(f"{company} added")
-            UserView.form_choices["asociated_with"].append(
-                (company, f"Company-{company}")
-            )
-        print(f"permissions updated {permissions}")
-
-        form.name.query = query_res
-        return form
-
     def _can_edit(self, model):
         # return True to allow edit
         if str(current_user.asociated_with).lower() == "global-full":

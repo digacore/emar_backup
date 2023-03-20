@@ -150,6 +150,11 @@ class UserView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
+    def edit_form(self, obj):
+        form = super(UserView, self).edit_form(obj)
+        form.asociated_with.choices = asociated_with_query_factory()
+        return form
+
     def get_query(self):
 
         if current_user:
