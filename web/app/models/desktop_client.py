@@ -67,7 +67,13 @@ class DesktopClientView(RowActionListMixin, MyModelView):
         )
     }
 
-    column_filters = ("name", "version",  "flag_name", "description", "filename",)
+    column_filters = (
+        "name",
+        "version",
+        "flag_name",
+        "description",
+        "filename",
+    )
     action_disallowed_list = ["delete"]
 
     def _download_formatter(self, context, model, name):
@@ -80,30 +86,6 @@ class DesktopClientView(RowActionListMixin, MyModelView):
     column_formatters = {
         "download": _download_formatter,
     }
-
-    def edit_form(self, obj):
-        form = super(DesktopClientView, self).edit_form(obj)
-
-        versions = [i.version for i in DesktopClient.query.all()]
-
-        for version in versions:
-            if (version, version) not in CFG.CLIENT_VERSIONS:
-                CFG.CLIENT_VERSIONS.append((version, version))
-
-        query_res = self.session.query(DesktopClient).all()
-
-        # TODO check wich option works better
-        # from app.models import ComputerView
-        # msi_versions = [i[0] for i in ComputerView.form_choices["msi_version"]]
-        # for version in [i.version for i in query_res]:
-        #     if version in msi_versions:
-        #         break
-        #     print(f"{version} added")
-        #     ComputerView.form_choices["msi_version"].append((version, f"{version}"))
-        # print(f"msi_versions updated {msi_versions}")
-
-        form.version.query = query_res
-        return form
 
     def _can_edit(self, model):
         # return True to allow edit
@@ -131,6 +113,23 @@ class DesktopClientView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
+
+        versions = [i.version for i in DesktopClient.query.all()]
+
+        # remove old versions from global versions variable
+        for version in CFG.CLIENT_VERSIONS:
+            if version[0] not in versions or version not in [
+                ("stable", "stable"),
+                ("latest", "latest"),
+            ]:
+                CFG.CLIENT_VERSIONS.remove(version)
+
+        # add new versions to global versions variable
+        for version in versions:
+            if (version, version) not in CFG.CLIENT_VERSIONS:
+                CFG.CLIENT_VERSIONS.append((version, version))
+
+        # check permissions
         if current_user:
             if str(current_user.asociated_with).lower() == "global-full":
                 if "delete" in self.action_disallowed_list:
