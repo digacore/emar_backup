@@ -209,6 +209,47 @@ class ComputerView(RowActionListMixin, MyModelView):
     # list rows depending on current user permissions
     def get_query(self):
 
+        # TODO should we move this code to Location and Company??
+        # NOTE Update Location and Company computers info
+        computers = Computer.query.all()
+        computer_location = [loc.location_name for loc in computers]
+        computer_company = [co.company_name for co in computers]
+
+        # update number of computers in locations
+        locations = Location.query.all()
+        location_company = [loc.company_name for loc in locations]
+        if locations:
+            for location in locations:
+                location.computers_per_location = computer_location.count(location.name)
+                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
+                computers_online_per_location = [
+                    comp.alert_status for comp in computers if comp.location == location
+                ]
+                computers_online = computers_online_per_location.count("green")
+                location.computers_online = computers_online
+                location.computers_offline = (
+                    len(computers_online_per_location) - computers_online
+                )
+                location.update()
+
+        # update number of locations and computers in companies
+        companies = Company.query.all()
+        if companies:
+            for company in companies:
+                company.total_computers = computer_company.count(company.name)
+                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
+                computers_online_per_company = [
+                    comp.alert_status for comp in computers if comp.company == company
+                ]
+                computers_online = computers_online_per_company.count("green")
+                company.computers_online = computers_online
+                company.computers_offline = (
+                    len(computers_online_per_company) - computers_online
+                )
+                company.locations_per_company = location_company.count(company.name)
+                company.update()
+
+        # NOTE Check permissions
         self.form_choices = CFG.CLIENT_VERSIONS
 
         if current_user:
@@ -295,40 +336,6 @@ class ComputerView(RowActionListMixin, MyModelView):
     #     query = self.session.query(Location).filter(Location.company == obj.company)
     #     form.location.query = query
     #     return form
-
-    def edit_form(self, obj):
-        form = super(ComputerView, self).edit_form(obj)
-
-        computers = [
-            {"location": comp.location_name, "company": comp.company_name}
-            for comp in Computer.query.all()
-        ]
-        computers = Computer.query.all()
-        computer_location = [loc.location_name for loc in computers]
-        computer_company = [co.company_name for co in computers]
-        computers_status = [stat.alert_status for stat in computers]
-        # update number of computers in locations
-        locations = Location.query.all()
-        location_company = [loc.company_name for loc in locations]
-        if locations:
-            for location in locations:
-                location.computers_per_location = computer_location.count(location.name)
-                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
-                computers_online = computers_status.count("green")
-                location.computers_online = computers_online
-                location.computers_offline = len(computers_status) - computers_online
-
-        # update number of locations and computers in companies
-        companies = Company.query.all()
-        if companies:
-            for company in companies:
-                company.total_computers = computer_company.count(company.name)
-                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
-                computers_online = computers_status.count("green")
-                company.computers_online = computers_online
-                company.computers_offline = len(computers_status) - computers_online
-                company.locations_per_company = location_company.count(company.name)
-        return form
 
     ###############################################
 
