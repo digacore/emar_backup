@@ -299,10 +299,10 @@ class ComputerView(RowActionListMixin, MyModelView):
     def edit_form(self, obj):
         form = super(ComputerView, self).edit_form(obj)
 
-        computers = [
-            {"location": comp.location_name, "company": comp.company_name}
-            for comp in Computer.query.all()
-        ]
+        # computers = [
+        #     {"location": comp.location_name, "company": comp.company_name}
+        #     for comp in Computer.query.all()
+        # ]
         computers = Computer.query.all()
         computer_location = [loc.location_name for loc in computers]
         computer_company = [co.company_name for co in computers]
