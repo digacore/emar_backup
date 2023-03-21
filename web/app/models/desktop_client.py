@@ -113,25 +113,6 @@ class DesktopClientView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
-        OBLIGATORY_VERSIONS = [
-            ("stable", "stable"),
-            ("latest", "latest"),
-        ]
-
-        versions = [i.version for i in DesktopClient.query.all()]
-
-        # remove old versions from global versions variable
-        for version in CFG.CLIENT_VERSIONS:
-            if version[0] not in versions or version not in OBLIGATORY_VERSIONS:
-                CFG.CLIENT_VERSIONS.remove(version)
-
-        # add new versions to global versions variable
-        for version in versions:
-            if (version, version) not in CFG.CLIENT_VERSIONS:
-                CFG.CLIENT_VERSIONS.append((version, version))
-        for dversion in OBLIGATORY_VERSIONS:
-            if dversion not in CFG.CLIENT_VERSIONS:
-                CFG.CLIENT_VERSIONS.append(dversion)
 
         # check permissions
         if current_user:
