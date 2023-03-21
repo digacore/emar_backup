@@ -5,7 +5,7 @@
            Manufacturer="Simple2B"
            Name="EmarVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.4.68652">
+           Version="1.0.5.68812">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
