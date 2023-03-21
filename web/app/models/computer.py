@@ -17,14 +17,14 @@ from flask_admin.model.template import EditRowAction, DeleteRowAction
 from flask_login import current_user
 
 from app import db
-from .location import Location
-from .company import Company
-
-# from .desktop_client import DesktopClient
 
 # from app.forms import SearchForm
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
+
+from .location import Location
+from .company import Company
+from .desktop_client import DesktopClient
 
 from config import BaseConfig as CFG
 
@@ -208,6 +208,26 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
+
+        OBLIGATORY_VERSIONS = [
+            ("stable", "stable"),
+            ("latest", "latest"),
+        ]
+
+        versions = [i.version for i in DesktopClient.query.all()]
+
+        # remove old versions from global versions variable
+        for version in CFG.CLIENT_VERSIONS:
+            if version[0] not in versions or version not in OBLIGATORY_VERSIONS:
+                CFG.CLIENT_VERSIONS.remove(version)
+
+        # add new versions to global versions variable
+        for version in versions:
+            if (version, version) not in CFG.CLIENT_VERSIONS:
+                CFG.CLIENT_VERSIONS.append((version, version))
+        for dversion in OBLIGATORY_VERSIONS:
+            if dversion not in CFG.CLIENT_VERSIONS:
+                CFG.CLIENT_VERSIONS.append(dversion)
 
         # TODO should we move this code to Location and Company??
         # NOTE Update Location and Company computers info
