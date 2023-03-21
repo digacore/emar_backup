@@ -3,9 +3,9 @@
   <Product Id="*"
            Language="1033"
            Manufacturer="Simple2B"
-           Name="CheckRemoteUpdate"
+           Name="EmarVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.5.59526">
+           Version="1.0.4.68652">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -38,7 +38,7 @@
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFilesFolder">
       <!-- <Directory Id="WindowsVolume"> -->
-        <Directory Id="MY_INSTALL_LOCATION" Name="CheckRemoteUpdate" />
+        <Directory Id="MY_INSTALL_LOCATION" Name="EmarVault" />
       </Directory>
     </Directory>
 
