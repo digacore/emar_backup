@@ -62,6 +62,7 @@ def register_computer(body: ComputerRegInfo):
                 computer_name=new_computer.computer_name,
                 folder_password="",
                 manager_host=CFG.APP_HOST_URL,
+                msi_version="stable",
             ),
             200,
         )
