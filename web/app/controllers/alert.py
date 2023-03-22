@@ -169,7 +169,7 @@ def check_and_alert():
             )
 
             check_computer_send_mail(
-                last_time=last_download_time,
+                last_time=last_time_online,
                 computer=computer,
                 alert_type="offline",
                 alert_obj=offline_12h,
