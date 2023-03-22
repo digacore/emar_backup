@@ -29,7 +29,7 @@ def offset_to_est(dt_now: datetime.datetime):
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
-STORAGE_PATH = os.path.join(Path("C:\\"), Path("EmarDir"))
+STORAGE_PATH = os.path.join(Path("C:\\"), Path("eMARVault"))
 
 log_format = "{time} - {name} - {level} - {message}"
 logger.add(
@@ -564,7 +564,7 @@ def main_func():
         # user = getpass.getuser()
 
         # This is path where the shortcut will be created
-        path = r"C:\\Users\\Public\\Desktop\\EMAR.lnk"
+        path = r"C:\\Users\\Public\\Desktop\\eMARVault.lnk"
 
         if not os.path.exists(path):
             from win32com.client import Dispatch
@@ -575,6 +575,7 @@ def main_func():
 
             shell = Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(path)
+            shortcut.IconLocation = str(Path(STORAGE_PATH) / "eMARVault_256x256.ico")
             shortcut.WorkingDirectory = wDir
             shortcut.Targetpath = target
             shortcut.save()
