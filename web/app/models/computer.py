@@ -80,6 +80,7 @@ class Computer(db.Model, ModelMixin):
     last_time_online = db.Column(db.DateTime)
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
     msi_version = db.Column(db.String(64))
+    current_msi_version = db.Column(db.String(64))
 
     company = relationship(
         "Company", passive_deletes=True, backref="computers", lazy="select"
@@ -105,6 +106,7 @@ class Computer(db.Model, ModelMixin):
             "last_download_time",
             "last_time_online",
             "msi_version",
+            "current_msi_version",
             "sftp_host",
             "sftp_username",
             "sftp_folder_path",
@@ -135,6 +137,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_download_time",
         "last_time_online",
         "msi_version",
+        "current_msi_version",
         "sftp_host",
         "sftp_username",
         "sftp_folder_path",
