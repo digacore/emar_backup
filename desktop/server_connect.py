@@ -82,6 +82,13 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
         credentials["msi_version"],
         old_credentials["msi_version"],
     )
+
+    # check if new or old version is None. If yes - convert to stable
+    if not credentials["msi_version"]:
+        credentials["msi_version"] = "stable"
+    if not old_credentials["msi_version"]:
+        old_credentials["msi_version"] = "stable"
+
     if credentials["msi_version"] != old_credentials["msi_version"]:
         logger.info(
             "Updating EmarVault client to new version. From {} to {}",
@@ -188,6 +195,8 @@ def register_computer():
 @logger.catch
 def get_credentials():
     logger.info("Recieving credentials.")
+    creds_json = None
+
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
@@ -206,7 +215,6 @@ def get_credentials():
                 "identifier_key": str(identifier_key),
             },
         )
-        # print("if response.json()", response.json())
 
         if "rmcreds" in response.json():
             if os.path.isfile(local_creds_json):
@@ -225,19 +233,26 @@ def get_credentials():
         response.json()["message"] == "Supplying credentials"
         or response.json()["message"] == "Computer registered"
     ):
+        msi_version = (
+            response.json()["msi_version"]
+            if "msi_version" in response.json()
+            else "stable"
+        )
         with open(local_creds_json, "w") as f:
             json.dump(
                 {
                     "computer_name": response.json()["computer_name"],
                     "identifier_key": response.json()["identifier_key"],
                     "manager_host": response.json()["manager_host"],
-                    "msi_version": response.json()["msi_version"],
+                    "msi_version": msi_version,
                 },
                 f,
             )
             logger.info(
                 f"Full credentials recieved from server and {local_creds_json} updated."
             )
+
+        creds_json = creds_json if creds_json else dict()
 
         return response.json(), creds_json
 
