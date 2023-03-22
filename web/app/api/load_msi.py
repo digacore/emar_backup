@@ -1,6 +1,5 @@
 import io
 from flask import send_file, jsonify, Response, Blueprint
-from flask_login import login_required
 
 from app.views.blueprint import BlueprintApi
 from app.models import DesktopClient, Computer
@@ -16,7 +15,6 @@ download_msi_fblueprint = Blueprint("download_msi", __name__)
 
 @download_msi_fblueprint.route("/download/<int:id>", methods=["GET"])
 @logger.catch
-@login_required
 def download_msi(id):
     # TODO protect by login requierd
     msi = DesktopClient.query.filter_by(id=id).first()
