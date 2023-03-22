@@ -7,3 +7,4 @@ from .computer import ComputerRegInfo
 from .files_checksum import FilesChecksum
 from .load_msi import LoadMSI
 from .column_search import ColumnSearch
+from .update_msi_version import UpdateMSIVersion

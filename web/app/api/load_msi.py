@@ -3,7 +3,7 @@ from flask import send_file, jsonify, Response, Blueprint
 
 from app.views.blueprint import BlueprintApi
 from app.models import DesktopClient, Computer
-from app.schema import LoadMSI
+from app.schema import LoadMSI, UpdateMSIVersion
 
 from app.logger import logger
 
@@ -37,6 +37,7 @@ def msi_download_to_local(body: LoadMSI):
     )
 
     if computer:
+
         if body.flag == "stable" or body.flag == "latest":
 
             msi: DesktopClient = DesktopClient.query.filter_by(
@@ -74,3 +75,23 @@ def msi_download_to_local(body: LoadMSI):
     message = "Wrong request data. Computer not found."
     logger.info("MSI download failed. Reason: {}", message)
     return jsonify(status="fail", message=message), 400
+
+
+@download_msi_blueprint.post("/update_current_msi_version")
+@logger.catch
+def update_current_msi_version(body: UpdateMSIVersion):
+    computer: Computer = (
+        Computer.query.filter_by(identifier_key=body.identifier_key).first()
+        if body.identifier_key
+        else None
+    )
+
+    if computer:
+
+        computer.current_msi_version = body.current_msi_version
+        computer.update()
+        return jsonify(status="success", message="Writing version to DB"), 200
+
+    message = "Wrong request data. Computer not found."
+    logger.info("MSI version update failed. Reason: {}", message)
+    return jsonify(status="fail", text=message), 400

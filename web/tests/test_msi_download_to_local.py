@@ -23,10 +23,24 @@ def test_msi_download_to_local(client):
             version="1.0.1.1",
             flag="stable",
             identifier_key="comp3_identifier_key",
-            )
+        ),
     )
 
     assert response
     assert response.status_code == 200
     assert response.mimetype == "application/octet-stream"
     assert response.data == b"test_bytes"
+
+
+def test_update_current_msi_version(client):
+
+    response = client.post(
+        "/update_current_msi_version",
+        json=dict(
+            current_msi_version="1.0.1.1",
+            identifier_key="comp3_identifier_key",
+        ),
+    )
+
+    assert response
+    assert response.status_code == 200

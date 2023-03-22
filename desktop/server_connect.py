@@ -92,16 +92,17 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
     if credentials["msi_version"] != old_credentials["msi_version"]:
         logger.info(
             "Updating EmarVault client to new version. From {} to {}",
-            credentials["msi_version"],
             old_credentials["msi_version"],
+            credentials["msi_version"],
         )
         response = requests.post(
-            f"{g_manager_host}/msi_download_to_local",
+            f"{credentials['manager_host']}/msi_download_to_local",
             json={
                 "name": "custompass",  # TODO is this required?
                 "version": credentials["msi_version"],
                 "flag": credentials["msi_version"],
                 "identifier_key": credentials["identifier_key"],
+                "current_msi_version": old_credentials["msi_version"],
             },
         )
 
@@ -125,6 +126,20 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
             "New msi version installed. From {} to {}",
             old_credentials["msi_version"],
             credentials["msi_version"],
+        )
+
+        update_response = requests.post(
+            f"{credentials['manager_host']}/update_current_msi_version",
+            json={
+                "identifier_key": credentials["identifier_key"],
+                "current_msi_version": credentials["msi_version"],
+            },
+        )
+
+        logger.debug(
+            "Request to update current msi version sent. Response: {}, text: {}",
+            update_response.status_code,
+            update_response.text,
         )
 
 
