@@ -33,6 +33,7 @@ def search_column(body: ColumnSearch):
             continue
 
         # get current model name from url
+        # TODO avoid using list element calling. It'll break if url is changed
         model_name = body.current_href.split("/")[4]
 
         # search by model's one column
