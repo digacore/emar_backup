@@ -32,11 +32,30 @@ def search_column(body: ColumnSearch):
         if not model_view.column_list:
             continue
 
-        if body.col_name in model_view.column_list:
+        # get current model name from url
+        # TODO avoid using list element calling. It'll break if url is changed
+        model_name = body.current_href.split("/")[4]
+
+        # search by model's one column
+        if (
+            body.col_name in model_view.column_list
+            and model_name in str(model_view).lower()
+        ):
             old_column_searchable_list = model_view.column_searchable_list
             model_view.column_searchable_list = [body.col_name]
             model_view.init_search()
-        elif body.col_name == "all":
+
+            return (
+                jsonify(
+                    status="success",
+                    message=f"{model_view.__repr__()} column_searchable_list updated from \
+                        {old_column_searchable_list} to {[body.col_name]}",
+                ),
+                200,
+            )
+
+        # search by model's all column
+        elif body.col_name == "all" and model_name in str(model_view).lower():
             old_column_searchable_list = model_view.column_searchable_list
             try:
                 model_view.column_searchable_list = model_view.column_list
@@ -58,5 +77,5 @@ def search_column(body: ColumnSearch):
         jsonify(
             status="fail", message=f"Failed to find {body.col_name} in ModelView's"
         ),
-        200,
+        404,
     )
