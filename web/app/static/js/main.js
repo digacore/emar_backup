@@ -6,7 +6,10 @@ document.querySelectorAll(".single-search-form").forEach((form) =>
 
     await fetch("/search_column", {
       method: "POST",
-      body: JSON.stringify({ col_name: e.target.dataset.search_value }),
+      body: JSON.stringify({
+        col_name: e.target.dataset.search_value,
+        current_href: window.location.href,
+      }),
       headers: {
         "Content-Type": "application/json",
       },
@@ -24,7 +27,10 @@ document.querySelectorAll("#overall-admin-search").forEach((form) =>
 
     await fetch("/search_column", {
       method: "POST",
-      body: JSON.stringify({ col_name: "all" }),
+      body: JSON.stringify({
+        col_name: "all",
+        current_href: window.location.href,
+      }),
       headers: {
         "Content-Type": "application/json",
       },
