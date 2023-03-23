@@ -74,6 +74,9 @@
       <Component Id="cmp_7_zip_dll">
         <File KeyPath="yes" Source="..\7z\7-zip.dll"></File>
       </Component>
+      <Component Id="shortcut_icon">
+        <File KeyPath="yes" Source="eMARVault_256x256.ico"></File>
+      </Component>
 
     </ComponentGroup>
 
