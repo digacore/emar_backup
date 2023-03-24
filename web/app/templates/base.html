@@ -47,17 +47,23 @@
         <div class="sidebar-brand-text mx-3">{{ config.APP_NAME }}</div>
       </a>
 
-      {% with messages = get_flashed_messages() %}
-        {% if messages %}
-          <div class="d-flex align-items-center alert alert-info alert-dismissable">
-          {% for message in messages %}
-            <div>{{ message }}
-              <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-            </div>
-          {% endfor %}
-          </div>
+      {% if request.endpoint %}
+        {% if 'static' not in request.endpoint %}
+          {% if 'admin' not in url_for(request.endpoint) %}
+            {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                <div class="d-flex align-items-center alert alert-info alert-dismissable">
+                {% for message in messages %}
+                  <div>{{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                  </div>
+                {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+          {% endif %}
         {% endif %}
-      {% endwith %}
+      {% endif %}
 
       <!-- Divider -->
       <hr class="sidebar-divider my-0">
