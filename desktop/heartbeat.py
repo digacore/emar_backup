@@ -18,15 +18,17 @@ def offset_to_est(dt_now: datetime.datetime):
     est_norm_datetime = dt_now - datetime.timedelta(hours=5)
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
-storage_path = os.path.join(Path("C:\\"), Path("EmarDir"))
+
+STORAGE_PATH = os.path.join(Path("C:\\"), Path("eMARVault"))
 
 log_format = "{time} - {name} - {level} - {message}"
 logger.add(
-    sink=os.path.join(storage_path, "emar_log.txt"),
+    sink=os.path.join(STORAGE_PATH, "emar_log.txt"),
     format=log_format,
     serialize=True,
     level="DEBUG",
-    colorize=True)
+    colorize=True,
+)
 
 
 def mknewdir(pathstr):
@@ -36,7 +38,7 @@ def mknewdir(pathstr):
     return True
 
 
-mknewdir(storage_path)
+mknewdir(STORAGE_PATH)
 
 if os.path.isfile(Path("config.json").absolute()):
     with open("config.json", "r") as f:
@@ -45,13 +47,16 @@ if os.path.isfile(Path("config.json").absolute()):
         g_manager_host = config_json["manager_host"]
     except Exception as e:
         logger.warning(f"Failed to get info from config.json. Error: {e}")
-        raise Exception("Can't find manager_host in config.json. Check that field and file exist.")
+        raise Exception(
+            "Can't find manager_host in config.json. Check that field and file exist."
+        )
 else:
     raise FileNotFoundError("Can't find config.json file. Check if file exists.")
 
 
 creds_file = "creds.json"
-local_creds_json = os.path.join(storage_path, creds_file)
+local_creds_json = os.path.join(STORAGE_PATH, creds_file)
+
 
 @logger.catch
 def send_activity():
@@ -60,20 +65,26 @@ def send_activity():
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
-        manager_host = creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
+        manager_host = (
+            creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
+        )
     else:
         manager_host = g_manager_host
 
     if creds_json:
         url = f"{manager_host}/last_time"
         last_time_online = offset_to_est(datetime.datetime.utcnow())
-        requests.post(url, json={
-        "computer_name": creds_json["computer_name"],
-        "identifier_key": creds_json["identifier_key"],
-        "last_time_online": last_time_online
-        })
+        requests.post(
+            url,
+            json={
+                "computer_name": creds_json["computer_name"],
+                "identifier_key": creds_json["identifier_key"],
+                "last_time_online": last_time_online,
+            },
+        )
         logger.info("User last time online {} sent.", last_time_online)
     else:
         logger.error("Heartbeat app can not find creds.json file.")
+
 
 send_activity()

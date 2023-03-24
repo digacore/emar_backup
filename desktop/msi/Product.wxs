@@ -5,7 +5,7 @@
            Manufacturer="Simple2B"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.5.68812">
+           Version="1.0.7.71259">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -75,7 +75,7 @@
         <File KeyPath="yes" Source="..\7z\7-zip.dll"></File>
       </Component>
       <Component Id="shortcut_icon">
-        <File KeyPath="yes" Source="eMARVault_256x256.ico"></File>
+        <File KeyPath="yes" Source="dist\eMARVault_256x256.ico"></File>
       </Component>
 
     </ComponentGroup>

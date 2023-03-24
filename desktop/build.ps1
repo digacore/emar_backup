@@ -20,5 +20,6 @@ pyinstaller --noconfirm --onefile --console `
 heartbeat.py
 
 copy .\config.json .\msi\dist\
+copy .\eMARVault_256x256.ico .\msi\dist\
 
 .\msi\BuildInstaller.ps1
