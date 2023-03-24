@@ -3,7 +3,7 @@ import uuid
 import json
 from flask import jsonify
 
-from app.models import Computer
+from app.models import Computer, DesktopClient
 from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
 from app.views.blueprint import BlueprintApi
 from app.logger import logger
@@ -67,7 +67,8 @@ def get_credentials(body: GetCredentials):
 
     if computer:
         print("computer: ", computer, computer.computer_name)
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())  # TODO couses error in tests but works ok on server
+        # TODO couses error in tests but works ok on server
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
@@ -76,6 +77,12 @@ def get_credentials(body: GetCredentials):
 
         remote_files_checksum = (
             computer.files_checksum if computer.files_checksum else {}
+        )
+
+        msi: DesktopClient = (
+            DesktopClient.query.filter_by(flag_name=computer.msi_version).first()
+            if computer.msi_version == "stable" or computer.msi_version == "latest"
+            else DesktopClient.query.filter_by(version=computer.msi_version).first()
         )
 
         return (
@@ -93,7 +100,7 @@ def get_credentials(body: GetCredentials):
                 folder_password=computer.folder_password,
                 manager_host=computer.manager_host,
                 files_checksum=json.loads(str(remote_files_checksum)),
-                msi_version=computer.msi_version,
+                msi_version=msi.version if msi else "undefined",
             ),
             200,
         )
@@ -134,7 +141,8 @@ def download_status(body: DownloadStatus):
         logger.info(
             "Updating download status for computer: {}.", computer.computer_name
         )
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())  # TODO couses error in tests but works ok on server
+        # TODO couses error in tests but works ok on server
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
         computer.download_status = body.download_status
         if body.last_downloaded:
@@ -171,7 +179,8 @@ def files_checksum(body: FilesChecksum):
 
     if computer:
         logger.info("Updating files checksum for computer: {}.", computer.computer_name)
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())  # TODO couses error in tests but works ok on server
+        # TODO couses error in tests but works ok on server
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()

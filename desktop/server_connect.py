@@ -231,6 +231,9 @@ def get_credentials():
             },
         )
 
+        if response.status_code == 500 or response.status_code == 400:
+            raise ConnectionAbortedError(response.text)
+
         if "rmcreds" in response.json():
             if os.path.isfile(local_creds_json):
                 os.remove(local_creds_json)
@@ -595,6 +598,13 @@ def main_func():
 
         # This is path where the shortcut will be created
         path = r"C:\\Users\\Public\\Desktop\\eMARVault.lnk"
+        icon_path = os.path.join(
+            Path("C:\\") / "Program Files" / "eMARVault" / "eMARVault_256x256.ico"
+        )
+        icon_path_86 = os.path.join(
+            Path("C:\\") / "Program Files (x86)" / "eMARVault" / "eMARVault_256x256.ico"
+        )
+        icon_path_to_use = icon_path_86 if os.path.isfile(icon_path_86) else icon_path
 
         if not os.path.exists(path):
             from win32com.client import Dispatch
@@ -605,7 +615,7 @@ def main_func():
 
             shell = Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(path)
-            shortcut.IconLocation = str(Path(STORAGE_PATH) / "eMARVault_256x256.ico")
+            shortcut.IconLocation = str(icon_path_to_use)
             shortcut.WorkingDirectory = wDir
             shortcut.Targetpath = target
             shortcut.save()

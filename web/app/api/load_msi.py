@@ -38,21 +38,11 @@ def msi_download_to_local(body: LoadMSI):
 
     if computer:
 
-        if body.flag == "stable" or body.flag == "latest":
-
-            msi: DesktopClient = DesktopClient.query.filter_by(
-                flag_name=body.flag
-            ).first()
-
-            msi = (
-                msi
-                if msi
-                else DesktopClient.query.filter_by(version=body.version).first()
-            )
-        else:
-            msi: DesktopClient = DesktopClient.query.filter_by(
-                version=body.version
-            ).first()
+        msi: DesktopClient = (
+            DesktopClient.query.filter_by(flag_name=body.flag).first()
+            if body.flag == "stable" or body.flag == "latest"
+            else DesktopClient.query.filter_by(version=body.version).first()
+        )
 
         if msi:
             logger.info(
@@ -88,9 +78,23 @@ def update_current_msi_version(body: UpdateMSIVersion):
 
     if computer:
 
-        computer.current_msi_version = body.current_msi_version
+        msi: DesktopClient = (
+            DesktopClient.query.filter_by(flag_name=body.current_msi_version).first()
+            if body.current_msi_version == "stable"
+            or body.current_msi_version == "latest"
+            else DesktopClient.query.filter_by(version=body.current_msi_version).first()
+        )
+
+        current_msi_version = msi.version if msi else "undefined"
+
+        computer.current_msi_version = current_msi_version
         computer.update()
-        return jsonify(status="success", message="Writing version to DB"), 200
+        return (
+            jsonify(
+                status="success", message=f"Writing version {current_msi_version} to DB"
+            ),
+            200,
+        )
 
     message = "Wrong request data. Computer not found."
     logger.info("MSI version update failed. Reason: {}", message)
