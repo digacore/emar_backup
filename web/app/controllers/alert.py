@@ -71,7 +71,6 @@ def check_computer_send_mail(
         last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time
         and computer.alert_status == "yellow"
     ):
-        # TODO think of which color means one alert and which means repited alerts for 1 comp
         computer.alert_status = "red"
         computer.update()
         logger.warning(
@@ -80,7 +79,12 @@ def check_computer_send_mail(
             alert_hours,
             alert_type,
         )
-    elif last_time > CFG.offset_to_est(datetime.now(), True) - alerts_time:
+    elif (
+        computer.last_download_time
+        > CFG.offset_to_est(datetime.now(), True) - alerts_time
+        and computer.last_time_online
+        > CFG.offset_to_est(datetime.now(), True) - alerts_time
+    ):
         computer.alert_status = "green"
         computer.update()
         logger.info(
@@ -136,49 +140,45 @@ def check_and_alert():
 
     for computer in computers:
 
-        # check last_download_time
-        if computer.last_download_time and "no_download_12h" in alert_names:
-            no_download_12h: m.Alert = m.Alert.query.filter_by(
-                name="no_download_12h"
-            ).first()
-            last_download_time = (
-                datetime.strptime(computer.last_download_time, time_format)
-                if isinstance(computer.last_download_time, str)
-                else computer.last_download_time
-            )
+        alert_types_computers = {
+            "no_download_12h": computer.last_download_time,
+            "offline_12h": computer.last_time_online,
+        }
 
-            check_computer_send_mail(
-                last_time=last_download_time,
-                computer=computer,
-                alert_type="download",
-                alert_obj=no_download_12h,
-            )
+        # last_download_time str check
+        last_download_time = (
+            datetime.strptime(computer.last_download_time, time_format)
+            if isinstance(computer.last_download_time, str)
+            else computer.last_download_time
+        )
 
-            if last_download_time < CFG.offset_to_est(datetime.now(), True) - timedelta(
-                seconds=7200
-            ):
-                no_update_files_2h += 1
+        # last_time_online str check
+        last_time_online = (
+            datetime.strptime(computer.last_time_online, time_format)
+            if isinstance(computer.last_time_online, str)
+            else computer.last_time_online
+        )
 
-        # check last_time_online
-        if computer.last_time_online and "offline_12h" in alert_names:
-            offline_12h: m.Alert = m.Alert.query.filter_by(name="offline_12h").first()
-            last_time_online = (
-                datetime.strptime(computer.last_time_online, time_format)
-                if isinstance(computer.last_time_online, str)
-                else computer.last_time_online
-            )
+        # check alert_types and computers. Send email if computer outdated
+        for alert_type in alert_types_computers:
+            if alert_types_computers[alert_type] and alert_type in alert_names:
+                alert_obj: m.Alert = m.Alert.query.filter_by(name=alert_type).first()
 
-            check_computer_send_mail(
-                last_time=last_time_online,
-                computer=computer,
-                alert_type="offline",
-                alert_obj=offline_12h,
-            )
+                if last_time_online < CFG.offset_to_est(
+                    datetime.now(), True
+                ) - timedelta(seconds=1800):
+                    off_30_min_computers += 1
+                if last_download_time < CFG.offset_to_est(
+                    datetime.now(), True
+                ) - timedelta(seconds=7200):
+                    no_update_files_2h += 1
 
-            if last_time_online < CFG.offset_to_est(datetime.now(), True) - timedelta(
-                seconds=1800
-            ):
-                off_30_min_computers += 1
+                check_computer_send_mail(
+                    last_times=last_download_time,
+                    computer=computer,
+                    alert_type=alert_type,
+                    alert_obj=alert_obj,
+                )
 
     if off_30_min_computers == len(computers):
         logger.warning("All computers offline 30 min alert.")
