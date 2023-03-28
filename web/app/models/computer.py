@@ -1,24 +1,16 @@
 from datetime import datetime
 
 # import psycopg2
-# from flask import request, url_for
 
 from sqlalchemy import JSON, or_
 from sqlalchemy.orm import relationship
-from flask_admin.contrib.sqla import form, filters as sqla_filters, tools
 
-# from flask_login import current_user
-# from flask_admin.contrib.sqla.fields import Select2Widget, QuerySelectField
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
-
-# from flask_admin.model.form import InlineFormAdmin
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
 from flask_login import current_user
 
 from app import db
-
-# from app.forms import SearchForm
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
@@ -55,6 +47,12 @@ class Computer(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
 
+    company = relationship(
+        "Company", passive_deletes=True, backref="computers", lazy="select"
+    )
+    company_name = db.Column(
+        db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
+    )
     location = relationship(
         "Location", passive_deletes=True, backref="computers", lazy="select"
     )
@@ -62,36 +60,28 @@ class Computer(db.Model, ModelMixin):
         db.String, db.ForeignKey("locations.name", ondelete="CASCADE")
     )
 
-    type = db.Column(db.String(128))
-    alert_status = db.Column(db.String(128))
-    activated = db.Column(
-        db.Boolean, default=False
-    )  # TODO do we need this one? Could computer be deactivated?
-    created_at = db.Column(db.DateTime, default=datetime.now)
-
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
     sftp_username = db.Column(db.String(64), default=CFG.DEFAULT_SFTP_USERNAME)
     sftp_password = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_PASSWORD)
     sftp_folder_path = db.Column(db.String(256))
-
     folder_password = db.Column(db.String(128), default=CFG.DEFAULT_FOLDER_PASSWORD)
+
+    type = db.Column(db.String(128))
+    msi_version = db.Column(db.String(64))
+    current_msi_version = db.Column(db.String(64))
+
+    alert_status = db.Column(db.String(128))
     download_status = db.Column(db.String(64))
     last_download_time = db.Column(db.DateTime)
     last_time_online = db.Column(db.DateTime)
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
-    msi_version = db.Column(db.String(64))
-    current_msi_version = db.Column(db.String(64))
-
-    company = relationship(
-        "Company", passive_deletes=True, backref="computers", lazy="select"
-    )
-    company_name = db.Column(
-        db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
-    )
 
     manager_host = db.Column(db.String(256))
     last_downloaded = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
+    # TODO do we need this one? Could computer be deactivated?
+    activated = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
 
     def __repr__(self):
         return self.computer_name
@@ -113,6 +103,8 @@ class Computer(db.Model, ModelMixin):
             "type",
             "manager_host",
             "activated",
+            "files_checksum",
+            "identifier_key",
         ]
 
 
@@ -171,6 +163,29 @@ class ComputerView(RowActionListMixin, MyModelView):
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
         # "files_checksum": {"readonly": True},
+    }
+
+    # Added to control fields order. It is dict though...
+    form_args = {
+        "computer_name": {"label": "Computer name"},
+        "company_name": {"label": "Company name"},
+        "location_name": {"label": "Location name"},
+        "sftp_host": {"label": "SFTP host"},
+        "sftp_username": {"label": "SFTP username"},
+        "sftp_password": {"label": "SFTP password"},
+        "sftp_folder_path": {"label": "SFTP folder path"},
+        "type": {"label": "Type"},
+        "msi_version": {"label": "Msi version"},
+        "current_msi_version": {"label": "Current msi version"},
+        "manager_host": {"label": "Manager host"},
+        "activated": {"label": "Activated"},
+        "alert_status": {"label": "Alert status"},
+        "download_status": {"label": "Download status"},
+        "last_download_time": {"label": "Last download time"},
+        "last_time_online": {"label": "Last time online"},
+        "identifier_key": {"label": "Identifier key"},
+        "files_checksum": {"label": "Files checksum"},
+        "created_at": {"label": "Created at"},
     }
 
     form_choices = {"msi_version": CFG.CLIENT_VERSIONS}
@@ -328,13 +343,6 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     ###############################################################
 
-    # form_ajax_refs = {
-    #     'location_name': QueryAjaxModelLoader('locations', db.session, Location,
-    #                                 fields=['name'], filters=["company_name=Dro Ltc"])
-    # }
-
-    ##############################################
-
     # NOTE 2 This one works as filter. You start to type company name in location field and
     # NOTE 2 and get list of aplicable locations
     # Setup AJAX lazy-loading for the ImageType inside the inline model
@@ -359,33 +367,3 @@ class ComputerView(RowActionListMixin, MyModelView):
     #     query = self.session.query(Location).filter(Location.company == obj.company)
     #     form.location.query = query
     #     return form
-
-    ###############################################
-
-    # form_ajax_refs = {
-    #     "location": {
-    #         "fields": ("company_name", ),
-    #         "placeholder": "Please select",
-    #         "page_size": 10,
-    #         "minimum_input_length": 0,
-    #     }
-    # }
-
-    # form_ajax_refs = {'location': {
-    #     'fields': (Location.company_name, 'company_name'),
-    #     "minimum_input_length": 0,
-    #     }
-    # }
-
-    ################################################
-
-    # form_extra_fields = {
-    #     "location_name": QuerySelectField(
-    #         label="Location_name",
-    #         query_factory=lambda: Location.query.all(),
-    #         widget=Select2Widget().
-    #     )
-    # }
-    # column_list = ("company_name", "locations", "computers")
-
-    ########################################################
