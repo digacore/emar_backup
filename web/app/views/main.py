@@ -18,10 +18,14 @@ def index():
         total_companies = len(Company.query.all())
         total_locations = len(Location.query.all())
         total_computers = len(Computer.query.all())
+        # TODO find out which computers are required here: NOT stable/latest OR status Red???
+        # current_version_date_comp = len(
+        #     Computer.query.filter(
+        #         or_(Computer.msi_version == "stable", Computer.msi_version == "latest")
+        #     ).all()
+        # )
         current_version_date_comp = len(
-            Computer.query.filter(
-                or_(Computer.msi_version == "stable", Computer.msi_version == "latest")
-            ).all()
+            Computer.query.filter(Computer.alert_status == "red").all()
         )
     else:
         total_companies = len(Company.query.filter_by(name=viewer.asociated_with).all())
@@ -30,6 +34,7 @@ def index():
             if total_companies > 0
             else len(Location.query.filter_by(name=viewer.asociated_with).all())
         )
+
         total_computers_query = Computer.query.filter(
             or_(
                 Computer.company_name == viewer.asociated_with,
@@ -38,16 +43,24 @@ def index():
         )
         total_computers = len(total_computers_query.all())
 
+        # TODO find out which computers are required here: NOT stable/latest OR status Red???
+        # current_version_date_comp = len(
+        #     total_computers_query.filter(
+        #         or_(
+        #             Computer.msi_version == "stable",
+        #             Computer.msi_version == "latest",
+        #         )
+        #     ).all()
+        # )
         current_version_date_comp = len(
             total_computers_query.filter(
-                or_(
-                    Computer.msi_version == "stable",
-                    Computer.msi_version == "latest",
-                )
+                Computer.alert_status == "red",
             ).all()
         )
 
-    out_of_date_comp = total_computers - current_version_date_comp
+    # NOTE use if NOT stable/latest computers are required
+    # out_of_date_comp = total_computers - current_version_date_comp
+    out_of_date_comp = current_version_date_comp
     out_of_date_comp_pers = (
         0 if total_computers == 0 else int((out_of_date_comp / total_computers) * 100)
     )
