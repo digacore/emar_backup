@@ -174,7 +174,7 @@ def check_and_alert():
                     no_update_files_2h += 1
 
                 check_computer_send_mail(
-                    last_times=last_download_time,
+                    last_time=last_download_time,
                     computer=computer,
                     alert_type=alert_type,
                     alert_obj=alert_obj,
