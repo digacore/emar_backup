@@ -376,11 +376,13 @@ def sftp_check_files_for_update_and_load(credentials):
             est_datetime = datetime.datetime.fromisoformat(
                 offset_to_est(datetime.datetime.utcnow())
             )
-            prefix = f"backup_{est_datetime.strftime('%Y-%b-%d %H_%M')}_"
-            suffix = f"_timestamp{est_datetime.timestamp()}"
+            prefix = f"emarbackup_{est_datetime.strftime('%H-%M_%b-%d-%Y')}_splitpoint"
 
-            with tempfile.TemporaryDirectory(prefix=prefix, suffix=suffix) as tempdir:
+            with tempfile.TemporaryDirectory(prefix=prefix) as raw_tempdir:
+                # this split is required to remove temp string from dir name
+                tempdir = raw_tempdir.split("_splitpoint")[0]
                 trigger_download = False
+
                 for filepath in files_cheksum:
                     if filepath not in credentials["files_checksum"]:
                         trigger_download = True
@@ -462,13 +464,23 @@ def sftp_check_files_for_update_and_load(credentials):
                         [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
                         stdout=PIPE,
                     )
-                    files = [
-                        l.split("Path = ")[1]
-                        for l in proc.stdout.read().decode().splitlines()
-                        if l.startswith("Path = ")
+                    raw_list_stdout = [
+                        f for f in proc.stdout.read().decode().splitlines()
                     ]
+                    # NOTE f.split("Path = ")[1] is folder name
+                    # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
+                    files = {
+                        f.split("Path = ")[1]: datetime.datetime.strptime(
+                            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip(
+                                "Modified = "
+                            ),
+                            "%Y-%m-%d %H:%M:%S",
+                        )
+                        for f in raw_list_stdout
+                        if f.startswith("Path = ")
+                    }
                     dirs = [i for i in files if "\\" not in i]
-                    dirs.sort(key=lambda x: x.split("timestamp")[1])
+                    dirs.sort(key=lambda x: files[x])
                     pprint.pprint(f"dirs:\n{dirs}")
 
                     # TODO should we make this configurable?
@@ -491,13 +503,23 @@ def sftp_check_files_for_update_and_load(credentials):
                         [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
                         stdout=PIPE,
                     )
-                    files = [
-                        l.split("Path = ")[1]
-                        for l in proc.stdout.read().decode().splitlines()
-                        if l.startswith("Path = ")
+                    raw_list_stdout = [
+                        f for f in proc.stdout.read().decode().splitlines()
                     ]
+                    # NOTE f.split("Path = ")[1] is folder name
+                    # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
+                    files = {
+                        f.split("Path = ")[1]: datetime.datetime.strptime(
+                            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip(
+                                "Modified = "
+                            ),
+                            "%Y-%m-%d %H:%M:%S",
+                        )
+                        for f in raw_list_stdout
+                        if f.startswith("Path = ")
+                    }
                     ddirs = [i for i in files if "\\" not in i]
-                    ddirs.sort(key=lambda x: x.split("timestamp")[1])
+                    ddirs.sort(key=lambda x: files[x])
                     pprint.pprint(f"after delete dirs:\n{ddirs}")
 
                 else:
