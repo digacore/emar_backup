@@ -3,6 +3,9 @@ from flask_login import current_user
 
 
 class MyModelView(ModelView):
+
+    page_size = 10
+
     def is_accessible(self):
         return current_user.is_authenticated
 
