@@ -131,7 +131,48 @@
       <h6 class="m-0 font-weight-bold text-primary">Instructions</h6>
     </div>
     <div class="card-body">
-      <p>Instructions on how to use web app etc.</p>
+      <h4>How to install eMARVault On an additional Computers</h4>
+
+        <h5>DESKTOP INSTALL INSTRUCTIONS</h5>
+        <ol type="1">
+          <li>Login into the website emarvault.com (Or eMAR Vault - Admin Panel (mytechwebsite.com))</li>
+          <li>Select "System Settings" -> "Desktop Client"</li>
+          <li>Locate version with "Latest" as the flag name. Right click on Download and copy link</li>
+          <li>Login into the computer where you will be installing the eMARVault desktop client</li>
+          <li>Download the client to the computer https://emarbackups.mytechwebsite.com/download/7</li>
+          <li>Run Installer from an admin account</li>
+          <li>When prompted enter admin username (DTC or something like that) and the admin password</li>
+          <ol type="a">
+            <li>This will create 2x scheduled tasks (eMARVaultHourlyCheck, eMARVaultHeartbeat)</li>
+              <li>This will install the program into C:\Program Files (x86)\eMARVault</li>
+        </ol>
+        </ol>
+
+        <h4>WEBSITE CONFIGURATION</h4>
+        <ol type="1">
+        <li>Login into the website emarvault.com (Or eMAR Vault - Admin Panel (mytechwebsite.com))</li>
+        <li>Select "Computers"</li>
+        <li>Locate the new computer that the software was installed on (OR sort by company name and the new device will show up first since there is no name there</li>
+        <li>Click Edit (Pencil button next to the trashbin looking icon)</li>
+        <li>Fill out the following fields</li>
+        <ol type="a">
+          <li>Company Name (Drop Down if missing, setup company under the "Company Tab")</li>
+          <li>Location (Drop Down if missing, setup "Location" under the "Location Tab" ) It will filter as you type in the company name</li>
+          <li>Type (Enter description on where that computer is)</li>
+          <li>SFTP Host (ftpus.pointclickcare.com)</li>
+          <li>SFTP Username (emar backup username for that company)</li>
+          <li>SFTP FolderPath (EG: emar_backup_hvhc_19)</li>
+          <li>Scroll to the bottom and click "Save"</li>
+        </ol>
+        <br>
+        <h6>Testing and Confirmation that its working</h6>
+        <li>Login into the computer and run the scheduled task</li>
+        <li>OR = Wait up to 1 hour (Scheduled task runs 1x times per hour)</li>
+        <li>A new ICON will show up on the desktop named "eMARVault"</li>
+        <li>Click on it and it will prompt for a password to open the files</li>
+        <li>The default password is = password</li>
+        <li>This can be changed from the website by editing the computer and changing the "Folder Password" to something else.</li>
+      </ol>
       <p class="mb-0">...</p>
     </div>
   </div>
