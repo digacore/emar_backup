@@ -8,6 +8,9 @@ from app.logger import logger
 from config import BaseConfig as CFG
 
 
+TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
 def check_computer_send_mail(
     last_time: datetime, computer: m.Computer, alert_type: str, alert_obj
 ):
@@ -24,8 +27,32 @@ def check_computer_send_mail(
 
     alert_url = CFG.MAIL_ALERTS
 
-    alert_hours = 12
+    alert_hours: int = 12
     alerts_time = timedelta(seconds=60 * 60 * alert_hours)
+
+    # TODO find more elegant way to handle all cases
+    # convert from str to datetime
+    last_online = (
+        datetime.strptime(computer.last_time_online, TIME_FORMAT)
+        if isinstance(computer.last_time_online, str)
+        else computer.last_time_online
+    )
+    last_download = (
+        datetime.strptime(computer.last_download_time, TIME_FORMAT)
+        if isinstance(computer.last_download_time, str)
+        else computer.last_download_time
+    )
+    # if None - consider it as time was missed to keep status red
+    last_online = (
+        last_online
+        if last_online
+        else CFG.offset_to_est(datetime.now(), True) - alerts_time * 2
+    )
+    last_download = (
+        last_download
+        if last_download
+        else CFG.offset_to_est(datetime.now(), True) - alerts_time * 2
+    )
 
     if not last_time and not computer:
         requests.post(
@@ -80,10 +107,8 @@ def check_computer_send_mail(
             alert_type,
         )
     elif (
-        computer.last_download_time
-        > CFG.offset_to_est(datetime.now(), True) - alerts_time
-        and computer.last_time_online
-        > CFG.offset_to_est(datetime.now(), True) - alerts_time
+        last_download > CFG.offset_to_est(datetime.now(), True) - alerts_time
+        and last_online > CFG.offset_to_est(datetime.now(), True) - alerts_time
     ):
         computer.alert_status = "green"
         computer.update()
@@ -133,7 +158,6 @@ def check_and_alert():
     # TODO loop for all CUSTOM alerts to send email
     alerts: list[m.Alert] = m.Alert.query.all()
     alert_names = [i.name for i in alerts]
-    time_format = "%Y-%m-%d %H:%M:%S"
 
     off_30_min_computers = 0
     no_update_files_2h = 0
@@ -147,14 +171,14 @@ def check_and_alert():
 
         # last_download_time str check
         last_download_time = (
-            datetime.strptime(computer.last_download_time, time_format)
+            datetime.strptime(computer.last_download_time, TIME_FORMAT)
             if isinstance(computer.last_download_time, str)
             else computer.last_download_time
         )
 
         # last_time_online str check
         last_time_online = (
-            datetime.strptime(computer.last_time_online, time_format)
+            datetime.strptime(computer.last_time_online, TIME_FORMAT)
             if isinstance(computer.last_time_online, str)
             else computer.last_time_online
         )
@@ -164,21 +188,32 @@ def check_and_alert():
             if alert_types_computers[alert_type] and alert_type in alert_names:
                 alert_obj: m.Alert = m.Alert.query.filter_by(name=alert_type).first()
 
-                if last_time_online < CFG.offset_to_est(
-                    datetime.now(), True
-                ) - timedelta(seconds=1800):
-                    off_30_min_computers += 1
-                if last_download_time < CFG.offset_to_est(
-                    datetime.now(), True
-                ) - timedelta(seconds=7200):
-                    no_update_files_2h += 1
+                # TODO find more elegant way to handle all cases
+                if last_time_online:
+                    if last_time_online < CFG.offset_to_est(
+                        datetime.now(), True
+                    ) - timedelta(seconds=1800):
+                        off_30_min_computers += 1
 
-                check_computer_send_mail(
-                    last_time=last_download_time,
-                    computer=computer,
-                    alert_type=alert_type,
-                    alert_obj=alert_obj,
-                )
+                    check_computer_send_mail(
+                        last_time=last_time_online,
+                        computer=computer,
+                        alert_type=alert_type,
+                        alert_obj=alert_obj,
+                    )
+
+                if last_download_time:
+                    if last_download_time < CFG.offset_to_est(
+                        datetime.now(), True
+                    ) - timedelta(seconds=7200):
+                        no_update_files_2h += 1
+
+                    check_computer_send_mail(
+                        last_time=last_download_time,
+                        computer=computer,
+                        alert_type=alert_type,
+                        alert_obj=alert_obj,
+                    )
 
     if off_30_min_computers == len(computers):
         logger.warning("All computers offline 30 min alert.")
