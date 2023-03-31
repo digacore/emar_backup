@@ -72,7 +72,7 @@
       <li class="nav-item active">
         <a class="nav-link" href="{{ url_for('main.index') }}">
           <i class="fas fa-fw fa-tachometer-alt"></i>
-          <span style="color: lawngreen;">Dashboard</span></a>
+          <span style="color: lawngreen;" title='Overview with some widgets "Offline Devices, Total Devices" etc…'>Dashboard</span></a>
       </li>
 
       {% if current_user.is_authenticated %}
@@ -88,19 +88,19 @@
         <li class="nav-item active">
           <a class="nav-link" href="/admin/company/">
             <i class="fas fa-fw fa-hospital"></i>
-            <span style="color: lawngreen;">Company</span></a>
+            <span style="color: lawngreen;" title='Create or view overview of a "Company"'>Company</span></a>
         </li>
         <!-- Nav Item - Computer -->
         <li class="nav-item active">
           <a class="nav-link" href="/admin/computer/">
             <i class="fas fa-fw fa-desktop"></i>
-            <span style="color: lawngreen;">Computer</span></a>
+            <span style="color: lawngreen;" title="View All eMARVault devices. Edit Devices etc….">Computer</span></a>
         </li>
         <!-- Nav Item - Location -->
         <li class="nav-item active">
           <a class="nav-link" href="/admin/location/">
             <i class="fas fa-fw fa-map-marker"></i>
-            <span style="color: lawngreen;">Location</span></a>
+            <span style="color: lawngreen;" title="View Sites/Locations, Add Sites/Locations associated with a company, View Site Overview (Offline Online devices etc..) ">Location</span></a>
         </li>
         <!-- Nav Item - Alert fa-bell fa-flash-->
         <li class="nav-item active">
@@ -113,7 +113,7 @@
       <li class="nav-item active">
         <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
           <i class="fas fa-fw fa-cog"></i>
-          <span style="color: lawngreen;">System Settings</span>
+          <span style="color: lawngreen;" title="Download lates desktop install">System Settings</span>
         </a>
         <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
           <div class="bg-white py-2 collapse-inner rounded">
@@ -150,9 +150,10 @@
         {% if 'static' not in request.endpoint %}
           {% if 'admin' in url_for(request.endpoint) %}
           <script>
-            window.onload=function(){
+            document.addEventListener("DOMContentLoaded", 
+              function(){
             $("#sidebarToggle").click();
-            }
+            })
           </script>
           {% endif %}
         {% endif %}
