@@ -39,6 +39,7 @@ def create_app(environment="development"):
         download_msi_blueprint,
         download_msi_fblueprint,
         search_column_blueprint,
+        locations_company_blueprint,
     )
     from app.models import (
         User,
@@ -83,6 +84,7 @@ def create_app(environment="development"):
     app.register_api(computer_blueprint)
     app.register_api(download_msi_blueprint)
     app.register_api(search_column_blueprint)
+    app.register_api(locations_company_blueprint)
 
     # Set up flask login.
     @login_manager.user_loader
