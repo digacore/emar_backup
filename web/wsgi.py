@@ -31,5 +31,12 @@ def create_superuser():
     create_superuser()
 
 
+@app.cli.command()
+def empty_to_stable():
+    from app.controllers import empty_to_stable
+
+    empty_to_stable()
+
+
 if __name__ == "__main__":
     app.run()

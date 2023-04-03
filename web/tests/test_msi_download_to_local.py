@@ -2,16 +2,18 @@ def test_download_msi(client):
     response = client.get("/download/1")
 
     assert response
-    assert response.status_code == 302
-    # assert response.mimetype == "application/octet-stream" not with @login_required and download_name
+    assert response.status_code == 200
+    assert (
+        response.mimetype == "application/octet-stream"
+    )  # not with @login_required and download_name
     assert isinstance(response.data, bytes)
 
     # TODO fix this test. It gives 302, before giving 400. It redirects first?
-    # response = client.get("/download/543543546")
+    response = client.get("/download/543543546")
 
-    # assert response
-    # assert response.status_code == 400
-    # assert response.json["status"] == "fail"
+    assert response
+    assert response.status_code == 400
+    assert response.json["status"] == "fail"
 
 
 def test_msi_download_to_local(client):

@@ -11,8 +11,6 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin, BlobMixin, BlobUploadField
 from app.utils import MyModelView
 
-from config import BaseConfig as CFG
-
 
 class DesktopClient(db.Model, ModelMixin, BlobMixin):
 

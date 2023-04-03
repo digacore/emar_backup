@@ -71,8 +71,10 @@ def init_db(test_me: bool = False):
             },
             "comp2_late": {
                 "computer_name": "comp2_late",
-                "last_download_time": CFG.offset_to_est(datetime.now(), True) - timedelta(seconds=60*60*13),
-                "last_time_online": CFG.offset_to_est(datetime.now(), True) - timedelta(seconds=60*60*13),
+                "last_download_time": CFG.offset_to_est(datetime.now(), True)
+                - timedelta(seconds=60 * 60 * 13),
+                "last_time_online": CFG.offset_to_est(datetime.now(), True)
+                - timedelta(seconds=60 * 60 * 13),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp2_sftp_host",
@@ -116,6 +118,21 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp4_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
+            },
+            "comp5_test": {
+                "computer_name": "comp5_test",
+                "last_download_time": CFG.offset_to_est(datetime.now(), True),
+                "last_time_online": CFG.offset_to_est(datetime.now(), True),
+                "company_name": "Atlas",
+                "location_name": "Maywood",
+                "sftp_host": "comp5_sftp_host",
+                "sftp_username": "comp5_sftp_username",
+                "sftp_password": "comp5_sftp_password",
+                "sftp_folder_path": "comp5_sftp_folder_path",
+                "identifier_key": "comp5_identifier_key",
+                "folder_password": "pass",
+                "manager_host": "comp5_manager_host",
+                "files_checksum": dict(),
             },
         }
 
@@ -169,22 +186,40 @@ def init_db(test_me: bool = False):
             m.Location(name=location, company_name=locations[location]).save()
 
         for computer in computers:
-            m.Computer(
-                computer_name=computers[computer]["computer_name"],
-                last_download_time=computers[computer]["last_download_time"],
-                last_time_online=computers[computer]["last_time_online"],
-                company_name=computers[computer]["company_name"],
-                location_name=computers[computer]["location_name"],
-                sftp_host=computers[computer]["sftp_host"],
-                sftp_username=computers[computer]["sftp_username"],
-                sftp_password=computers[computer]["sftp_password"],
-                sftp_folder_path=computers[computer]["sftp_folder_path"],
-                identifier_key=computers[computer]["identifier_key"],
-                folder_password=computers[computer]["folder_password"],
-                manager_host=computers[computer]["manager_host"],
-                files_checksum=computers[computer]["files_checksum"],
-                msi_version=computers[computer]["msi_version"],
-            ).save()
+            if "msi_version" in computer:
+                m.Computer(
+                    computer_name=computers[computer]["computer_name"],
+                    last_download_time=computers[computer]["last_download_time"],
+                    last_time_online=computers[computer]["last_time_online"],
+                    company_name=computers[computer]["company_name"],
+                    location_name=computers[computer]["location_name"],
+                    sftp_host=computers[computer]["sftp_host"],
+                    sftp_username=computers[computer]["sftp_username"],
+                    sftp_password=computers[computer]["sftp_password"],
+                    sftp_folder_path=computers[computer]["sftp_folder_path"],
+                    identifier_key=computers[computer]["identifier_key"],
+                    folder_password=computers[computer]["folder_password"],
+                    manager_host=computers[computer]["manager_host"],
+                    files_checksum=computers[computer]["files_checksum"],
+                    msi_version=computers[computer]["msi_version"],
+                ).save()
+
+            else:
+                m.Computer(
+                    computer_name=computers[computer]["computer_name"],
+                    last_download_time=computers[computer]["last_download_time"],
+                    last_time_online=computers[computer]["last_time_online"],
+                    company_name=computers[computer]["company_name"],
+                    location_name=computers[computer]["location_name"],
+                    sftp_host=computers[computer]["sftp_host"],
+                    sftp_username=computers[computer]["sftp_username"],
+                    sftp_password=computers[computer]["sftp_password"],
+                    sftp_folder_path=computers[computer]["sftp_folder_path"],
+                    identifier_key=computers[computer]["identifier_key"],
+                    folder_password=computers[computer]["folder_password"],
+                    manager_host=computers[computer]["manager_host"],
+                    files_checksum=computers[computer]["files_checksum"],
+                ).save()
 
         for alert in alerts:
             m.Alert(
@@ -210,3 +245,14 @@ def init_db(test_me: bool = False):
         ).save()
 
         db.session.commit()
+
+
+def empty_to_stable():
+    """
+    Convert empty msi_version field to 'stable'
+    """
+    computers = m.Computer.query.filter_by(msi_version=None).all()
+
+    for computer in computers:
+        computer.msi_version = "stable"
+        computer.update()
