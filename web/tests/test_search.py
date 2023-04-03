@@ -4,6 +4,7 @@ def test_search_column(client):
         "/search_column",
         json=dict(
             col_name="computer_name",
+            current_href="http://localhost:5000/admin/computer/",
         ),
     )
 
@@ -14,6 +15,7 @@ def test_search_column(client):
         "/search_column",
         json=dict(
             col_name="name_computer",
+            current_href="http://localhost:5000/admin/computer/",
         ),
     )
 
