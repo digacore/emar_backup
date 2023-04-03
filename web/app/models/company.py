@@ -7,7 +7,8 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
-from app.logger import logger
+from .computer import Computer
+from .location import Location
 
 
 class Company(db.Model, ModelMixin):
@@ -84,8 +85,31 @@ class CompanyView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
-    # list rows depending on current user permissions
     def get_query(self):
+
+        # NOTE Update number of Locations and Computers in Companies
+        computers = Computer.query.all()
+        locations = Location.query.all()
+        companies = Company.query.all()
+
+        if companies:
+            computer_company = [co.company_name for co in computers]
+            location_company = [loc.company_name for loc in locations]
+            for company in companies:
+                company.total_computers = computer_company.count(company.name)
+                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
+                computers_online_per_company = [
+                    comp.alert_status for comp in computers if comp.company == company
+                ]
+                computers_online = computers_online_per_company.count("green")
+                company.computers_online = computers_online
+                company.computers_offline = (
+                    len(computers_online_per_company) - computers_online
+                )
+                company.locations_per_company = location_company.count(company.name)
+                company.update()
+
+        # NOTE handle permissions - meaning which details current user could view
         if current_user:
             if str(current_user.asociated_with).lower() == "global-full":
                 if "delete" in self.action_disallowed_list:
@@ -96,12 +120,6 @@ class CompanyView(RowActionListMixin, MyModelView):
                     self.action_disallowed_list.append("delete")
                 self.can_create = False
 
-        logger.debug(
-            "company.py get_query() current_user={}, asociated_with={}",
-            current_user,
-            current_user.asociated_with,
-        )
-        if current_user:
             user_permission: str = current_user.asociated_with
             if (
                 user_permission.lower() == "global-full"
