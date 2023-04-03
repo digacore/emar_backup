@@ -10,7 +10,7 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
-from app.logger import logger
+from .computer import Computer
 
 
 class Location(db.Model, ModelMixin):
@@ -92,9 +92,29 @@ class LocationView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
-    # list rows depending on current user permissions
     def get_query(self):
 
+        # NOTE Update number of Computers in Locations
+        computers = Computer.query.all()
+        locations = Location.query.all()
+
+        if locations:
+            computer_location = [loc.location_name for loc in computers]
+            for location in locations:
+                location.computers_per_location = computer_location.count(location.name)
+                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
+                computers_online_per_location = [
+                    comp.alert_status for comp in computers if comp.location == location
+                ]
+                computers_online = computers_online_per_location.count("green")
+                location.computers_online = computers_online
+                location.computers_offline = (
+                    len(computers_online_per_location) - computers_online
+                )
+                location.update()
+
+        # TODO make universal (func or something) for every model
+        # NOTE handle permissions - meaning which details current user could view
         if current_user:
             if str(current_user.asociated_with).lower() == "global-full":
                 if "delete" in self.action_disallowed_list:
@@ -105,12 +125,6 @@ class LocationView(RowActionListMixin, MyModelView):
                     self.action_disallowed_list.append("delete")
                 self.can_create = False
 
-        logger.debug(
-            "location.py get_query() current_user={}, asociated_with={}",
-            current_user,
-            current_user.asociated_with,
-        )
-        if current_user:
             user_permission: str = current_user.asociated_with
             if (
                 user_permission.lower() == "global-full"

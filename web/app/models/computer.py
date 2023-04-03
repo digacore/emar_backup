@@ -11,8 +11,6 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
-from .location import Location
-from .company import Company
 from .desktop_client import DesktopClient
 
 from config import BaseConfig as CFG
@@ -53,7 +51,7 @@ class Computer(db.Model, ModelMixin):
     folder_password = db.Column(db.String(128), default=CFG.DEFAULT_FOLDER_PASSWORD)
 
     type = db.Column(db.String(128))
-    msi_version = db.Column(db.String(64))
+    msi_version = db.Column(db.String(64), default="stable")
     current_msi_version = db.Column(db.String(64))
 
     alert_status = db.Column(db.String(128))
@@ -99,11 +97,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         return "ComputerView"
 
     list_template = "import-computer-to-dashboard.html"
-
-    # NOTE could be useful when define the permissions
-    # can_create = False
-    # can_edit = False
-    # can_delete = False
 
     column_hide_backrefs = False
     column_list = [
@@ -152,7 +145,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         # "files_checksum": {"readonly": True},
     }
 
-    # Added to control fields order. It is dict though...
+    # form_args control fields order. It is dict though...
     form_args = {
         "computer_name": {"label": "Computer name"},
         "company_name": {"label": "Company name", "id": "company_name"},
@@ -211,7 +204,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
-    # list rows depending on current user permissions
     def get_query(self):
 
         OBLIGATORY_VERSIONS = [
@@ -219,7 +211,10 @@ class ComputerView(RowActionListMixin, MyModelView):
             ("latest", "latest"),
         ]
 
-        versions = [i.version for i in DesktopClient.query.all()]
+        versions = [
+            i.version
+            for i in DesktopClient.query.with_entities(DesktopClient.version).all()
+        ]
 
         # remove old versions from global versions variable
         for version in CFG.CLIENT_VERSIONS:
@@ -234,47 +229,7 @@ class ComputerView(RowActionListMixin, MyModelView):
             if dversion not in CFG.CLIENT_VERSIONS:
                 CFG.CLIENT_VERSIONS.append(dversion)
 
-        # TODO should we move this code to Location and Company??
-        # NOTE Update Location and Company computers info
-        computers = Computer.query.all()
-        computer_location = [loc.location_name for loc in computers]
-        computer_company = [co.company_name for co in computers]
-
-        # update number of computers in locations
-        locations = Location.query.all()
-        location_company = [loc.company_name for loc in locations]
-        if locations:
-            for location in locations:
-                location.computers_per_location = computer_location.count(location.name)
-                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
-                computers_online_per_location = [
-                    comp.alert_status for comp in computers if comp.location == location
-                ]
-                computers_online = computers_online_per_location.count("green")
-                location.computers_online = computers_online
-                location.computers_offline = (
-                    len(computers_online_per_location) - computers_online
-                )
-                location.update()
-
-        # update number of locations and computers in companies
-        companies = Company.query.all()
-        if companies:
-            for company in companies:
-                company.total_computers = computer_company.count(company.name)
-                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
-                computers_online_per_company = [
-                    comp.alert_status for comp in computers if comp.company == company
-                ]
-                computers_online = computers_online_per_company.count("green")
-                company.computers_online = computers_online
-                company.computers_offline = (
-                    len(computers_online_per_company) - computers_online
-                )
-                company.locations_per_company = location_company.count(company.name)
-                company.update()
-
-        # NOTE Check permissions
+        # NOTE handle permissions - meaning which details current user could view
         self.form_choices = CFG.CLIENT_VERSIONS
 
         if current_user:
@@ -287,7 +242,6 @@ class ComputerView(RowActionListMixin, MyModelView):
                     self.action_disallowed_list.append("delete")
                 self.can_create = False
 
-        if current_user:
             user_permission: str = current_user.asociated_with
             if (
                 user_permission.lower() == "global-full"
@@ -305,4 +259,5 @@ class ComputerView(RowActionListMixin, MyModelView):
             result_query = self.session.query(self.model).filter(
                 self.model.computer_name == "None"
             )
+
         return result_query
