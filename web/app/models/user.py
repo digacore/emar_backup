@@ -86,8 +86,6 @@ class UserView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "UserView"
 
-    list_template = "import-admin-list-to-dashboard.html"
-
     column_list = [
         "id",
         "username",

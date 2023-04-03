@@ -23,7 +23,9 @@ class ModelMixin(object):
 
 class RowActionListMixin:
 
-    list_template = "admin/list.html"
+    list_template = "import-admin-list-to-dashboard.html"
+    edit_template = "import-admin-edit-to-dashboard.html"
+    create_template = "import-admin-create-to-dashboard.html"
 
     def allow_row_action(self, action, model):
         return True

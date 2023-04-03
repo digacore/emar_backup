@@ -45,8 +45,6 @@ class LocationView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "LocationView"
 
-    list_template = "import-admin-list-to-dashboard.html"
-
     column_hide_backrefs = False
     column_list = [
         "name",
