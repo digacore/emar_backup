@@ -24,8 +24,6 @@ class ClientVersionView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "ClientVersionView"
 
-    list_template = "import-admin-list-to-dashboard.html"
-
     form_choices = {"name": [("stable", "stable"), ("latest", "latest")]}
 
     action_disallowed_list = ["delete"]

@@ -43,9 +43,15 @@ class AlertView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "AlertView"
 
-    list_template = "import-admin-list-to-dashboard.html"
-
-    column_list = ["name", "from_email", "to_addresses", "subject", "body", "html_body", "alert_status"]
+    column_list = [
+        "name",
+        "from_email",
+        "to_addresses",
+        "subject",
+        "body",
+        "html_body",
+        "alert_status",
+    ]
 
     column_searchable_list = ["name", "from_email", "to_addresses"]
 

@@ -43,8 +43,6 @@ class DesktopClientView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "DesktopClientView"
 
-    list_template = "import-admin-list-to-dashboard.html"
-
     column_searchable_list = ["name", "version", "flag_name"]
 
     column_list = (
@@ -75,6 +73,7 @@ class DesktopClientView(RowActionListMixin, MyModelView):
         "filename",
     )
     action_disallowed_list = ["delete"]
+    column_default_sort = ("version", True)
 
     def _download_formatter(self, context, model, name):
         return Markup(

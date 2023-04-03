@@ -39,8 +39,6 @@ class CompanyView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "CompanyView"
 
-    list_template = "import-admin-list-to-dashboard.html"
-
     column_list = [
         "name",
         "locations_per_company",
