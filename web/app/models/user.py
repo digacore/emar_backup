@@ -153,7 +153,7 @@ class UserView(RowActionListMixin, MyModelView):
         form.asociated_with.choices = asociated_with_query_factory()
         return form
 
-    def create_form(self, obj):
+    def create_form(self, obj=None):
         form = super(UserView, self).create_form(obj)
         form.asociated_with.choices = asociated_with_query_factory()
         return form
