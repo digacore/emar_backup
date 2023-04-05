@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
+from typing import List
 
 import requests
+from sqlalchemy import or_
 
 from app import models as m
 from app.logger import logger
@@ -9,6 +11,36 @@ from config import BaseConfig as CFG
 
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
+def alert_additional_users(computer: m.Computer, alert_obj: m.Alert):
+    # get users associated with this computer
+    users: List[m.User] = m.User.query.filter(
+        or_(
+            m.User.asociated_with == computer.company_name,
+            m.User.asociated_with == computer.location_name,
+        )
+    ).all()
+
+    for user in users:
+        if alert_obj.name not in [alert.name for alert in user.alerts]:
+            # if user does not have this alert_obj in his alerts
+            continue
+
+        to_addresses = user.email
+        response = requests.post(
+            CFG.MAIL_ALERTS,
+            json={
+                "alerted_target": computer.computer_name,
+                "alert_status": alert_obj.alert_status,
+                "from_email": alert_obj.from_email,
+                "to_addresses": to_addresses,
+                "subject": f"{computer.computer_name} {alert_obj.subject}",
+                "body": f"{computer.computer_name} {alert_obj.body}",
+                "html_body": alert_obj.html_body,
+            },
+        )
+    return response
 
 
 def check_computer_send_mail(
@@ -85,6 +117,7 @@ def check_computer_send_mail(
                 "html_body": alert_obj.html_body,
             },
         )
+        alert_additional_users(computer, alert_obj)
 
         computer.alert_status = "yellow"
         computer.update()
