@@ -27,8 +27,14 @@ def alert_additional_users(computer: m.Computer, alert_obj: m.Alert):
             # if user does not have this alert_obj in his alerts
             continue
 
+        logger.debug(
+            "Sending additional email to user {} with {} alert",
+            user.username,
+            alert_obj.name,
+        )
+
         to_addresses = user.email
-        response = requests.post(
+        requests.post(
             CFG.MAIL_ALERTS,
             json={
                 "alerted_target": computer.computer_name,
@@ -40,7 +46,6 @@ def alert_additional_users(computer: m.Computer, alert_obj: m.Alert):
                 "html_body": alert_obj.html_body,
             },
         )
-    return response
 
 
 def check_computer_send_mail(
