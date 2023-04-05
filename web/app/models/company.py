@@ -17,6 +17,8 @@ class Company(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
+    default_sftp_username = db.Column(db.String(128))
+    default_sftp_password = db.Column(db.String(128))
     locations_per_company = db.Column(db.Integer)
     total_computers = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
@@ -29,6 +31,8 @@ class Company(db.Model, ModelMixin):
     def _cols(self):
         return [
             "name",
+            "default_sftp_username",
+            "default_sftp_password",
             "locations_per_company",
             "total_computers",
             "computers_online",
@@ -42,6 +46,7 @@ class CompanyView(RowActionListMixin, MyModelView):
 
     column_list = [
         "name",
+        "default_sftp_username",
         "locations_per_company",
         "total_computers",
         "computers_online",

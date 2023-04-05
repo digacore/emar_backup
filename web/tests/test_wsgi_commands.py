@@ -17,6 +17,10 @@ def test_check_and_alert(client):
 
 
 def test_empty_to_stable(client):
+    computer5: Computer = Computer.query.filter_by(computer_name="comp5_test").first()
+    computer5.msi_version = None
+    computer5.update()
+
     empty_computers = Computer.query.filter_by(msi_version=None).all()
     empty_to_stable()
     no_empty_computers = Computer.query.filter_by(msi_version=None).all()
