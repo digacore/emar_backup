@@ -105,6 +105,17 @@ def check_computer_send_mail(
             },
         )
 
+        all_computers = m.Computer.query.all()
+        for computer in all_computers:
+            computer.alert_status = f"red - {alert_type}"
+            computer.update()
+        logger.warning(
+            "Computer {} {} hours {} alert sent and alert status updated to red.",
+            "ALL",
+            "null",
+            alert_type,
+        )
+
     elif (
         last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time
         and computer.alert_status == "green"
@@ -124,7 +135,7 @@ def check_computer_send_mail(
         )
         alert_additional_users(computer, alert_obj)
 
-        computer.alert_status = "yellow"
+        computer.alert_status = f"yellow - {alert_type}"
         computer.update()
         logger.warning(
             "Computer {} {} hours {} alert sent and alert status updated to yellow.",
@@ -136,7 +147,7 @@ def check_computer_send_mail(
         last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time
         and computer.alert_status == "yellow"
     ):
-        computer.alert_status = "red"
+        computer.alert_status = f"red - {alert_type}"
         computer.update()
         logger.warning(
             "Computer {} {} hours {} alert status updated to red due to repeated yellow condition.",
@@ -263,7 +274,10 @@ def check_and_alert():
                 else None
             )
             check_computer_send_mail(
-                last_time=None, computer=None, alert_type="", alert_obj=all_offline
+                last_time=None,
+                computer=None,
+                alert_type="all offline 30 min",
+                alert_obj=all_offline,
             )
             logger.warning(
                 "All computers offline 30 min alert sent and alert statuses updated."
@@ -279,7 +293,10 @@ def check_and_alert():
                 else None
             )
             check_computer_send_mail(
-                last_time=None, computer=None, alert_type="", alert_obj=no_files_2h
+                last_time=None,
+                computer=None,
+                alert_type="no new files 2 h",
+                alert_obj=no_files_2h,
             )
 
             logger.info("No new files over 2 h alert sent and alert statuses updated.")
