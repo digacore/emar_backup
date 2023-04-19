@@ -57,6 +57,14 @@ class LocationView(RowActionListMixin, MyModelView):
     column_sortable_list = column_list
     action_disallowed_list = ["delete"]
 
+    form_widget_args = {
+        "computers_per_location": {"readonly": True},
+        "total_computers": {"readonly": True},
+        "computers_online": {"readonly": True},
+        "computers_offline": {"readonly": True},
+        "created_at": {"readonly": True},
+    }
+
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
 

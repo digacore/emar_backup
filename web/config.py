@@ -51,10 +51,15 @@ class BaseConfig(object):
 
     CLIENT_VERSIONS = [("stable", "stable"), ("latest", "latest")]
 
-    DEFAULT_SFTP_HOST = os.environ.get("DEFAULT_SFTP_HOST", "")
+    DEFAULT_SFTP_HOST = os.environ.get(
+        "DEFAULT_SFTP_HOST", "http://ftpus.pointclickcare.com"
+    )
     DEFAULT_SFTP_USERNAME = os.environ.get("DEFAULT_SFTP_USERNAME", "Username")
     DEFAULT_SFTP_PASSWORD = os.environ.get("DEFAULT_SFTP_PASSWORD", "password")
     DEFAULT_FOLDER_PASSWORD = os.environ.get("DEFAULT_FOLDER_PASSWORD", "password")
+    DEFAULT_MANAGER_HOST = os.environ.get(
+        "DEFAULT_MANAGER_HOST", "https://emarvault.com/"
+    )
 
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time

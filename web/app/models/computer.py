@@ -60,7 +60,7 @@ class Computer(db.Model, ModelMixin):
     last_time_online = db.Column(db.DateTime)
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
 
-    manager_host = db.Column(db.String(256))
+    manager_host = db.Column(db.String(256), default=CFG.DEFAULT_MANAGER_HOST)
     last_downloaded = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
     # TODO do we need this one? Could computer be deactivated?
@@ -142,6 +142,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "alert_status": {"readonly": True},
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
+        "current_msi_version": {"readonly": True},
         # "files_checksum": {"readonly": True},
     }
 
