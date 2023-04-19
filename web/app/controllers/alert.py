@@ -13,6 +13,44 @@ from config import BaseConfig as CFG
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
+def get_html_body(computer: m.Computer, alert_obj: m.Alert):
+    html_template = f"""
+        <html>
+            <head>
+                <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                <style>
+                /* Add custom classes and styles that you want inlined here */
+                </style>
+            </head>
+            <body class="bg-light">
+                <div class="container">
+                <div class="card my-10">
+                    <div class="card-body">
+                    <h1 class="h3 mb-2">Computer {computer.computer_name} Alert</h1>
+                    <h5 class="text-teal-700">
+                        {computer.company_name} {computer.location_name} {alert_obj.name} {computer.sftp_password}
+                    </h5>
+                    <hr>
+                    <div class="space-y-3">
+                        <p class="text-700">
+                            Computer {computer.computer_name} {alert_obj.body}
+                        </p>
+                    </div>
+                    <hr>
+                    eMARVault Contact info
+                    <a class="btn btn-primary" href="https://app.bootstrapemail.com/templates" target="_blank">
+                        Get More Email Templates
+                    </a>
+                    </div>
+                </div>
+                </div>
+            </body>
+        </html>
+    """
+
+    return html_template
+
+
 def alert_additional_users(computer: m.Computer, alert_obj: m.Alert):
     # get users associated with this computer
     users: List[m.User] = m.User.query.filter(
@@ -34,6 +72,7 @@ def alert_additional_users(computer: m.Computer, alert_obj: m.Alert):
         )
 
         to_addresses = user.email
+        html_body = get_html_body(computer, alert_obj)
         requests.post(
             CFG.MAIL_ALERTS,
             json={
@@ -41,9 +80,9 @@ def alert_additional_users(computer: m.Computer, alert_obj: m.Alert):
                 "alert_status": alert_obj.alert_status,
                 "from_email": alert_obj.from_email,
                 "to_addresses": to_addresses,
-                "subject": f"{computer.computer_name} {alert_obj.subject}",
-                "body": f"{computer.computer_name} {alert_obj.body}",
-                "html_body": alert_obj.html_body,
+                "subject": f"{computer.company_name} {computer.location_name} {alert_obj.name}",
+                "body": "",
+                "html_body": html_body,
             },
         )
 
@@ -116,9 +155,8 @@ def check_computer_send_mail(
             alert_type,
         )
 
-    elif (
-        last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time
-        and computer.alert_status == "green"
+    elif last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time and (
+        computer.alert_status == "green" or not computer.alert_status
     ):
         requests.post(
             alert_url,
@@ -203,6 +241,7 @@ def check_and_alert():
     Checks computers activity.
     Send email and change status if something went wrong.
     """
+    # TODO update query to check computer last time inside database
     computers: list[m.Computer] = m.Computer.query.all()
     # TODO loop for all CUSTOM alerts to send email
     alerts: list[m.Alert] = m.Alert.query.all()
