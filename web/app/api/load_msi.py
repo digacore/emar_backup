@@ -16,7 +16,7 @@ download_msi_fblueprint = Blueprint("download_msi", __name__)
 @download_msi_fblueprint.route("/download/<int:id>", methods=["GET"])
 @logger.catch
 def download_msi(id):
-    # TODO protect by login requierd
+    # TODO add guid, register to db, add to /download/23dc4cccccqd4443c
     msi = DesktopClient.query.filter_by(id=id).first()
 
     if msi:

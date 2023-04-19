@@ -1,7 +1,7 @@
 import datetime
 import uuid
 import json
-from flask import jsonify
+from flask import jsonify, request
 
 from app.models import Computer, DesktopClient
 from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
@@ -52,7 +52,7 @@ def last_time(body: LastTime):
 @downloads_info_blueprint.post("/get_credentials")
 @logger.catch
 def get_credentials(body: GetCredentials):
-
+    # TODO add unique guid to headers in server_connect.py for api
     computer: Computer = (
         Computer.query.filter_by(
             identifier_key=body.identifier_key, computer_name=body.computer_name

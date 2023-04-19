@@ -26,6 +26,7 @@ class BaseConfig(object):
     SUPER_USER_MAIL = os.environ.get("SUPERPASS", "emarsup@email.com")
 
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
+    UPDATE_CL_PERIOD = int(os.environ.get("UPDATE_CL_PERIOD", 120))
 
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
