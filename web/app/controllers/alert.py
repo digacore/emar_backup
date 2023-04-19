@@ -168,8 +168,6 @@ def check_computer_send_mail(
             alert_type,
         )
     else:
-        computer.alert_status = f"red - {alert_type}"
-        computer.update()
         logger.info(
             "Computer {} {} hours {} alert was already sent and updated.",
             computer.computer_name,
