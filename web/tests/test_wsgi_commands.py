@@ -1,6 +1,11 @@
 import pytest
 
-from app.controllers import create_superuser, check_and_alert, empty_to_stable
+from app.controllers import (
+    create_superuser,
+    check_and_alert,
+    empty_to_stable,
+    daily_summary,
+)
 from app.models import User, Computer, Alert
 
 from config import BaseConfig as CFG
@@ -61,3 +66,13 @@ def test_empty_to_stable(client):
 
     assert len(empty_computers) > 0
     assert len(no_empty_computers) == 0
+
+
+def test_daily_summary(client, requests_mock):
+
+    requests_mock.post(
+        CFG.MAIL_ALERTS,
+        json={"message": "Email alert sent from API", "status": "success"},
+    )
+
+    daily_summary()

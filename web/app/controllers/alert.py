@@ -342,3 +342,102 @@ def check_and_alert():
             )
 
             logger.info("No new files over 2 h alert sent and alert statuses updated.")
+
+
+def daily_summary():
+    computers: list[m.Computer] = m.Computer.query.all()
+    users: list[m.User] = m.User.query.all()
+
+    email_user = {user.email: user for user in users}
+    relation_user = {user.asociated_with: user.email for user in users}
+    email_computers = {user.email: [] for user in users}
+
+    for comp in computers:
+        if comp.company_name in relation_user:
+            email_computers[relation_user[comp.company_name]].append(comp)
+        elif comp.location_name in relation_user:
+            email_computers[relation_user[comp.location_name]].append(comp)
+
+    for user in users:
+        if (
+            user.asociated_with.lower() == "global-full"
+            or user.asociated_with.lower() == "global-view"
+        ):
+            email_computers[user.email] = computers
+
+    for recipient in email_computers:
+
+        green_comp = len(
+            [
+                comp.alert_status
+                for comp in email_computers[recipient]
+                if "green" in comp.alert_status
+            ]
+        )
+        yellow_comp = len(
+            [
+                comp.alert_status
+                for comp in email_computers[recipient]
+                if "yellow" in comp.alert_status
+            ]
+        )
+        red_comp = len(
+            [
+                comp.alert_status
+                for comp in email_computers[recipient]
+                if "red" in comp.alert_status
+            ]
+        )
+
+        computers_li = [
+            f"<li>{comp.computer_name} - {comp.location_name} - {comp.last_time_online} - {comp.last_download_time} - {comp.alert_status} - {comp.type}</li>"
+            for comp in email_computers[recipient]
+        ]
+        computers_str = " ".join(computers_li)
+
+        html_template = f"""
+            <html>
+                <head>
+                    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                </head>
+                <body class="bg-light">
+                    <div class="container">
+                    <div class="card my-10">
+                        <div class="card-body">
+                        <h1 class="h3 mb-2">eMARVault daily summary for {email_user[recipient].asociated_with}</h1>
+                        <hr>
+                        <div class="space-y-3">
+                            <p class="text-700">
+                                Green computers: {green_comp}
+                            </p>
+                            <p class="text-700">
+                                Yellow computers: {yellow_comp}
+                            </p>
+                            <p class="text-700">
+                                Red computers: {red_comp}
+                            </p>
+                            <ul>
+                            {computers_str}
+                            </ul>
+                        </div>
+                        <hr>
+                        </div>
+                    </div>
+                    </div>
+                </body>
+            </html>
+        """.replace(
+            "\n", ""
+        )
+
+        requests.post(
+            CFG.MAIL_ALERTS,
+            json={
+                "alerted_target": "daily_summary",
+                "alert_status": "daily_summary",
+                "to_addresses": recipient,
+                "subject": f"eMARVault daily summary for {email_user[recipient].asociated_with}",
+                "body": "",
+                "html_body": html_template,
+            },
+        )

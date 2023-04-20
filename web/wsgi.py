@@ -45,5 +45,12 @@ def update_cl_stat():
     update_companies_locations_statistic()
 
 
+@app.cli.command()
+def daily_summary():
+    from app.controllers import daily_summary
+
+    daily_summary()
+
+
 if __name__ == "__main__":
     app.run()

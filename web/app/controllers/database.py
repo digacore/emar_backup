@@ -68,6 +68,7 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp1_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
+                "alert_status": "green",
             },
             "comp2_late": {
                 "computer_name": "comp2_late",
@@ -86,6 +87,7 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp2_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
+                "alert_status": "red",
             },
             "comp3_test": {
                 "computer_name": "comp3_test",
@@ -102,6 +104,7 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp3_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
+                "alert_status": "yellow",
             },
             "comp4_test": {
                 "computer_name": "comp4_test",
@@ -118,6 +121,7 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp4_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
+                "alert_status": "green",
             },
             "comp5_test": {
                 "computer_name": "comp5_test",
@@ -133,6 +137,7 @@ def init_db(test_me: bool = False):
                 "folder_password": "pass",
                 "manager_host": "comp5_manager_host",
                 "files_checksum": dict(),
+                "alert_status": "green",
             },
         }
 
@@ -202,6 +207,7 @@ def init_db(test_me: bool = False):
                     manager_host=computers[computer]["manager_host"],
                     files_checksum=computers[computer]["files_checksum"],
                     msi_version=computers[computer]["msi_version"],
+                    alert_status=computers[computer]["alert_status"],
                 ).save()
 
             else:
@@ -219,6 +225,7 @@ def init_db(test_me: bool = False):
                     folder_password=computers[computer]["folder_password"],
                     manager_host=computers[computer]["manager_host"],
                     files_checksum=computers[computer]["files_checksum"],
+                    alert_status=computers[computer]["alert_status"],
                 ).save()
 
         for alert in alerts:

@@ -10,6 +10,7 @@ from config import BaseConfig as CFG
 
 ALERT_PERIOD = CFG.ALERT_PERIOD
 UPDATE_CL_PERIOD = CFG.UPDATE_CL_PERIOD
+DAILY_SUMMARY_PERIOD = CFG.DAILY_SUMMARY_PERIOD
 
 load_dotenv()
 
@@ -30,6 +31,7 @@ def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
         UPDATE_CL_PERIOD, update_cl_stat.s(), name="update-cl-stat"
     )
+    sender.add_periodic_task(UPDATE_CL_PERIOD, daily_summary.s(), name="daily-summary")
 
 
 @app.task
@@ -41,6 +43,12 @@ def check_and_alert():
 @app.task
 def update_cl_stat():
     flask_proc = subprocess.Popen(["flask", "update-cl-stat"])
+    flask_proc.communicate()
+
+
+@app.task
+def daily_summary():
+    flask_proc = subprocess.Popen(["flask", "daily-summary"])
     flask_proc.communicate()
 
 
