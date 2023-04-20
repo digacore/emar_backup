@@ -280,7 +280,7 @@ def check_and_alert():
                 alert_obj: m.Alert = m.Alert.query.filter_by(name=alert_type).first()
 
                 # TODO find more elegant way to handle all cases
-                if last_time_online:
+                if last_time_online and alert_type == "offline_12h":
                     if last_time_online < CFG.offset_to_est(
                         datetime.now(), True
                     ) - timedelta(seconds=1800):
@@ -293,7 +293,7 @@ def check_and_alert():
                         alert_obj=alert_obj,
                     )
 
-                if last_download_time:
+                if last_download_time and alert_type == "no_download_12h":
                     if last_download_time < CFG.offset_to_est(
                         datetime.now(), True
                     ) - timedelta(seconds=7200):
