@@ -104,7 +104,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         "alert_status",
         "company_name",
         "location_name",
-        "download_status",
         "last_download_time",
         "last_time_online",
         "msi_version",
