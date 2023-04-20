@@ -183,7 +183,7 @@ def check_computer_send_mail(
         )
     elif (
         last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time
-        and computer.alert_status == "yellow"
+        and "yellow" in computer.alert_status
     ):
         computer.alert_status = f"red - {alert_type}"
         computer.update()
