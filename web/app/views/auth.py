@@ -18,8 +18,8 @@ def login():
     if form.validate_on_submit():
         user: User = User.authenticate(form.user_id.data, form.password.data)
         if user is not None:
-            user.last_time_online = CFG.offset_to_est(datetime.now(), True).strftime(
-                "%Y-%m-%d %H:%M:%S"
+            user.last_time_online = CFG.offset_to_est(
+                datetime.now().replace(microsecond=0), True
             )
             user.update()
             login_user(user)
@@ -32,8 +32,8 @@ def login():
 @auth_blueprint.route("/logout")
 @login_required
 def logout():
-    current_user.last_time_online = CFG.offset_to_est(datetime.now(), True).strftime(
-        "%Y-%m-%d %H:%M:%S"
+    current_user.last_time_online = CFG.offset_to_est(
+        datetime.now().replace(microsecond=0), True
     )
     current_user.update()
     logout_user()
