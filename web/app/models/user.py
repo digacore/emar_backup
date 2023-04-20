@@ -78,6 +78,7 @@ def asociated_with_query_factory():
         ("Global-view", "Global-view"),
     ]
 
+    # NOTE this try block is used to avoid appending during app launch
     try:
         locations = db.session.query(Location).all()
         companies = db.session.query(Company).all()
@@ -88,7 +89,7 @@ def asociated_with_query_factory():
         for company in companies:
             USER_PERMISSIONS.append((company, f"Company-{company}"))
     except RuntimeError as err:
-        logger.debug("Encountered error most likely during launch. Message {}", err)
+        logger.debug("Encountered error during launch. Message: {}", err)
 
     return USER_PERMISSIONS
 

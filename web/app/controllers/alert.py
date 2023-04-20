@@ -21,6 +21,9 @@ def get_html_body(computer: m.Computer, alert_obj: m.Alert):
                 <style>
                 /* Add custom classes and styles that you want inlined here */
                 </style>
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap/5.3.0/bootstrap.min.css')}}" type="text/css" />
+                <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js')}}"></script>
+                <script src="{{ url_for('static', filename='js/bootstrap/5.3.0/sb-admin-2.min.js')}}"></script>
             </head>
             <body class="bg-light">
                 <div class="container">
