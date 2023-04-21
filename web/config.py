@@ -27,7 +27,7 @@ class BaseConfig(object):
 
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
     UPDATE_CL_PERIOD = int(os.environ.get("UPDATE_CL_PERIOD", 120))
-    DAILY_SUMMARY_PERIOD = int(os.environ.get("UPDATE_CL_PERIOD", 86400))
+    DAILY_SUMMARY_PERIOD = int(os.environ.get("DAILY_SUMMARY_PERIOD", 86400))
 
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
@@ -74,7 +74,7 @@ class BaseConfig(object):
         """
         est_norm_datetime = dt_now - datetime.timedelta(hours=5)
         if datetime_obj:
-            return est_norm_datetime
+            return est_norm_datetime.replace(microsecond=0)
         return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
