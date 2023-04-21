@@ -12,6 +12,8 @@ from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
 from .desktop_client import DesktopClient
+from .company import Company
+from .location import Location
 
 from config import BaseConfig as CFG
 
@@ -203,6 +205,24 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    def create_form(self, obj=None):
+        form = super().create_form(obj)
+
+        # apply a sort to the relation
+        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.location.query_factory = lambda: Location.query.order_by(Location.name)
+
+        return form
+
+    def edit_form(self, obj=None):
+        form = super().edit_form(obj)
+
+        # apply a sort to the relation
+        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.location.query_factory = lambda: Location.query.order_by(Location.name)
+
+        return form
 
     def get_query(self):
 
