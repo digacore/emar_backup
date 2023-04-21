@@ -31,7 +31,9 @@ def setup_periodic_tasks(sender, **kwargs):
     sender.add_periodic_task(
         UPDATE_CL_PERIOD, update_cl_stat.s(), name="update-cl-stat"
     )
-    sender.add_periodic_task(UPDATE_CL_PERIOD, daily_summary.s(), name="daily-summary")
+    sender.add_periodic_task(
+        DAILY_SUMMARY_PERIOD, daily_summary.s(), name="daily-summary"
+    )
 
 
 @app.task
