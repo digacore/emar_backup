@@ -10,6 +10,7 @@ def test_alert_additional_users(client, requests_mock):
     user: User = User.query.filter_by(username="test_user_company").first()
     computer: Computer = Computer.query.filter_by(computer_name="comp4_test").first()
     alert_obj: Alert = Alert.query.filter_by(name="no_download_12h").first()
+    alert_obj_off: Alert = Alert.query.filter_by(name="offline_12h").first()
 
     user.alerts.append(alert_obj)
     db.session.commit()
@@ -20,5 +21,6 @@ def test_alert_additional_users(client, requests_mock):
     )
 
     alert_additional_users(computer, alert_obj)
+    alert_additional_users(computer, alert_obj_off)
 
     # assert WHAT?

@@ -1,3 +1,4 @@
+import base64
 from datetime import datetime, timedelta
 from typing import List
 
@@ -14,6 +15,11 @@ TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
 def get_html_body(computer: m.Computer, alert_obj: m.Alert):
+
+    image = open("app/static/favicon.ico", "rb")
+    imgb = str(base64.b64encode(image.read()))[2:-1]
+    image.close()
+
     html_template = f"""
         <html>
             <head>
@@ -21,9 +27,7 @@ def get_html_body(computer: m.Computer, alert_obj: m.Alert):
                 <style>
                 /* Add custom classes and styles that you want inlined here */
                 </style>
-                <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap/5.3.0/bootstrap.min.css')}}" type="text/css" />
-                <script src="{{ url_for('static', filename='vendor/jquery/jquery.min.js')}}"></script>
-                <script src="{{ url_for('static', filename='js/bootstrap/5.3.0/sb-admin-2.min.js')}}"></script>
+                <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
             </head>
             <body class="bg-light">
                 <div class="container">
@@ -40,10 +44,15 @@ def get_html_body(computer: m.Computer, alert_obj: m.Alert):
                         </p>
                     </div>
                     <hr>
-                    eMARVault Contact info
-                    <a class="btn btn-primary" href="https://app.bootstrapemail.com/templates" target="_blank">
-                        Get More Email Templates
-                    </a>
+                        <p>
+                        <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
+                        </p>
+                        <p>
+                            support@digacore.com
+                        </p>
+                        <p>
+                            732-646-5725
+                        </p>
                     </div>
                 </div>
                 </div>
@@ -345,6 +354,11 @@ def check_and_alert():
 
 
 def daily_summary():
+
+    image = open("app/static/favicon.ico", "rb")
+    imgb = str(base64.b64encode(image.read()))[2:-1]
+    image.close()
+
     computers: list[m.Computer] = m.Computer.query.all()
     users: list[m.User] = m.User.query.all()
 
@@ -399,6 +413,7 @@ def daily_summary():
             <html>
                 <head>
                     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+                    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
                 </head>
                 <body class="bg-light">
                     <div class="container">
@@ -421,6 +436,15 @@ def daily_summary():
                             </ul>
                         </div>
                         <hr>
+                        <p>
+                            <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
+                        </p>
+                        <p>
+                            support@digacore.com
+                        </p>
+                        <p>
+                            732-646-5725
+                        </p>
                         </div>
                     </div>
                     </div>
