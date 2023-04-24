@@ -1,21 +1,29 @@
 from datetime import datetime
 
-from flask_login import UserMixin, AnonymousUserMixin
 from sqlalchemy import func
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from flask_login import current_user
+from flask_login import current_user, UserMixin, AnonymousUserMixin
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
+
 from app.utils import MyModelView
 
 from .company import Company
 from .location import Location
 
 from app.logger import logger
+
+
+users_alerts = db.Table(
+    "users_alerts",
+    db.Column("users_id", db.Integer, db.ForeignKey("users.id")),
+    db.Column("alerts_id", db.Integer, db.ForeignKey("alerts.id")),
+)
 
 
 class User(db.Model, UserMixin, ModelMixin):
@@ -30,6 +38,14 @@ class User(db.Model, UserMixin, ModelMixin):
     created_at = db.Column(db.DateTime, default=datetime.now)
     # TODO permission field. Global or company or location.
     asociated_with = db.Column(db.String(64))
+
+    alerts = relationship(
+        "Alert",
+        secondary=users_alerts,
+        passive_deletes=True,
+        backref="users",
+        lazy="select",
+    )
 
     last_time_online = db.Column(db.DateTime)
 
@@ -62,6 +78,7 @@ def asociated_with_query_factory():
         ("Global-view", "Global-view"),
     ]
 
+    # NOTE this try block is used to avoid appending during app launch
     try:
         locations = db.session.query(Location).all()
         companies = db.session.query(Company).all()
@@ -72,7 +89,7 @@ def asociated_with_query_factory():
         for company in companies:
             USER_PERMISSIONS.append((company, f"Company-{company}"))
     except RuntimeError as err:
-        logger.debug("Encountered error most likely during launch. Message {}", err)
+        logger.debug("Encountered error during launch. Message: {}", err)
 
     return USER_PERMISSIONS
 

@@ -12,6 +12,8 @@ from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
 from .desktop_client import DesktopClient
+from .company import Company
+from .location import Location
 
 from config import BaseConfig as CFG
 
@@ -60,7 +62,7 @@ class Computer(db.Model, ModelMixin):
     last_time_online = db.Column(db.DateTime)
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
 
-    manager_host = db.Column(db.String(256))
+    manager_host = db.Column(db.String(256), default=CFG.DEFAULT_MANAGER_HOST)
     last_downloaded = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
     # TODO do we need this one? Could computer be deactivated?
@@ -104,7 +106,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         "alert_status",
         "company_name",
         "location_name",
-        "download_status",
         "last_download_time",
         "last_time_online",
         "msi_version",
@@ -142,6 +143,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "alert_status": {"readonly": True},
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
+        "current_msi_version": {"readonly": True},
         # "files_checksum": {"readonly": True},
     }
 
@@ -203,6 +205,24 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    def create_form(self, obj=None):
+        form = super().create_form(obj)
+
+        # apply a sort to the relation
+        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.location.query_factory = lambda: Location.query.order_by(Location.name)
+
+        return form
+
+    def edit_form(self, obj=None):
+        form = super().edit_form(obj)
+
+        # apply a sort to the relation
+        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.location.query_factory = lambda: Location.query.order_by(Location.name)
+
+        return form
 
     def get_query(self):
 

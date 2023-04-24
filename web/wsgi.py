@@ -38,5 +38,19 @@ def empty_to_stable():
     empty_to_stable()
 
 
+@app.cli.command()
+def update_cl_stat():
+    from app.controllers import update_companies_locations_statistic
+
+    update_companies_locations_statistic()
+
+
+@app.cli.command()
+def daily_summary():
+    from app.controllers import daily_summary
+
+    daily_summary()
+
+
 if __name__ == "__main__":
     app.run()

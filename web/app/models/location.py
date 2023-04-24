@@ -10,8 +10,6 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
-from .computer import Computer
-
 
 class Location(db.Model, ModelMixin):
 
@@ -20,6 +18,7 @@ class Location(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
     company = relationship("Company", passive_deletes=True, lazy="select")
+    # TODO swap company name to company id. Same for all models
     company_name = db.Column(
         db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
     )
@@ -58,6 +57,14 @@ class LocationView(RowActionListMixin, MyModelView):
     column_sortable_list = column_list
     action_disallowed_list = ["delete"]
 
+    form_widget_args = {
+        "computers_per_location": {"readonly": True},
+        "total_computers": {"readonly": True},
+        "computers_online": {"readonly": True},
+        "computers_offline": {"readonly": True},
+        "created_at": {"readonly": True},
+    }
+
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
 
@@ -91,25 +98,6 @@ class LocationView(RowActionListMixin, MyModelView):
         return super().allow_row_action(action, model)
 
     def get_query(self):
-
-        # NOTE Update number of Computers in Locations
-        computers = Computer.query.all()
-        locations = Location.query.all()
-
-        if locations:
-            computer_location = [loc.location_name for loc in computers]
-            for location in locations:
-                location.computers_per_location = computer_location.count(location.name)
-                # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
-                computers_online_per_location = [
-                    comp.alert_status for comp in computers if comp.location == location
-                ]
-                computers_online = computers_online_per_location.count("green")
-                location.computers_online = computers_online
-                location.computers_offline = (
-                    len(computers_online_per_location) - computers_online
-                )
-                location.update()
 
         # TODO make universal (func or something) for every model
         # NOTE handle permissions - meaning which details current user could view

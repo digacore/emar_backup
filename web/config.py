@@ -26,6 +26,8 @@ class BaseConfig(object):
     SUPER_USER_MAIL = os.environ.get("SUPERPASS", "emarsup@email.com")
 
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
+    UPDATE_CL_PERIOD = int(os.environ.get("UPDATE_CL_PERIOD", 120))
+    DAILY_SUMMARY_PERIOD = int(os.environ.get("DAILY_SUMMARY_PERIOD", 86400))
 
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
@@ -50,10 +52,13 @@ class BaseConfig(object):
 
     CLIENT_VERSIONS = [("stable", "stable"), ("latest", "latest")]
 
-    DEFAULT_SFTP_HOST = os.environ.get("DEFAULT_SFTP_HOST", "")
+    DEFAULT_SFTP_HOST = os.environ.get("DEFAULT_SFTP_HOST", "ftpus.pointclickcare.com")
     DEFAULT_SFTP_USERNAME = os.environ.get("DEFAULT_SFTP_USERNAME", "Username")
     DEFAULT_SFTP_PASSWORD = os.environ.get("DEFAULT_SFTP_PASSWORD", "password")
     DEFAULT_FOLDER_PASSWORD = os.environ.get("DEFAULT_FOLDER_PASSWORD", "password")
+    DEFAULT_MANAGER_HOST = os.environ.get(
+        "DEFAULT_MANAGER_HOST", "https://emarvault.com/"
+    )
 
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
@@ -67,7 +72,7 @@ class BaseConfig(object):
         """
         est_norm_datetime = dt_now - datetime.timedelta(hours=5)
         if datetime_obj:
-            return est_norm_datetime
+            return est_norm_datetime.replace(microsecond=0)
         return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
