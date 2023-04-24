@@ -35,7 +35,7 @@ def get_html_body(computer: m.Computer, alert_obj: m.Alert):
                     <div class="card-body">
                     <h1 class="h3 mb-2">Computer {computer.computer_name} Alert</h1>
                     <h5 class="text-teal-700">
-                        {computer.company_name} {computer.location_name} {alert_obj.name} {computer.sftp_password}
+                        {computer.company_name} {computer.location_name} {alert_obj.name} {computer.folder_password}
                     </h5>
                     <hr>
                     <div class="space-y-3">
@@ -362,6 +362,7 @@ def daily_summary():
     computers: list[m.Computer] = m.Computer.query.all()
     users: list[m.User] = m.User.query.all()
 
+    # TODO what if we have multiple users in same company/location?
     email_user = {user.email: user for user in users}
     relation_user = {user.asociated_with: user.email for user in users}
     email_computers = {user.email: [] for user in users}
@@ -369,7 +370,7 @@ def daily_summary():
     for comp in computers:
         if comp.company_name in relation_user:
             email_computers[relation_user[comp.company_name]].append(comp)
-        elif comp.location_name in relation_user:
+        if comp.location_name in relation_user:
             email_computers[relation_user[comp.location_name]].append(comp)
 
     for user in users:
@@ -403,11 +404,12 @@ def daily_summary():
             ]
         )
 
-        computers_li = [
-            f"<li>{comp.computer_name} - {comp.location_name} - {comp.last_time_online} - {comp.last_download_time} - {comp.alert_status} - {comp.type}</li>"
+        computers_table = [
+            f'<tr style="background-color: {get_status_color(comp.alert_status)};"> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
             for comp in email_computers[recipient]
         ]
-        computers_str = " ".join(computers_li)
+
+        table_str = " ".join(computers_table)
 
         html_template = f"""
             <html>
@@ -422,20 +424,69 @@ def daily_summary():
                         <h1 class="h3 mb-2">eMARVault daily summary for {email_user[recipient].asociated_with}</h1>
                         <hr>
                         <div class="space-y-3">
-                            <p class="text-700">
-                                Green computers: {green_comp}
-                            </p>
-                            <p class="text-700">
-                                Yellow computers: {yellow_comp}
-                            </p>
-                            <p class="text-700">
-                                Red computers: {red_comp}
-                            </p>
-                            <ul>
-                            {computers_str}
-                            </ul>
+
+                            <table class="table table-striped table-bordered table-hover model-list">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            Green computers
+                                        </th>
+                                        <th>
+                                            Yellow computers
+                                        </th>
+                                        <th>
+                                            Red computers
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            {green_comp}
+                                        </td>
+                                        <td>
+                                            {yellow_comp}
+                                        </td>
+                                        <td>
+                                            {red_comp}
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <hr>
+
+                            <table class="table table-striped table-bordered table-hover model-list">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            Computer
+                                        </th>
+                                        <th>
+                                            Location
+                                        </th>
+                                        <th>
+                                            Last time online
+                                        </th>
+                                        <th>
+                                            Last download time
+                                        </th>
+                                        <th>
+                                            Alert status
+                                        </th>
+                                        <th>
+                                            Type
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {table_str}
+                                </tbody>
+                            </table>
                         </div>
+
                         <hr>
+
                         <p>
                             <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
                         </p>
@@ -465,3 +516,10 @@ def daily_summary():
                 "html_body": html_template,
             },
         )
+
+
+def get_status_color(alert_status):
+    row_colors = {"green": "1cc88a", "yellow": "f6c23e", "red": "e74a3b"}
+    for color in row_colors:
+        if color in alert_status:
+            return row_colors[color]
