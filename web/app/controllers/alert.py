@@ -14,11 +14,18 @@ from config import BaseConfig as CFG
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-def get_html_body(computer: m.Computer, alert_obj: m.Alert):
+def get_html_body(location: m.Location, computers: list, alert_obj: m.Alert):
 
     image = open("app/static/favicon.ico", "rb")
     imgb = str(base64.b64encode(image.read()))[2:-1]
     image.close()
+
+    computers_table = [
+        f"<tr> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.folder_password}</td> <td>{comp.type}</td> </tr>"
+        for comp in computers
+    ]
+
+    table_str = " ".join(computers_table)
 
     html_template = f"""
         <html>
@@ -33,15 +40,37 @@ def get_html_body(computer: m.Computer, alert_obj: m.Alert):
                 <div class="container">
                 <div class="card my-10">
                     <div class="card-body">
-                    <h1 class="h3 mb-2">Computer {computer.computer_name} Alert</h1>
-                    <h5 class="text-teal-700">
-                        {computer.company_name} {computer.location_name} {alert_obj.name} {computer.folder_password}
-                    </h5>
+                    <h1 class="h3 mb-2">Location {location.name} Alert - {alert_obj.name}</h1>
+                    <h5 class="h3 mb-2" style="background-color: e74a3b;">Attention! All computers in this location have status RED!</h5>
                     <hr>
                     <div class="space-y-3">
-                        <p class="text-700">
-                            Computer {computer.computer_name} {alert_obj.body}
-                        </p>
+                        <table class="table table-striped table-bordered table-hover model-list">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        Computer
+                                    </th>
+                                    <th>
+                                        Location
+                                    </th>
+                                    <th>
+                                        Last time online
+                                    </th>
+                                    <th>
+                                        Last download time
+                                    </th>
+                                    <th>
+                                        Backup folder password
+                                    </th>
+                                    <th>
+                                        Type
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {table_str}
+                            </tbody>
+                        </table>
                     </div>
                     <hr>
                         <p>
@@ -150,8 +179,11 @@ def check_computer_send_mail(
 
     if not last_time and not computer and alerted_target:
         to_addresses: list = m.User.query.filter_by(asociated_with=alerted_target).all()
+        alerted_computers: list = m.Computer.query.filter_by(
+            location_name=alerted_target
+        ).all()
         body = alert_obj.body if alert_obj.body else ""
-        html_body = alert_obj.html_body if alert_obj.html_body else ""
+        html_body = get_html_body(alerted_target, alerted_computers, alert_type)
 
         # TODO temporary to_addresses.extend(). Deside if to send mail to Global users
 
@@ -165,7 +197,7 @@ def check_computer_send_mail(
                     ["xavrais312@gmail.com", "nberger@digacore.com"]
                 ),
                 "subject": alert_obj.subject,
-                "body": body,
+                "body": "",
                 "html_body": html_body,
             },
         )
