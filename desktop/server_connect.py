@@ -203,7 +203,6 @@ def register_computer():
             "Something went wrong. Response status code = {}", response.status_code
         )
 
-    print("else response.json()", response.json())
     return response
 
 
@@ -512,7 +511,7 @@ def sftp_check_files_for_update_and_load(credentials):
             json={
                 "files_checksum": files_cheksum,
                 "identifier_key": str(credentials["identifier_key"]),
-                "last_time_online": str(offset_to_est(datetime.datetime.utcnow())),
+                "last_time_online": offset_to_est(datetime.datetime.utcnow()),
             },
         )
         logger.debug(
@@ -545,8 +544,8 @@ def send_activity(last_download_time, creds):
             "company_name": creds["company_name"],
             "identifier_key": creds["identifier_key"],
             "location_name": creds["location_name"],
-            "last_download_time": str(last_download_time),
-            "last_time_online": str(offset_to_est(datetime.datetime.utcnow())),
+            "last_download_time": last_download_time,
+            "last_time_online": offset_to_est(datetime.datetime.utcnow()),
         },
     )
     logger.info("User last time download sent.")
@@ -573,7 +572,7 @@ def update_download_status(status, creds, last_downloaded=""):
             "company_name": creds["company_name"],
             "location_name": creds["location_name"],
             "download_status": status,
-            "last_time_online": str(offset_to_est(datetime.datetime.utcnow())),
+            "last_time_online": offset_to_est(datetime.datetime.utcnow()),
             "identifier_key": creds["identifier_key"],
             "last_downloaded": last_downloaded,
         },
@@ -585,7 +584,6 @@ def update_download_status(status, creds, last_downloaded=""):
 def main_func():
     logger.info("Downloading proccess started.")
     credentials, old_credentials = get_credentials()
-    print("\ncredentials", credentials, "\n")
     if not credentials:
         raise ValueError("Credentials not supplayed. Can't continue.")
 

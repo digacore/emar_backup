@@ -37,7 +37,25 @@ def last_time(body: LastTime):
         logger.info(
             "Last {} time for computer {} is updated.", field, computer.computer_name
         )
-        return jsonify(status="success", message="Writing time to db"), 200
+
+        msi: DesktopClient = (
+            DesktopClient.query.filter_by(flag_name=computer.msi_version).first()
+            if computer.msi_version == "stable" or computer.msi_version == "latest"
+            else DesktopClient.query.filter_by(version=computer.msi_version).first()
+        )
+
+        return (
+            jsonify(
+                status="success",
+                message="Writing time to db",
+                sftp_host=computer.sftp_host,
+                sftp_username=computer.sftp_username,
+                sftp_folder_path=computer.sftp_folder_path,
+                manager_host=computer.manager_host,
+                msi_version=msi.version if msi else "undefined",
+            ),
+            200,
+        )
 
     message = "Wrong request data. Computer not found."
     logger.info(
@@ -68,8 +86,8 @@ def get_credentials(body: GetCredentials):
     if computer:
         print("computer: ", computer, computer.computer_name)
         # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
+        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
         logger.info("Updated identifier_key for computer {}.", computer.computer_name)
@@ -142,8 +160,8 @@ def download_status(body: DownloadStatus):
             "Updating download status for computer: {}.", computer.computer_name
         )
         # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
+        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.download_status = body.download_status
         if body.last_downloaded:
             computer.last_downloaded = body.last_downloaded
@@ -180,8 +198,8 @@ def files_checksum(body: FilesChecksum):
     if computer:
         logger.info("Updating files checksum for computer: {}.", computer.computer_name)
         # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.now())
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.now(), True)
+        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
+        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()
         logger.info(
