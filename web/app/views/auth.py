@@ -18,13 +18,18 @@ def login():
     if form.validate_on_submit():
         user: User = User.authenticate(form.user_id.data, form.password.data)
         if user is not None:
-            user.last_time_online = CFG.offset_to_est(
-                datetime.now().replace(microsecond=0), True
-            )
-            user.update()
-            login_user(user)
-            flash("Login successful.", "success")
-            return redirect(url_for("main.index"))
+            if user.activated:
+                user.last_time_online = CFG.offset_to_est(
+                    datetime.now().replace(microsecond=0), True
+                )
+                user.update()
+                login_user(user)
+                flash("Login successful.", "success")
+                return redirect(url_for("main.index"))
+
+            flash("This user is deactivated", "danger")
+            return render_template("auth/login.html", form=form)
+
         flash("Wrong user ID or password.", "danger")
     return render_template("auth/login.html", form=form)
 
