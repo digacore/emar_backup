@@ -52,5 +52,12 @@ def daily_summary():
     daily_summary()
 
 
+@app.cli.command()
+def reset_alerts():
+    from app.controllers import reset_alert_statuses
+
+    reset_alert_statuses()
+
+
 if __name__ == "__main__":
     app.run()
