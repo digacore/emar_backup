@@ -533,3 +533,16 @@ def get_status_color(alert_status):
     for color in row_colors:
         if color in alert_status:
             return row_colors[color]
+
+
+def reset_alert_statuses():
+    """
+    Set alert_status to green to all computers
+    """
+    computers: list[m.Computer] = m.Computer.query.all()
+
+    for comp in computers:
+        comp.alert_status = "green"
+        comp.update()
+
+    logger.debug("All computers alert_status updated to green")
