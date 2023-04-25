@@ -10,6 +10,8 @@ from app.logger import logger
 
 from config import BaseConfig as CFG
 
+from pprint import pprint
+
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -26,13 +28,33 @@ def get_html_body(location: str, computers: list, alert_type: str):
     ]
 
     table_str = " ".join(computers_table)
+    styles = """
+        table {
+        font-family: arial, sans-serif;
+        border-colapse: collapse;
+        width: 100%;
+        }
 
+        td, th {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+        }
+
+        tr:nth-child(even) {
+        background-color: #dddddd;
+        }
+    """
+
+    # base64 png image
+    # <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
+    # TODO do something with this html template to make it universal both for daily summary and alerts
     html_template = f"""
         <html>
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
                 <style>
-                /* Add custom classes and styles that you want inlined here */
+                {styles}
                 </style>
                 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
             </head>
@@ -41,10 +63,13 @@ def get_html_body(location: str, computers: list, alert_type: str):
                 <div class="card my-10">
                     <div class="card-body">
                     <h1 class="h3 mb-2">Location {location} Alert - {alert_type}</h1>
-                    <h5 class="h3 mb-2" style="background-color: e74a3b;">Attention! All computers in this location have status RED!</h5>
-                    <hr>
+                    <h4 class="h3 mb-2" style="background-color: #e74a3b;"
+                    >Attention! All computers in this location have status RED!</h4>
+
                     <div class="space-y-3">
-                        <table class="table table-striped table-bordered table-hover model-list">
+                        <table class="table table-striped table-bordered table-hover model-list"
+                        style="border-collapse: collapse; width: 90%;"
+                        >
                             <thead>
                                 <tr>
                                     <th>
@@ -72,9 +97,9 @@ def get_html_body(location: str, computers: list, alert_type: str):
                             </tbody>
                         </table>
                     </div>
-                    <hr>
+
                         <p>
-                        <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
+                        <img src="{{url_for('static', filename='favicon.ico')}}" alt="eMARVault" width="128px" height="128px">
                         </p>
                         <p>
                             support@digacore.com
@@ -179,34 +204,73 @@ def check_computer_send_mail(
         last_tms["last_download"] = late_time
 
     if not last_time and not computer and alerted_target:
-        to_addresses: list = m.User.query.filter_by(asociated_with=alerted_target).all()
+        # TODO remove if overkill
+        # query for all computers in location
+        all_computers: list[m.Computer] = m.Computer.query.filter_by(
+            location_name=alerted_target
+        ).all()
+        # if all computer are already red - quit from this func
+        comps_stats = [
+            comp.alert_status for comp in all_computers if "red" in comp.alert_status
+        ]
+
+        if len(comps_stats) == len(all_computers):
+            logger.info(
+                "Location {} {} alert was already sent and updated.",
+                alerted_target,
+                alert_type,
+            )
+            return
+
+        for computer in all_computers:
+            computer.alert_status = f"red - {alert_type}"
+            computer.update()
+
+        # query for alerted location to get location company name
+        alerted_location: m.Location = m.Location.query.filter_by(
+            name=alerted_target
+        ).first()
+
+        # query for users who are associated with alerted location/company
+        alerted_users: list[m.User] = m.User.query.filter(
+            or_(
+                m.User.asociated_with == alerted_location.company_name,
+                m.User.asociated_with == alerted_location.name,
+            )
+        ).all()
+
+        to_addresses = [user.email for user in alerted_users]
+        # TODO temporary append. Remove in future
+        for email in ["xavrais312@gmail.com", "nberger@digacore.com"]:
+            if email not in to_addresses:
+                to_addresses.append(email)
+
+        # query for computers in alerted location
         alerted_computers: list = m.Computer.query.filter_by(
             location_name=alerted_target
         ).all()
         body = alert_obj.body if alert_obj.body else ""
         html_body = get_html_body(alerted_target, alerted_computers, alert_type)
 
-        # TODO temporary to_addresses.extend(). Deside if to send mail to Global users
+        # TODO temporary to_addresses. Remove in future
+        request_json = {
+            "alerted_target": alerted_target,
+            "alert_status": alert_obj.alert_status,
+            "from_email": alert_obj.from_email,
+            "to_addresses": ["xavrais312@gmail.com", "nberger@digacore.com"],
+            "subject": alert_obj.subject,
+            "body": "",
+            "html_body": html_body,
+        }
+        pprint(request_json)
+
+        # TODO Deside if to send mail to Global users
         requests.post(
+            # "http://localhost:5000/api_email_alert",
             alert_url,
-            json={
-                "alerted_target": alerted_target,
-                "alert_status": alert_obj.alert_status,
-                "from_email": alert_obj.from_email,
-                "to_addresses": to_addresses.extend(
-                    ["xavrais312@gmail.com", "nberger@digacore.com"]
-                ),
-                "subject": alert_obj.subject,
-                "body": "",
-                "html_body": html_body,
-            },
+            json=request_json,
         )
 
-        # TODO remove if overkill
-        all_computers = m.Computer.query.filter_by(location_name=alerted_target).all()
-        for computer in all_computers:
-            computer.alert_status = f"red - {alert_type}"
-            computer.update()
         logger.warning(
             "Location {} {} alert sent and alert statuses updated to red.",
             alerted_target,
@@ -283,6 +347,10 @@ def check_and_alert():
             location_computers[no_location].append(computer)
 
     for location in location_computers:
+        # do nothing if no computer in location
+        if len(location_computers[location]) == 0:
+            continue
+
         off_30_min_computers = 0
         no_update_files_2h = 0
 
@@ -423,15 +491,35 @@ def daily_summary():
         )
 
         computers_table = [
-            f'<tr style="background-color: {get_status_color(comp.alert_status)};"> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
+            f'<tr style="background-color: #{get_status_color(comp.alert_status)};"> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
             for comp in email_computers[recipient]
         ]
 
         table_str = " ".join(computers_table)
+        styles = """
+            table {
+            font-family: arial, sans-serif;
+            border-colapse: collapse;
+            width: 100%;
+            }
+
+            td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+            }
+
+            tr:nth-child(even) {
+            background-color: #dddddd;
+            }
+        """
 
         html_template = f"""
             <html>
                 <head>
+                    <style>
+                        {styles}
+                    </style>
                     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
                     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
                 </head>
@@ -440,10 +528,12 @@ def daily_summary():
                     <div class="card my-10">
                         <div class="card-body">
                         <h1 class="h3 mb-2">eMARVault daily summary for {email_user[recipient].asociated_with}</h1>
-                        <hr>
+
                         <div class="space-y-3">
 
-                            <table class="table table-striped table-bordered table-hover model-list">
+                            <table class="table table-striped table-bordered table-hover model-list"
+                            style="border-collapse: collapse; width: 90%;"
+                            >
                                 <thead>
                                     <tr>
                                         <th>
@@ -471,8 +561,6 @@ def daily_summary():
                                     </tr>
                                 </tbody>
                             </table>
-
-                            <hr>
 
                             <table class="table table-striped table-bordered table-hover model-list">
                                 <thead>
@@ -502,8 +590,6 @@ def daily_summary():
                                 </tbody>
                             </table>
                         </div>
-
-                        <hr>
 
                         <p>
                             <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
