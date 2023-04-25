@@ -210,16 +210,10 @@ def check_computer_send_mail(
             location_name=alerted_target
         ).all()
         # if all computer are already red - quit from this func
-        comps_stats = [
-            comp.alert_status for comp in all_computers if "red" in comp.alert_status
-        ]
-
-        if len(comps_stats) == len(all_computers):
-            logger.info(
-                "Location {} {} alert was already sent and updated.",
-                alerted_target,
-                alert_type,
-            )
+        if check_for_red(
+            all_computers,
+            f"Location - {alerted_target} alert - {alert_type} was already sent and updated.",
+        ):
             return
 
         for computer in all_computers:
@@ -277,9 +271,22 @@ def check_computer_send_mail(
             alert_type,
         )
 
-    elif last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time and (
-        computer.alert_status == "green" or not computer.alert_status
-    ):
+    elif last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time:
+        # if computer did not download files or was offline for alerts_time AND
+        # has alert_status green OR empty OR red
+
+        current_location: m.Location = m.Location.query.filter_by(
+            name=computer.location_name
+        ).first()
+        current_location_comps: list[m.Computer] = m.Computer.query.filter_by(
+            location=current_location
+        ).all()
+
+        if check_for_red(
+            current_location_comps,
+            f"Computer - {computer.computer_name} alert - {alert_type} was already sent and updated.",
+        ):
+            return
 
         computer.alert_status = f"yellow - {alert_type}"
         computer.update()
@@ -640,3 +647,24 @@ def reset_alert_statuses():
         comp.update()
 
     logger.debug("All computers alert_status updated to green")
+
+
+def check_for_red(location_computers: list[m.Computer], message: str):
+    """Check if all computers in current location are red to deside what to do
+    with current computer alert_status.
+
+    Args:
+        location_computers (list[m.Computer]): list of sqla Computer objects
+        message (str): message to log
+
+    Returns:
+        bool: True or False which should continue or end parent func
+    """
+    comps_stats = [
+        comp.alert_status for comp in location_computers if "red" in comp.alert_status
+    ]
+
+    if len(comps_stats) == len(location_computers):
+        logger.info(message)
+        return True
+    return False
