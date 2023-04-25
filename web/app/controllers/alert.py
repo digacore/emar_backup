@@ -14,7 +14,7 @@ from config import BaseConfig as CFG
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 
-def get_html_body(location: m.Location, computers: list, alert_obj: m.Alert):
+def get_html_body(location: str, computers: list, alert_type: str):
 
     image = open("app/static/favicon.ico", "rb")
     imgb = str(base64.b64encode(image.read()))[2:-1]
@@ -40,7 +40,7 @@ def get_html_body(location: m.Location, computers: list, alert_obj: m.Alert):
                 <div class="container">
                 <div class="card my-10">
                     <div class="card-body">
-                    <h1 class="h3 mb-2">Location {location.name} Alert - {alert_obj.name}</h1>
+                    <h1 class="h3 mb-2">Location {location} Alert - {alert_type}</h1>
                     <h5 class="h3 mb-2" style="background-color: e74a3b;">Attention! All computers in this location have status RED!</h5>
                     <hr>
                     <div class="space-y-3">
@@ -151,31 +151,32 @@ def check_computer_send_mail(
 
     alert_hours: int = 12
     alerts_time = timedelta(seconds=60 * 60 * alert_hours)
+    late_time = CFG.offset_to_est(datetime.utcnow(), True) - alerts_time * 10
+
+    last_tms = {
+        "last_online": 0,
+        "last_download": 0,
+    }
 
     # TODO find more elegant way to handle all cases
-
     # if None - consider it as time was missed to keep status red
-    last_online = (
-        computer.last_time_online
-        if computer
-        else CFG.offset_to_est(datetime.utcnow(), True) - alerts_time * 2
-    )
-    last_download = (
-        computer.last_download_time
-        if computer
-        else CFG.offset_to_est(datetime.utcnow(), True) - alerts_time * 2
-    )
-    # convert from str to datetime
-    last_online = (
-        datetime.strptime(last_online, TIME_FORMAT)
-        if isinstance(last_online, str)
-        else last_online
-    )
-    last_download = (
-        datetime.strptime(last_download, TIME_FORMAT)
-        if isinstance(last_download, str)
-        else last_download
-    )
+    if computer:
+        last_tms["last_online"] = computer.last_time_online
+        last_tms["last_download"] = computer.last_download_time
+
+        for ls_tm in last_tms:
+            if last_tms[ls_tm]:
+                last_tms[ls_tm] = (
+                    datetime.strptime(last_tms[ls_tm], TIME_FORMAT)
+                    if isinstance(last_tms[ls_tm], str)
+                    else last_tms[ls_tm]
+                )
+            else:
+                last_tms[ls_tm] = late_time
+
+    else:
+        last_tms["last_online"] = late_time
+        last_tms["last_download"] = late_time
 
     if not last_time and not computer and alerted_target:
         to_addresses: list = m.User.query.filter_by(asociated_with=alerted_target).all()
@@ -186,7 +187,6 @@ def check_computer_send_mail(
         html_body = get_html_body(alerted_target, alerted_computers, alert_type)
 
         # TODO temporary to_addresses.extend(). Deside if to send mail to Global users
-
         requests.post(
             alert_url,
             json={
@@ -226,8 +226,10 @@ def check_computer_send_mail(
             alert_type,
         )
     elif (
-        last_download > CFG.offset_to_est(datetime.now(), True) - alerts_time
-        and last_online > CFG.offset_to_est(datetime.now(), True) - alerts_time
+        last_tms["last_download"]
+        > CFG.offset_to_est(datetime.now(), True) - alerts_time
+        and last_tms["last_online"]
+        > CFG.offset_to_est(datetime.now(), True) - alerts_time
     ):
         computer.alert_status = "green"
         computer.update()
@@ -271,8 +273,14 @@ def check_and_alert():
     alert_names = {alert.name: alert for alert in alerts}
     location_computers = {location.name: [] for location in locations}
 
+    # add computers to locations. Add dummy location for computers with empty location
+    no_location = "no_location"
+    location_computers[no_location] = []
     for computer in computers:
-        location_computers[computer.location_name].append(computer)
+        if computer.location_name:
+            location_computers[computer.location_name].append(computer)
+        else:
+            location_computers[no_location].append(computer)
 
     for location in location_computers:
         off_30_min_computers = 0
@@ -312,7 +320,7 @@ def check_and_alert():
                     # TODO find more elegant way to handle all cases
                     if last_time_online and alert_type == "offline_12h":
                         if last_time_online < CFG.offset_to_est(
-                            datetime.now(), True
+                            datetime.utcnow(), True
                         ) - timedelta(seconds=1800):
                             off_30_min_computers += 1
 
@@ -325,7 +333,7 @@ def check_and_alert():
 
                     if last_download_time and alert_type == "no_download_12h":
                         if last_download_time < CFG.offset_to_est(
-                            datetime.now(), True
+                            datetime.utcnow(), True
                         ) - timedelta(seconds=7200):
                             no_update_files_2h += 1
 
