@@ -99,7 +99,7 @@ def get_html_body(location: str, computers: list, alert_type: str):
                     </div>
 
                         <p>
-                        <img src="{{url_for('static', filename='favicon.ico')}}" alt="eMARVault" width="128px" height="128px">
+                        <img src="https://emarbackups.mytechwebsite.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
                         </p>
                         <p>
                             support@digacore.com
@@ -234,10 +234,6 @@ def check_computer_send_mail(
         ).all()
 
         to_addresses = [user.email for user in alerted_users]
-        # TODO temporary append. Remove in future
-        for email in ["xavrais312@gmail.com", "nberger@digacore.com"]:
-            if email not in to_addresses:
-                to_addresses.append(email)
 
         # query for computers in alerted location
         alerted_computers: list = m.Computer.query.filter_by(
@@ -271,9 +267,12 @@ def check_computer_send_mail(
             alert_type,
         )
 
-    elif last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time:
+    elif (
+        last_time < CFG.offset_to_est(datetime.now(), True) - alerts_time
+        and computer.alert_status != "yellow"
+    ):
         # if computer did not download files or was offline for alerts_time AND
-        # has alert_status green OR empty OR red
+        # has alert_status not yellow
 
         current_location: m.Location = m.Location.query.filter_by(
             name=computer.location_name
@@ -302,6 +301,20 @@ def check_computer_send_mail(
         and last_tms["last_online"]
         > CFG.offset_to_est(datetime.now(), True) - alerts_time
     ):
+
+        current_location_comps = m.Computer.query.filter_by(
+            location_name=computer.location_name
+        ).count()
+
+        # if (comp has no download 2h OR is offline 30 min) AND it is only one in his location - keep it red
+        if (
+            last_tms["last_download"]
+            < CFG.offset_to_est(datetime.now(), True) - timedelta(seconds=60 * 120)
+            or last_tms["last_online"]
+            < CFG.offset_to_est(datetime.now(), True) - timedelta(seconds=60 * 30)
+        ) and current_location_comps == 1:
+            return
+
         computer.alert_status = "green"
         computer.update()
         logger.info(
@@ -474,6 +487,7 @@ def daily_summary():
             email_computers[user.email] = computers
 
     for recipient in email_computers:
+        # TODO what if comp.alert_status == None???
 
         green_comp = len(
             [
@@ -599,7 +613,7 @@ def daily_summary():
                         </div>
 
                         <p>
-                            <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
+                            <img src="https://emarbackups.mytechwebsite.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
                         </p>
                         <p>
                             support@digacore.com
