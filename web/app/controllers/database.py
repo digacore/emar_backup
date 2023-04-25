@@ -47,6 +47,12 @@ def init_db(test_me: bool = False):
                 "password": "test_user_location",
                 "asociated_with": "Maywood",
             },
+            "location_dro_user": {
+                "username": "location_dro_user",
+                "email": "location_dro_user@mail.com",
+                "password": "test_user_location",
+                "asociated_with": "SpringField",
+            },
         }
 
         companies = ["Atlas", "Dro", "WRC"]
@@ -136,6 +142,24 @@ def init_db(test_me: bool = False):
                 "identifier_key": "comp5_identifier_key",
                 "folder_password": "pass",
                 "manager_host": "comp5_manager_host",
+                "files_checksum": dict(),
+                "alert_status": "green",
+            },
+            "comp6_late": {
+                "computer_name": "comp6_test",
+                "last_download_time": CFG.offset_to_est(datetime.now(), True)
+                - timedelta(seconds=60 * 60 * 50),
+                "last_time_online": CFG.offset_to_est(datetime.now(), True)
+                - timedelta(seconds=60 * 60 * 50),
+                "company_name": "Dro",
+                "location_name": "SpringField",
+                "sftp_host": "comp6_sftp_host",
+                "sftp_username": "comp6_sftp_username",
+                "sftp_password": "comp6_sftp_password",
+                "sftp_folder_path": "comp6_sftp_folder_path",
+                "identifier_key": "comp6_identifier_key",
+                "folder_password": "pass",
+                "manager_host": "comp6_manager_host",
                 "files_checksum": dict(),
                 "alert_status": "green",
             },

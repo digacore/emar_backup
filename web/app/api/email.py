@@ -24,8 +24,9 @@ def api_email_alert(body: EmailSchema):
         msg = Message(
             subject=body.subject,
             body=body.body,
-            recipients=[body.to_addresses],
-            html=html_body)
+            recipients=body.to_addresses,
+            html=html_body,
+        )
 
         if body.from_email:
             msg.sender = body.from_email
@@ -34,12 +35,20 @@ def api_email_alert(body: EmailSchema):
 
         mail.send(msg)
 
-        logger.info("Email sent from {} to {}. Subject: {}", body.from_email, body.to_addresses, body.subject)
+        logger.info(
+            "Email sent from {} to {}. Subject: {}",
+            body.from_email,
+            body.to_addresses,
+            body.subject,
+        )
         return jsonify(status="success", message="Email alert sent from API"), 200
 
     message = "Wrong request data."
     logger.info(
         "Failed to send email from {} to {}. Subject: {}. Reason: {}",
-        body.from_email, body.to_addresses, body.subject, message
-        )
+        body.from_email,
+        body.to_addresses,
+        body.subject,
+        message,
+    )
     return jsonify(status="fail", message=message), 404
