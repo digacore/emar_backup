@@ -2,7 +2,7 @@ from app.models import User
 
 
 def register(username, email="username@test.com", password="password"):
-    user = User(username=username, email=email, password=password)
+    user = User(username=username, email=email, password=password, activated=True)
     user.save()
     return user.id
 
