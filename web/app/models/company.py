@@ -41,6 +41,8 @@ class CompanyView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "CompanyView"
 
+    list_template = "import-company_location-to-dashboard.html"
+
     column_list = [
         "name",
         "default_sftp_username",
