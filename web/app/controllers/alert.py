@@ -24,7 +24,7 @@ def get_timedelta_hours(hours: int) -> datetime:
     """
     alerts_timedelta = timedelta(seconds=60 * 60 * hours)
 
-    return CFG.offset_to_est(datetime.now(), True) - alerts_timedelta
+    return CFG.offset_to_est(datetime.utcnow(), True) - alerts_timedelta
 
 
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -200,33 +200,24 @@ def check_computer_send_mail(
     """
 
     alert_url = CFG.MAIL_ALERTS
-    late_time = get_timedelta_hours(120)
 
     # put computer alerts time into dict for ease checks of its type
     last_tms = {
-        "last_online": 0,
-        "last_download": 0,
+        "last_online": time_type_check(computer, "online"),
+        "last_download": time_type_check(computer, "download"),
     }
 
-    # TODO find more elegant way to handle all cases
-    # if None - consider it as time was missed to keep status red
-    if computer:
-        last_tms["last_online"] = computer.last_time_online
-        last_tms["last_download"] = computer.last_download_time
-
-        for ls_tm in last_tms:
-            if last_tms[ls_tm]:
-                last_tms[ls_tm] = (
-                    datetime.strptime(last_tms[ls_tm], TIME_FORMAT)
-                    if isinstance(last_tms[ls_tm], str)
-                    else last_tms[ls_tm]
-                )
-            else:
-                last_tms[ls_tm] = late_time
-
-    else:
-        last_tms["last_online"] = late_time
-        last_tms["last_download"] = late_time
+    logger.debug(
+        "compare download 4: {} {}; compare online 12: {} {}; compare no download 3: {} {}; compare offline 30 min: {} {};",
+        last_tms["last_download"].strftime("%Y-%m-%d %H:%M:%S"),
+        last_tms["last_download"] > NO_DOWNLOAD_ALERT_TIME,
+        last_tms["last_online"].strftime("%Y-%m-%d %H:%M:%S"),
+        last_tms["last_online"] > OFFLINE_ALERT_TIME,
+        last_tms["last_download"].strftime("%Y-%m-%d %H:%M:%S"),
+        last_tms["last_download"] < LOCATION_NO_DOWNLOAD_TIME,
+        last_tms["last_online"].strftime("%Y-%m-%d %H:%M:%S"),
+        last_tms["last_online"] < LOCATION_OFFLINE_TIME,
+    )
 
     if not last_time and not computer and alerted_target:
         # query for all computers in location
@@ -239,14 +230,16 @@ def check_computer_send_mail(
             if "offline" in alert_type:
                 # get hours offline of no download from (EST now time - last download/online)
                 time_diff = round(
-                    (get_timedelta_hours(0) - computer.last_time_online).total_seconds()
+                    (
+                        get_timedelta_hours(0) - time_type_check(computer, "online")
+                    ).total_seconds()
                     / 3600
                 )
                 status_details = f"offline over {time_diff} h"
             else:
                 time_diff = round(
                     (
-                        get_timedelta_hours(0) - computer.last_download_time
+                        get_timedelta_hours(0) - time_type_check(computer, "download")
                     ).total_seconds()
                     / 3600
                 )
@@ -373,14 +366,56 @@ def check_computer_send_mail(
         )
 
 
-def time_type_check(time_obj):
-    # last_download_time str check
-    last_time = (
-        datetime.strptime(time_obj, TIME_FORMAT)
-        if isinstance(time_obj, str)
-        else time_obj
-    )
-    return last_time
+def time_type_check(computer: m.Computer, return_val: str) -> datetime:
+    """Check and transform computer last_time_online and last_download_time
+    to datetime objects, if it is string. If it is non - meaning field is empty -
+    consider time was missed
+
+    Args:
+        computer (m.Computer): sqla Computer object
+        return_val (str): marker to undestand which value to return
+
+    Raises:
+        ValueError: raise error if return_val is not existent
+
+    Returns:
+        datetime: datetime obj to determine if computer is offline/no download
+    """
+
+    # if None - consider it as time was missed to keep status red
+    late_time = get_timedelta_hours(999)
+
+    last_tms = {
+        "last_online": 0,
+        "last_download": 0,
+    }
+
+    if computer:
+        last_tms["last_online"] = computer.last_time_online
+        last_tms["last_download"] = computer.last_download_time
+
+        for ls_tm in last_tms:
+            if last_tms[ls_tm]:
+                # convert str to datetime or return same obj if type is already datetime
+                last_tms[ls_tm] = (
+                    datetime.strptime(last_tms[ls_tm], TIME_FORMAT)
+                    if isinstance(last_tms[ls_tm], str)
+                    else last_tms[ls_tm]
+                )
+            else:
+                # assign late_time if last_tms[ls_tm] is None
+                last_tms[ls_tm] = late_time
+
+    else:
+        last_tms["last_online"] = late_time
+        last_tms["last_download"] = late_time
+
+    if return_val == "online":
+        return last_tms["last_online"]
+    elif return_val == "download":
+        return last_tms["last_download"]
+    else:
+        raise ValueError("Incorrect return_val arg for time_type_check()")
 
 
 def check_and_alert():
@@ -418,13 +453,13 @@ def check_and_alert():
 
         for computer in location_computers[location]:
 
-            alert_types_computers = {
-                "no_download_4h": computer.last_download_time,
-                "offline_12h": computer.last_time_online,
-            }
+            last_download_time = time_type_check(computer, "download")
+            last_time_online = time_type_check(computer, "online")
 
-            last_download_time = time_type_check(computer.last_download_time)
-            last_time_online = time_type_check(computer.last_time_online)
+            alert_types_computers = {
+                "no_download_4h": last_download_time,
+                "offline_12h": last_time_online,
+            }
 
             # check alert_types and computers. Send email if computer outdated
             for alert_type in alert_types_computers:
