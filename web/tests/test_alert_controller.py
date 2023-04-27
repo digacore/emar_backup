@@ -5,6 +5,7 @@ from app import db
 from config import BaseConfig as CFG
 
 
+# TODO remove if alert_additional_users is not going to be used
 def test_alert_additional_users(client, requests_mock):
 
     user: User = User.query.filter_by(username="test_user_company").first()
