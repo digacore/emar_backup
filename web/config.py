@@ -70,7 +70,7 @@ class BaseConfig(object):
         Returns:
             datetime.datetime: EST datetime
         """
-        est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+        est_norm_datetime = dt_now - datetime.timedelta(hours=4)
         if datetime_obj:
             return est_norm_datetime.replace(microsecond=0)
         return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
