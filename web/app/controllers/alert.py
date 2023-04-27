@@ -122,6 +122,10 @@ def get_html_body(
 
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
+                    <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png">
+
+                    <hr style="margin-left: 10%;margin-right: 10%;">
+
                         <p>
                         <a href="https://emarvault.com/">
                             <img src="https://emarbackups.mytechwebsite.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
@@ -178,6 +182,53 @@ def alert_additional_users(computer: m.Computer, alert_obj: m.Alert):
                 "html_body": html_body,
             },
         )
+
+
+def send_alert_email(
+    alerted_target: str, alert_obj: m.Alert, status_details: str
+) -> bool:
+    # query for alerted location to get location company name
+    alerted_location: m.Location = m.Location.query.filter_by(
+        name=alerted_target
+    ).first()
+
+    # query for users who are associated with alerted location/company
+    alerted_users: list[m.User] = m.User.query.filter(
+        or_(
+            m.User.asociated_with == alerted_location.company_name,
+            m.User.asociated_with == alerted_location.name,
+        )
+    ).all()
+
+    to_addresses = [user.email for user in alerted_users]
+
+    # query for computers in alerted location
+    alerted_computers: list = m.Computer.query.filter_by(
+        location_name=alerted_target
+    ).all()
+    body = alert_obj.body if alert_obj.body else ""
+    html_body = get_html_body(alerted_target, alerted_computers, status_details)
+
+    # TODO temporary to_addresses. Remove in future
+    request_json = {
+        "alerted_target": alerted_target,
+        "alert_status": alert_obj.alert_status,
+        "from_email": alert_obj.from_email,
+        "to_addresses": ["xavrais312@gmail.com", "nberger@digacore.com"],
+        "subject": alert_obj.subject,
+        "body": "",
+        "html_body": html_body,
+    }
+    pprint(request_json)
+
+    # TODO Deside if to send mail to Global users
+    requests.post(
+        CFG.MAIL_ALERTS,
+        json=request_json,
+    )
+
+    # return true to confrim that request was sent
+    return True
 
 
 def check_computer_send_mail(
@@ -290,7 +341,6 @@ def check_computer_send_mail(
 
         # TODO Deside if to send mail to Global users
         requests.post(
-            # "http://localhost:5000/api_email_alert",
             alert_url,
             json=request_json,
         )
@@ -350,6 +400,9 @@ def check_computer_send_mail(
             or last_tms["last_online"] < LOCATION_OFFLINE_TIME
         ) and current_location_comps == 1:
             return
+
+        # TODO if all red status was resolved, send email about it
+        # send_alert_email(computer.location_name, alert_obj, status_details)
 
         computer.alert_status = "green"
         computer.update()
