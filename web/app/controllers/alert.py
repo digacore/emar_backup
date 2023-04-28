@@ -283,6 +283,9 @@ def check_computer_send_mail(
             location_name=alerted_target
         ).all()
 
+        # check for red before computers update
+        all_red = check_for_red(all_computers)
+
         # decide which alert details assign to location's computers alert_status and update them
         for computer in all_computers:
             if "offline" in alert_type:
@@ -310,10 +313,7 @@ def check_computer_send_mail(
             )
 
         # if all computer are already red - quit from this func
-        if check_for_red(
-            all_computers,
-            f"Location - {alerted_target} alert - {alert_type} was already sent and updated.",
-        ):
+        if all_red:
             logger.debug(
                 "Location - {} alert - {} was already sent and updated.",
                 alerted_target,
