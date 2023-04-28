@@ -557,7 +557,7 @@ def check_and_alert():
 
                     # TODO find more elegant way to handle all cases
 
-                    if last_download_time and alert_type == "no_download_4h":
+                    if last_download_time and "no_download" in alert_type:
                         if last_download_time < CFG.offset_to_est(
                             datetime.utcnow(), True
                         ) - timedelta(seconds=7200):
@@ -571,7 +571,7 @@ def check_and_alert():
                             alert_obj=alert_obj,
                         )
 
-                    if last_time_online and alert_type == "offline_12h":
+                    if last_time_online and "offline" in alert_type:
                         if last_time_online < CFG.offset_to_est(
                             datetime.utcnow(), True
                         ) - timedelta(seconds=1800):

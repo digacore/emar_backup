@@ -51,6 +51,14 @@ def check_msi_version(computer: Computer, body, time_type: str):
         .first()
     )
 
+    msi_version: DesktopClient = (
+        msi_version
+        if msi_version
+        else DesktopClient.query.filter(DesktopClient.flag_name == "stable")
+        .with_entities(DesktopClient.version)
+        .first()
+    )
+
     if int(msi_version.version.replace(".", "")) < int("1.0.9.100769".replace(".", "")):
         return lst_times[time_type] + datetime.timedelta(hours=1)
     return lst_times[time_type]
