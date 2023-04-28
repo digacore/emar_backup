@@ -833,7 +833,7 @@ def reset_alert_statuses():
     logger.debug("All computers alert_status updated to green")
 
 
-def check_for_red(location_computers: list[m.Computer], message: str):
+def check_for_red(location_computers: list[m.Computer], message: str = ""):
     """Check if all computers in current location are red to deside what to do
     with current computer alert_status.
 
