@@ -35,12 +35,18 @@ def check_msi_version(computer: Computer, body, time_type: str):
     if time_type not in lst_times:
         raise ValueError("Wrong time_type in check_msi_version: {}", time_type)
 
+    current_comp_msi_version = (
+        computer.msi_version if computer.msi_version else "stable"
+    )
+
     msi_version: DesktopClient = (
-        DesktopClient.query.filter(DesktopClient.flag_name == computer.msi_version)
+        DesktopClient.query.filter(DesktopClient.flag_name == current_comp_msi_version)
         .with_entities(DesktopClient.version)
         .first()
-        if computer.msi_version == "stable" or computer.msi_version == "latest"
-        else DesktopClient.query.filter(DesktopClient.version == computer.msi_version)
+        if current_comp_msi_version == "stable" or current_comp_msi_version == "latest"
+        else DesktopClient.query.filter(
+            DesktopClient.version == current_comp_msi_version
+        )
         .with_entities(DesktopClient.version)
         .first()
     )

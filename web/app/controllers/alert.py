@@ -302,12 +302,23 @@ def check_computer_send_mail(
                 status_details = f"no backup over {time_diff} h"
             computer.alert_status = f"red - {status_details}"
             computer.update()
+            logger.debug(
+                "Computer {} from location {} has alert_status {}",
+                computer.computer_name,
+                computer.location_name,
+                computer.alert_status,
+            )
 
         # if all computer are already red - quit from this func
         if check_for_red(
             all_computers,
             f"Location - {alerted_target} alert - {alert_type} was already sent and updated.",
         ):
+            logger.debug(
+                "Location - {} alert - {} was already sent and updated.",
+                alerted_target,
+                alert_type,
+            )
             return
 
         # query for alerted location to get location company name
@@ -371,8 +382,12 @@ def check_computer_send_mail(
         # do not update to yellow if all computers in location are red
         if check_for_red(
             current_location_comps,
-            f"Computer - {computer.computer_name} alert - {alert_type} was already sent and updated.",
         ):
+            logger.debug(
+                "Computer - {} alert - {} was already sent and updated.",
+                computer.computer_name,
+                alert_type,
+            )
             return
 
         # gent hours offline of no download from (EST now time - last download/online)
@@ -836,6 +851,6 @@ def check_for_red(location_computers: list[m.Computer], message: str):
     ]
 
     if len(comps_stats) == len(location_computers):
-        logger.info(message)
+        # logger.info(message)
         return True
     return False
