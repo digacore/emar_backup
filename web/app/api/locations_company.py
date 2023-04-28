@@ -20,7 +20,11 @@ def cid(id):
         locations = Location.query.all()
     else:
         company: Company = Company.query.filter_by(id=id).first()
-        locations = Location.query.filter_by(company_name=company.name).all()
+        locations = (
+            Location.query.filter_by(company_name=company.name)
+            .order_by(Location.name)
+            .all()
+        )
 
     res = [(loc.id, loc.name) for loc in locations]
 
