@@ -44,7 +44,7 @@ def register_computer(body: ComputerRegInfo):
         new_computer = Computer(
             identifier_key=new_identifier_key,
             computer_name=body.computer_name,
-            manager_host=CFG.APP_HOST_URL,
+            manager_host=CFG.DEFAULT_MANAGER_HOST,
         )
         new_computer.save()
         logger.info("Computer registered. ID = {}.", new_identifier_key)
@@ -61,7 +61,7 @@ def register_computer(body: ComputerRegInfo):
                 identifier_key=new_computer.identifier_key,
                 computer_name=new_computer.computer_name,
                 folder_password="",
-                manager_host=CFG.APP_HOST_URL,
+                manager_host=CFG.DEFAULT_MANAGER_HOST,
                 msi_version="stable",
             ),
             200,
