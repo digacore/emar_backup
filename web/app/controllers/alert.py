@@ -122,7 +122,8 @@ def get_html_body(
 
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
-                    <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png">
+                    <h1 class="h3 mb-2" style="text-align: center">Instructions on how to access the eMARVault backups</h1>
+                    <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png" width="100%" height="100%">
 
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
