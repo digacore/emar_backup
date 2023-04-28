@@ -23,6 +23,7 @@ class Location(db.Model, ModelMixin):
     company_name = db.Column(
         db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
     )
+    default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
@@ -35,6 +36,7 @@ class Location(db.Model, ModelMixin):
         return [
             "name",
             "company_name",
+            "default_sftp_path",
             "computers_per_location",
             "computers_online",
             "computers_offline",
@@ -51,6 +53,7 @@ class LocationView(RowActionListMixin, MyModelView):
     column_list = [
         "name",
         "company_name",
+        "default_sftp_path",
         "computers_per_location",
         "computers_online",
         "computers_offline",
