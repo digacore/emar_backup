@@ -68,6 +68,13 @@ def get_html_body(
     # base64 png image
     # <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
     # TODO do something with this html template to make it universal both for daily summary and alerts
+
+    # TODO put new instructions above contact when supplied
+    # old one:
+    # <hr style="margin-left: 10%;margin-right: 10%;">
+    # <h1 style="text-align:center">Instructions on how to access the eMARVault backups</h1>
+    # <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png">
+
     html_template = f"""
         <html>
             <head>
@@ -118,10 +125,6 @@ def get_html_body(
                             </tbody>
                         </table>
                     </div>
-
-                    <hr style="margin-left: 10%;margin-right: 10%;">
-
-                    <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png">
 
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
