@@ -127,6 +127,21 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
             old_credentials["msi_version"],
             credentials["msi_version"],
         )
+        # NOTE rerun PostInstallActions.ps1 after installation as Admin
+        posha_path = os.path.join(
+            Path("C:\\") / "Program Files" / "eMARVault" / "PostInstallActions.ps1"
+        )
+        posha_path_86 = os.path.join(
+            Path("C:\\")
+            / "Program Files (x86)"
+            / "eMARVault"
+            / "PostInstallActions.ps1"
+        )
+        posha_path_to_use = (
+            posha_path_86 if os.path.isfile(posha_path_86) else posha_path
+        )
+        Popen(["powershell.exe", "-File", posha_path_to_use, "-verb", "runas"])
+        logger.debug("Scheduled task updated.")
 
         update_response = requests.post(
             f"{credentials['manager_host']}/update_current_msi_version",

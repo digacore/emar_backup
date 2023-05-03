@@ -11,12 +11,12 @@ def offset_to_est(dt_now: datetime.datetime):
     """Offset to EST time
 
     Args:
-        dt_now (datetime.datetime): datetime.datetime.now()
+        dt_now (datetime.datetime): datetime.datetime.utcnow()
 
     Returns:
         datetime.datetime: EST datetime
     """
-    est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+    est_norm_datetime = dt_now - datetime.timedelta(hours=4)
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
