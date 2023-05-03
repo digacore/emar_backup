@@ -21,3 +21,8 @@
 .dash-cards {
   color: inherit;
 }
+
+.center-hor {
+  margin-left: auto;
+  margin-right: auto;
+}
