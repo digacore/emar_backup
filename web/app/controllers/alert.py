@@ -1,6 +1,5 @@
 import base64
 from datetime import datetime, timedelta
-from typing import List
 
 import requests
 from sqlalchemy import or_
@@ -69,6 +68,13 @@ def get_html_body(
     # base64 png image
     # <img src="data:image/png;base64, {imgb}" alt="eMARVault" width="128px" height="128px">
     # TODO do something with this html template to make it universal both for daily summary and alerts
+
+    # TODO put new instructions above contact when supplied
+    # old one:
+    # <hr style="margin-left: 10%;margin-right: 10%;">
+    # <h1 style="text-align:center">Instructions on how to access the eMARVault backups</h1>
+    # <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png">
+
     html_template = f"""
         <html>
             <head>
@@ -122,11 +128,6 @@ def get_html_body(
 
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
-                    <h1 class="h3 mb-2" style="text-align: center">Instructions on how to access the eMARVault backups</h1>
-                    <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png" width="100%" height="100%">
-
-                    <hr style="margin-left: 10%;margin-right: 10%;">
-
                         <p>
                         <a href="https://emarvault.com/">
                             <img src="https://emarbackups.mytechwebsite.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
@@ -146,43 +147,6 @@ def get_html_body(
     """
 
     return html_template
-
-
-# TODO remove if alert_additional_users is not going to be used
-def alert_additional_users(computer: m.Computer, alert_obj: m.Alert):
-    # get users associated with this computer
-    users: List[m.User] = m.User.query.filter(
-        or_(
-            m.User.asociated_with == computer.company_name,
-            m.User.asociated_with == computer.location_name,
-        )
-    ).all()
-
-    for user in users:
-        if alert_obj.name not in [alert.name for alert in user.alerts]:
-            # if user does not have this alert_obj in his alerts
-            continue
-
-        logger.debug(
-            "Sending additional email to user {} with {} alert",
-            user.username,
-            alert_obj.name,
-        )
-
-        to_addresses = [user.email]
-        html_body = get_html_body(computer, alert_obj)
-        requests.post(
-            CFG.MAIL_ALERTS,
-            json={
-                "alerted_target": computer.computer_name,
-                "alert_status": alert_obj.alert_status,
-                "from_email": alert_obj.from_email,
-                "to_addresses": to_addresses,
-                "subject": f"{computer.company_name} {computer.location_name} {alert_obj.name}",
-                "body": "",
-                "html_body": html_body,
-            },
-        )
 
 
 def send_alert_email(

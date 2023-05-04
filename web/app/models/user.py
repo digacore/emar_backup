@@ -89,7 +89,9 @@ def asociated_with_query_factory():
         for company in companies:
             USER_PERMISSIONS.append((company, f"Company-{company}"))
     except RuntimeError as err:
-        logger.debug("Encountered error during launch. Message: {}", err)
+        # NOTE use print tonot spam the logs in celery
+        print(f"Encountered error during launch. Message: {err}")
+        # logger.debug("Encountered error during launch. Message: {}", err)
 
     return USER_PERMISSIONS
 

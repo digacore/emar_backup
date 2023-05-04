@@ -7,23 +7,23 @@
 <!-- Page Heading -->
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
   <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
-  <!-- <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i class="fas fa-download fa-sm text-white-50"></i> Generate Report</a> -->
+  <!-- <a class="dash-cards" href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i class="fas fa-download fa-sm text-white-50"></i> Generate Report</a> -->
 </div>
 
-<!-- Content Row -->
+<!-- Content Row 1 -->
 <div class="row">
 
   <!-- Earnings (Monthly) Card Example -->
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-primary shadow h-100 py-2">
+    <div class="card border-left-success shadow h-100 py-2">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"><a href="/admin/company/">Total Companies</a></div>
+            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="/admin/company/">Total Companies</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
-                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{total_companies}}</div>
+                <div class="h3 mb-0 mr-5 font-weight-bold text-gray-800">{{total_companies}}</div>
               </div>
               <div class="col">
                 <!-- <div class="progress progress-sm mr-2">
@@ -34,7 +34,7 @@
             {% endif %}
           </div>
           <div class="col-auto">
-            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+            <i class="fas fa-hospital fa-2x text-success"></i>
           </div>
         </div>
       </div>
@@ -48,10 +48,10 @@
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xs font-weight-bold text-success text-uppercase mb-1"><a href="/admin/location/">Total Sites</a></div>
+            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="/admin/location/">Total Sites</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
-                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{total_locations}}</div>
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{total_locations}}</div>
               </div>
               <!-- <div class="col">
                 <div class="progress progress-sm mr-2">
@@ -62,7 +62,7 @@
             {% endif %}
           </div>
           <div class="col-auto">
-            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+            <i class="fas fa-map-marker-alt fa-2x text-success"></i>
           </div>
         </div>
       </div>
@@ -71,15 +71,15 @@
 
   <!-- Earnings (Monthly) Card Example -->
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-info shadow h-100 py-2">
+    <div class="card border-left-success shadow h-100 py-2">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xs font-weight-bold text-info text-uppercase mb-1"><a href="/admin/computer/">Total Computers</a></div>
+            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="/admin/computer/">Total Computers</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
-                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{total_computers}}</div>
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{total_computers}}</div>
               </div>
               <!-- <div class="col">
                 <div class="progress progress-sm mr-2">
@@ -90,7 +90,137 @@
             {% endif %}
           </div>
           <div class="col-auto">
-            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
+            <i class="fas fa-desktop fa-2x text-success"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending Requests Card Example -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-info shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+            <div class="text-xxs font-weight-bold text-info text-uppercase mb-1"><a class="dash-cards" href="admin/desktopclient/?search=stable">Latest Stable MSI</a></div>
+
+            <!-- <div class="text-xxs font-weight-bold text-info text-uppercase mb-1"><a class="dash-cards" href="/admin/desktopclient/?flt2_19=latest%2Cstable">Latest Stable MSI</a></div> -->
+            <div class="row no-gutters align-items-center">
+              <div class="col-auto">
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{stable_msi}}</div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-server fa-2x text-info"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Content Row 2 -->
+<div class="row">
+
+  <!-- Earnings (Monthly) Card Example -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-danger shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="/admin/location/{{al_loc_off_filter_link.replace('percen', '%')}}">Locations Offline</a></div>
+            <div class="row no-gutters align-items-center">
+              <div class="col-auto">
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{locations_offline}}</div>
+              </div>
+              <div class="col">
+                <div class="col">
+                  <div class="progress progress-sm mr-2">
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: {{ locations_offline_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-map-marker-alt fa-1x text-danger center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-power-off fa-1x text-danger center-hor"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Earnings (Monthly) Card Example -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-danger shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="/admin/location/{{al_loc_no_back_filter_link.replace('percen', '%')}}">Locations no Backups</a></div>
+            <div class="row no-gutters align-items-center">
+              <div class="col-auto">
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{locations_no_download}}</div>
+              </div>
+              <div class="col">
+                <div class="progress progress-sm mr-2">
+                  <div class="progress-bar bg-danger" role="progressbar" style="width: {{ locations_no_download_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-map-marker-alt fa-1x text-danger center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-download fa-1x text-danger center-hor"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Earnings (Monthly) Card Example -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-warning shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+            <div class="text-xxs font-weight-bold text-warning text-uppercase mb-1"><a class="dash-cards" href="/admin/computer/?search=offlin">Computers Offline > 48</a></div>
+            <div class="row no-gutters align-items-center">
+              <div class="col-auto">
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{offline_48h}}</div>
+              </div>
+              <div class="col">
+                <div class="progress progress-sm mr-2">
+                  <div class="progress-bar bg-warning" role="progressbar" style="width: {{ offline_48h_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-desktop fa-1x text-warning center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-power-off fa-1x text-warning center-hor"></i>
+            </div>
           </div>
         </div>
       </div>
@@ -104,21 +234,26 @@
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1"><a href="/admin/computer/?search=red">Out of Date Computers</a></div>
+            <div class="text-xxs font-weight-bold text-warning text-uppercase mb-1"><a class="dash-cards" href="/admin/computer/?search=backu">No Backups > 4 h</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
-                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">{{out_of_date_comp}}</div>
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{no_backup_4h}}</div>
               </div>
               <div class="col">
                 <div class="progress progress-sm mr-2">
-                  <div class="progress-bar bg-warning" role="progressbar" style="width: {{ out_of_date_comp_pers }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar bg-warning" role="progressbar" style="width: {{ no_backup_4h_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div>
             </div>
             {% endif %}
           </div>
-          <div class="col-auto">
-            <i class="fas fa-comments fa-2x text-gray-300"></i>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-desktop fa-1x text-warning center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-download fa-1x text-warning center-hor"></i>
+            </div>
           </div>
         </div>
       </div>

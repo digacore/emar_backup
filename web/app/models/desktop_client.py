@@ -129,4 +129,12 @@ class DesktopClientView(RowActionListMixin, MyModelView):
             result_query = self.session.query(self.model).filter(
                 self.model.name == "None"
             )
-        return result_query
+
+        return result_query.with_entities(
+            DesktopClient.name,
+            DesktopClient.id,
+            DesktopClient.version,
+            DesktopClient.description,
+            DesktopClient.filename,
+            DesktopClient.flag_name,
+        )

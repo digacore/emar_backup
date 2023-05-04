@@ -1,7 +1,7 @@
 import datetime
 import uuid
 import json
-from flask import jsonify, request
+from flask import jsonify
 
 from app.models import Computer, DesktopClient
 from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
@@ -80,20 +80,31 @@ def last_time(body: LastTime):
     ).first()
 
     if computer:
-        # logger.info(
-        #     "Updating last download time for computer: {}.", computer.computer_name
-        # )
-        computer.last_time_online = check_msi_version(computer, body, "online")
+        logger.info(
+            "Updating last download/online time for computer: {}. Current time download: {}. Current time online: {}. EST time: {}",
+            computer.computer_name,
+            computer.last_download_time,
+            computer.last_time_online,
+            CFG.offset_to_est(datetime.datetime.utcnow(), True),
+        )
+        # TODO deside which way is better and remove needless one
+        # computer.last_time_online = body.last_time_online
+        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         field = "online"
         if body.last_download_time:
-            computer.last_download_time = check_msi_version(computer, body, "download")
+            # computer.last_download_time = body.last_download_time
+            computer.last_download_time = CFG.offset_to_est(
+                datetime.datetime.utcnow(), True
+            )
             field = "download/online"
         computer.update()
         logger.info(
-            "Last {} time for computer {} is updated to {}.",
+            "Last {} time for computer {} is updated. New time download: {}. New time online: {}.",
             field,
             computer.computer_name,
-            check_msi_version(computer, body, "online"),
+            computer.last_download_time,
+            computer.last_time_online,
+
         )
 
         msi: DesktopClient = (
@@ -159,7 +170,7 @@ def get_credentials(body: GetCredentials):
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
-        logger.info("Updated identifier_key for computer {}.", computer.computer_name)
+        # logger.info("Updated identifier_key for computer {}.", computer.computer_name)
         logger.info("Supplying credentials for computer {}.", computer.computer_name)
 
         remote_files_checksum = (
