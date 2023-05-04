@@ -124,6 +124,7 @@ def index():
 
     # create a link for Locations filtering for red cards (danger) at index.html
     offline_1h = get_outdated_status_comps(total_computers, 1, "offline", "red")
+    no_backup_1h = get_outdated_status_comps(total_computers, 1, "backup", "red")
     list_filter_str = "?flt2_5="
     alerted_locations_offline = "percen2C".join(
         list(
@@ -141,7 +142,7 @@ def index():
             set(
                 [
                     comp.location_name.replace(" ", "+").replace("&", "%26")
-                    for comp in no_backup_4h
+                    for comp in no_backup_1h
                     if comp.location_name
                 ]
             )
