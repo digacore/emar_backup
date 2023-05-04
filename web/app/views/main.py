@@ -129,7 +129,7 @@ def index():
         list(
             set(
                 [
-                    comp.location_name.replace(" ", "+")
+                    comp.location_name.replace(" ", "+").replace("&", "%26")
                     for comp in offline_1h
                     if comp.location_name
                 ]
@@ -140,7 +140,7 @@ def index():
         list(
             set(
                 [
-                    comp.location_name.replace(" ", "+")
+                    comp.location_name.replace(" ", "+").replace("&", "%26")
                     for comp in no_backup_4h
                     if comp.location_name
                 ]
