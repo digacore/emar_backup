@@ -130,7 +130,7 @@ def get_html_body(
 
                         <p>
                         <a href="https://emarvault.com/">
-                            <img src="https://emarbackups.mytechwebsite.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
+                            <img src="https://emarvault.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
                         </a>
                         </p>
                         <p>
@@ -745,7 +745,7 @@ def daily_summary():
 
                         <p>
                             <a href="https://emarvault.com/">
-                                <img src="https://emarbackups.mytechwebsite.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
+                                <img src="https://emarvault.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
                             </a>
                         </p>
                         <p>
