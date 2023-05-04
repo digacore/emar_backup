@@ -133,7 +133,7 @@
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="/admin/location/{{al_com_off_filter_link.replace('percen', '%')}}">Locations Offline</a></div>
+            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="/admin/location/{{al_loc_off_filter_link.replace('percen', '%')}}">Locations Offline</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
                 <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{locations_offline}}</div>
@@ -168,7 +168,7 @@
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="/admin/location/{{al_com_no_back_filter_link.replace('percen', '%')}}">Locations no Backups</a></div>
+            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="/admin/location/{{al_loc_no_back_filter_link.replace('percen', '%')}}">Locations no Backups</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
                 <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{locations_no_download}}</div>

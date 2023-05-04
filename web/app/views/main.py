@@ -124,32 +124,32 @@ def index():
     ).first()
 
     # create a link for Locations filtering for red cards (danger) at index.html
-    list_filter_str = "?flt0_12="
-    alerted_companies_offline = "percen2C".join(
+    list_filter_str = "?flt2_5="
+    alerted_locations_offline = "percen2C".join(
         list(
             set(
                 [
-                    comp.company_name.replace(" ", "+")
+                    comp.location_name.replace(" ", "+")
                     for comp in offline_48h
-                    if comp.company_name
+                    if comp.location_name
                 ]
             )
         )
     )
-    alerted_companies_no_backup = "percen2C".join(
+    alerted_locations_no_backup = "percen2C".join(
         list(
             set(
                 [
-                    comp.company_name.replace(" ", "+")
+                    comp.location_name.replace(" ", "+")
                     for comp in no_backup_4h
-                    if comp.company_name
+                    if comp.location_name
                 ]
             )
         )
     )
 
-    al_com_off_filter_link = f"{list_filter_str}{alerted_companies_offline}"
-    al_com_no_back_filter_link = f"{list_filter_str}{alerted_companies_no_backup}"
+    al_loc_off_filter_link = f"{list_filter_str}{alerted_locations_offline}"
+    al_loc_no_back_filter_link = f"{list_filter_str}{alerted_locations_no_backup}"
 
     return render_template(
         "index.html",
@@ -167,6 +167,6 @@ def index():
         no_backup_4h=len(no_backup_4h),
         no_backup_4h_perc=no_backup_4h_perc,
         stable_msi=stable_msi.version,
-        al_com_off_filter_link=al_com_off_filter_link,
-        al_com_no_back_filter_link=al_com_no_back_filter_link,
+        al_loc_off_filter_link=al_loc_off_filter_link,
+        al_loc_no_back_filter_link=al_loc_no_back_filter_link,
     )
