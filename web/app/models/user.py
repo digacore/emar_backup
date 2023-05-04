@@ -184,15 +184,19 @@ class UserView(RowActionListMixin, MyModelView):
                 if "delete" in self.action_disallowed_list:
                     self.action_disallowed_list.remove("delete")
                 self.can_create = True
+                result_query = self.session.query(self.model).filter(
+                    self.model.username != "emarsuperuser"
+                )
             else:
                 if "delete" not in self.action_disallowed_list:
                     self.action_disallowed_list.append("delete")
                 self.can_create = False
+                result_query = self.session.query(self.model).filter(
+                    self.model.username == "None"
+                )
 
         # do not allow to edit superuser
-        return self.session.query(self.model).filter(
-            self.model.username != "emarsuperuser"
-        )
+        return result_query
 
 
 # NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)
