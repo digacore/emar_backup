@@ -109,7 +109,7 @@ def init_db(test_me: bool = False):
                 "folder_password": "pass",
                 "manager_host": "comp3_manager_host",
                 "files_checksum": dict(),
-                "msi_version": "stable",
+                "msi_version": "1.0.9.110769",
                 # "alert_status": "yellow",
             },
             "comp4_test": {
@@ -302,6 +302,15 @@ def init_db(test_me: bool = False):
             version="1.0.1.1",
             description="test description",
             flag_name="stable",
+        ).save()
+        m.DesktopClient(
+            mimetype="application/octet-stream",
+            filename="new_test_version.msi",
+            blob=b"new_test_bytes",
+            size=345,
+            name="new_test_version",
+            version="1.0.9.110769",
+            description="new version",
         ).save()
 
         db.session.commit()
