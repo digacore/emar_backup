@@ -123,7 +123,7 @@ def index():
     ).first()
 
     # create a link for Locations filtering for red cards (danger) at index.html
-    offline_1h = get_outdated_status_comps(total_computers, 1, "offline")
+    offline_1h = get_outdated_status_comps(total_computers, 1, "offline", "red")
     list_filter_str = "?flt2_5="
     alerted_locations_offline = "percen2C".join(
         list(
