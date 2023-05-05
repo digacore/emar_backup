@@ -31,7 +31,7 @@ Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`
 $trigger = New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Hours 1) -At 0am
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - trigger - [$trigger]"
 
-$principal = New-ScheduledTaskPrincipal -UserId "NTAuthority\SYSTEM" -RunLevel Highest
+$principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest
 
 $task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "eMARVaultHourlyCheck" `
 -Principal $principal -Description "Periodically check remote sftp and update backups" `
