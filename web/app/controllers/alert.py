@@ -126,6 +126,10 @@ def get_html_body(
                         </table>
                     </div>
 
+                        <hr style="margin-left: 10%;margin-right: 10%;">
+                        <h1 style="text-align:center">Instructions on how to access the eMARVault backups</h1>
+                        <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png">
+
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
                         <p>
@@ -179,7 +183,7 @@ def send_alert_email(
         "alerted_target": alerted_target,
         "alert_status": alert_obj.alert_status,
         "from_email": alert_obj.from_email,
-        "to_addresses": ["xavrais312@gmail.com", "nberger@digacore.com"],
+        "to_addresses": [CFG.DEV_EMAIL, CFG.CLIENT_EMAIL],
         "subject": alert_obj.subject,
         "body": "",
         "html_body": html_body,
@@ -313,7 +317,7 @@ def check_computer_send_mail(
             "alerted_target": alerted_target,
             "alert_status": alert_obj.alert_status,
             "from_email": alert_obj.from_email,
-            "to_addresses": ["xavrais312@gmail.com", "nberger@digacore.com"],
+            "to_addresses": [CFG.DEV_EMAIL, CFG.CLIENT_EMAIL],
             "subject": alert_obj.subject,
             "body": "",
             "html_body": html_body,
@@ -585,7 +589,9 @@ def daily_summary():
     image.close()
 
     computers: list[m.Computer] = m.Computer.query.all()
-    users: list[m.User] = m.User.query.all()
+    users: list[m.User] = m.User.query.filter(
+        m.User.asociated_with != "global-full", m.User.asociated_with != "global-view"
+    ).all()
     # get rid of users without association
     users = [user for user in users if user.asociated_with]
 
@@ -593,22 +599,32 @@ def daily_summary():
     email_user = {user.email: user for user in users}
     relation_user = {user.asociated_with: user.email for user in users}
     email_computers = {user.email: [] for user in users}
+    # TODO remove after global users behavior is set
+    email_user[CFG.DEV_EMAIL] = m.User(
+        username="dev",
+        email=CFG.DEV_EMAIL,
+        password="dev",
+        asociated_with="global-full",
+    )
+    relation_user["global-full"] = CFG.DEV_EMAIL
+    email_computers[CFG.DEV_EMAIL] = computers
 
     for comp in computers:
         if comp.company_name in relation_user:
+            # TODO convert to set() to avoid repetition
             email_computers[relation_user[comp.company_name]].append(comp)
         if comp.location_name in relation_user:
             email_computers[relation_user[comp.location_name]].append(comp)
 
-    for user in users:
-        if (
-            user.asociated_with.lower() == "global-full"
-            or user.asociated_with.lower() == "global-view"
-        ):
-            email_computers[user.email] = computers
+    # TODO discuss and organize behavior for global users
+    # for user in users:
+    #     if (
+    #         user.asociated_with.lower() == "global-full"
+    #         or user.asociated_with.lower() == "global-view"
+    #     ):
+    #         email_computers[user.email] = computers
 
     for recipient in email_computers:
-        # TODO what if comp.alert_status == None???
 
         green_comp = len(
             [
@@ -632,12 +648,53 @@ def daily_summary():
             ]
         )
 
-        computers_table = [
-            f'<tr style="background-color: #{get_status_color(comp.alert_status)};"> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
-            for comp in email_computers[recipient]
-        ]
+        recipient_locations_comps = dict()
+        for comp in email_computers[recipient]:
+            if comp.location_name not in recipient_locations_comps:
+                recipient_locations_comps[comp.location_name] = []
+            recipient_locations_comps[comp.location_name].append(comp)
 
-        table_str = " ".join(computers_table)
+        # building a location-tables html
+        table_head = """
+        <table class="table table-striped table-bordered table-hover model-list"
+                            style="border-collapse: collapse;"
+                            >
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            Computer
+                                        </th>
+                                        <th>
+                                            Last time online
+                                        </th>
+                                        <th>
+                                            Last download time
+                                        </th>
+                                        <th>
+                                            Alert status
+                                        </th>
+                                        <th>
+                                            Type
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+        """
+
+        locations_tables = []
+        for loc in recipient_locations_comps:
+            header = f'<hr> <h1 class="h3 mb-2 h1-header">Computers from {loc} location </h1>'
+            computers_trs = " ".join(
+                [
+                    f'<tr style="background-color: #{get_status_color(comp.alert_status)};"> <td>{comp.computer_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
+                    for comp in recipient_locations_comps[loc]
+                ]
+            )
+            close_tags = "</tbody> </table>"
+            location_table_str = f"{header} {table_head} {computers_trs} {close_tags}"
+            locations_tables.append(location_table_str)
+
+        table_str = " ".join(locations_tables)
         styles = """
             table {
             font-family: arial, sans-serif;
@@ -654,6 +711,15 @@ def daily_summary():
             tr:nth-child(even) {
             background-color: #dddddd;
             }
+
+            .h1-header {
+            text-align: center
+            }
+
+            hr {
+            margin-left: 10%;
+            margin-right: 10%;
+            }
         """
 
         html_template = f"""
@@ -669,11 +735,9 @@ def daily_summary():
                     <div class="container">
                     <div class="card my-10">
                         <div class="card-body">
-                        <h1 class="h3 mb-2"
-                        style="text-align: center"
-                        >eMARVault daily summary for {email_user[recipient].asociated_with}</h1>
+                        <h1 class="h3 mb-2 h1-header">{email_user[recipient].asociated_with} computers</h1>
 
-                        <hr style="margin-left: 10%;margin-right: 10%;">
+                        <hr>
 
                         <div class="space-y-3">
 
@@ -708,40 +772,11 @@ def daily_summary():
                                 </tbody>
                             </table>
 
-                            <hr style="margin-left: 10%;margin-right: 10%;">
+                            {table_str}
 
-                            <table class="table table-striped table-bordered table-hover model-list"
-                            style="border-collapse: collapse;"
-                            >
-                                <thead>
-                                    <tr>
-                                        <th>
-                                            Computer
-                                        </th>
-                                        <th>
-                                            Location
-                                        </th>
-                                        <th>
-                                            Last time online
-                                        </th>
-                                        <th>
-                                            Last download time
-                                        </th>
-                                        <th>
-                                            Alert status
-                                        </th>
-                                        <th>
-                                            Type
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {table_str}
-                                </tbody>
-                            </table>
                         </div>
 
-                        <hr style="margin-top: 4px; margin-bottom: 4px; margin-left: 10%; margin-right: 10%;">
+                        <hr>
 
                         <p>
                             <a href="https://emarvault.com/">
