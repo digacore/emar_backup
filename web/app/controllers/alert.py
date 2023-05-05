@@ -629,7 +629,6 @@ def daily_summary():
         # do nothing for recipients with no computers
         if len(email_computers[recipient]) == 0:
             continue
-        print("recipients", recipient)
 
         green_comp = len(
             [
@@ -814,6 +813,7 @@ def daily_summary():
                 "html_body": html_template,
             },
         )
+        logger.debug("Recipients {} email sent", recipient)
 
 
 def get_status_color(alert_status):
