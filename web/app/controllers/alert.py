@@ -599,6 +599,14 @@ def daily_summary():
     email_user = {user.email: user for user in users}
     relation_user = {user.asociated_with: user.email for user in users}
     email_computers = {user.email: [] for user in users}
+
+    for comp in computers:
+        if comp.company_name in relation_user:
+            # TODO convert to set() to avoid repetition
+            email_computers[relation_user[comp.company_name]].append(comp)
+        elif comp.location_name in relation_user:
+            email_computers[relation_user[comp.location_name]].append(comp)
+
     # TODO remove after global users behavior is set
     email_user[CFG.DEV_EMAIL] = m.User(
         username="dev",
@@ -609,13 +617,6 @@ def daily_summary():
     relation_user["global-full"] = CFG.DEV_EMAIL
     email_computers[CFG.DEV_EMAIL] = computers
 
-    for comp in computers:
-        if comp.company_name in relation_user:
-            # TODO convert to set() to avoid repetition
-            email_computers[relation_user[comp.company_name]].append(comp)
-        if comp.location_name in relation_user:
-            email_computers[relation_user[comp.location_name]].append(comp)
-
     # TODO discuss and organize behavior for global users
     # for user in users:
     #     if (
@@ -625,6 +626,10 @@ def daily_summary():
     #         email_computers[user.email] = computers
 
     for recipient in email_computers:
+        # do nothing for recipients with no computers
+        if len(email_computers[recipient]) == 0:
+            continue
+        print("recipients", recipient)
 
         green_comp = len(
             [
