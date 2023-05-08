@@ -1,4 +1,4 @@
-import base64
+# import base64
 from datetime import datetime, timedelta
 
 import requests
@@ -37,12 +37,14 @@ def get_html_body(
     location: str, computers: list, alert_type: str, alert_details: str = ""
 ) -> str:
 
-    image = open("app/static/favicon.ico", "rb")
-    imgb = str(base64.b64encode(image.read()))[2:-1]
-    image.close()
+    # TODO remove if unused
+    # image = open("app/static/favicon.ico", "rb")
+    # imgb = str(base64.b64encode(image.read()))[2:-1]
+    # image.close()
 
     computers_table = [
-        f"<tr> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.folder_password}</td> <td>{comp.type}</td> </tr>"
+        f"<tr> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td>\
+            <td>{comp.last_download_time}</td> <td>{comp.folder_password}</td> <td>{comp.type}</td> </tr>"
         for comp in computers
     ]
 
@@ -175,7 +177,8 @@ def send_alert_email(
     alerted_computers: list = m.Computer.query.filter_by(
         location_name=alerted_target
     ).all()
-    body = alert_obj.body if alert_obj.body else ""
+    # TODO remove if unused
+    # body = alert_obj.body if alert_obj.body else ""
     html_body = get_html_body(alerted_target, alerted_computers, status_details)
 
     # TODO temporary to_addresses. Remove in future
@@ -228,7 +231,8 @@ def check_computer_send_mail(
     }
 
     logger.debug(
-        "{} -> utc: {}, est: {} compare download 4: {} > {} = {};\n compare online 12: {} > {} = {};\n compare no download 3: {} < {} = {};\n compare offline 30 min: {} < {} = {};\n",
+        "{} -> utc: {}, est: {} compare download 4: {} > {} = {};\n compare online 12: \
+        {} > {} = {};\n compare no download 3: {} < {} = {};\n compare offline 30 min: {} < {} = {};\n",
         computer,
         datetime.utcnow(),
         CFG.offset_to_est(datetime.utcnow(), True),
@@ -309,7 +313,8 @@ def check_computer_send_mail(
         alerted_computers: list = m.Computer.query.filter_by(
             location_name=alerted_target
         ).all()
-        body = alert_obj.body if alert_obj.body else ""
+        # TODO remove if unused
+        # body = alert_obj.body if alert_obj.body else ""
         html_body = get_html_body(alerted_target, alerted_computers, status_details)
 
         # TODO temporary to_addresses. Remove in future
@@ -584,38 +589,64 @@ def check_and_alert():
 
 def daily_summary():
 
-    image = open("app/static/favicon.ico", "rb")
-    imgb = str(base64.b64encode(image.read()))[2:-1]
-    image.close()
+    # TODO remove if unused
+    # image = open("app/static/favicon.ico", "rb")
+    # imgb = str(base64.b64encode(image.read()))[2:-1]
+    # image.close()
 
     computers: list[m.Computer] = m.Computer.query.all()
     users: list[m.User] = m.User.query.filter(
         m.User.asociated_with != "global-full", m.User.asociated_with != "global-view"
     ).all()
+    companies: list[m.Company] = m.Company.query.all()
+    locations: list[m.Location] = m.Location.query.with_entities(
+        m.Location.name, m.Location.company_name
+    ).all()
+
+    companies_names = [company.name for company in companies]
+    locations_names = {loc.name: loc.company_name for loc in locations}
+
+    # build a tree {company: {location: [computer, computer], location: [computer]}, company:...}
+    company_loc_comp = {
+        company.name: {
+            loc.name: [comp for comp in computers if comp.location_name == loc.name]
+            for loc in locations
+            if loc.company_name == company.name
+        }
+        for company in companies
+    }
+
     # get rid of users without association
     users = [user for user in users if user.asociated_with]
-
-    # TODO what if we have multiple users in same company/location?
-    email_user = {user.email: user for user in users}
-    relation_user = {user.asociated_with: user.email for user in users}
-    email_computers = {user.email: [] for user in users}
-
-    for comp in computers:
-        if comp.company_name in relation_user:
-            # TODO convert to set() to avoid repetition
-            email_computers[relation_user[comp.company_name]].append(comp)
-        elif comp.location_name in relation_user:
-            email_computers[relation_user[comp.location_name]].append(comp)
-
     # TODO remove after global users behavior is set
-    email_user[CFG.DEV_EMAIL] = m.User(
+    dev = m.User(
         username="dev",
         email=CFG.DEV_EMAIL,
         password="dev",
         asociated_with="global-full",
     )
-    relation_user["global-full"] = CFG.DEV_EMAIL
-    email_computers[CFG.DEV_EMAIL] = computers
+    users.append(dev)
+
+    # TODO what if we have multiple users in same company/location?
+    email_user = {user.email: user for user in users}
+    email_company_locs_comps = {user.email: dict() for user in users}
+
+    # asociate appropriate company trees to users
+    for user in users:
+        if user.asociated_with in companies_names:
+            email_company_locs_comps[user.email] = {
+                user.asociated_with: company_loc_comp[user.asociated_with]
+            }
+        elif user.asociated_with in locations_names:
+            user_company = locations_names[user.asociated_with]
+            email_company_locs_comps[user.email] = {
+                user_company: company_loc_comp[user_company]
+            }
+        elif (
+            user.asociated_with.lower() == "global-full"
+            or user.asociated_with.lower() == "global-view"
+        ):
+            email_company_locs_comps[user.email] = company_loc_comp
 
     # TODO discuss and organize behavior for global users
     # for user in users:
@@ -625,80 +656,53 @@ def daily_summary():
     #     ):
     #         email_computers[user.email] = computers
 
-    for recipient in email_computers:
+    for recipient in email_company_locs_comps:
         # do nothing for recipients with no computers
-        if len(email_computers[recipient]) == 0:
+        if len(email_company_locs_comps[recipient]) == 0:
             continue
 
-        green_comp = len(
-            [
-                comp.alert_status
-                for comp in email_computers[recipient]
-                if "green" in str(comp.alert_status)
-            ]
-        )
-        yellow_comp = len(
-            [
-                comp.alert_status
-                for comp in email_computers[recipient]
-                if "yellow" in str(comp.alert_status)
-            ]
-        )
-        red_comp = len(
-            [
-                comp.alert_status
-                for comp in email_computers[recipient]
-                if "red" in str(comp.alert_status)
-            ]
-        )
+        red_comp = 0
+        yellow_comp = 0
+        green_comp = 0
+        company_tables = list()
+        # build html company - locations - computers tree
+        for company in email_company_locs_comps[recipient]:
+            company_str = f"<tr> <td>{company}</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> </tr>"
+            company_tables.append(company_str)
+            for location in email_company_locs_comps[recipient][company]:
+                location_str = f"<tr> <td></td> <td>{location}</td> <td></td> <td></td> \
+                    <td></td> <td></td> <td></td> </tr>"
+                company_tables.append(location_str)
 
-        recipient_locations_comps = dict()
-        for comp in email_computers[recipient]:
-            if comp.location_name not in recipient_locations_comps:
-                recipient_locations_comps[comp.location_name] = []
-            recipient_locations_comps[comp.location_name].append(comp)
+                # NOTE this is shorter way, BUT doesn't count colors
+                # computer_tables = " ".join(
+                #     [
+                #         f'<tr style="background-color: #{get_status_color(comp.alert_status)};"> <td></td> \
+                #           <td></td> <td>{comp.computer_name}</td> <td>{comp.last_time_online}</td> \
+                #           <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
+                #         for comp in email_company_locs_comps[recipient][company][
+                #             location
+                #         ]
+                #     ]
+                # )
 
-        # building a location-tables html
-        table_head = """
-        <table class="table table-striped table-bordered table-hover model-list"
-                            style="border-collapse: collapse;"
-                            >
-                                <thead>
-                                    <tr>
-                                        <th>
-                                            Computer
-                                        </th>
-                                        <th>
-                                            Last time online
-                                        </th>
-                                        <th>
-                                            Last download time
-                                        </th>
-                                        <th>
-                                            Alert status
-                                        </th>
-                                        <th>
-                                            Type
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-        """
+                computer_tables = list()
+                for computer in email_company_locs_comps[recipient][company][location]:
+                    computer_tables.append(
+                        f'<tr style="background-color: #{get_status_color(computer.alert_status)};"> <td></td> \
+                        <td></td> <td>{computer.computer_name}</td> <td>{computer.last_time_online}</td> \
+                        <td>{computer.last_download_time}</td> <td>{computer.alert_status}</td> \
+                        <td>{computer.type}</td> </tr>'
+                    )
+                    if "red" in str(computer.alert_status):
+                        red_comp += 1
+                    elif "yellow" in str(computer.alert_status):
+                        yellow_comp += 1
+                    elif "green" in str(computer.alert_status):
+                        green_comp += 1
+                company_tables.append(" ".join(computer_tables))
 
-        locations_tables = []
-        for loc in recipient_locations_comps:
-            header = f'<hr> <h1 class="h3 mb-2 h1-header">Computers from {loc} location </h1>'
-            computers_trs = " ".join(
-                [
-                    f'<tr style="background-color: #{get_status_color(comp.alert_status)};"> <td>{comp.computer_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
-                    for comp in recipient_locations_comps[loc]
-                ]
-            )
-            close_tags = "</tbody> </table>"
-            location_table_str = f"{header} {table_head} {computers_trs} {close_tags}"
-            locations_tables.append(location_table_str)
-
-        table_str = " ".join(locations_tables)
+        table_str = " ".join(company_tables)
         styles = """
             table {
             font-family: arial, sans-serif;
@@ -776,7 +780,41 @@ def daily_summary():
                                 </tbody>
                             </table>
 
+                            <hr>
+
+                            <table class="table table-striped table-bordered table-hover model-list"
+                                style="border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            Company
+                                        </th>
+                                        <th>
+                                            Location
+                                        </th>
+                                        <th>
+                                            Computer
+                                        </th>
+                                        <th>
+                                            Last time online
+                                        </th>
+                                        <th>
+                                            Last download time
+                                        </th>
+                                        <th>
+                                            Alert status
+                                        </th>
+                                        <th>
+                                            Type
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+
                             {table_str}
+
+                                </tbody>
+                            </table>
 
                         </div>
 
@@ -784,7 +822,7 @@ def daily_summary():
 
                         <p>
                             <a href="https://emarvault.com/">
-                                <img src="https://emarvault.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
+                                <img src="https://emarvault.com/static/img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
                             </a>
                         </p>
                         <p>
