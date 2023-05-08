@@ -667,12 +667,14 @@ def daily_summary():
         company_tables = list()
         # build html company - locations - computers tree
         for company in email_company_locs_comps[recipient]:
-            company_str = f"<tr> <td>{company}</td> <td></td> <td></td> <td></td> <td></td> <td></td> <td></td> </tr>"
-            company_tables.append(company_str)
+            company_online_comps = 0
+            company_offline_comps = 0
+            computer_loc_str_tables = list()
+
             for location in email_company_locs_comps[recipient][company]:
                 location_str = f"<tr> <td></td> <td>{location}</td> <td></td> <td></td> \
                     <td></td> <td></td> <td></td> </tr>"
-                company_tables.append(location_str)
+                computer_loc_str_tables.append(location_str)
 
                 # NOTE this is shorter way, BUT doesn't count colors
                 # computer_tables = " ".join(
@@ -695,12 +697,20 @@ def daily_summary():
                         <td>{computer.type}</td> </tr>'
                     )
                     if "red" in str(computer.alert_status):
+                        company_offline_comps += 1
                         red_comp += 1
                     elif "yellow" in str(computer.alert_status):
+                        company_offline_comps += 1
                         yellow_comp += 1
                     elif "green" in str(computer.alert_status):
+                        company_online_comps += 1
                         green_comp += 1
-                company_tables.append(" ".join(computer_tables))
+                computer_loc_str_tables.append(" ".join(computer_tables))
+
+            company_str = f"<tr> <td>{company}</td> <td>Online {company_online_comps}</td> \
+                <td>Offline {company_offline_comps}</td> <td></td> <td></td> <td></td> <td></td> </tr>"
+            company_tables.append(company_str)
+            company_tables.extend(computer_loc_str_tables)
 
         table_str = " ".join(company_tables)
         styles = """
