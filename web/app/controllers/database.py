@@ -13,6 +13,7 @@ def create_superuser():
             email=CFG.SUPER_USER_MAIL,
             password=CFG.SUPER_USER_PASS,
             asociated_with="global-full",
+            activated=True,
         )
         user.save()
         logger.info("Superuser created")

@@ -2,12 +2,15 @@ import os
 import subprocess
 
 from celery import Celery
-from celery.schedules import crontab
+from celery.schedules import crontab, schedule
 from dotenv import load_dotenv
+from redbeat import RedBeatSchedulerEntry
 
-from app.models import AlertControls
+# from app.models import AlertControls
 from app.logger import logger
 from config import BaseConfig as CFG
+
+import celery_config
 
 
 ALERT_PERIOD = CFG.ALERT_PERIOD
@@ -21,29 +24,29 @@ REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 REDIS_ADDR = os.environ.get("REDIS_ADDR", f"localhost:{REDIS_PORT}")
 BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_ADDR}"
 
+
 app = Celery(__name__)
 app.conf.broker_url = BROKER_URL
 app.conf.timezone = "US/Eastern"
+app.conf.redbeat_redis_url = f"{BROKER_URL}/1"
+app.config_from_object(celery_config)
 # celery.conf.result_backend = conf.REDIS_URL_FOR_CELERY
+# interval = schedule(run_every=120)  # seconds
+# entry = RedBeatSchedulerEntry(
+#     "daily_summary", "worker.daily_summary", interval, app=app
+# )
+# entry.save()
 
 
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
-    daily_summary_controls: AlertControls = AlertControls.query.filter_by(
-        name="daily-summary"
-    ).first()
-    logger.debug("ALERT_PERIOD: {}", ALERT_PERIOD)
-    sender.add_periodic_task(ALERT_PERIOD, check_and_alert.s(), name="check-and-alert")
-    sender.add_periodic_task(
-        UPDATE_CL_PERIOD, update_cl_stat.s(), name="update-cl-stat"
-    )
-    alert_hours = int(int(daily_summary_controls.alert_period) / 3600)
-    alert_minutes = int(int(daily_summary_controls.alert_period) % 3600)
-    sender.add_periodic_task(
-        crontab(hour=alert_hours, minute=alert_minutes),
-        daily_summary.s(),
-        name="daily-summary",
-    )
+    # logger.debug("ALERT_PERIOD: {}", ALERT_PERIOD)
+    # sender.add_periodic_task(ALERT_PERIOD, check_and_alert.s(), name="check-and-alert")
+    # sender.add_periodic_task(
+    #     UPDATE_CL_PERIOD, update_cl_stat.s(), name="update-cl-stat"
+    # )
+
+    print("query for daily summary")
 
 
 @app.task

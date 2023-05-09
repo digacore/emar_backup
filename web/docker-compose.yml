@@ -46,7 +46,7 @@ services:
     depends_on:
       - db
     command: >
-      celery -A worker worker -B --loglevel=INFO
+      celery -A worker worker -B -S redbeat.RedBeatScheduler --loglevel=INFO
 
   redis:
     restart: unless-stopped

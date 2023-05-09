@@ -4,20 +4,26 @@ from sqlalchemy.orm import relationship
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
+from celery.schedules import crontab, schedule
+from redbeat import RedBeatSchedulerEntry
+from worker import app as celery_app
+
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 
+from app.logger import logger
+
 
 class AlertControls(db.Model, ModelMixin):
-
     __tablename__ = "alert_controls"
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
+    alert_interval = db.Column(db.String(64), nullable=False)
     alert_period = db.Column(db.Integer)
+    key = db.Column(db.String(128))
     alert = relationship("Alert", passive_deletes=True, lazy="select")
-    # TODO swap company name to company id. Same for all models
     alert_associated = db.Column(
         db.Integer, db.ForeignKey("alerts.id", ondelete="CASCADE")
     )
@@ -31,7 +37,80 @@ class AlertControlsView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "AlertControlsView"
 
+    form_choices = {
+        "alert_interval": [
+            ("repeat every alert period", "repeat every alert period"),
+            ("daily", "daily"),
+            ("weekly", "weekly"),
+            ("monthly", "monthly"),
+        ],
+        "name": [
+            ("daily_summary", "daily_summary"),
+            ("update_cl_stat", "update_cl_stat"),
+            ("check_and_alert", "check_and_alert"),
+        ]
+    }
+
     action_disallowed_list = ["delete"]
+
+    def on_model_change(self, form, model, is_created):
+        alert_hours = int(int(model.alert_period) / 3600)
+        alert_minutes = int(int(model.alert_period) % 3600)
+
+        if model.key:
+            entry = RedBeatSchedulerEntry.from_key(model.key, app=celery_app)
+            entry.delete()
+
+        if model.alert_interval == "repeat every alert period":
+            interval = schedule(run_every=model.alert_period)  # seconds
+            entry = RedBeatSchedulerEntry(
+                model.name, f"worker.{model.name}", interval, app=celery_app
+            )
+            entry.save()
+
+            logger.debug(
+                "daily_summary interval changed to: {} {}",
+                model.alert_period,
+                model.alert_interval,
+            )
+
+        elif model.alert_interval == "daily":
+            interval = crontab(hour=alert_hours, minute=alert_minutes)
+            entry = RedBeatSchedulerEntry(
+                model.name, f"worker.{model.name}", interval, app=celery_app
+            )
+            entry.save()
+            logger.debug(
+                "daily_summary interval changed to: {} {}",
+                model.alert_period,
+                model.alert_interval,
+            )
+
+        elif model.alert_interval == "weekly":
+            interval = crontab(hour=alert_hours, minute=alert_minutes, day_of_week=1)
+            entry = RedBeatSchedulerEntry(
+                model.name, f"worker.{model.name}", interval, app=celery_app
+            )
+            entry.save()
+            logger.debug(
+                "daily_summary interval changed to: {} {}",
+                model.alert_period,
+                model.alert_interval,
+            )
+
+        elif model.alert_interval == "monthly":
+            interval = crontab(hour=alert_hours, minute=alert_minutes, day_of_month=1)
+            entry = RedBeatSchedulerEntry(
+                model.name, f"worker.{model.name}", interval, app=celery_app
+            )
+            entry.save()
+            logger.debug(
+                "daily_summary interval changed to: {} {}",
+                model.alert_period,
+                model.alert_interval,
+            )
+
+        model.key = entry.key
 
     def _can_edit(self, model):
         # return True to allow edit
@@ -45,7 +124,6 @@ class AlertControlsView(RowActionListMixin, MyModelView):
         return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
@@ -57,7 +135,6 @@ class AlertControlsView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
-
         if current_user:
             if str(current_user.asociated_with).lower() == "global-full":
                 if "delete" in self.action_disallowed_list:
