@@ -93,7 +93,8 @@
                   Impersonate="yes" />
 
     <InstallExecuteSequence>
-      <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom>
+    <!-- <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom> -->
+      <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed OR WIX_UPGRADE_DETECTED</Custom>
     </InstallExecuteSequence>
 
     <Feature Id="SomeInstallFeature">
