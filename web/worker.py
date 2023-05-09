@@ -5,6 +5,7 @@ from celery import Celery
 from celery.schedules import crontab
 from dotenv import load_dotenv
 
+from app.models import AlertControls
 from app.logger import logger
 from config import BaseConfig as CFG
 
@@ -28,13 +29,20 @@ app.conf.timezone = "US/Eastern"
 
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
+    daily_summary_controls: AlertControls = AlertControls.query.filter_by(
+        name="daily-summary"
+    ).first()
     logger.debug("ALERT_PERIOD: {}", ALERT_PERIOD)
     sender.add_periodic_task(ALERT_PERIOD, check_and_alert.s(), name="check-and-alert")
     sender.add_periodic_task(
         UPDATE_CL_PERIOD, update_cl_stat.s(), name="update-cl-stat"
     )
+    alert_hours = int(int(daily_summary_controls.alert_period) / 3600)
+    alert_minutes = int(int(daily_summary_controls.alert_period) % 3600)
     sender.add_periodic_task(
-        crontab(hour=9, minute=0), daily_summary.s(), name="daily-summary"
+        crontab(hour=alert_hours, minute=alert_minutes),
+        daily_summary.s(),
+        name="daily-summary",
     )
 
 

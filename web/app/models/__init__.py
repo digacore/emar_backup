@@ -6,3 +6,4 @@ from .location import Location, LocationView
 from .alert import Alert, AlertView
 from .desktop_client import DesktopClient, DesktopClientView
 from .client_version import ClientVersion, ClientVersionView
+from .alert_controls import AlertControls, AlertControlsView
