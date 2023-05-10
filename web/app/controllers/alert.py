@@ -30,7 +30,9 @@ TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 OFFLINE_ALERT_12H: datetime = get_timedelta_hours(12)
 NO_DOWNLOAD_ALERT_4H: datetime = get_timedelta_hours(4)
 LOCATION_OFFLINE_30MIN: datetime = get_timedelta_hours(0.5)
+LOCATION_OFFLINE_30MIN_IN_SEC: int = 1800
 LOCATION_NO_DOWNLOAD_3H: datetime = get_timedelta_hours(3)
+LOCATION_NO_DOWNLOAD_3H_IN_SEC: int = 10800
 
 
 def get_html_body(
@@ -248,15 +250,15 @@ def check_computer_send_mail(
 
     if not last_time and not computer and alerted_target:
         # query for all computers in location
-        all_computers: list[m.Computer] = m.Computer.query.filter_by(
+        alerted_computers: list[m.Computer] = m.Computer.query.filter_by(
             location_name=alerted_target
         ).all()
 
         # check for red before computers update
-        all_red = check_for_red(all_computers)
+        all_red = check_for_red(alerted_computers)
 
         # decide which alert details assign to location's computers alert_status and update them
-        for computer in all_computers:
+        for computer in alerted_computers:
             if "offline" in alert_type:
                 # get hours offline of no download from (EST now time - last download/online)
                 time_diff = (
@@ -313,10 +315,6 @@ def check_computer_send_mail(
 
         to_addresses = [user.email for user in alerted_users]
 
-        # query for computers in alerted location
-        alerted_computers: list = m.Computer.query.filter_by(
-            location_name=alerted_target
-        ).all()
         # TODO remove if unused
         # body = alert_obj.body if alert_obj.body else ""
         html_body = get_html_body(alerted_target, alerted_computers, status_details)
@@ -394,9 +392,9 @@ def check_computer_send_mail(
 
         # if (comp has no download 3h OR is offline 30 min) AND it is only one in his location - keep it red
         if (
-            last_tms["last_download"] < LOCATION_NO_DOWNLOAD_3H
-            or last_tms["last_online"] < LOCATION_OFFLINE_30MIN
-        ) and current_location_comps == 1:
+            last_tms["last_download"] <= LOCATION_NO_DOWNLOAD_3H
+            or last_tms["last_online"] <= LOCATION_OFFLINE_30MIN
+        ) and current_location_comps <= 1:
             return
 
         # TODO if all red status was resolved, send email about it
@@ -499,8 +497,8 @@ def check_and_alert():
         if len(location_computers[location]) == 0:
             continue
 
-        off_30_min_computers = 0
-        no_update_files_2h = 0
+        off_time_computers = 0
+        no_update_files_time = 0
 
         for computer in location_computers[location]:
 
@@ -519,7 +517,7 @@ def check_and_alert():
 
                     # TODO apply something like this to DRY
                     # def handle_alert_case(last_time, alert_type, computer, alert_obj):
-                    #     alerts_timedelta = {"offline_12h": 1800, "no_download_4h": 7200}
+                    #     alerts_timedelta = {"offline_12h": LOCATION_OFFLINE_30MIN_IN_SEC, "no_download_4h": LOCATION_NO_DOWNLOAD_3H_IN_SEC}
 
                     #     if last_time < CFG.offset_to_est(
                     #         datetime.now(), True
@@ -538,8 +536,8 @@ def check_and_alert():
                     if last_download_time and "no_download" in alert_type:
                         if last_download_time < CFG.offset_to_est(
                             datetime.utcnow(), True
-                        ) - timedelta(seconds=7200):
-                            no_update_files_2h += 1
+                        ) - timedelta(seconds=LOCATION_NO_DOWNLOAD_3H_IN_SEC):
+                            no_update_files_time += 1
 
                         check_computer_send_mail(
                             last_time=last_download_time,
@@ -552,8 +550,8 @@ def check_and_alert():
                     if last_time_online and "offline" in alert_type:
                         if last_time_online < CFG.offset_to_est(
                             datetime.utcnow(), True
-                        ) - timedelta(seconds=1800):
-                            off_30_min_computers += 1
+                        ) - timedelta(seconds=LOCATION_OFFLINE_30MIN_IN_SEC):
+                            off_time_computers += 1
 
                         check_computer_send_mail(
                             last_time=last_time_online,
@@ -563,7 +561,7 @@ def check_and_alert():
                             alert_obj=alert_obj,
                         )
 
-        if no_update_files_2h == len(location_computers[location]):
+        if no_update_files_time == len(location_computers[location]):
 
             check_computer_send_mail(
                 last_time=None,
@@ -576,7 +574,7 @@ def check_and_alert():
 
             logger.warning("No new files over 3 h alert in location {}.", location)
 
-        if off_30_min_computers == len(location_computers[location]):
+        if off_time_computers == len(location_computers[location]):
 
             check_computer_send_mail(
                 last_time=None,
