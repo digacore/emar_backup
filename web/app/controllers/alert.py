@@ -36,13 +36,18 @@ LOCATION_NO_DOWNLOAD_3H_IN_SEC: int = 10800
 
 
 def get_html_body(
-    location: str, computers: list, alert_type: str, alert_details: str = ""
+    location: str,
+    computers: list,
+    alert_details: str,
+    attention: str = "Attention! All computers in this location have status RED!",
 ) -> str:
 
     # TODO remove if unused
     # image = open("app/static/favicon.ico", "rb")
     # imgb = str(base64.b64encode(image.read()))[2:-1]
     # image.close()
+
+    attention_color = "#e74a3b" if "RED" in attention else "#1cc88a"
 
     computers_table = [
         f"<tr> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td>\
@@ -92,9 +97,9 @@ def get_html_body(
                 <div class="container">
                 <div class="card my-10">
                     <div class="card-body">
-                    <h1 class="h3 mb-2" style="text-align: center">Location {location} Alert - {alert_type}</h1>
-                    <h4 class="h3 mb-2" style="background-color: #e74a3b; text-align: center"
-                    >Attention! All computers in this location have status RED! {alert_details}</h4>
+                    <h1 class="h3 mb-2" style="text-align: center">Location {location} Alert - {alert_details}</h1>
+                    <h4 class="h3 mb-2" style="background-color: {attention_color}; text-align: center"
+                    >{attention}</h4>
 
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
@@ -154,8 +159,18 @@ def get_html_body(
 
 
 def send_alert_email(
-    alerted_target: str, alert_obj: m.Alert, status_details: str
+    alerted_target: str, alert_obj: m.Alert, status_details: str, attention=None
 ) -> bool:
+    """Send all red or all green email to appropriate user
+
+    Args:
+        alerted_target (str): location name
+        alert_obj (m.Alert): Alert sqla object
+        status_details (str): description of alert status and it's change
+
+    Returns:
+        bool: return true to confrim that request was sent
+    """
     # query for alerted location to get location company name
     alerted_location: m.Location = m.Location.query.filter_by(
         name=alerted_target
@@ -177,7 +192,11 @@ def send_alert_email(
     ).all()
     # TODO remove if unused
     # body = alert_obj.body if alert_obj.body else ""
-    html_body = get_html_body(alerted_target, alerted_computers, status_details)
+    html_body = (
+        get_html_body(alerted_target, alerted_computers, status_details, attention)
+        if attention
+        else get_html_body(alerted_target, alerted_computers, status_details)
+    )
 
     # TODO temporary to_addresses. Remove in future
     request_json = {
@@ -207,17 +226,20 @@ def check_computer_send_mail(
     computer: m.Computer,
     alert_type: str,
     alert_obj: m.Alert,
-    alerted_target=None,
+    alerted_target: str = None,
 ):
-    """Send email to support if last time online/download > alert_hours.
+    """
+    Send email to support if last time online/download > alert_hours.
     If not - make status green
     Dont send repeatedly.
 
     Args:
         last_time (datetime): computer last time online/download
+        compare_time (datetime): time limit to which computer last times would be compared
         computer (models.Computer): Computer model instance
         alert_type (str): alert type to log
         alert_obj (sqlalchemy.query): sqlalchemy.query object of some model
+        alerted_target (str): alerted location name when all offline or no backup. Defaults to None.
     """
 
     alert_url = CFG.MAIL_ALERTS
@@ -291,14 +313,6 @@ def check_computer_send_mail(
                 alert_type,
             )
             return
-        else:
-            # TODO remove in future?? Log an error, if this happens to easely notice it
-            logger.error(
-                "Location - {} alert - {} all red = {}.",
-                alerted_target,
-                alert_type,
-                all_red,
-            )
 
         # query for alerted location to get location company name
         alerted_location: m.Location = m.Location.query.filter_by(
@@ -397,9 +411,6 @@ def check_computer_send_mail(
         ) and current_location_comps <= 1:
             return
 
-        # TODO if all red status was resolved, send email about it
-        # send_alert_email(computer.location_name, alert_obj, status_details)
-
         computer.alert_status = "green"
         computer.update()
         logger.info(
@@ -416,7 +427,8 @@ def check_computer_send_mail(
 
 
 def time_type_check(computer: m.Computer, return_val: str) -> datetime:
-    """Check and transform computer last_time_online and last_download_time
+    """
+    Check and transform computer last_time_online and last_download_time
     to datetime objects, if it is string. If it is non - meaning field is empty -
     consider time was missed
 
@@ -471,7 +483,7 @@ def check_and_alert():
     """
     CLI command for celery worker.
     Checks computers activity.
-    Send email and change status if something went wrong.
+    Send email and change status.
     """
 
     locations: list[m.Location] = m.Location.query.all()
@@ -479,6 +491,8 @@ def check_and_alert():
     computers: list[m.Computer] = m.Computer.query.all()
     # TODO loop for all CUSTOM alerts to send email
     alerts: list[m.Alert] = m.Alert.query.all()
+    # take all_green alert from alerts list to no query again
+    all_green_li = [alert for alert in alerts if alert.name == "all_green"]
 
     alert_names = {alert.name: alert for alert in alerts}
     location_computers = {location.name: [] for location in locations}
@@ -499,6 +513,10 @@ def check_and_alert():
 
         off_time_computers = 0
         no_update_files_time = 0
+
+        red_comps = [
+            comp for comp in location_computers[location] if "red" in comp.alert_status
+        ]
 
         for computer in location_computers[location]:
 
@@ -561,6 +579,10 @@ def check_and_alert():
                             alert_obj=alert_obj,
                         )
 
+        # if computer is without location, don't send any email for location
+        if location == no_location:
+            continue
+
         if no_update_files_time == len(location_computers[location]):
 
             check_computer_send_mail(
@@ -588,8 +610,34 @@ def check_and_alert():
                 "All computers from location {} offline 30 min alert.", location
             )
 
+        # query now for green comps in current location and compare to red comps
+        # then decide if to send green email (meaning that all computers returned online)
+        updated_loc_green_comps: list[m.Computer] = m.Computer.query.filter_by(
+            alert_status="green", location_name=location
+        ).all()
+
+        logger.error(
+            "All green. location: {}. Red {}, Green {}",
+            location,
+            len(red_comps),
+            len(updated_loc_green_comps),
+        )
+
+        if len(red_comps) == 0 and len(updated_loc_green_comps) == 0:
+            continue
+
+        if len(red_comps) == len(updated_loc_green_comps) and len(all_green_li) > 0:
+            send_alert_email(
+                location, all_green_li[0], "all_green", "All computers are back online"
+            )
+            logger.error("All green email sent for location {}", location)
+
 
 def daily_summary():
+    """
+    CLI command for celery worker.
+    Sends daily summary to every user respectfully to user's asociated_with.
+    """
 
     # TODO remove if unused
     # image = open("app/static/favicon.ico", "rb")
