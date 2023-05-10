@@ -48,7 +48,7 @@ class AlertControlsView(RowActionListMixin, MyModelView):
             ("daily_summary", "daily_summary"),
             ("update_cl_stat", "update_cl_stat"),
             ("check_and_alert", "check_and_alert"),
-        ]
+        ],
     }
 
     action_disallowed_list = ["delete"]
@@ -58,8 +58,11 @@ class AlertControlsView(RowActionListMixin, MyModelView):
         alert_minutes = int(int(model.alert_period) % 3600)
 
         if model.key:
-            entry = RedBeatSchedulerEntry.from_key(model.key, app=celery_app)
-            entry.delete()
+            try:
+                entry = RedBeatSchedulerEntry.from_key(model.key, app=celery_app)
+                entry.delete()
+            except Exception as e:
+                logger.debug("No such record in Redis DB yet. Exception: {}", e)
 
         if model.alert_interval == "repeat every alert period":
             interval = schedule(run_every=model.alert_period)  # seconds
