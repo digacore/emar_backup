@@ -39,3 +39,23 @@ document.querySelectorAll("#overall-admin-search").forEach((form) =>
     globalForm.submit();
   })
 );
+
+function startTime() {
+  let offsetHours = -4;
+  const today = new Date();
+  today.setHours(today.getHours() + offsetHours);
+  let h = today.getHours();
+  let m = today.getMinutes();
+  let s = today.getSeconds();
+  m = checkTime(m);
+  s = checkTime(s);
+  document.getElementById("js-clock").innerHTML = h + ":" + m + ":" + s;
+  setTimeout(startTime, 1000);
+}
+
+function checkTime(i) {
+  if (i < 10) {
+    i = "0" + i;
+  } // add zero in front of numbers < 10
+  return i;
+}
