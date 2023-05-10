@@ -128,10 +128,6 @@ def get_html_body(
                         </table>
                     </div>
 
-                        <hr style="margin-left: 10%;margin-right: 10%;">
-                        <h1 style="text-align:center">Instructions on how to access the eMARVault backups</h1>
-                        <img src="https://user-images.githubusercontent.com/54449043/234306932-37cde083-9c8b-4eab-a12b-5ef393680ae2.png">
-
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
                         <p>
@@ -288,11 +284,19 @@ def check_computer_send_mail(
         # if all computer are already red - quit from this func
         if all_red:
             logger.debug(
-                "Location - {} alert - {} was already sent and updated.",
+                "Location - {} alert - {} was already sent and updated. All red.",
                 alerted_target,
                 alert_type,
             )
             return
+        else:
+            # TODO remove in future?? Log an error, if this happens to easely notice it
+            logger.error(
+                "Location - {} alert - {} all red = {}.",
+                alerted_target,
+                alert_type,
+                all_red,
+            )
 
         # query for alerted location to get location company name
         alerted_location: m.Location = m.Location.query.filter_by(
