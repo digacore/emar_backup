@@ -1,7 +1,7 @@
 import datetime
 import uuid
 import json
-from flask import jsonify
+from flask import jsonify, request
 
 from app.models import Computer, DesktopClient
 from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
@@ -81,11 +81,15 @@ def last_time(body: LastTime):
 
     if computer:
         logger.info(
-            "Updating last download/online time for computer: {}. Current time download: {}. Current time online: {}. EST time: {}",
+            "Updating last download/online time for computer: {}. \
+                Current time download: {}. Current time online: {}. EST time: {}",
             computer.computer_name,
             computer.last_download_time,
             computer.last_time_online,
             CFG.offset_to_est(datetime.datetime.utcnow(), True),
+        )
+        computer.computer_ip = request.headers.get(
+            "X-Forwarded-For", request.remote_addr
         )
         # TODO deside which way is better and remove needless one
         # computer.last_time_online = body.last_time_online
@@ -104,7 +108,6 @@ def last_time(body: LastTime):
             computer.computer_name,
             computer.last_download_time,
             computer.last_time_online,
-
         )
 
         msi: DesktopClient = (
@@ -165,6 +168,9 @@ def get_credentials(body: GetCredentials):
     ).first()
 
     if computer:
+        computer.computer_ip = request.headers.get(
+            "X-Forwarded-For", request.remote_addr
+        )
         # TODO couses error in tests but works ok on server
         # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
