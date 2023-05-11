@@ -88,6 +88,11 @@ def last_time(body: LastTime):
             computer.last_time_online,
             CFG.offset_to_est(datetime.datetime.utcnow(), True),
         )
+        logger.debug(
+            "X-Forwarded-For: {}, request.remote_addr: {}",
+            request.headers.get("X-Forwarded-For"),
+            request.remote_addr,
+        )
         computer.computer_ip = request.headers.get(
             "X-Forwarded-For", request.remote_addr
         )
