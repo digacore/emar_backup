@@ -21,7 +21,7 @@ class AlertControls(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
     alert_interval = db.Column(db.String(64), nullable=False)
-    alert_period = db.Column(db.Integer)
+    alert_period = db.Column(db.Integer)  # in minutes
     key = db.Column(db.String(128))
     alert = relationship("Alert", passive_deletes=True, lazy="select")
     alert_associated = db.Column(
@@ -54,8 +54,8 @@ class AlertControlsView(RowActionListMixin, MyModelView):
     action_disallowed_list = ["delete"]
 
     def on_model_change(self, form, model, is_created):
-        alert_hours = int(int(model.alert_period) / 3600)
-        alert_minutes = int(int(model.alert_period) % 3600)
+        alert_hours = int(int(model.alert_period) / 60)
+        alert_minutes = int(int(model.alert_period) % 60)
 
         if model.key:
             try:
@@ -65,7 +65,7 @@ class AlertControlsView(RowActionListMixin, MyModelView):
                 logger.debug("No such record in Redis DB yet. Exception: {}", e)
 
         if model.alert_interval == "repeat every alert period":
-            interval = schedule(run_every=model.alert_period)  # seconds
+            interval = schedule(run_every=int(model.alert_period) * 60)  # seconds
             entry = RedBeatSchedulerEntry(
                 model.name, f"worker.{model.name}", interval, app=celery_app
             )
