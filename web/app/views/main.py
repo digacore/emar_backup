@@ -20,14 +20,6 @@ def index():
         total_locations: list[Location] = Location.query.all()
         total_computers: list[Computer] = Computer.query.all()
 
-        # TODO find out which computers are required here: NOT stable/latest OR status Red???
-        # current_version_date_comp = len(
-        #     Computer.query.filter(
-        #         or_(Computer.msi_version == "stable", Computer.msi_version == "latest")
-        #     ).all()
-        # )
-        total_computers_query = Computer.query.filter(Computer.alert_status == "red")
-
     else:
         total_companies = Company.query.filter_by(name=viewer.asociated_with).all()
         total_locations = (
@@ -36,32 +28,12 @@ def index():
             else Location.query.filter_by(name=viewer.asociated_with).all()
         )
 
-        total_computers_query = Computer.query.filter(
+        total_computers = Computer.query.filter(
             or_(
                 Computer.company_name == viewer.asociated_with,
                 Computer.location_name == viewer.asociated_with,
             )
-        )
-        total_computers = total_computers_query.all()
-
-        # TODO find out which computers are required here: NOT stable/latest OR status Red???
-        # current_version_date_comp = len(
-        #     total_computers_query.filter(
-        #         or_(
-        #             Computer.msi_version == "stable",
-        #             Computer.msi_version == "latest",
-        #         )
-        #     ).all()
-        # )
-
-    current_version_date_comp = total_computers_query.filter(
-        Computer.alert_status == "red",
-    ).all()
-
-    # NOTE use if NOT stable/latest computers are required
-    # out_of_date_comp = total_computers - current_version_date_comp
-    out_of_date_comp = len(current_version_date_comp)
-    out_of_date_comp_perc = get_percentage(total_computers, current_version_date_comp)
+        ).all()
 
     # count locations_offline
     locations_status = {loc.name: [] for loc in total_locations}
@@ -124,13 +96,15 @@ def index():
     ).first()
 
     # create a link for Locations filtering for red cards (danger) at index.html
+    offline_1h = get_outdated_status_comps(total_computers, 1, "offline", "red")
+    no_backup_1h = get_outdated_status_comps(total_computers, 1, "backup", "red")
     list_filter_str = "?flt2_5="
     alerted_locations_offline = "percen2C".join(
         list(
             set(
                 [
-                    comp.location_name.replace(" ", "+")
-                    for comp in offline_48h
+                    comp.location_name.replace(" ", "+").replace("&", "%26")
+                    for comp in offline_1h
                     if comp.location_name
                 ]
             )
@@ -140,8 +114,8 @@ def index():
         list(
             set(
                 [
-                    comp.location_name.replace(" ", "+")
-                    for comp in no_backup_4h
+                    comp.location_name.replace(" ", "+").replace("&", "%26")
+                    for comp in no_backup_1h
                     if comp.location_name
                 ]
             )
@@ -156,8 +130,6 @@ def index():
         total_companies=len(total_companies),
         total_locations=len(total_locations),
         total_computers=len(total_computers),
-        out_of_date_comp=out_of_date_comp,
-        out_of_date_comp_perc=out_of_date_comp_perc,
         locations_offline=len(locations_offline),
         locations_offline_perc=locations_offline_perc,
         locations_no_download=len(locations_no_download),

@@ -13,6 +13,7 @@ def create_superuser():
             email=CFG.SUPER_USER_MAIL,
             password=CFG.SUPER_USER_PASS,
             asociated_with="global-full",
+            activated=True,
         )
         user.save()
         logger.info("Superuser created")
@@ -325,3 +326,38 @@ def empty_to_stable():
     for computer in computers:
         computer.msi_version = "stable"
         computer.update()
+
+
+def register_base_alert_controls():
+    base_alert_controls = {
+        "daily_summary": {
+            "name": "daily_summary",
+            "alert_interval": "repeat every alert period",
+            "alert_period": 60 * 24,
+            "key": "redbeatdaily_summary",
+        },
+        "update_cl_stat": {
+            "name": "update_cl_stat",
+            "alert_interval": "repeat every alert period",
+            "alert_period": 3,
+            "key": "redbeatupdate_cl_stat",
+        },
+        "check_and_alert": {
+            "name": "check_and_alert",
+            "alert_interval": "repeat every alert period",
+            "alert_period": 10,
+            "key": "redbeatcheck_and_alert",
+        },
+    }
+
+    db_blc: list[m.AlertControls] = m.AlertControls.query.all()
+    db_blc_names = [blc.name for blc in db_blc]
+
+    for blc in base_alert_controls:
+        if blc not in db_blc_names:
+            m.AlertControls(
+                name=base_alert_controls[blc]["name"],
+                alert_interval=base_alert_controls[blc]["alert_interval"],
+                alert_period=base_alert_controls[blc]["alert_period"],
+                key=base_alert_controls[blc]["key"],
+            ).save()

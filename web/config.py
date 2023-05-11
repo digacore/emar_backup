@@ -60,6 +60,9 @@ class BaseConfig(object):
         "DEFAULT_MANAGER_HOST", "https://emarvault.com/"
     )
 
+    DEV_EMAIL = os.environ.get("DEV_EMAIL", "dummy@dddevemail.com")
+    CLIENT_EMAIL = os.environ.get("CLIENT_EMAIL", "dummy@cccevemail.com")
+
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 

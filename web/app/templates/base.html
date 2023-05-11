@@ -36,7 +36,7 @@
 
 </head>
 
-<body id="page-top">
+<body id="page-top" onload="startTime()">
 
   <!-- Page Wrapper -->
   <div id="wrapper">
@@ -129,6 +129,7 @@
             <a class="collapse-item" href="/admin/user/">User</a>
             <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
             <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
+            <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
           </div>
         </div>
       </li>
@@ -187,6 +188,8 @@
           <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
             <i class="fa fa-bars"></i>
           </button>
+
+          <div id="js-clock"></div>
 
           <!-- Topbar Navbar -->
           <ul class="navbar-nav ml-auto">
@@ -306,6 +309,7 @@
   <!-- Page level custom scripts -->
   <script src="{{ url_for('static', filename='/js/demo/chart-area-demo.js') }}"></script>
   <script src="{{ url_for('static', filename='/js/demo/chart-pie-demo.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js')}}"></script>
 
   {% block scripts %}
   {% endblock %}

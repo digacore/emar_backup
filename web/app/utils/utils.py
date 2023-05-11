@@ -16,7 +16,7 @@ def get_percentage(all_obj: list, perc_obj: list) -> int:
 
 
 def get_outdated_status_comps(
-    total_computers: list, hours: int, alert_type: str
+    total_computers: list, hours: int, alert_type: str, alert_color: str = None
 ) -> list:
 
     """Get outdated computers. At this point when alert status no_download > 4 h or
@@ -30,10 +30,20 @@ def get_outdated_status_comps(
     Returns:
         list[Computer]: filtered list of Computer instances
     """
-    outdated_comps = [
-        comp
-        for comp in total_computers
-        if int(re.findall(r"\d+", f"{comp.alert_status} 0")[0]) > hours
-        and alert_type in comp.alert_status
-    ]
+    outdated_comps = (
+        [
+            comp
+            for comp in total_computers
+            if int(re.findall(r"\d+", f"{comp.alert_status} 0")[0]) > hours
+            and alert_type in comp.alert_status
+        ]
+        if not alert_color
+        else [
+            comp
+            for comp in total_computers
+            if int(re.findall(r"\d+", f"{comp.alert_status} 0")[0]) > hours
+            and alert_type in comp.alert_status
+            and alert_color in comp.alert_status
+        ]
+    )
     return outdated_comps

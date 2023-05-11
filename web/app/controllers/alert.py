@@ -1,4 +1,4 @@
-import base64
+# import base64
 from datetime import datetime, timedelta
 
 import requests
@@ -30,19 +30,28 @@ TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 OFFLINE_ALERT_12H: datetime = get_timedelta_hours(12)
 NO_DOWNLOAD_ALERT_4H: datetime = get_timedelta_hours(4)
 LOCATION_OFFLINE_30MIN: datetime = get_timedelta_hours(0.5)
+LOCATION_OFFLINE_30MIN_IN_SEC: int = 1800
 LOCATION_NO_DOWNLOAD_3H: datetime = get_timedelta_hours(3)
+LOCATION_NO_DOWNLOAD_3H_IN_SEC: int = 10800
 
 
 def get_html_body(
-    location: str, computers: list, alert_type: str, alert_details: str = ""
+    location: str,
+    computers: list,
+    alert_details: str,
+    attention: str = "Attention! All computers in this location have status RED!",
 ) -> str:
 
-    image = open("app/static/favicon.ico", "rb")
-    imgb = str(base64.b64encode(image.read()))[2:-1]
-    image.close()
+    # TODO remove if unused
+    # image = open("app/static/favicon.ico", "rb")
+    # imgb = str(base64.b64encode(image.read()))[2:-1]
+    # image.close()
+
+    attention_color = "#e74a3b" if "RED" in attention else "#1cc88a"
 
     computers_table = [
-        f"<tr> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.folder_password}</td> <td>{comp.type}</td> </tr>"
+        f"<tr> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td>\
+            <td>{comp.last_download_time}</td> <td>{comp.folder_password}</td> <td>{comp.type}</td> </tr>"
         for comp in computers
     ]
 
@@ -88,9 +97,9 @@ def get_html_body(
                 <div class="container">
                 <div class="card my-10">
                     <div class="card-body">
-                    <h1 class="h3 mb-2" style="text-align: center">Location {location} Alert - {alert_type}</h1>
-                    <h4 class="h3 mb-2" style="background-color: #e74a3b; text-align: center"
-                    >Attention! All computers in this location have status RED! {alert_details}</h4>
+                    <h1 class="h3 mb-2" style="text-align: center">Location {location} Alert - {alert_details}</h1>
+                    <h4 class="h3 mb-2" style="background-color: {attention_color}; text-align: center"
+                    >{attention}</h4>
 
                     <hr style="margin-left: 10%;margin-right: 10%;">
 
@@ -130,7 +139,7 @@ def get_html_body(
 
                         <p>
                         <a href="https://emarvault.com/">
-                            <img src="https://emarbackups.mytechwebsite.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
+                            <img src="https://emarvault.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
                         </a>
                         </p>
                         <p>
@@ -150,8 +159,18 @@ def get_html_body(
 
 
 def send_alert_email(
-    alerted_target: str, alert_obj: m.Alert, status_details: str
+    alerted_target: str, alert_obj: m.Alert, status_details: str, attention=None
 ) -> bool:
+    """Send all red or all green email to appropriate user
+
+    Args:
+        alerted_target (str): location name
+        alert_obj (m.Alert): Alert sqla object
+        status_details (str): description of alert status and it's change
+
+    Returns:
+        bool: return true to confrim that request was sent
+    """
     # query for alerted location to get location company name
     alerted_location: m.Location = m.Location.query.filter_by(
         name=alerted_target
@@ -171,15 +190,20 @@ def send_alert_email(
     alerted_computers: list = m.Computer.query.filter_by(
         location_name=alerted_target
     ).all()
-    body = alert_obj.body if alert_obj.body else ""
-    html_body = get_html_body(alerted_target, alerted_computers, status_details)
+    # TODO remove if unused
+    # body = alert_obj.body if alert_obj.body else ""
+    html_body = (
+        get_html_body(alerted_target, alerted_computers, status_details, attention)
+        if attention
+        else get_html_body(alerted_target, alerted_computers, status_details)
+    )
 
     # TODO temporary to_addresses. Remove in future
     request_json = {
         "alerted_target": alerted_target,
         "alert_status": alert_obj.alert_status,
         "from_email": alert_obj.from_email,
-        "to_addresses": ["xavrais312@gmail.com", "nberger@digacore.com"],
+        "to_addresses": [CFG.DEV_EMAIL, CFG.CLIENT_EMAIL],
         "subject": alert_obj.subject,
         "body": "",
         "html_body": html_body,
@@ -202,17 +226,20 @@ def check_computer_send_mail(
     computer: m.Computer,
     alert_type: str,
     alert_obj: m.Alert,
-    alerted_target=None,
+    alerted_target: str = None,
 ):
-    """Send email to support if last time online/download > alert_hours.
+    """
+    Send email to support if last time online/download > alert_hours.
     If not - make status green
     Dont send repeatedly.
 
     Args:
         last_time (datetime): computer last time online/download
+        compare_time (datetime): time limit to which computer last times would be compared
         computer (models.Computer): Computer model instance
         alert_type (str): alert type to log
         alert_obj (sqlalchemy.query): sqlalchemy.query object of some model
+        alerted_target (str): alerted location name when all offline or no backup. Defaults to None.
     """
 
     alert_url = CFG.MAIL_ALERTS
@@ -224,7 +251,8 @@ def check_computer_send_mail(
     }
 
     logger.debug(
-        "{} -> utc: {}, est: {} compare download 4: {} > {} = {};\n compare online 12: {} > {} = {};\n compare no download 3: {} < {} = {};\n compare offline 30 min: {} < {} = {};\n",
+        "{} -> utc: {}, est: {} compare download 4: {} > {} = {};\n compare online 12: \
+        {} > {} = {};\n compare no download 3: {} < {} = {};\n compare offline 30 min: {} < {} = {};\n",
         computer,
         datetime.utcnow(),
         CFG.offset_to_est(datetime.utcnow(), True),
@@ -244,15 +272,15 @@ def check_computer_send_mail(
 
     if not last_time and not computer and alerted_target:
         # query for all computers in location
-        all_computers: list[m.Computer] = m.Computer.query.filter_by(
+        alerted_computers: list[m.Computer] = m.Computer.query.filter_by(
             location_name=alerted_target
         ).all()
 
         # check for red before computers update
-        all_red = check_for_red(all_computers)
+        all_red = check_for_red(alerted_computers)
 
         # decide which alert details assign to location's computers alert_status and update them
-        for computer in all_computers:
+        for computer in alerted_computers:
             if "offline" in alert_type:
                 # get hours offline of no download from (EST now time - last download/online)
                 time_diff = (
@@ -280,7 +308,7 @@ def check_computer_send_mail(
         # if all computer are already red - quit from this func
         if all_red:
             logger.debug(
-                "Location - {} alert - {} was already sent and updated.",
+                "Location - {} alert - {} was already sent and updated. All red.",
                 alerted_target,
                 alert_type,
             )
@@ -301,11 +329,8 @@ def check_computer_send_mail(
 
         to_addresses = [user.email for user in alerted_users]
 
-        # query for computers in alerted location
-        alerted_computers: list = m.Computer.query.filter_by(
-            location_name=alerted_target
-        ).all()
-        body = alert_obj.body if alert_obj.body else ""
+        # TODO remove if unused
+        # body = alert_obj.body if alert_obj.body else ""
         html_body = get_html_body(alerted_target, alerted_computers, status_details)
 
         # TODO temporary to_addresses. Remove in future
@@ -313,7 +338,7 @@ def check_computer_send_mail(
             "alerted_target": alerted_target,
             "alert_status": alert_obj.alert_status,
             "from_email": alert_obj.from_email,
-            "to_addresses": ["xavrais312@gmail.com", "nberger@digacore.com"],
+            "to_addresses": [CFG.DEV_EMAIL, CFG.CLIENT_EMAIL],
             "subject": alert_obj.subject,
             "body": "",
             "html_body": html_body,
@@ -381,13 +406,10 @@ def check_computer_send_mail(
 
         # if (comp has no download 3h OR is offline 30 min) AND it is only one in his location - keep it red
         if (
-            last_tms["last_download"] < LOCATION_NO_DOWNLOAD_3H
-            or last_tms["last_online"] < LOCATION_OFFLINE_30MIN
-        ) and current_location_comps == 1:
+            last_tms["last_download"] <= LOCATION_NO_DOWNLOAD_3H
+            or last_tms["last_online"] <= LOCATION_OFFLINE_30MIN
+        ) and current_location_comps <= 1:
             return
-
-        # TODO if all red status was resolved, send email about it
-        # send_alert_email(computer.location_name, alert_obj, status_details)
 
         computer.alert_status = "green"
         computer.update()
@@ -405,7 +427,8 @@ def check_computer_send_mail(
 
 
 def time_type_check(computer: m.Computer, return_val: str) -> datetime:
-    """Check and transform computer last_time_online and last_download_time
+    """
+    Check and transform computer last_time_online and last_download_time
     to datetime objects, if it is string. If it is non - meaning field is empty -
     consider time was missed
 
@@ -460,7 +483,7 @@ def check_and_alert():
     """
     CLI command for celery worker.
     Checks computers activity.
-    Send email and change status if something went wrong.
+    Send email and change status.
     """
 
     locations: list[m.Location] = m.Location.query.all()
@@ -468,6 +491,8 @@ def check_and_alert():
     computers: list[m.Computer] = m.Computer.query.all()
     # TODO loop for all CUSTOM alerts to send email
     alerts: list[m.Alert] = m.Alert.query.all()
+    # take all_green alert from alerts list to no query again
+    all_green_li = [alert for alert in alerts if alert.name == "all_green"]
 
     alert_names = {alert.name: alert for alert in alerts}
     location_computers = {location.name: [] for location in locations}
@@ -486,8 +511,14 @@ def check_and_alert():
         if len(location_computers[location]) == 0:
             continue
 
-        off_30_min_computers = 0
-        no_update_files_2h = 0
+        off_time_computers = 0
+        no_update_files_time = 0
+
+        red_comps = [
+            comp
+            for comp in location_computers[location]
+            if "red" in str(comp.alert_status)
+        ]
 
         for computer in location_computers[location]:
 
@@ -506,7 +537,7 @@ def check_and_alert():
 
                     # TODO apply something like this to DRY
                     # def handle_alert_case(last_time, alert_type, computer, alert_obj):
-                    #     alerts_timedelta = {"offline_12h": 1800, "no_download_4h": 7200}
+                    #     alerts_timedelta = {"offline_12h": LOCATION_OFFLINE_30MIN_IN_SEC, "no_download_4h": LOCATION_NO_DOWNLOAD_3H_IN_SEC}
 
                     #     if last_time < CFG.offset_to_est(
                     #         datetime.now(), True
@@ -525,8 +556,8 @@ def check_and_alert():
                     if last_download_time and "no_download" in alert_type:
                         if last_download_time < CFG.offset_to_est(
                             datetime.utcnow(), True
-                        ) - timedelta(seconds=7200):
-                            no_update_files_2h += 1
+                        ) - timedelta(seconds=LOCATION_NO_DOWNLOAD_3H_IN_SEC):
+                            no_update_files_time += 1
 
                         check_computer_send_mail(
                             last_time=last_download_time,
@@ -539,8 +570,8 @@ def check_and_alert():
                     if last_time_online and "offline" in alert_type:
                         if last_time_online < CFG.offset_to_est(
                             datetime.utcnow(), True
-                        ) - timedelta(seconds=1800):
-                            off_30_min_computers += 1
+                        ) - timedelta(seconds=LOCATION_OFFLINE_30MIN_IN_SEC):
+                            off_time_computers += 1
 
                         check_computer_send_mail(
                             last_time=last_time_online,
@@ -550,7 +581,11 @@ def check_and_alert():
                             alert_obj=alert_obj,
                         )
 
-        if no_update_files_2h == len(location_computers[location]):
+        # if computer is without location, don't send any email for location
+        if location == no_location:
+            continue
+
+        if no_update_files_time == len(location_computers[location]):
 
             check_computer_send_mail(
                 last_time=None,
@@ -563,7 +598,7 @@ def check_and_alert():
 
             logger.warning("No new files over 3 h alert in location {}.", location)
 
-        if off_30_min_computers == len(location_computers[location]):
+        if off_time_computers == len(location_computers[location]):
 
             check_computer_send_mail(
                 last_time=None,
@@ -577,67 +612,159 @@ def check_and_alert():
                 "All computers from location {} offline 30 min alert.", location
             )
 
+        # query now for green comps in current location and compare to red comps
+        # then decide if to send green email (meaning that all computers returned online)
+        updated_loc_green_comps: list[m.Computer] = m.Computer.query.filter_by(
+            alert_status="green", location_name=location
+        ).all()
+
+        logger.error(
+            "All green. location: {}. Red {}, Green {}",
+            location,
+            len(red_comps),
+            len(updated_loc_green_comps),
+        )
+
+        if len(red_comps) == 0 and len(updated_loc_green_comps) == 0:
+            continue
+
+        if len(red_comps) == len(updated_loc_green_comps) and len(all_green_li) > 0:
+            send_alert_email(
+                location, all_green_li[0], "all_green", "All computers are back online"
+            )
+            logger.error("All green email sent for location {}", location)
+
 
 def daily_summary():
+    """
+    CLI command for celery worker.
+    Sends daily summary to every user respectfully to user's asociated_with.
+    """
 
-    image = open("app/static/favicon.ico", "rb")
-    imgb = str(base64.b64encode(image.read()))[2:-1]
-    image.close()
+    # TODO remove if unused
+    # image = open("app/static/favicon.ico", "rb")
+    # imgb = str(base64.b64encode(image.read()))[2:-1]
+    # image.close()
 
     computers: list[m.Computer] = m.Computer.query.all()
-    users: list[m.User] = m.User.query.all()
+    users: list[m.User] = m.User.query.filter(
+        m.User.asociated_with != "global-full", m.User.asociated_with != "global-view"
+    ).all()
+    companies: list[m.Company] = m.Company.query.all()
+    locations: list[m.Location] = m.Location.query.with_entities(
+        m.Location.name, m.Location.company_name
+    ).all()
+
+    companies_names = [company.name for company in companies]
+    locations_names = {loc.name: loc.company_name for loc in locations}
+
+    # build a tree {company: {location: [computer, computer], location: [computer]}, company:...}
+    company_loc_comp = {
+        company.name: {
+            loc.name: [comp for comp in computers if comp.location_name == loc.name]
+            for loc in locations
+            if loc.company_name == company.name
+        }
+        for company in companies
+    }
+
     # get rid of users without association
     users = [user for user in users if user.asociated_with]
+    # TODO remove after global users behavior is set
+    dev = m.User(
+        username="dev",
+        email=CFG.DEV_EMAIL,
+        password="dev",
+        asociated_with="global-full",
+    )
+    users.append(dev)
 
     # TODO what if we have multiple users in same company/location?
     email_user = {user.email: user for user in users}
-    relation_user = {user.asociated_with: user.email for user in users}
-    email_computers = {user.email: [] for user in users}
+    email_company_locs_comps = {user.email: dict() for user in users}
 
-    for comp in computers:
-        if comp.company_name in relation_user:
-            email_computers[relation_user[comp.company_name]].append(comp)
-        if comp.location_name in relation_user:
-            email_computers[relation_user[comp.location_name]].append(comp)
-
+    # asociate appropriate company trees to users
     for user in users:
-        if (
+        if user.asociated_with in companies_names:
+            email_company_locs_comps[user.email] = {
+                user.asociated_with: company_loc_comp[user.asociated_with]
+            }
+        elif user.asociated_with in locations_names:
+            user_company = locations_names[user.asociated_with]
+            email_company_locs_comps[user.email] = {
+                user_company: company_loc_comp[user_company]
+            }
+        elif (
             user.asociated_with.lower() == "global-full"
             or user.asociated_with.lower() == "global-view"
         ):
-            email_computers[user.email] = computers
+            email_company_locs_comps[user.email] = company_loc_comp
 
-    for recipient in email_computers:
-        # TODO what if comp.alert_status == None???
+    # TODO discuss and organize behavior for global users
+    # for user in users:
+    #     if (
+    #         user.asociated_with.lower() == "global-full"
+    #         or user.asociated_with.lower() == "global-view"
+    #     ):
+    #         email_computers[user.email] = computers
 
-        green_comp = len(
-            [
-                comp.alert_status
-                for comp in email_computers[recipient]
-                if "green" in str(comp.alert_status)
-            ]
-        )
-        yellow_comp = len(
-            [
-                comp.alert_status
-                for comp in email_computers[recipient]
-                if "yellow" in str(comp.alert_status)
-            ]
-        )
-        red_comp = len(
-            [
-                comp.alert_status
-                for comp in email_computers[recipient]
-                if "red" in str(comp.alert_status)
-            ]
-        )
+    for recipient in email_company_locs_comps:
+        # do nothing for recipients with no computers
+        if len(email_company_locs_comps[recipient]) == 0:
+            continue
 
-        computers_table = [
-            f'<tr style="background-color: #{get_status_color(comp.alert_status)};"> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td> <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
-            for comp in email_computers[recipient]
-        ]
+        red_comp = 0
+        yellow_comp = 0
+        green_comp = 0
+        company_tables = list()
+        # build html company - locations - computers tree
+        for company in email_company_locs_comps[recipient]:
+            company_online_comps = 0
+            company_offline_comps = 0
+            computer_loc_str_tables = list()
 
-        table_str = " ".join(computers_table)
+            for location in email_company_locs_comps[recipient][company]:
+                location_str = f"<tr> <td></td> <td>{location}</td> <td></td> <td></td> \
+                    <td></td> <td></td> <td></td> </tr>"
+                computer_loc_str_tables.append(location_str)
+
+                # NOTE this is shorter way, BUT doesn't count colors
+                # computer_tables = " ".join(
+                #     [
+                #         f'<tr style="background-color: #{get_status_color(comp.alert_status)};"> <td></td> \
+                #           <td></td> <td>{comp.computer_name}</td> <td>{comp.last_time_online}</td> \
+                #           <td>{comp.last_download_time}</td> <td>{comp.alert_status}</td> <td>{comp.type}</td> </tr>'
+                #         for comp in email_company_locs_comps[recipient][company][
+                #             location
+                #         ]
+                #     ]
+                # )
+
+                computer_tables = list()
+                for computer in email_company_locs_comps[recipient][company][location]:
+                    computer_tables.append(
+                        f'<tr style="background-color: #{get_status_color(computer.alert_status)};"> <td></td> \
+                        <td></td> <td>{computer.computer_name}</td> <td>{computer.last_time_online}</td> \
+                        <td>{computer.last_download_time}</td> <td>{computer.alert_status}</td> \
+                        <td>{computer.type}</td> </tr>'
+                    )
+                    if "red" in str(computer.alert_status):
+                        company_offline_comps += 1
+                        red_comp += 1
+                    elif "yellow" in str(computer.alert_status):
+                        company_offline_comps += 1
+                        yellow_comp += 1
+                    elif "green" in str(computer.alert_status):
+                        company_online_comps += 1
+                        green_comp += 1
+                computer_loc_str_tables.append(" ".join(computer_tables))
+
+            company_str = f"<tr> <td>{company}</td> <td>Online {company_online_comps}</td> \
+                <td>Offline {company_offline_comps}</td> <td></td> <td></td> <td></td> <td></td> </tr>"
+            company_tables.append(company_str)
+            company_tables.extend(computer_loc_str_tables)
+
+        table_str = " ".join(company_tables)
         styles = """
             table {
             font-family: arial, sans-serif;
@@ -654,6 +781,15 @@ def daily_summary():
             tr:nth-child(even) {
             background-color: #dddddd;
             }
+
+            .h1-header {
+            text-align: center
+            }
+
+            hr {
+            margin-left: 10%;
+            margin-right: 10%;
+            }
         """
 
         html_template = f"""
@@ -669,11 +805,9 @@ def daily_summary():
                     <div class="container">
                     <div class="card my-10">
                         <div class="card-body">
-                        <h1 class="h3 mb-2"
-                        style="text-align: center"
-                        >eMARVault daily summary for {email_user[recipient].asociated_with}</h1>
+                        <h1 class="h3 mb-2 h1-header">{email_user[recipient].asociated_with} computers</h1>
 
-                        <hr style="margin-left: 10%;margin-right: 10%;">
+                        <hr>
 
                         <div class="space-y-3">
 
@@ -708,18 +842,20 @@ def daily_summary():
                                 </tbody>
                             </table>
 
-                            <hr style="margin-left: 10%;margin-right: 10%;">
+                            <hr>
 
                             <table class="table table-striped table-bordered table-hover model-list"
-                            style="border-collapse: collapse;"
-                            >
+                                style="border-collapse: collapse;">
                                 <thead>
                                     <tr>
                                         <th>
-                                            Computer
+                                            Company
                                         </th>
                                         <th>
                                             Location
+                                        </th>
+                                        <th>
+                                            Computer
                                         </th>
                                         <th>
                                             Last time online
@@ -736,16 +872,19 @@ def daily_summary():
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {table_str}
+
+                            {table_str}
+
                                 </tbody>
                             </table>
+
                         </div>
 
-                        <hr style="margin-top: 4px; margin-bottom: 4px; margin-left: 10%; margin-right: 10%;">
+                        <hr>
 
                         <p>
                             <a href="https://emarvault.com/">
-                                <img src="https://emarbackups.mytechwebsite.com/static//img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
+                                <img src="https://emarvault.com/static/img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
                             </a>
                         </p>
                         <p>
@@ -774,6 +913,7 @@ def daily_summary():
                 "html_body": html_template,
             },
         )
+        logger.debug("Recipients {} email sent", recipient)
 
 
 def get_status_color(alert_status):

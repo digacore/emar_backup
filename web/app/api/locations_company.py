@@ -9,13 +9,12 @@ from app.logger import logger
 locations_company_blueprint = BlueprintApi(
     "/locations_company", __name__, url_prefix="/locations_company"
 )
-# TODO split blueprints
 
 
 @locations_company_blueprint.route("/cid/<int:id>", methods=["GET"])
 @logger.catch
 def cid(id):
-    # TODO protect by login requierd
+    # TODO protect by login requierd or token
     if id == 0:
         locations = Location.query.all()
     else:

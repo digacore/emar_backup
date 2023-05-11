@@ -70,6 +70,7 @@ class Computer(db.Model, ModelMixin):
     # TODO do we need this one? Could computer be deactivated?
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
+    computer_ip = db.Column(db.String(128))
 
     def __repr__(self):
         return self.computer_name
@@ -93,6 +94,7 @@ class Computer(db.Model, ModelMixin):
             "activated",
             "files_checksum",
             "identifier_key",
+            "computer_ip",
         ]
 
 
@@ -118,6 +120,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "type",
         "manager_host",
         "activated",
+        "computer_ip",
     ]
 
     column_searchable_list = column_list
@@ -146,6 +149,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
         "current_msi_version": {"readonly": True},
+        "computer_ip": {"readonly": True},
         # "files_checksum": {"readonly": True},
     }
 
@@ -170,6 +174,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "identifier_key": {"label": "Identifier key"},
         "files_checksum": {"label": "Files checksum"},
         "created_at": {"label": "Created at"},
+        "computer_ip": {"label": "Computer IP"},
     }
 
     form_choices = {"msi_version": CFG.CLIENT_VERSIONS}

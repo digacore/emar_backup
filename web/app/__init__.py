@@ -5,6 +5,7 @@ from flask_openapi3 import OpenAPI
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.menu import MenuLink
@@ -58,10 +59,15 @@ def create_app(environment="development"):
         DesktopClientView,
         ClientVersion,
         ClientVersionView,
+        AlertControls,
+        AlertControlsView,
     )
 
     # Instantiate app.
     app = OpenAPI(__name__)
+
+    # to have access to real IPs from incoming requests
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_host=1)
 
     # Set app config.
     env = os.environ.get("FLASK_ENV", environment)
@@ -124,6 +130,7 @@ def create_app(environment="development"):
     admin.add_view(AlertView(Alert, db.session))
     admin.add_view(DesktopClientView(DesktopClient, db.session))
     admin.add_view(ClientVersionView(ClientVersion, db.session))
+    admin.add_view(AlertControlsView(AlertControls, db.session))
 
     # Error handlers.
     @app.errorhandler(HTTPException)
