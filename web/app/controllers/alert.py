@@ -515,7 +515,9 @@ def check_and_alert():
         no_update_files_time = 0
 
         red_comps = [
-            comp for comp in location_computers[location] if "red" in comp.alert_status
+            comp
+            for comp in location_computers[location]
+            if "red" in str(comp.alert_status)
         ]
 
         for computer in location_computers[location]:
