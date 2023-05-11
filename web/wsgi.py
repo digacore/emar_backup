@@ -1,5 +1,6 @@
 #!/user/bin/env python
 from app import create_app, db, models, forms
+from app.controllers import register_base_alert_controls
 
 
 app = create_app()
@@ -61,3 +62,4 @@ def reset_alerts():
 
 if __name__ == "__main__":
     app.run()
+    register_base_alert_controls()
