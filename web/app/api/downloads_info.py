@@ -96,12 +96,10 @@ def last_time(body: LastTime):
         computer.computer_ip = request.headers.get(
             "X-Forwarded-For", request.remote_addr
         )
-        # TODO deside which way is better and remove needless one
-        # computer.last_time_online = body.last_time_online
+
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         field = "online"
         if body.last_download_time:
-            # computer.last_download_time = body.last_download_time
             computer.last_download_time = CFG.offset_to_est(
                 datetime.datetime.utcnow(), True
             )
@@ -176,12 +174,9 @@ def get_credentials(body: GetCredentials):
         computer.computer_ip = request.headers.get(
             "X-Forwarded-For", request.remote_addr
         )
-        # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.identifier_key = str(uuid.uuid4())
         computer.update()
-        # logger.info("Updated identifier_key for computer {}.", computer.computer_name)
         logger.info("Supplying credentials for computer {}.", computer.computer_name)
 
         remote_files_checksum = (
@@ -252,8 +247,6 @@ def download_status(body: DownloadStatus):
             computer.computer_name,
             CFG.offset_to_est(datetime.datetime.utcnow(), True),
         )
-        # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.download_status = body.download_status
         if body.last_downloaded:
@@ -290,8 +283,6 @@ def files_checksum(body: FilesChecksum):
 
     if computer:
         logger.info("Updating files checksum for computer: {}.", computer.computer_name)
-        # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()

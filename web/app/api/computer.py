@@ -15,7 +15,6 @@ computer_blueprint = BlueprintApi("/computer", __name__)
 @computer_blueprint.post("/register_computer")
 @logger.catch
 def register_computer(body: ComputerRegInfo):
-    # TODO set local user password here or on another route?
 
     # TODO use some token to secure api routes
 

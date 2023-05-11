@@ -123,8 +123,10 @@ class AlertControlsView(RowActionListMixin, MyModelView):
             return False
 
     def _can_delete(self, model):
-        # NOTE deletes not allowed as only 2 options are available
-        return False
+        if str(current_user.asociated_with).lower() == "global-full":
+            return True
+        else:
+            return False
 
     def allow_row_action(self, action, model):
         if isinstance(action, EditRowAction):
