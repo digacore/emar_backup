@@ -41,21 +41,9 @@ document.querySelectorAll("#overall-admin-search").forEach((form) =>
 );
 
 function startTime() {
-  let offsetHours = -4;
-  const today = new Date();
-  today.setHours(today.getHours() + offsetHours);
-  let h = today.getHours();
-  let m = today.getMinutes();
-  let s = today.getSeconds();
-  m = checkTime(m);
-  s = checkTime(s);
-  document.getElementById("js-clock").innerHTML = h + ":" + m + ":" + s;
+  const today = new Date().toLocaleTimeString("en-US", {
+    timeZone: "America/New_York",
+  });
+  document.getElementById("js-clock").innerHTML = today;
   setTimeout(startTime, 1000);
-}
-
-function checkTime(i) {
-  if (i < 10) {
-    i = "0" + i;
-  } // add zero in front of numbers < 10
-  return i;
 }
