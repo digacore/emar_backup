@@ -63,6 +63,13 @@ class BaseConfig(object):
     DEV_EMAIL = os.environ.get("DEV_EMAIL", "dummy@dddevemail.com")
     CLIENT_EMAIL = os.environ.get("CLIENT_EMAIL", "dummy@cccevemail.com")
 
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+    GOOGLE_DISCOVERY_URL = (
+        "https://accounts.google.com/.well-known/openid-configuration"
+    )
+    SSO_DEF_PASSWORD = os.environ.get("SSO_DEF_PASSWORD", None)
+
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 

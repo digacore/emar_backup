@@ -10,6 +10,9 @@ from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.menu import MenuLink
 from flask_mail import Mail
+from oauthlib.oauth2 import WebApplicationClient
+
+from config import BaseConfig as CFG
 
 
 class MainIndexLink(MenuLink):
@@ -23,6 +26,7 @@ db = SQLAlchemy()
 migration = Migrate()
 mail = Mail()
 admin = Admin(template_mode="bootstrap4")
+google_client = WebApplicationClient(CFG.GOOGLE_CLIENT_ID)
 
 
 def create_app(environment="development"):
