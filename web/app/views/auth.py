@@ -2,7 +2,10 @@ from datetime import datetime
 import requests
 import json
 
-from flask import Blueprint, render_template, url_for, redirect, flash, request
+import identity
+import identity.web
+
+from flask import Blueprint, render_template, url_for, redirect, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 
 from app.models import User
@@ -15,6 +18,13 @@ from app.logger import logger
 
 
 auth_blueprint = Blueprint("auth", __name__)
+
+auth = identity.web.Auth(
+    session=session,
+    authority=CFG.MICRO_AUTHORITY,
+    client_id=CFG.MICRO_CLIENT_ID,
+    client_credential=CFG.MICRO_CLIENT_SECRET,
+)
 
 
 @auth_blueprint.route("/login", methods=["GET", "POST"])
@@ -113,8 +123,8 @@ def callback():
             username=f"{users_name}-{unique_id}",
             email=users_email,
             password=CFG.SSO_DEF_PASSWORD,
-            activated=True,
-            asociated_with="global-view",
+            # activated=True,
+            # asociated_with="Test-Company",
         )
         user.save()
     if not user.activated:
@@ -138,11 +148,78 @@ def logout():
     current_user.update()
     logout_user()
     flash("You were logged out.", "info")
+
+    # NOTE this one is for correct logout from microsoft sso
+    auth.log_out(url_for("main.index", _external=True))
     return redirect(url_for("main.index"))
 
 
 def get_google_provider_cfg():
     return requests.get(CFG.GOOGLE_DISCOVERY_URL).json()
+
+
+@auth_blueprint.route("/mlogin")
+def mlogin():
+    auth_uri = auth.log_in(
+        scopes=CFG.MICRO_SCOPE,  # Have user consent to scopes during log-in
+        redirect_uri=url_for(
+            "auth.auth_response", _external=True
+        ),  # Optional. If present, this absolute URL must match your app's redirect_uri registered in Azure Portal
+    )
+    return redirect(auth_uri["auth_uri"])
+
+
+@auth_blueprint.route(CFG.MICRO_REDIRECT_PATH)
+def auth_response():
+    result = auth.complete_log_in(request.args)
+    if "error" in result:
+        flash("Can't complete_log_in for current request", "danger")
+        return render_template("auth/login.html", result=result)
+
+    # check if result["preferred_username"] has email inside
+    if "@" not in result["preferred_username"]:
+        flash(f"Can't verify user {result['name']} email", "danger")
+        return redirect(url_for("auth.login"))
+
+    user = User.query.filter_by(email=result["preferred_username"]).first()
+
+    # Create a user in our db with the information provided by Microsoft
+    if not user:
+        # TODO temporary setup. Change activated to False and asociated_with to empty
+        user = User(
+            username=str(result["name"]).lower().replace(" ", "-"),
+            email=result["preferred_username"],
+            password=CFG.SSO_DEF_PASSWORD,
+            # activated=True,
+            # asociated_with="Test-Company",
+        )
+        user.save()
+    if not user.activated:
+        flash("This user is deactivated", "danger")
+        return redirect(url_for("auth.login"))
+
+    # Begin user session by logging the user in
+    login_user(user)
+
+    # Send user back to homepage
+    flash("SSO login successful.", "success")
+    return redirect(url_for("main.index"))
+
+
+# NOTE this could be useful for APIs
+
+# @auth_blueprint.route("/call_downstream_api")
+# def call_downstream_api():
+#     token = auth.get_token_for_user(CFG.MICRO_SCOPE)
+#     if "error" in token:
+#         return redirect(url_for("auth.login"))
+#     # Use access token to call downstream api
+#     api_result = requests.get(
+#         CFG.MICRO_ENDPOINT,
+#         headers={"Authorization": "Bearer " + token["access_token"]},
+#         timeout=30,
+#     ).json()
+#     return render_template("index.html", result=api_result)
 
 
 # NOTE for API directly with token usage
@@ -258,27 +335,3 @@ def get_google_provider_cfg():
 #         "client_secret": credentials.client_secret,
 #         "scopes": credentials.scopes,
 #     }
-
-
-# def print_index_table():
-#     return (
-#         "<table>"
-#         + '<tr><td><a href="/test">Test an API request</a></td>'
-#         + "<td>Submit an API request and see a formatted JSON response. "
-#         + "    Go through the authorization flow if there are no stored "
-#         + "    credentials for the user.</td></tr>"
-#         + '<tr><td><a href="/authorize">Test the auth flow directly</a></td>'
-#         + "<td>Go directly to the authorization flow. If there are stored "
-#         + "    credentials, you still might not be prompted to reauthorize "
-#         + "    the application.</td></tr>"
-#         + '<tr><td><a href="/revoke">Revoke current credentials</a></td>'
-#         + "<td>Revoke the access token associated with the current user "
-#         + "    session. After revoking credentials, if you go to the test "
-#         + "    page, you should see an <code>invalid_grant</code> error."
-#         + "</td></tr>"
-#         + '<tr><td><a href="/clear">Clear Flask session credentials</a></td>'
-#         + "<td>Clear the access token currently stored in the user session. "
-#         + '    After clearing the token, if you <a href="/test">test the '
-#         + "    API request</a> again, you should go back to the auth flow."
-#         + "</td></tr></table>"
-#     )
