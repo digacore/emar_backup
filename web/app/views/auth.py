@@ -1,6 +1,7 @@
 from datetime import datetime
 import requests
 import json
+from uuid import uuid4
 
 import identity
 import identity.web
@@ -122,7 +123,8 @@ def callback():
         user = User(
             username=f"{users_name}-{unique_id}",
             email=users_email,
-            password=CFG.SSO_DEF_PASSWORD,
+            # password=CFG.SSO_DEF_PASSWORD,
+            password=uuid4(),
             # activated=True,
             # asociated_with="Test-Company",
         )
@@ -189,7 +191,8 @@ def auth_response():
         user = User(
             username=str(result["name"]).lower().replace(" ", "-"),
             email=result["preferred_username"],
-            password=CFG.SSO_DEF_PASSWORD,
+            # password=CFG.SSO_DEF_PASSWORD,
+            password=uuid4(),
             # activated=True,
             # asociated_with="Test-Company",
         )
