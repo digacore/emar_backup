@@ -122,7 +122,7 @@ def callback():
         user = User(
             username=f"{users_name}-{unique_id}",
             email=users_email,
-            password=uuid4(),
+            password=str(uuid4()),
         )
         user.save()
     if not user.activated:
@@ -186,7 +186,7 @@ def auth_response():
         user = User(
             username=str(result["name"]).lower().replace(" ", "-"),
             email=result["preferred_username"],
-            password=uuid4(),
+            password=str(uuid4()),
         )
         user.save()
     if not user.activated:
