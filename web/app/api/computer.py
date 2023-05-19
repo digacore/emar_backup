@@ -38,7 +38,6 @@ def register_computer(body: ComputerRegInfo):
 
     elif body.identifier_key == "new_computer":
         new_identifier_key = str(uuid.uuid4())
-        logger.info("Registering computer. ID = {}.", new_identifier_key)
 
         new_computer = Computer(
             identifier_key=new_identifier_key,
@@ -46,7 +45,9 @@ def register_computer(body: ComputerRegInfo):
             manager_host=CFG.DEFAULT_MANAGER_HOST,
         )
         new_computer.save()
-        logger.info("Computer registered. ID = {}.", new_identifier_key)
+        logger.info(
+            "Computer registered. {} identifier_key was set.", body.computer_name
+        )
         return (
             jsonify(
                 status="registered",

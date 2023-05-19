@@ -164,7 +164,9 @@ def get_credentials(body: GetCredentials):
             "X-Forwarded-For", request.remote_addr
         )
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
-        computer.identifier_key = str(uuid.uuid4())
+        # TODO find out why some computers can't write identifier_key to creds.json
+        # TODO disable till then
+        # computer.identifier_key = str(uuid.uuid4())
         computer.update()
         logger.info("Supplying credentials for computer {}.", computer.computer_name)
 
