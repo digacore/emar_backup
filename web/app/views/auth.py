@@ -131,6 +131,9 @@ def callback():
 
     # Begin user session by logging the user in
     login_user(user)
+    user.last_time_online = CFG.offset_to_est(
+        datetime.now().replace(microsecond=0), True
+    )
 
     # Send user back to homepage
     flash("SSO login successful.", "success")
@@ -195,6 +198,9 @@ def auth_response():
 
     # Begin user session by logging the user in
     login_user(user)
+    user.last_time_online = CFG.offset_to_est(
+        datetime.now().replace(microsecond=0), True
+    )
 
     # Send user back to homepage
     flash("SSO login successful.", "success")
