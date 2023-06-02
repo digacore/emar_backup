@@ -4,6 +4,7 @@ from stat import S_ISDIR, S_ISREG
 import time
 import datetime
 import json
+import random
 
 # import getpass
 from pathlib import Path
@@ -670,9 +671,12 @@ def main_func():
 
 
 try:
+    # NOTE wait randomly from 0 to 1800 sec
+    # to spread load on the server
+    time.sleep(random.uniform(0, 1800))
     main_func()
-    print("Task finished")
+    logger.info("Task finished")
     time.sleep(20)
 except Exception as e:
-    print(f"Exception occured: {e}")
+    logger.error("Exception occurred: {}", e)
     time.sleep(120)
