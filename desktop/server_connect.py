@@ -30,6 +30,7 @@ def offset_to_est(dt_now: datetime.datetime):
 
 
 STORAGE_PATH = os.path.join(Path("C:\\"), Path("eMARVault"))
+IP_BLACKLISTED = "red - ip_blacklisted"
 
 log_format = "{time} - {name} - {level} - {message}"
 logger.add(
@@ -299,11 +300,20 @@ def sftp_check_files_for_update_and_load(credentials):
                 credentials["host"],
                 username=credentials["sftp_username"],
                 password=credentials["sftp_password"],
-                timeout=10,
-                auth_timeout=10,
             )
         except Exception as e:
-            raise Exception(e)
+            if e == TimeoutError:
+                requests.post(
+                    f'{credentials["host"]}/special_status',
+                    json={
+                        "computer_name": credentials["computer_name"],
+                        "identifier_key": credentials["identifier_key"],
+                        "special_status": IP_BLACKLISTED,
+                    },
+                )
+                return offset_to_est(datetime.datetime.utcnow())
+            else:
+                raise Exception(e)
 
         with ssh.open_sftp() as sftp:
             # get list of all files and folders on sftp server
@@ -539,6 +549,15 @@ def sftp_check_files_for_update_and_load(credentials):
         logger.debug(
             "files_cheksum sent to server. Response status code = {}",
             response.status_code,
+        )
+
+        requests.post(
+            f'{credentials["host"]}/special_status',
+            json={
+                "computer_name": credentials["computer_name"],
+                "identifier_key": credentials["identifier_key"],
+                "special_status": "ok",
+            },
         )
 
     return offset_to_est(datetime.datetime.utcnow())
