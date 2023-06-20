@@ -1,9 +1,8 @@
 from flask import jsonify
+from flask_jwt_extended import jwt_required
 
 from app.views.blueprint import BlueprintApi
 from app.models import Location, Company
-
-from flask_jwt_extended import jwt_required
 
 from app.logger import logger
 
