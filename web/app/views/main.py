@@ -47,7 +47,7 @@ def index():
         loc_comps_stats = locations_status[loc]  # computers in location
         loc_status_count = 0
         for comp_stat in loc_comps_stats:
-            if "offline" in comp_stat:
+            if "offline" in str(comp_stat) or not comp_stat:
                 loc_status_count += 1
         if loc_status_count == len(loc_comps_stats) and len(loc_comps_stats) != 0:
             locations_status[loc] = "offline"
@@ -72,7 +72,7 @@ def index():
         loc_comps_stats = locations_d_status[loc]  # computers in location
         loc_status_count = 0
         for comp_stat in loc_comps_stats:
-            if "no backup" in comp_stat:
+            if "no backup" in str(comp_stat) or not comp_stat:
                 loc_status_count += 1
         if loc_status_count == len(loc_comps_stats) and len(loc_comps_stats) != 0:
             locations_d_status[loc] = "no backup"
@@ -91,9 +91,11 @@ def index():
     no_backup_4h = get_outdated_status_comps(total_computers, 4, "backup")
     no_backup_4h_perc = get_percentage(total_computers, no_backup_4h)
 
-    stable_msi: DesktopClient = DesktopClient.query.filter_by(
+    stable_msi_res: DesktopClient = DesktopClient.query.filter_by(
         flag_name="stable"
     ).first()
+
+    stable_msi = stable_msi_res.version if stable_msi_res else "empty"
 
     # create a link for Locations filtering for red cards (danger) at index.html
     offline_1h = get_outdated_status_comps(total_computers, 1, "offline", "red")
@@ -138,7 +140,7 @@ def index():
         offline_48h_perc=offline_48h_perc,
         no_backup_4h=len(no_backup_4h),
         no_backup_4h_perc=no_backup_4h_perc,
-        stable_msi=stable_msi.version,
+        stable_msi=stable_msi,
         al_loc_off_filter_link=al_loc_off_filter_link,
         al_loc_no_back_filter_link=al_loc_no_back_filter_link,
     )

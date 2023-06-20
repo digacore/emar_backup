@@ -3,6 +3,12 @@ $("#company").change((event) => {
   // if "__None" send 0 instead
   const selectedId = event.target.value === "__None" ? 0 : event.target.value;
   // request for list of tuples where [(location_id, location_name),]
+  const jwt = ('; '+document.cookie).split(`; jwt_token=`).pop().split(';')[0];
+  $.ajaxSetup({
+    headers:{
+       'Authorization': `Bearer ${jwt}`
+    }
+ });
   $.get(`/locations_company/cid/${selectedId}`, (data, status) => {
     let $el = $("#location");
     $el.empty(); // remove old options

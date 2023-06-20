@@ -10,6 +10,7 @@ from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.menu import MenuLink
 from flask_mail import Mail
+from flask_jwt_extended import JWTManager
 
 
 class MainIndexLink(MenuLink):
@@ -23,6 +24,7 @@ db = SQLAlchemy()
 migration = Migrate()
 mail = Mail()
 admin = Admin(template_mode="bootstrap4")
+jwt = JWTManager()
 
 
 def create_app(environment="development"):
@@ -78,6 +80,7 @@ def create_app(environment="development"):
     db.init_app(app)
     migration.init_app(app, db)
     login_manager.init_app(app)
+    jwt.init_app(app)
 
     # Register blueprints.
     app.register_blueprint(auth_blueprint)

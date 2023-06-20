@@ -63,6 +63,14 @@ class BaseConfig(object):
     DEV_EMAIL = os.environ.get("DEV_EMAIL", "dummy@dddevemail.com")
     CLIENT_EMAIL = os.environ.get("CLIENT_EMAIL", "dummy@cccevemail.com")
 
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "1234")
+    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+    )
+    PERMANENT_SESSION_LIFETIME = datetime.timedelta(
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+    )
+
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 
