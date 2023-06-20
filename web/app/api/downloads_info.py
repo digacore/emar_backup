@@ -80,19 +80,7 @@ def last_time(body: LastTime):
     ).first()
 
     if computer:
-        logger.info(
-            "Updating last download/online time for computer: {}. \
-                Current time download: {}. Current time online: {}. EST time: {}",
-            computer.computer_name,
-            computer.last_download_time,
-            computer.last_time_online,
-            CFG.offset_to_est(datetime.datetime.utcnow(), True),
-        )
-        logger.debug(
-            "X-Forwarded-For: {}, request.remote_addr: {}",
-            request.headers.get("X-Forwarded-For"),
-            request.remote_addr,
-        )
+
         computer.computer_ip = request.headers.get(
             "X-Forwarded-For", request.remote_addr
         )
@@ -105,13 +93,14 @@ def last_time(body: LastTime):
             )
             field = "download/online"
         computer.update()
-        logger.info(
-            "Last {} time for computer {} is updated. New time download: {}. New time online: {}.",
-            field,
-            computer.computer_name,
-            computer.last_download_time,
-            computer.last_time_online,
-        )
+        # TODO enable if required
+        # logger.info(
+        #     "Last {} time for computer {} is updated. New time download: {}. New time online: {}.",
+        #     field,
+        #     computer.computer_name,
+        #     computer.last_download_time,
+        #     computer.last_time_online,
+        # )
 
         msi: DesktopClient = (
             DesktopClient.query.filter_by(flag_name=computer.msi_version).first()
@@ -175,7 +164,9 @@ def get_credentials(body: GetCredentials):
             "X-Forwarded-For", request.remote_addr
         )
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
-        computer.identifier_key = str(uuid.uuid4())
+        # TODO find out why some computers can't write identifier_key to creds.json
+        # TODO disable till then
+        # computer.identifier_key = str(uuid.uuid4())
         computer.update()
         logger.info("Supplying credentials for computer {}.", computer.computer_name)
 
@@ -242,21 +233,18 @@ def download_status(body: DownloadStatus):
     )
 
     if computer:
-        logger.info(
-            "Updating download status for computer: {} to {}.",
-            computer.computer_name,
-            CFG.offset_to_est(datetime.datetime.utcnow(), True),
-        )
+
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.download_status = body.download_status
         if body.last_downloaded:
             computer.last_downloaded = body.last_downloaded
         computer.update()
-        logger.info(
-            "Download status for computer {} is updated to {}.",
-            computer.computer_name,
-            body.download_status,
-        )
+        # TODO enable if required
+        # logger.info(
+        #     "Download status for computer {} is updated to {}.",
+        #     computer.computer_name,
+        #     body.download_status,
+        # )
 
         return jsonify(status="success", message="Writing download status to db"), 200
 
@@ -286,11 +274,12 @@ def files_checksum(body: FilesChecksum):
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()
-        logger.info(
-            "Files checksum for computer {} is updated to {}.",
-            computer.computer_name,
-            body.files_checksum,
-        )
+        # TODO enable if required
+        # logger.debug(
+        #     "Files checksum for computer {} is updated to {}.",
+        #     computer.computer_name,
+        #     body.files_checksum,
+        # )
 
         return jsonify(status="success", message="Writing files checksum to db"), 200
 

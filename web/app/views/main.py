@@ -47,7 +47,7 @@ def index():
         loc_comps_stats = locations_status[loc]  # computers in location
         loc_status_count = 0
         for comp_stat in loc_comps_stats:
-            if "offline" in comp_stat:
+            if "offline" in str(comp_stat):
                 loc_status_count += 1
         if loc_status_count == len(loc_comps_stats) and len(loc_comps_stats) != 0:
             locations_status[loc] = "offline"
@@ -72,7 +72,7 @@ def index():
         loc_comps_stats = locations_d_status[loc]  # computers in location
         loc_status_count = 0
         for comp_stat in loc_comps_stats:
-            if "no backup" in comp_stat:
+            if "no backup" in str(comp_stat):
                 loc_status_count += 1
         if loc_status_count == len(loc_comps_stats) and len(loc_comps_stats) != 0:
             locations_d_status[loc] = "no backup"
