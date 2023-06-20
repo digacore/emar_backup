@@ -110,6 +110,9 @@ class BaseConfig(object):
             return est_norm_datetime.replace(microsecond=0)
         return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
+    # NOTE special statuses. Transform to some object?
+    SPECIAL_STATUSES = ["red - ip_blacklisted"]
+
     @staticmethod
     def configure(app):
         # Implement this method to do further configuration on your app.

@@ -27,3 +27,9 @@ class ComputerFullInfo(BaseModel):  # TODO remove if unused
 class ComputerRegInfo(BaseModel):
     identifier_key: str
     computer_name: str
+
+
+class ComputerSpecialStatus(BaseModel):
+    identifier_key: str
+    computer_name: str
+    special_status: str

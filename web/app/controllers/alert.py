@@ -41,7 +41,6 @@ def get_html_body(
     alert_details: str,
     attention: str = "Attention! All computers in this location have status RED!",
 ) -> str:
-
     # TODO remove if unused
     # image = open("app/static/favicon.ico", "rb")
     # imgb = str(base64.b64encode(image.read()))[2:-1]
@@ -399,7 +398,6 @@ def check_computer_send_mail(
         last_tms["last_download"] > NO_DOWNLOAD_ALERT_4H
         and last_tms["last_online"] > OFFLINE_ALERT_12H
     ):
-
         current_location_comps = m.Computer.query.filter_by(
             location_name=computer.location_name
         ).count()
@@ -409,6 +407,10 @@ def check_computer_send_mail(
             last_tms["last_download"] <= LOCATION_NO_DOWNLOAD_3H
             or last_tms["last_online"] <= LOCATION_OFFLINE_30MIN
         ) and current_location_comps <= 1:
+            return
+
+        # if computer status is something like "red - ip_blacklisted" - keep it red until it becomes green
+        if computer.alert_status in CFG.SPECIAL_STATUSES:
             return
 
         computer.alert_status = "green"
@@ -521,7 +523,6 @@ def check_and_alert():
         ]
 
         for computer in location_computers[location]:
-
             last_download_time = time_type_check(computer, "download")
             last_time_online = time_type_check(computer, "online")
 
@@ -586,7 +587,6 @@ def check_and_alert():
             continue
 
         if no_update_files_time == len(location_computers[location]):
-
             check_computer_send_mail(
                 last_time=None,
                 compare_time=LOCATION_NO_DOWNLOAD_3H,
@@ -599,7 +599,6 @@ def check_and_alert():
             logger.warning("No new files over 3 h alert in location {}.", location)
 
         if off_time_computers == len(location_computers[location]):
-
             check_computer_send_mail(
                 last_time=None,
                 compare_time=LOCATION_OFFLINE_30MIN,
