@@ -33,9 +33,11 @@ Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`
 
 $principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest
 
+$executionTimeLimit = New-TimeSpan -Hours 2
+
 $task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "eMARVaultHourlyCheck" `
 -Principal $principal -Description "Periodically check remote sftp and update backups" `
--Settings $(New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries)
+-Settings $(New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit $executionTimeLimit)
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Register-ScheduledTask - [$task]"
 
 Unregister-ScheduledTask -TaskName "eMARVaultHeartbeat" -Confirm:$false -ErrorAction Continue
@@ -53,6 +55,7 @@ $trigger = New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Min
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - trigger - [$trigger]"
 
 $task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "eMARVaultHeartbeat" `
+-Settings $(New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit $executionTimeLimit) `
 -Principal $principal -Description "Periodically notify server that local machine is alive"
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Register-ScheduledTask - [$task]"
 
