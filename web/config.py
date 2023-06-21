@@ -95,6 +95,9 @@ class BaseConfig(object):
     # TODO default password when user is logged in through sso. Do we need it?
     SSO_DEF_PASSWORD = os.environ.get("SSO_DEF_PASSWORD", None)
 
+    # NOTE special statuses. Transform to some object?
+    SPECIAL_STATUSES = ["red - ip blacklisted"]
+
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 

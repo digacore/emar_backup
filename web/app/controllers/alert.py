@@ -411,6 +411,10 @@ def check_computer_send_mail(
         ) and current_location_comps <= 1:
             return
 
+        # if computer status is something like "red - ip_blacklisted" - keep it red until it becomes green
+        if computer.alert_status in CFG.SPECIAL_STATUSES:
+            return
+
         computer.alert_status = "green"
         computer.update()
         logger.info(
