@@ -1,7 +1,6 @@
 $("#company").change((event) => {
   const selectedId = event.target.value;
-//  TODO rename function
-  function send() {
+  function setCompanyValue() {
     const access_jwt = ('; '+document.cookie).split(`; jwt_token=`).pop().split(';')[0];
 
     $.ajax({
@@ -42,7 +41,7 @@ $("#company").change((event) => {
         request.setRequestHeader('Authorization', `Bearer ${refresh_jwt}`);
       },
       success: () => {
-        send()
+        setCompanyValue()
       },
       error: (xhr)=> {
         console.log("error in refreshJWT", xhr);
@@ -50,13 +49,12 @@ $("#company").change((event) => {
     });
   }
 
-  send();
+  setCompanyValue();
 });
 
 $("#location").change((event) => {
   const selectedId = event.target.value;
-// TODO rename function
-  function sendData() {
+  function setLocationValue() {
     const access_jwt = ('; '+document.cookie).split(`; jwt_token=`).pop().split(';')[0];
 
     $.ajax({
@@ -68,8 +66,6 @@ $("#location").change((event) => {
         request.setRequestHeader('Authorization', `Bearer ${access_jwt}`);
       },
       success: function (data) {
-        console.log("test sftp data")
-
         if (
           $("#sftp_folder_path").val() === null ||
           $("#sftp_folder_path").val() === undefined ||
@@ -96,7 +92,7 @@ $("#location").change((event) => {
         request.setRequestHeader('Authorization', `Bearer ${refresh_jwt}`);
       },
       success: () => {
-        sendData()
+        setLocationValue()
       },
       error: (xhr)=> {
         console.log("error in refreshJWT", xhr);
@@ -104,5 +100,5 @@ $("#location").change((event) => {
     });
   };
 
-  sendData();
+  setLocationValue();
 });

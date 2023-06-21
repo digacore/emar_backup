@@ -1,6 +1,7 @@
 from typing import List
 
 from flask import jsonify
+from flask_jwt_extended import jwt_required
 
 import app
 
@@ -21,8 +22,8 @@ search_column_blueprint = BlueprintApi("/search_column", __name__)
 
 
 @search_column_blueprint.post("/search_column")
+@jwt_required()
 def search_column(body: ColumnSearch):
-
     # get list of flask_admin ModelView's from current running app
     model_views: List[MyModelView] = app.admin._views
 
