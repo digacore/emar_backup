@@ -90,7 +90,7 @@ def get_computers():
     return jsonify(response), 200
 
 
-@computer_blueprint.get("/special_status")
+@computer_blueprint.post("/special_status")
 @logger.catch
 def special_status(body: ComputerSpecialStatus):
     # TODO use some token to secure api routes
