@@ -111,7 +111,7 @@ class BaseConfig(object):
         return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     # NOTE special statuses. Transform to some object?
-    SPECIAL_STATUSES = ["red - ip_blacklisted"]
+    SPECIAL_STATUSES = ["red - ip blacklisted"]
 
     @staticmethod
     def configure(app):
