@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.9.101037">
+           Version="1.0.13.130987">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -93,7 +93,8 @@
                   Impersonate="yes" />
 
     <InstallExecuteSequence>
-      <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom>
+    <!-- <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom> -->
+      <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed OR WIX_UPGRADE_DETECTED</Custom>
     </InstallExecuteSequence>
 
     <Feature Id="SomeInstallFeature">
