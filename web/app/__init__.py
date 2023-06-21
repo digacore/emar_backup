@@ -5,10 +5,15 @@ from flask_openapi3 import OpenAPI
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.menu import MenuLink
 from flask_mail import Mail
+from oauthlib.oauth2 import WebApplicationClient
+from flask_session import Session
+
+from config import BaseConfig as CFG
 
 
 class MainIndexLink(MenuLink):
@@ -22,6 +27,8 @@ db = SQLAlchemy()
 migration = Migrate()
 mail = Mail()
 admin = Admin(template_mode="bootstrap4")
+google_client = WebApplicationClient(CFG.GOOGLE_CLIENT_ID)
+flask_session = Session()
 
 
 def create_app(environment="development"):
@@ -58,10 +65,21 @@ def create_app(environment="development"):
         DesktopClientView,
         ClientVersion,
         ClientVersionView,
+        AlertControls,
+        AlertControlsView,
     )
 
     # Instantiate app.
     app = OpenAPI(__name__)
+
+    # to have access to real IPs from incoming requests
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
+    # basic config for flask-session
+    app.secret_key = CFG.SECRET_KEY
+    app.config["SESSION_TYPE"] = "filesystem"
+
+    flask_session.init_app(app)
 
     # Set app config.
     env = os.environ.get("FLASK_ENV", environment)
@@ -124,6 +142,7 @@ def create_app(environment="development"):
     admin.add_view(AlertView(Alert, db.session))
     admin.add_view(DesktopClientView(DesktopClient, db.session))
     admin.add_view(ClientVersionView(ClientVersion, db.session))
+    admin.add_view(AlertControlsView(AlertControls, db.session))
 
     # Error handlers.
     @app.errorhandler(HTTPException)

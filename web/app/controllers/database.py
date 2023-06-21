@@ -13,6 +13,7 @@ def create_superuser():
             email=CFG.SUPER_USER_MAIL,
             password=CFG.SUPER_USER_PASS,
             asociated_with="global-full",
+            activated=True,
         )
         user.save()
         logger.info("Superuser created")
@@ -61,8 +62,8 @@ def init_db(test_me: bool = False):
         computers = {
             "comp1_intime": {
                 "computer_name": "comp1_intime",
-                "last_download_time": CFG.offset_to_est(datetime.now(), True),
-                "last_time_online": CFG.offset_to_est(datetime.now(), True),
+                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp1_sftp_host",
@@ -74,13 +75,13 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp1_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
-                "alert_status": "green",
+                # "alert_status": "green",
             },
             "comp2_late": {
                 "computer_name": "comp2_late",
-                "last_download_time": CFG.offset_to_est(datetime.now(), True)
+                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True)
                 - timedelta(seconds=60 * 60 * 13),
-                "last_time_online": CFG.offset_to_est(datetime.now(), True)
+                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True)
                 - timedelta(seconds=60 * 60 * 13),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
@@ -93,12 +94,12 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp2_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
-                "alert_status": "red",
+                # "alert_status": "red",
             },
             "comp3_test": {
                 "computer_name": "comp3_test",
-                "last_download_time": CFG.offset_to_est(datetime.now(), True),
-                "last_time_online": CFG.offset_to_est(datetime.now(), True),
+                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp3_sftp_host",
@@ -109,13 +110,13 @@ def init_db(test_me: bool = False):
                 "folder_password": "pass",
                 "manager_host": "comp3_manager_host",
                 "files_checksum": dict(),
-                "msi_version": "stable",
-                "alert_status": "yellow",
+                "msi_version": "1.0.9.110769",
+                # "alert_status": "yellow",
             },
             "comp4_test": {
                 "computer_name": "comp4_test",
-                "last_download_time": CFG.offset_to_est(datetime.now(), True),
-                "last_time_online": CFG.offset_to_est(datetime.now(), True),
+                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp4_sftp_host",
@@ -127,12 +128,12 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp4_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
-                "alert_status": "green",
+                # "alert_status": "green",
             },
             "comp5_test": {
                 "computer_name": "comp5_test",
-                "last_download_time": CFG.offset_to_est(datetime.now(), True),
-                "last_time_online": CFG.offset_to_est(datetime.now(), True),
+                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp5_sftp_host",
@@ -143,13 +144,27 @@ def init_db(test_me: bool = False):
                 "folder_password": "pass",
                 "manager_host": "comp5_manager_host",
                 "files_checksum": dict(),
-                "alert_status": "green",
+                # "alert_status": "green",
+            },
+            "comp7_no_download_time": {
+                "computer_name": "comp7_no_download_time",
+                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
+                "company_name": "Dro",
+                "location_name": "SpringField",
+                "sftp_host": "comp7_sftp_host",
+                "sftp_username": "comp7_sftp_username",
+                "sftp_password": "comp7_sftp_password",
+                "sftp_folder_path": "comp7_sftp_folder_path",
+                "identifier_key": "comp7_identifier_key",
+                "folder_password": "pass",
+                "manager_host": "comp7_manager_host",
+                "files_checksum": dict(),
             },
             "comp6_late": {
-                "computer_name": "comp6_test",
-                "last_download_time": CFG.offset_to_est(datetime.now(), True)
+                "computer_name": "comp6_late",
+                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True)
                 - timedelta(seconds=60 * 60 * 50),
-                "last_time_online": CFG.offset_to_est(datetime.now(), True)
+                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True)
                 - timedelta(seconds=60 * 60 * 50),
                 "company_name": "Dro",
                 "location_name": "SpringField",
@@ -161,17 +176,17 @@ def init_db(test_me: bool = False):
                 "folder_password": "pass",
                 "manager_host": "comp6_manager_host",
                 "files_checksum": dict(),
-                "alert_status": "green",
+                # "alert_status": "green",
             },
         }
 
         alerts = {
-            "no_download_12h": {
-                "name": "no_download_12h",
+            "no_download_4h": {
+                "name": "no_download_4h",
                 "from_email": "",
                 "to_addresses": "",
-                "subject": "computer 12 hours alert!",
-                "body": "computer had not download files for more then 12 hours.",
+                "subject": "computer 4 hours alert!",
+                "body": "computer had not download files for more then 4 hours.",
                 "alert_status": "red",
             },
             "offline_12h": {
@@ -190,12 +205,12 @@ def init_db(test_me: bool = False):
                 "body": "All computers are offline more then 30 minutes.",
                 "alert_status": "red",
             },
-            "no_files_2h": {
-                "name": "no_files_2h",
+            "no_files_3h": {
+                "name": "no_files_3h",
                 "from_email": "",
                 "to_addresses": "",
-                "subject": "No new files over 2 h alert!",
-                "body": "No new files were downloaded by all computers for over 2 hours.",
+                "subject": "No new files over 3 h alert!",
+                "body": "No new files were downloaded by all computers for over 3 hours.",
                 "alert_status": "red",
             },
         }
@@ -215,7 +230,22 @@ def init_db(test_me: bool = False):
             m.Location(name=location, company_name=locations[location]).save()
 
         for computer in computers:
-            if "msi_version" in computer:
+            if "last_download_time" not in computers[computer]:
+                m.Computer(
+                    computer_name=computers[computer]["computer_name"],
+                    last_time_online=computers[computer]["last_time_online"],
+                    company_name=computers[computer]["company_name"],
+                    location_name=computers[computer]["location_name"],
+                    sftp_host=computers[computer]["sftp_host"],
+                    sftp_username=computers[computer]["sftp_username"],
+                    sftp_password=computers[computer]["sftp_password"],
+                    sftp_folder_path=computers[computer]["sftp_folder_path"],
+                    identifier_key=computers[computer]["identifier_key"],
+                    folder_password=computers[computer]["folder_password"],
+                    manager_host=computers[computer]["manager_host"],
+                    files_checksum=computers[computer]["files_checksum"],
+                ).save()
+            elif "msi_version" in computers[computer]:
                 m.Computer(
                     computer_name=computers[computer]["computer_name"],
                     last_download_time=computers[computer]["last_download_time"],
@@ -231,7 +261,7 @@ def init_db(test_me: bool = False):
                     manager_host=computers[computer]["manager_host"],
                     files_checksum=computers[computer]["files_checksum"],
                     msi_version=computers[computer]["msi_version"],
-                    alert_status=computers[computer]["alert_status"],
+                    # alert_status=computers[computer]["alert_status"],
                 ).save()
 
             else:
@@ -249,7 +279,7 @@ def init_db(test_me: bool = False):
                     folder_password=computers[computer]["folder_password"],
                     manager_host=computers[computer]["manager_host"],
                     files_checksum=computers[computer]["files_checksum"],
-                    alert_status=computers[computer]["alert_status"],
+                    # alert_status=computers[computer]["alert_status"],
                 ).save()
 
         for alert in alerts:
@@ -274,6 +304,15 @@ def init_db(test_me: bool = False):
             description="test description",
             flag_name="stable",
         ).save()
+        m.DesktopClient(
+            mimetype="application/octet-stream",
+            filename="new_test_version.msi",
+            blob=b"new_test_bytes",
+            size=345,
+            name="new_test_version",
+            version="1.0.9.110769",
+            description="new version",
+        ).save()
 
         db.session.commit()
 
@@ -287,3 +326,38 @@ def empty_to_stable():
     for computer in computers:
         computer.msi_version = "stable"
         computer.update()
+
+
+def register_base_alert_controls():
+    base_alert_controls = {
+        "daily_summary": {
+            "name": "daily_summary",
+            "alert_interval": "repeat every alert period",
+            "alert_period": 60 * 24,
+            "key": "redbeatdaily_summary",
+        },
+        "update_cl_stat": {
+            "name": "update_cl_stat",
+            "alert_interval": "repeat every alert period",
+            "alert_period": 3,
+            "key": "redbeatupdate_cl_stat",
+        },
+        "check_and_alert": {
+            "name": "check_and_alert",
+            "alert_interval": "repeat every alert period",
+            "alert_period": 10,
+            "key": "redbeatcheck_and_alert",
+        },
+    }
+
+    db_blc: list[m.AlertControls] = m.AlertControls.query.all()
+    db_blc_names = [blc.name for blc in db_blc]
+
+    for blc in base_alert_controls:
+        if blc not in db_blc_names:
+            m.AlertControls(
+                name=base_alert_controls[blc]["name"],
+                alert_interval=base_alert_controls[blc]["alert_interval"],
+                alert_period=base_alert_controls[blc]["alert_period"],
+                key=base_alert_controls[blc]["key"],
+            ).save()

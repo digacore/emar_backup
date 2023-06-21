@@ -1,7 +1,9 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, or_
+from sqlalchemy import JSON, or_, and_
 from sqlalchemy.orm import relationship
+
+from flask import request
 
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
@@ -9,7 +11,7 @@ from flask_login import current_user
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
-from app.utils import MyModelView
+from app.utils import MyModelView, get_outdated_status_comps
 
 from .desktop_client import DesktopClient
 from .company import Company
@@ -68,6 +70,7 @@ class Computer(db.Model, ModelMixin):
     # TODO do we need this one? Could computer be deactivated?
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
+    computer_ip = db.Column(db.String(128))
 
     def __repr__(self):
         return self.computer_name
@@ -91,6 +94,7 @@ class Computer(db.Model, ModelMixin):
             "activated",
             "files_checksum",
             "identifier_key",
+            "computer_ip",
         ]
 
 
@@ -116,6 +120,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "type",
         "manager_host",
         "activated",
+        "computer_ip",
     ]
 
     column_searchable_list = column_list
@@ -144,6 +149,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
         "current_msi_version": {"readonly": True},
+        "computer_ip": {"readonly": True},
         # "files_checksum": {"readonly": True},
     }
 
@@ -168,6 +174,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "identifier_key": {"label": "Identifier key"},
         "files_checksum": {"label": "Files checksum"},
         "created_at": {"label": "Created at"},
+        "computer_ip": {"label": "Computer IP"},
     }
 
     form_choices = {"msi_version": CFG.CLIENT_VERSIONS}
@@ -279,5 +286,48 @@ class ComputerView(RowActionListMixin, MyModelView):
             result_query = self.session.query(self.model).filter(
                 self.model.computer_name == "None"
             )
+
+        # NOTE this if closure is used for Dashboard cards searches (index.html)
+        if "search" in request.values:
+            # NOTE last letter is missed to not intervene in common user search
+            alert_types = {"offlin": 48, "backu": 4}
+
+            if request.values["search"] in alert_types:
+                alerted_computers: list[Computer] = (
+                    Computer.query.filter(
+                        and_(
+                            Computer.alert_status != "green",
+                            Computer.alert_status.isnot(None),
+                        )
+                    )
+                    .with_entities(
+                        Computer.id, Computer.computer_name, Computer.alert_status
+                    )
+                    .all()
+                )
+                for alert in alert_types:
+                    if request.values["search"] == alert:
+
+                        offline_48h = get_outdated_status_comps(
+                            alerted_computers, alert_types[alert], str(alert)[:-1]
+                        )
+                        result_query = result_query.filter(
+                            self.model.id.in_([comp.id for comp in offline_48h])
+                        )
+                        # NOTE Change headers to use unique search value. Doesnt work at this point.
+                        # from werkzeug.datastructures import ImmutableMultiDict, CombinedMultiDict
+                        # change_search = request.args.to_dict()
+                        # change_search["search"] = "offline"
+                        # request.args = ImmutableMultiDict(change_search)
+                        # request.values = CombinedMultiDict(
+                        #     [ImmutableMultiDict([("search", "offline")])]
+                        # )
+                        # request.url = "http://localhost:5000/admin/computer/?search=offline"
+                        # request.environ["QUERY_STRING"] = "search=offline"
+                        # request.environ[
+                        #     "HTTP_REFERER"
+                        # ] = "http://localhost:5000/admin/computer/?search=offline"
+                        # request.environ["RAW_URI"] = "/admin/computer/?search=offline"
+                        # request.environ["REQUEST_URI"] = "/admin/computer/?search=offline"
 
         return result_query

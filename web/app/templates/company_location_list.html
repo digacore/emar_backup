@@ -1,11 +1,10 @@
-
+{% import 'model_layout.html' as single_layout with context %}
 {% extends 'admin/master.html' %}
 {% import 'admin/lib.html' as lib with context %}
 {% import 'admin/static.html' as admin_static with context%}
 {% import 'admin/model/layout.html' as model_layout with context %}
 {% import 'admin/actions.html' as actionlib with context %}
 {% import 'admin/model/row_actions.html' as row_actions with context %}
-{% import 'model_layout.html' as single_layout with context %}
 
 {% block head %}
     {{ super() }}
@@ -149,21 +148,94 @@
                     </td>
                     {%- endif -%}
                 {% endblock %}
-    
+                
+                {% set loc_compn_name = namespace(loc='loc') %}
+                {% set comp_or_loc = namespace(col='0_21') %}
                 {% for c, name in list_columns %}
                     <td class="col-{{c}}">
-                    {% if admin_view.is_editable(c) %}
-                        {% set form = list_forms[get_pk_value(row)] %}
-                        {% if form.csrf_token %}
-                        {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
-                        {% elif csrf_token %}
-                        {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                        {%if c=="name" %}
+                            {% set loc_compn_name.loc = get_value(row, c) %}
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                        {%elif c=="computers_per_location" or c=="total_computers"%}
+                            <a href="https://emarvault.com/admin/computer/?search={{loc_compn_name.loc}}">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {% if form.csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                    {% elif csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                    {% else %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                    {% endif %}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                            </a>
+                        {%elif c=="locations_per_company"%}
+                            {% set comp_or_loc.col = '0_14' %}
+                            <a href="https://emarvault.com/admin/location/?flt1_7={{loc_compn_name.loc}}">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {% if form.csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                    {% elif csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                    {% else %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                    {% endif %}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                            </a>
+                        {%elif c=="computers_online"%}
+                            <a href="https://emarvault.com/admin/computer/?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt2_7=green">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {% if form.csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                    {% elif csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                    {% else %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                    {% endif %}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                            </a>
+                        {%elif c=="computers_offline"%}
+                            <a href="https://emarvault.com/admin/computer/?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt0_8=green">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {% if form.csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                    {% elif csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                    {% else %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                    {% endif %}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                            </a>
                         {% else %}
-                        {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                            {% if admin_view.is_editable(c) %}
+                                {% set form = list_forms[get_pk_value(row)] %}
+                                {% if form.csrf_token %}
+                                {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                {% elif csrf_token %}
+                                {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                {% else %}
+                                {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                {% endif %}
+                            {% else %}
+                            {{ get_value(row, c) }}
+                            {% endif %}
                         {% endif %}
-                    {% else %}
-                    {{ get_value(row, c) }}
-                    {% endif %}
                     </td>
                 {% endfor %}
             {% endblock %}

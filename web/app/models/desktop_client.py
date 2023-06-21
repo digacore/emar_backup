@@ -19,7 +19,6 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
     version = db.Column(db.String(64))
-    # msi_path = db.Column(db.LargeBinary or db.String)  # TODO Could we store it on SFTP server?
     description = db.Column(db.String(512))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
@@ -129,4 +128,12 @@ class DesktopClientView(RowActionListMixin, MyModelView):
             result_query = self.session.query(self.model).filter(
                 self.model.name == "None"
             )
-        return result_query
+
+        return result_query.with_entities(
+            DesktopClient.name,
+            DesktopClient.id,
+            DesktopClient.version,
+            DesktopClient.description,
+            DesktopClient.filename,
+            DesktopClient.flag_name,
+        )

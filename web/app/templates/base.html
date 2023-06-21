@@ -27,13 +27,16 @@
   <!-- Custom styles for list view-->
   <link href="{{ url_for('static', filename='/css/custom-model-views.css') }}" rel="stylesheet">
 
+  <!-- Custom CSS-->
+  <link href="{{ url_for('static', filename='/css/main.css') }}" rel="stylesheet">
+
   <!-- prettier-ignore -->
   {% block links %}
   {% endblock %}
 
 </head>
 
-<body id="page-top">
+<body id="page-top" onload="startTime()">
 
   <!-- Page Wrapper -->
   <div id="wrapper">
@@ -126,6 +129,7 @@
             <a class="collapse-item" href="/admin/user/">User</a>
             <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
             <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
+            <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
           </div>
         </div>
       </li>
@@ -184,6 +188,8 @@
           <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
             <i class="fa fa-bars"></i>
           </button>
+
+          <div id="js-clock"></div>
 
           <!-- Topbar Navbar -->
           <ul class="navbar-nav ml-auto">
@@ -260,7 +266,7 @@
       <footer class="sticky-footer bg-white">
         <div class="container my-auto">
           <div class="copyright text-center my-auto">
-            <span>Copyright &copy; eMARVault 2023</span>
+            <span>Copyright &copy; Digacore 2023</span>
           </div>
         </div>
       </footer>
@@ -303,6 +309,7 @@
   <!-- Page level custom scripts -->
   <script src="{{ url_for('static', filename='/js/demo/chart-area-demo.js') }}"></script>
   <script src="{{ url_for('static', filename='/js/demo/chart-pie-demo.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/main.js')}}"></script>
 
   {% block scripts %}
   {% endblock %}

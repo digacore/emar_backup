@@ -12,7 +12,11 @@ class EmailForm(FlaskForm):
     from_email = StringField(
         "From email", validators=[Email()], default=CFG.SUPPORT_EMAIL
     )
-    to_addresses = StringField("To addresses", validators=[DataRequired(), Email()])
+    to_addresses = StringField(
+        "To addresses",
+        validators=[DataRequired(), Email()],
+        default="email@example.com",
+    )
     subject = StringField(
         "Subject", validators=[DataRequired(), Length(0, 100)], default="subject"
     )

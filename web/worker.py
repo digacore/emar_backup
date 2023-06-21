@@ -2,10 +2,15 @@ import os
 import subprocess
 
 from celery import Celery
+from celery.schedules import crontab, schedule
 from dotenv import load_dotenv
+from redbeat import RedBeatSchedulerEntry
 
+# from app.models import AlertControls
 from app.logger import logger
 from config import BaseConfig as CFG
+
+import celery_config
 
 
 ALERT_PERIOD = CFG.ALERT_PERIOD
@@ -19,21 +24,40 @@ REDIS_PASSWORD = os.environ.get("REDIS_PASSWORD")
 REDIS_ADDR = os.environ.get("REDIS_ADDR", f"localhost:{REDIS_PORT}")
 BROKER_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_ADDR}"
 
+
 app = Celery(__name__)
 app.conf.broker_url = BROKER_URL
+app.conf.timezone = "US/Eastern"
+app.conf.redbeat_redis_url = f"{BROKER_URL}/1"
+app.config_from_object(celery_config)
 # celery.conf.result_backend = conf.REDIS_URL_FOR_CELERY
 
 
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
     logger.debug("ALERT_PERIOD: {}", ALERT_PERIOD)
-    sender.add_periodic_task(ALERT_PERIOD, check_and_alert.s(), name="check-and-alert")
-    sender.add_periodic_task(
-        UPDATE_CL_PERIOD, update_cl_stat.s(), name="update-cl-stat"
+    logger.debug("DAILY_SUMMARY_PERIOD: {}", DAILY_SUMMARY_PERIOD)
+    logger.debug("UPDATE_CL_PERIOD: {}", UPDATE_CL_PERIOD)
+
+    interval = crontab(hour=9, minute=0)  # hours
+    entry = RedBeatSchedulerEntry(
+        "daily_summary", "worker.daily_summary", interval, app=app
     )
-    sender.add_periodic_task(
-        DAILY_SUMMARY_PERIOD, daily_summary.s(), name="daily-summary"
+    entry.save()
+
+    interval = schedule(run_every=UPDATE_CL_PERIOD)  # seconds
+    entry = RedBeatSchedulerEntry(
+        "update_cl_stat", "worker.update_cl_stat", interval, app=app
     )
+    entry.save()
+
+    interval = schedule(run_every=ALERT_PERIOD)  # seconds
+    entry = RedBeatSchedulerEntry(
+        "check_and_alert", "worker.check_and_alert", interval, app=app
+    )
+    entry.save()
+
+    logger.debug("Tasks added to Redis")
 
 
 @app.task

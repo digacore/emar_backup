@@ -13,6 +13,57 @@ from config import BaseConfig as CFG
 downloads_info_blueprint = BlueprintApi("/downloads_info", __name__)
 
 
+def check_msi_version(computer: Computer, body, time_type: str):
+    """Check for old or new msi version. If old - return datetime.utcnow() + 5
+    Else - return datetime.utcnow() + 4
+
+    Args:
+        computer (Computer): sqla Computer obj
+        time_type (str): "online" or "download"
+
+    Raises:
+        ValueError: if time_type != "online" or "download"
+
+    Returns:
+        (datetime or str): computer.last_time_online or computer.last_download_time
+    """
+    lst_times = {
+        "online": body.last_time_online,
+        "download": body.last_download_time,
+    }
+
+    if time_type not in lst_times:
+        raise ValueError("Wrong time_type in check_msi_version: {}", time_type)
+
+    current_comp_msi_version = (
+        computer.msi_version if computer.msi_version else "stable"
+    )
+
+    msi_version: DesktopClient = (
+        DesktopClient.query.filter(DesktopClient.flag_name == current_comp_msi_version)
+        .with_entities(DesktopClient.version)
+        .first()
+        if current_comp_msi_version == "stable" or current_comp_msi_version == "latest"
+        else DesktopClient.query.filter(
+            DesktopClient.version == current_comp_msi_version
+        )
+        .with_entities(DesktopClient.version)
+        .first()
+    )
+
+    msi_version: DesktopClient = (
+        msi_version
+        if msi_version
+        else DesktopClient.query.filter(DesktopClient.flag_name == "stable")
+        .with_entities(DesktopClient.version)
+        .first()
+    )
+
+    if int(msi_version.version.replace(".", "")) < int("1.0.9.100769".replace(".", "")):
+        return lst_times[time_type] + datetime.timedelta(hours=1)
+    return lst_times[time_type]
+
+
 @downloads_info_blueprint.post("/last_time")
 @logger.catch
 def last_time(body: LastTime):
@@ -24,19 +75,32 @@ def last_time(body: LastTime):
         else None
     )
 
+    computer_name: Computer = Computer.query.filter_by(
+        computer_name=body.computer_name
+    ).first()
+
     if computer:
-        logger.info(
-            "Updating last download time for computer: {}.", computer.computer_name
+
+        computer.computer_ip = request.headers.get(
+            "X-Forwarded-For", request.remote_addr
         )
-        computer.last_time_online = body.last_time_online
+
+        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         field = "online"
         if body.last_download_time:
-            computer.last_download_time = body.last_download_time
+            computer.last_download_time = CFG.offset_to_est(
+                datetime.datetime.utcnow(), True
+            )
             field = "download/online"
         computer.update()
-        logger.info(
-            "Last {} time for computer {} is updated.", field, computer.computer_name
-        )
+        # TODO enable if required
+        # logger.info(
+        #     "Last {} time for computer {} is updated. New time download: {}. New time online: {}.",
+        #     field,
+        #     computer.computer_name,
+        #     computer.last_download_time,
+        #     computer.last_time_online,
+        # )
 
         msi: DesktopClient = (
             DesktopClient.query.filter_by(flag_name=computer.msi_version).first()
@@ -57,14 +121,26 @@ def last_time(body: LastTime):
             200,
         )
 
+    elif computer_name:
+        message = "Wrong id."
+        logger.info(
+            "Last download/online time update failed. computer: {}, \
+            id {}. Reason: {}",
+            body.computer_name,
+            body.identifier_key,
+            message,
+        )
+        return jsonify(status="fail", message=message), 400
+
     message = "Wrong request data. Computer not found."
     logger.info(
-        "Last download/online time update failed. computer_name: {}, \
-                Reason: {}",
+        "Last download/online time update failed. computer: {}, id {}. \
+        Reason: {}. Removing local credentials.",
         body.computer_name,
+        body.identifier_key,
         message,
     )
-    return jsonify(status="fail", message=message), 400
+    return jsonify(status="fail", message=message, rmcreds="rmcreds"), 400
 
 
 @downloads_info_blueprint.post("/get_credentials")
@@ -84,13 +160,14 @@ def get_credentials(body: GetCredentials):
     ).first()
 
     if computer:
-        print("computer: ", computer, computer.computer_name)
-        # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
+        computer.computer_ip = request.headers.get(
+            "X-Forwarded-For", request.remote_addr
+        )
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
-        computer.identifier_key = str(uuid.uuid4())
+        # TODO find out why some computers can't write identifier_key to creds.json
+        # TODO disable till then
+        # computer.identifier_key = str(uuid.uuid4())
         computer.update()
-        logger.info("Updated identifier_key for computer {}.", computer.computer_name)
         logger.info("Supplying credentials for computer {}.", computer.computer_name)
 
         remote_files_checksum = (
@@ -156,21 +233,18 @@ def download_status(body: DownloadStatus):
     )
 
     if computer:
-        logger.info(
-            "Updating download status for computer: {}.", computer.computer_name
-        )
-        # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
+
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.download_status = body.download_status
         if body.last_downloaded:
             computer.last_downloaded = body.last_downloaded
         computer.update()
-        logger.info(
-            "Download status for computer {} is updated to {}.",
-            computer.computer_name,
-            body.download_status,
-        )
+        # TODO enable if required
+        # logger.info(
+        #     "Download status for computer {} is updated to {}.",
+        #     computer.computer_name,
+        #     body.download_status,
+        # )
 
         return jsonify(status="success", message="Writing download status to db"), 200
 
@@ -197,16 +271,15 @@ def files_checksum(body: FilesChecksum):
 
     if computer:
         logger.info("Updating files checksum for computer: {}.", computer.computer_name)
-        # TODO couses error in tests but works ok on server
-        # computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow())
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()
-        logger.info(
-            "Files checksum for computer {} is updated to {}.",
-            computer.computer_name,
-            body.files_checksum,
-        )
+        # TODO enable if required
+        # logger.debug(
+        #     "Files checksum for computer {} is updated to {}.",
+        #     computer.computer_name,
+        #     body.files_checksum,
+        # )
 
         return jsonify(status="success", message="Writing files checksum to db"), 200
 

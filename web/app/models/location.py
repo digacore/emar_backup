@@ -9,6 +9,7 @@ from flask_admin.model.template import EditRowAction, DeleteRowAction
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
+from .company import Company
 
 
 class Location(db.Model, ModelMixin):
@@ -22,6 +23,7 @@ class Location(db.Model, ModelMixin):
     company_name = db.Column(
         db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
     )
+    default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
@@ -34,6 +36,7 @@ class Location(db.Model, ModelMixin):
         return [
             "name",
             "company_name",
+            "default_sftp_path",
             "computers_per_location",
             "computers_online",
             "computers_offline",
@@ -44,10 +47,13 @@ class LocationView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "LocationView"
 
+    list_template = "import-company_location-to-dashboard.html"
+
     column_hide_backrefs = False
     column_list = [
         "name",
         "company_name",
+        "default_sftp_path",
         "computers_per_location",
         "computers_online",
         "computers_offline",
@@ -96,6 +102,22 @@ class LocationView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    def create_form(self, obj=None):
+        form = super().create_form(obj)
+
+        # apply a sort to the relation
+        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+
+        return form
+
+    def edit_form(self, obj=None):
+        form = super().edit_form(obj)
+
+        # apply a sort to the relation
+        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+
+        return form
 
     def get_query(self):
 

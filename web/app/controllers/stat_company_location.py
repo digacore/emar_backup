@@ -10,7 +10,6 @@ def update_companies_locations_statistic():
         computer_location = [loc.location_name for loc in computers]
         for location in locations:
             location.computers_per_location = computer_location.count(location.name)
-            # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
             computers_online_per_location = [
                 comp.alert_status for comp in computers if comp.location == location
             ]
@@ -29,7 +28,6 @@ def update_companies_locations_statistic():
         location_company = [loc.company_name for loc in locations]
         for company in companies:
             company.total_computers = computer_company.count(company.name)
-            # TODO status will be updated only on computer save, though heartbeat checks it every 5 min
             computers_online_per_company = [
                 comp.alert_status for comp in computers if comp.company == company
             ]

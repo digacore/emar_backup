@@ -60,6 +60,41 @@ class BaseConfig(object):
         "DEFAULT_MANAGER_HOST", "https://emarvault.com/"
     )
 
+    # developer and client emails to use in production testing
+    DEV_EMAIL = os.environ.get("DEV_EMAIL", "dummy@dddevemail.com")
+    CLIENT_EMAIL = os.environ.get("CLIENT_EMAIL", "dummy@cccevemail.com")
+
+    # google sso config
+    GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
+    GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
+    GOOGLE_DISCOVERY_URL = (
+        "https://accounts.google.com/.well-known/openid-configuration"
+    )
+
+    # microsoft sso config
+    MICRO_AUTHORITY = os.environ.get(
+        "MICRO_AUTHORITY", "https://login.microsoftonline.com/common"
+    )
+    MICRO_CLIENT_ID = os.environ.get("MICRO_CLIENT_ID", None)
+    MICRO_CLIENT_SECRET = os.environ.get("MICRO_CLIENT_SECRET", None)
+
+    # You can find the proper permission names from this document
+    # https://docs.microsoft.com/en-us/graph/permissions-reference
+    MICRO_SCOPE = ["User.ReadBasic.All"]
+
+    # Used for forming an absolute URL to your redirect URI.
+    # The absolute URL must match the redirect URI you set
+    # in the app's registration in the Azure portal.
+    MICRO_REDIRECT_PATH = "/getAToken"
+
+    # You can find more Microsoft Graph API endpoints from Graph Explorer
+    # https://developer.microsoft.com/en-us/graph/graph-explorer
+    # This resource requires no admin consent
+    MICRO_ENDPOINT = "https://graph.microsoft.com/v1.0/users"
+
+    # TODO default password when user is logged in through sso. Do we need it?
+    SSO_DEF_PASSWORD = os.environ.get("SSO_DEF_PASSWORD", None)
+
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 
@@ -70,7 +105,7 @@ class BaseConfig(object):
         Returns:
             datetime.datetime: EST datetime
         """
-        est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+        est_norm_datetime = dt_now - datetime.timedelta(hours=4)
         if datetime_obj:
             return est_norm_datetime.replace(microsecond=0)
         return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")

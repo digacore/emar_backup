@@ -15,7 +15,6 @@ computer_blueprint = BlueprintApi("/computer", __name__)
 @computer_blueprint.post("/register_computer")
 @logger.catch
 def register_computer(body: ComputerRegInfo):
-    # TODO set local user password here or on another route?
 
     # TODO use some token to secure api routes
 
@@ -39,15 +38,16 @@ def register_computer(body: ComputerRegInfo):
 
     elif body.identifier_key == "new_computer":
         new_identifier_key = str(uuid.uuid4())
-        logger.info("Registering computer. ID = {}.", new_identifier_key)
 
         new_computer = Computer(
             identifier_key=new_identifier_key,
             computer_name=body.computer_name,
-            manager_host=CFG.APP_HOST_URL,
+            manager_host=CFG.DEFAULT_MANAGER_HOST,
         )
         new_computer.save()
-        logger.info("Computer registered. ID = {}.", new_identifier_key)
+        logger.info(
+            "Computer registered. {} identifier_key was set.", body.computer_name
+        )
         return (
             jsonify(
                 status="registered",
@@ -61,7 +61,7 @@ def register_computer(body: ComputerRegInfo):
                 identifier_key=new_computer.identifier_key,
                 computer_name=new_computer.computer_name,
                 folder_password="",
-                manager_host=CFG.APP_HOST_URL,
+                manager_host=CFG.DEFAULT_MANAGER_HOST,
                 msi_version="stable",
             ),
             200,

@@ -39,3 +39,11 @@ document.querySelectorAll("#overall-admin-search").forEach((form) =>
     globalForm.submit();
   })
 );
+
+function startTime() {
+  const today = new Date().toLocaleTimeString("en-US", {
+    timeZone: "America/New_York",
+  });
+  document.getElementById("js-clock").innerHTML = today;
+  setTimeout(startTime, 1000);
+}
