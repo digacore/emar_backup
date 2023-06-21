@@ -30,7 +30,7 @@ def offset_to_est(dt_now: datetime.datetime):
 
 
 STORAGE_PATH = os.path.join(Path("C:\\"), Path("eMARVault"))
-IP_BLACKLISTED = "red - ip_blacklisted"
+IP_BLACKLISTED = "red - ip blacklisted"
 
 log_format = "{time} - {name} - {level} - {message}"
 logger.add(
@@ -302,9 +302,9 @@ def sftp_check_files_for_update_and_load(credentials):
                 password=credentials["sftp_password"],
             )
         except Exception as e:
-            if e == TimeoutError:
-                requests.post(
-                    f'{credentials["host"]}/special_status',
+            if isinstance(e, TimeoutError):
+                response = requests.post(
+                    f'{credentials["manager_host"]}/special_status',
                     json={
                         "computer_name": credentials["computer_name"],
                         "identifier_key": credentials["identifier_key"],
