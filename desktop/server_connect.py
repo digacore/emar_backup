@@ -4,6 +4,7 @@ from stat import S_ISDIR, S_ISREG
 import time
 import datetime
 import json
+import random
 
 # import getpass
 from pathlib import Path
@@ -25,7 +26,7 @@ def offset_to_est(dt_now: datetime.datetime):
     Returns:
         datetime.datetime: EST datetime
     """
-    est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+    est_norm_datetime = dt_now - datetime.timedelta(hours=4)
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -127,6 +128,21 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
             old_credentials["msi_version"],
             credentials["msi_version"],
         )
+        # NOTE rerun PostInstallActions.ps1 after installation as Admin
+        posha_path = os.path.join(
+            Path("C:\\") / "Program Files" / "eMARVault" / "PostInstallActions.ps1"
+        )
+        posha_path_86 = os.path.join(
+            Path("C:\\")
+            / "Program Files (x86)"
+            / "eMARVault"
+            / "PostInstallActions.ps1"
+        )
+        posha_path_to_use = (
+            posha_path_86 if os.path.isfile(posha_path_86) else posha_path
+        )
+        Popen(["powershell.exe", "-File", posha_path_to_use, "-verb", "runas"])
+        logger.debug("Scheduled task updated.")
 
         update_response = requests.post(
             f"{credentials['manager_host']}/update_current_msi_version",
@@ -655,9 +671,12 @@ def main_func():
 
 
 try:
+    # NOTE wait randomly from 0 to 1800 sec
+    # to spread load on the server
+    time.sleep(random.uniform(0, 1800))
     main_func()
-    print("Task finished")
+    logger.info("Task finished")
     time.sleep(20)
 except Exception as e:
-    print(f"Exception occured: {e}")
+    logger.error("Exception occurred: {}", e)
     time.sleep(120)
