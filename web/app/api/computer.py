@@ -2,7 +2,7 @@ import uuid
 from flask import jsonify
 
 from app.models import Computer
-from app.schema import ComputerRegInfo
+from app.schema import ComputerRegInfo, ComputerSpecialStatus
 from app.views.blueprint import BlueprintApi
 from app.logger import logger
 
@@ -89,3 +89,20 @@ def get_computers():
     }
 
     return jsonify(response), 200
+
+
+@computer_blueprint.post("/special_status")
+@logger.catch
+def special_status(body: ComputerSpecialStatus):
+    # TODO use some token to secure api routes
+
+    computer: Computer = Computer.query.filter_by(
+        identifier_key=body.identifier_key, computer_name=body.computer_name
+    ).first()
+
+    computer.alert_status = (
+        body.special_status if body.special_status in CFG.SPECIAL_STATUSES else "green"
+    )
+    computer.save()
+
+    return jsonify({"status": "success"}), 200
