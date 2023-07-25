@@ -64,6 +64,14 @@ class BaseConfig(object):
     DEV_EMAIL = os.environ.get("DEV_EMAIL", "dummy@dddevemail.com")
     CLIENT_EMAIL = os.environ.get("CLIENT_EMAIL", "dummy@cccevemail.com")
 
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "1234")
+    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+    )
+    PERMANENT_SESSION_LIFETIME = datetime.timedelta(
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+    )
+
     # google sso config
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)

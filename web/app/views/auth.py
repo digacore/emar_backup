@@ -3,11 +3,27 @@ import requests
 import json
 from uuid import uuid4
 
+from flask import (
+    Blueprint,
+    render_template,
+    url_for,
+    redirect,
+    flash,
+    request,
+    make_response,
+    session,
+)
 import identity
 import identity.web
 
 from flask import Blueprint, render_template, url_for, redirect, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
+from flask_jwt_extended import (
+    create_access_token,
+    create_refresh_token,
+    jwt_required,
+    get_jwt_identity,
+)
 
 from app.models import User
 from app.forms import LoginForm
@@ -40,8 +56,15 @@ def login():
                 )
                 user.update()
                 login_user(user)
+                session.permanent = True
+                jwt_token = create_access_token(identity=form.user_id.data)
+                refresh_jwt_token = create_refresh_token(identity=form.user_id.data)
                 flash("Login successful.", "success")
-                return redirect(url_for("main.index"))
+
+                response = make_response(redirect(url_for("main.index")))
+                response.set_cookie("jwt_token", jwt_token)
+                response.set_cookie("refresh_jwt_token", refresh_jwt_token)
+                return response
 
             flash("This user is deactivated", "danger")
             return render_template("auth/login.html", form=form)
@@ -151,6 +174,20 @@ def logout():
     logout_user()
     flash("You were logged out.", "info")
 
+    response = make_response(redirect(url_for("main.index")))
+    response.set_cookie("jwt_token", "", expires=0)
+    return response
+
+
+# route to refresh jwt token
+@auth_blueprint.route("/refresh")
+@jwt_required(refresh=True)
+def refresh():
+    current_user = get_jwt_identity()
+    jwt_token = create_access_token(identity=current_user)
+    response = make_response()
+    response.set_cookie("jwt_token", jwt_token)
+    return response
     # NOTE this one is for correct logout from microsoft sso
     auth.log_out(url_for("main.index", _external=True))
     return redirect(url_for("main.index"))
