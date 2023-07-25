@@ -2,6 +2,8 @@ import os
 from subprocess import Popen
 import datetime
 from pathlib import Path
+import time
+import random
 import json
 import requests
 from loguru import logger
@@ -11,12 +13,12 @@ def offset_to_est(dt_now: datetime.datetime):
     """Offset to EST time
 
     Args:
-        dt_now (datetime.datetime): datetime.datetime.now()
+        dt_now (datetime.datetime): datetime.datetime.utcnow()
 
     Returns:
         datetime.datetime: EST datetime
     """
-    est_norm_datetime = dt_now - datetime.timedelta(hours=5)
+    est_norm_datetime = dt_now - datetime.timedelta(hours=4)
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -133,4 +135,13 @@ def main_func():
     changes_lookup(comp_remote_data)
 
 
-main_func()
+try:
+    # NOTE wait randomly from 0 to 279 sec
+    # to spread load on the server
+    time.sleep(random.uniform(0, 279))
+    main_func()
+    logger.info("Task finished")
+    time.sleep(5)
+except Exception as e:
+    logger.error("Exception occurred: {}", e)
+    time.sleep(20)

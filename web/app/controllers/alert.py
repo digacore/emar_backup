@@ -373,9 +373,9 @@ def check_computer_send_mail(
             current_location_comps,
         ):
             logger.debug(
-                "Computer - {} alert - {} was already sent and updated.",
+                "Computer - {} alert status - {}. all computers in location are red",
                 computer.computer_name,
-                alert_type,
+                computer.alert_status,
             )
             return
 
@@ -386,6 +386,15 @@ def check_computer_send_mail(
             if "offline" in alert_type
             else f"online but no backup over {time_diff} h"
         )
+
+        # if computer status is something like "red - ip_blacklisted" - keep it red until it becomes green
+        if computer.alert_status in CFG.SPECIAL_STATUSES:
+            logger.info(
+                "Computer - {} alert status - {}.",
+                computer.computer_name,
+                computer.alert_status,
+            )
+            return
 
         computer.alert_status = f"yellow - {status_details}"
         computer.update()
@@ -407,6 +416,20 @@ def check_computer_send_mail(
             last_tms["last_download"] <= LOCATION_NO_DOWNLOAD_3H
             or last_tms["last_online"] <= LOCATION_OFFLINE_30MIN
         ) and current_location_comps <= 1:
+            logger.info(
+                "Computer - {} alert status - {}.",
+                computer.computer_name,
+                computer.alert_status,
+            )
+            return
+
+        # if computer status is something like "red - ip_blacklisted" - keep it red until it becomes green
+        if computer.alert_status in CFG.SPECIAL_STATUSES:
+            logger.info(
+                "Computer - {} alert status - {}.",
+                computer.computer_name,
+                computer.alert_status,
+            )
             return
 
         # if computer status is something like "red - ip_blacklisted" - keep it red until it becomes green

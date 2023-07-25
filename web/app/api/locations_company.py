@@ -1,4 +1,5 @@
 from flask import jsonify
+from flask_jwt_extended import jwt_required
 
 from app.views.blueprint import BlueprintApi
 from app.models import Location, Company
@@ -12,6 +13,7 @@ locations_company_blueprint = BlueprintApi(
 
 
 @locations_company_blueprint.route("/cid/<int:id>", methods=["GET"])
+@jwt_required()
 @logger.catch
 def cid(id):
     # TODO protect by login requierd or token

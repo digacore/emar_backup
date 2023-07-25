@@ -64,6 +64,14 @@ class BaseConfig(object):
     DEV_EMAIL = os.environ.get("DEV_EMAIL", "dummy@dddevemail.com")
     CLIENT_EMAIL = os.environ.get("CLIENT_EMAIL", "dummy@cccevemail.com")
 
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "1234")
+    JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+    )
+    PERMANENT_SESSION_LIFETIME = datetime.timedelta(
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+    )
+
     # google sso config
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)
     GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", None)
@@ -94,6 +102,9 @@ class BaseConfig(object):
 
     # TODO default password when user is logged in through sso. Do we need it?
     SSO_DEF_PASSWORD = os.environ.get("SSO_DEF_PASSWORD", None)
+
+    # NOTE special statuses. Transform to some object?
+    SPECIAL_STATUSES = ["red - ip blacklisted"]
 
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time

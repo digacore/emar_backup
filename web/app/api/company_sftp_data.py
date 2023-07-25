@@ -1,4 +1,5 @@
 from flask import jsonify
+from flask_jwt_extended import jwt_required
 
 from app.views.blueprint import BlueprintApi
 from app.models import Company, Location
@@ -11,9 +12,9 @@ sftp_data_blueprint = BlueprintApi("/sftp_data", __name__)
 
 
 @sftp_data_blueprint.post("/sftp_data")
+@jwt_required()
 @logger.catch
 def sftp_data(body: CompanySFTPData):
-
     company: Company = Company.query.filter_by(id=body.company_id).first()
     location: Location = Location.query.filter_by(id=body.location_id).first()
 
