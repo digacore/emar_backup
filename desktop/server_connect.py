@@ -1,4 +1,5 @@
 import os
+import re
 from subprocess import Popen, PIPE
 from stat import S_ISDIR, S_ISREG
 import time
@@ -481,9 +482,35 @@ def sftp_check_files_for_update_and_load(credentials):
                             zip_name,
                             tempdir,
                             f'-p{credentials["folder_password"]}',
-                        ]
+                        ],
+                        stdout=PIPE
                     )
-                    subprs.communicate()
+                    stdout_res, stderr_res = subprs.communicate()
+
+                    # Check if archive can be changed by 7z and it is not corrupted
+                    stdout_str = str(stdout_res)
+                    if re.search("is not supported archive", stdout_str):
+                        logger.info("{} is not supported archive. Create new zip and delete the old one.", zip_name)
+
+                        # Create new zip archive and save pulled backup to it
+                        new_zip = os.path.join(STORAGE_PATH, "emar_backups_new.zip")
+                        new_subprs = Popen(
+                            [
+                                Path(".") / "7z.exe",
+                                "a",
+                                new_zip,
+                                tempdir,
+                                f'-p{credentials["folder_password"]}',
+                            ],
+                            stdout=PIPE
+                        )
+
+                        new_subprs.communicate()
+                        
+                        # Remove the original zip archive with backups and rename the new one
+                        os.remove(zip_name)
+                        os.rename(new_zip, zip_name)
+
 
                     logger.info("Files zipped.")
 
