@@ -9,3 +9,4 @@ from .load_msi import LoadMSI
 from .column_search import ColumnSearch
 from .update_msi_version import UpdateMSIVersion
 from .company_sftp_data import CompanySFTPData
+from .two_legged_auth_result import TwoLeggedAuthResult

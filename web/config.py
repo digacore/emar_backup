@@ -106,6 +106,13 @@ class BaseConfig(object):
     # NOTE special statuses. Transform to some object?
     SPECIAL_STATUSES = ["red - ip blacklisted"]
 
+    # PCC API
+    PCC_BASE_URL = os.environ.get("PCC_BASE_URL", None)
+    PCC_CLIENT_ID = os.environ.get("PCC_CLIENT_ID", None)
+    PCC_CLIENT_SECRET = os.environ.get("PCC_CLIENT_SECRET", None)
+    CERTIFICATE_PATH = os.environ.get("CERTIFICATE_PATH", None)
+    PRIVATEKEY_PATH = os.environ.get("PRIVATEKEY_PATH", None)
+
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 
