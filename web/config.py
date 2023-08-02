@@ -68,9 +68,13 @@ class BaseConfig(object):
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(
         minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
     )
+
+    # Flask-Session parameters
     PERMANENT_SESSION_LIFETIME = datetime.timedelta(
         minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
     )
+    SESSION_FILE_THRESHOLD = int(os.environ.get("SESSION_FILE_THRESHOLD", 500))
+    SESSION_TYPE = "filesystem"
 
     # google sso config
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)

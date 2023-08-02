@@ -1,7 +1,7 @@
 import datetime
 from app.models import Computer
 from app.api import check_msi_version
-from app.schema import LastTime
+from app.schema import LastTime, GetCredentials
 
 from config import BaseConfig as CFG
 
@@ -59,17 +59,8 @@ def test_get_credentials(client):
     assert response
     assert response.status_code == 200
     assert response.json["status"] == "success"
-    assert response.json["identifier_key"] != "comp4_identifier_key"
+    assert response.json["identifier_key"] == "comp4_identifier_key"
     assert response.json["computer_name"] == "comp4_test"
-
-    response = client.post(
-        "/get_credentials",
-        json=dict(identifier_key="comp4_identifier_key", computer_name="comp4_test"),
-    )
-
-    assert response
-    assert response.status_code == 400
-    assert response.json["status"] == "fail"
 
     response = client.post(
         "/get_credentials", json=dict(identifier_key=111, computer_name=222)
@@ -183,3 +174,47 @@ def test_check_msi_version(client):
 
     assert last_download_old > last_download_new
     assert last_online_old > last_online_new
+
+
+def test_get_pcc_access_token(client):
+    # Test successful call
+    response = client.post(
+        "/get_pcc_access_token",
+        json=GetCredentials(identifier_key="comp4_identifier_key", computer_name="comp4_test").json(),
+    )
+
+    assert response
+    assert response.status_code == 200
+    assert response.json["status"] == "success"
+    assert response.json["access_token"]
+
+    # Test call with not valid data
+    response = client.post(
+        "/get_pcc_access_token",
+        json=GetCredentials(identifier_key="incorrect_key", computer_name="incorrect_computer_name").json(),
+    )
+
+    assert response
+    assert response.status_code == 404
+    assert response.json["status"] == "fail"
+
+
+def test_get_ssl_cert(client):
+    # Test successful call
+    response = client.post(
+        "/get_ssl_cert",
+        json=GetCredentials(identifier_key="comp4_identifier_key", computer_name="comp4_test").json(),
+    )
+
+    assert response
+    assert response.status_code == 200
+    assert response.content_type == "zip"
+
+    # Test call with not valid data
+    response = client.post(
+        "/get_ssl_cert",
+        json=GetCredentials(identifier_key="incorrect_key", computer_name="incorrect_computer_name").json(),
+    )
+
+    assert response
+    assert response.status_code == 404

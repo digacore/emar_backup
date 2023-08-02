@@ -77,16 +77,14 @@ def create_app(environment="development"):
     # to have access to real IPs from incoming requests
     app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-    # basic config for flask-session
-    app.secret_key = CFG.SECRET_KEY
-    app.config["SESSION_TYPE"] = "filesystem"
-
-    flask_session.init_app(app)
-
     # Set app config.
     env = os.environ.get("FLASK_ENV", environment)
     app.config.from_object(config[env])
     config[env].configure(app)
+
+    # basic config for flask-session
+    app.secret_key = CFG.SECRET_KEY
+    flask_session.init_app(app)
 
     # Set up extensions.
     db.init_app(app)

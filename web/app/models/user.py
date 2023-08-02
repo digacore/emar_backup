@@ -85,9 +85,9 @@ def asociated_with_query_factory():
 
         for company in companies:
             USER_PERMISSIONS.append((company, f"Company-{company}"))
-    except RuntimeError as err:
-        # NOTE use print tonot spam the logs in celery
-        print(f"Encountered error during launch. Message: {err}")
+    except RuntimeError:
+        # NOTE avoid situation when app starts and asociated_with_query_factory() is called in UserView
+        pass
 
     return USER_PERMISSIONS
 
