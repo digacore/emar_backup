@@ -3,9 +3,10 @@ import uuid
 import json
 from flask import jsonify, request
 
-from app.models import Computer, DesktopClient
+from app.models import Computer, DesktopClient, LogEvent, LogType
 from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
 from app.views.blueprint import BlueprintApi
+from app.controllers import create_log_event
 from app.logger import logger
 from config import BaseConfig as CFG
 
@@ -86,13 +87,14 @@ def last_time(body: LastTime):
         )
 
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
-        field = "online"
+        # field = "online"
         if body.last_download_time:
             computer.last_download_time = CFG.offset_to_est(
                 datetime.datetime.utcnow(), True
             )
-            field = "download/online"
+            # field = "download/online"
         computer.update()
+
         # TODO enable if required
         # logger.info(
         #     "Last {} time for computer {} is updated. New time download: {}. New time online: {}.",
@@ -101,6 +103,12 @@ def last_time(body: LastTime):
         #     computer.last_download_time,
         #     computer.last_time_online,
         # )
+
+        # Add uptime/downtime log event
+        if computer.logs_enabled:
+            create_log_event(
+                computer, LogType.HEARTBEAT, created_at=computer.last_time_online
+            )
 
         msi: DesktopClient = (
             DesktopClient.query.filter_by(flag_name=computer.msi_version).first()
@@ -245,6 +253,14 @@ def download_status(body: DownloadStatus):
         #     computer.computer_name,
         #     body.download_status,
         # )
+        if (
+            computer.logs_enabled
+            and body.download_status == "downloaded"
+            and body.last_downloaded
+        ):
+            create_log_event(
+                computer, LogType.BACKUP_DOWNLOAD, created_at=body.last_downloaded
+            )
 
         return jsonify(status="success", message="Writing download status to db"), 200
 

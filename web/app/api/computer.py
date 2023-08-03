@@ -1,9 +1,10 @@
 import uuid
 from flask import jsonify
 
-from app.models import Computer
+from app.models import Computer, LogType
 from app.schema import ComputerRegInfo, ComputerSpecialStatus
 from app.views.blueprint import BlueprintApi
+from app.controllers import create_log_event
 from app.logger import logger
 
 from config import BaseConfig as CFG
@@ -104,5 +105,8 @@ def special_status(body: ComputerSpecialStatus):
         body.special_status if body.special_status in CFG.SPECIAL_STATUSES else "green"
     )
     computer.save()
+
+    if computer.logs_enabled and body.special_status in CFG.SPECIAL_STATUSES:
+        create_log_event(computer, LogType.SPECIAL_STATUS, body.special_status)
 
     return jsonify({"status": "success"}), 200

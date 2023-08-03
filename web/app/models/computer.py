@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, or_, and_
+from sqlalchemy import JSON, or_, and_, sql
 from sqlalchemy.orm import relationship
 
 from flask import request
@@ -69,6 +69,8 @@ class Computer(db.Model, ModelMixin):
     files_checksum = db.Column(JSON)
     # TODO do we need this one? Could computer be deactivated?
     activated = db.Column(db.Boolean, default=False)
+
+    logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     computer_ip = db.Column(db.String(128))
 

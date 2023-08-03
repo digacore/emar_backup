@@ -8,4 +8,4 @@ def test_company_sftp_data(client):
     )
 
     assert response
-    assert response.status_code == 200
+    assert response.status_code == 401

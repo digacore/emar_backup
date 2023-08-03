@@ -6,6 +6,7 @@ from sqlalchemy import or_
 
 from app import models as m
 from app.logger import logger
+from app.controllers.log_event import create_log_event
 
 from config import BaseConfig as CFG
 
@@ -298,6 +299,10 @@ def check_computer_send_mail(
                 status_details = f"no backup over {time_diff} h"
             computer.alert_status = f"red - {status_details}"
             computer.update()
+
+            if computer.logs_enabled:
+                create_log_event(computer, m.LogType.STATUS_RED, data=status_details)
+
             logger.debug(
                 "Computer {} from location {} has alert_status {}",
                 computer.computer_name,
@@ -399,6 +404,10 @@ def check_computer_send_mail(
 
         computer.alert_status = f"yellow - {status_details}"
         computer.update()
+
+        if computer.logs_enabled:
+            create_log_event(computer, m.LogType.STATUS_YELLOW, data=status_details)
+
         logger.warning(
             "Computer - {} alert - {} status updated to yellow.",
             computer.computer_name,
@@ -436,6 +445,10 @@ def check_computer_send_mail(
 
         computer.alert_status = "green"
         computer.update()
+
+        if computer.logs_enabled:
+            create_log_event(computer, m.LogType.STATUS_GREEN)
+
         logger.info(
             "Computer - {} alert - {} status updated to green.",
             computer.computer_name,

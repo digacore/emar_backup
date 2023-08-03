@@ -20,3 +20,18 @@ def client():
         db.session.remove()
         db.drop_all()
         app_ctx.pop()
+
+
+@pytest.fixture
+def test_db():
+
+    with app.test_client() as client:
+        app_ctx = app.app_context()
+        app_ctx.push()
+        db.drop_all()
+        db.create_all()
+        init_db(True)
+        yield db
+        db.session.remove()
+        db.drop_all()
+        app_ctx.pop()

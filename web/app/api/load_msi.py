@@ -2,8 +2,9 @@ import io
 from flask import send_file, jsonify, Response, Blueprint
 
 from app.views.blueprint import BlueprintApi
-from app.models import DesktopClient, Computer
+from app.models import DesktopClient, Computer, LogType
 from app.schema import LoadMSI, UpdateMSIVersion
+from app.controllers import create_log_event
 
 from app.logger import logger
 
@@ -89,6 +90,14 @@ def update_current_msi_version(body: UpdateMSIVersion):
 
         computer.current_msi_version = current_msi_version
         computer.update()
+
+        if computer.logs_enabled:
+            create_log_event(
+                computer,
+                LogType.CLIENT_UPGRADE,
+                data=f"New version: {current_msi_version}",
+            )
+
         return (
             jsonify(
                 status="success", message=f"Writing version {current_msi_version} to DB"
