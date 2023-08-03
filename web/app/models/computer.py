@@ -94,6 +94,7 @@ class Computer(db.Model, ModelMixin):
             "type",
             "manager_host",
             "activated",
+            "logs_enabled",
             "files_checksum",
             "identifier_key",
             "computer_ip",
@@ -122,8 +123,11 @@ class ComputerView(RowActionListMixin, MyModelView):
         "type",
         "manager_host",
         "activated",
+        "logs_enabled",
         "computer_ip",
     ]
+
+    form_excluded_columns = ("log_events",)
 
     column_searchable_list = column_list
     column_sortable_list = column_list
@@ -169,6 +173,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "current_msi_version": {"label": "Current msi version"},
         "manager_host": {"label": "Manager host"},
         "activated": {"label": "Activated"},
+        "logs_enabled:": {"label": "Logs enabled"},
         "alert_status": {"label": "Alert status"},
         "download_status": {"label": "Download status"},
         "last_download_time": {"label": "Last download time"},
