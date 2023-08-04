@@ -22,7 +22,7 @@ class BaseConfig(object):
     APP_HOST_URL = os.environ.get("APP_HOST_URL")
 
     # Pagination
-    DEFAULT_PAGE_SIZE = os.environ.get("DEFAULT_PAGE_SIZE", 25)
+    DEFAULT_PAGE_SIZE = os.environ.get("DEFAULT_PAGE_SIZE", 10)
     PAGE_LINKS_NUMBER = os.environ.get("DEFAULT_PAGE_SIZE", 5)
 
     SUPER_USER_PASS = os.environ.get("SUPERPASS")
