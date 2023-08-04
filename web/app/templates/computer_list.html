@@ -100,12 +100,12 @@
                                         <span class="fa fa-chevron-down glyphicon glyphicon-chevron-down"></span>
                                     {% endif %}
                                 </a>
-                                
+
                             {% else %}
                                 <a href="{{ sort_url(column, True) }}" title="{{ _gettext('Sort by %(name)s', name=name) }}">{{ name }}</a>
                             {% endif %}
 
-                            <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"  
+                            <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"
                                 role="search">
                                 <div class="form-inline">
                                     <input class="single-search-cls" size="20" type="text" name="search" value=""
@@ -160,6 +160,15 @@
                             {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
                         {% else %}
                         {{ get_value(row, c) }}
+                        {% endif %}
+                        </td>
+                    {% elif c=="computer_name" %}
+                        <td class="col-{{c}}" >
+                        {% if admin_view.is_editable(c) %}
+                            {% set form = list_forms[get_pk_value(row)] %}
+                            {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                        {% else %}
+                            <a href="{{url_for('info.computer_info', computer_id=get_pk_value(row))}}">{{ get_value(row, c) }}</a>
                         {% endif %}
                         </td>
                     {% else %}

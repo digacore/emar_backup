@@ -21,6 +21,10 @@ class BaseConfig(object):
 
     APP_HOST_URL = os.environ.get("APP_HOST_URL")
 
+    # Pagination
+    DEFAULT_PAGE_SIZE = os.environ.get("DEFAULT_PAGE_SIZE", 25)
+    PAGE_LINKS_NUMBER = os.environ.get("DEFAULT_PAGE_SIZE", 5)
+
     SUPER_USER_PASS = os.environ.get("SUPERPASS")
     SUPER_USER_NAME = os.environ.get("SUPER_USER_NAME", "emarsuperuser")
     SUPER_USER_MAIL = os.environ.get("SUPERPASS", "emarsup@email.com")

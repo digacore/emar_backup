@@ -55,23 +55,26 @@
         <div class="sidebar-brand-text mx-3">{{ config.APP_NAME }}</div>
       </a>
 
-      {% if request.endpoint %}
-        {% if 'static' not in request.endpoint %}
-          {% if 'admin' not in url_for(request.endpoint) %}
-            {% with messages = get_flashed_messages() %}
-              {% if messages %}
-                <div class="d-flex align-items-center alert alert-info alert-dismissable">
-                {% for message in messages %}
-                  <div>{{ message }}
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+
+      {% block flash_messages %}
+        {% if request.endpoint %}
+          {% if 'static' not in request.endpoint %}
+            {% if 'admin' not in url_for(request.endpoint) %}
+              {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                  <div class="d-flex align-items-center alert alert-info alert-dismissable">
+                  {% for message in messages %}
+                    <div>{{ message }}
+                      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
+                    </div>
+                  {% endfor %}
                   </div>
-                {% endfor %}
-                </div>
-              {% endif %}
-            {% endwith %}
+                {% endif %}
+              {% endwith %}
+            {% endif %}
           {% endif %}
         {% endif %}
-      {% endif %}
+      {% endblock flash_messages %}
 
       <!-- Divider -->
       <hr class="sidebar-divider my-0">
@@ -155,18 +158,20 @@
 
       <!-- Sidebar Toggler (Sidebar) -->
 
-      {% if request.endpoint %}
-        {% if 'static' not in request.endpoint %}
-          {% if 'admin' in url_for(request.endpoint) %}
-          <script>
-            document.addEventListener("DOMContentLoaded", 
-              function(){
-            $("#sidebarToggle").click();
-            })
-          </script>
+      {% block sidebar_toggle %}
+        {% if request.endpoint %}
+          {% if 'static' not in request.endpoint %}
+            {% if 'admin' in url_for(request.endpoint) %}
+            <script>
+              document.addEventListener("DOMContentLoaded",
+                function(){
+              $("#sidebarToggle").click();
+              })
+            </script>
+            {% endif %}
           {% endif %}
         {% endif %}
-       {% endif %}
+      {% endblock sidebar_toggle %}
 
       <div class="text-center d-none d-md-inline">
         <button class="rounded-circle border-0" id="sidebarToggle"></button>
@@ -251,7 +256,7 @@
             {% endif %}
 
           </ul>
-        
+
         </nav>
         <!-- End of Topbar -->
 
@@ -284,16 +289,18 @@
   </a>
 
   <!-- Bootstrap core JavaScript-->
-  {% if request.endpoint %}
-    {% if 'static' not in request.endpoint %}
-      {% if 'admin' not in url_for(request.endpoint) %}
-        <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
-        <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
-        <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+  {% block bootstrap_core %}
+    {% if request.endpoint %}
+      {% if 'static' not in request.endpoint %}
+        {% if 'admin' not in url_for(request.endpoint) %}
+          <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
+          <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+          <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+          <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+        {% endif %}
       {% endif %}
     {% endif %}
-  {% endif %}
+  {% endblock bootstrap_core %}
   <script src="{{ url_for('static', filename='/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
   <script src="{{ url_for('static', filename='/vendor/bootstrap/js/bootstrap.bundle.min.js.map') }}"></script>
 

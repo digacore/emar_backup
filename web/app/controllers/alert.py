@@ -443,6 +443,7 @@ def check_computer_send_mail(
             )
             return
 
+        # TODO: change status on green when successful download happened
         computer.alert_status = "green"
         computer.update()
 

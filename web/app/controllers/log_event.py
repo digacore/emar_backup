@@ -38,7 +38,7 @@ def gen_fake_backup_logs(computer: m.Computer, time_period: timedelta):
         time_period (timedelta): Time period for logs
     """
     # Set up list of working hours
-    WORKING_HOURS = list(range(8, 13)) + list(range(14, 23))
+    WORKING_HOURS = tuple(range(8, 13)) + list(range(14, 23))
 
     # Check if there are any logs exist for this computer
     current_logs = m.LogEvent.query.filter_by(computer_id=computer.id).all()
