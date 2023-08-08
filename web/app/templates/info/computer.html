@@ -1,5 +1,11 @@
 {% extends "base.html" %}
 
+#TODO: remove CDN and replace it with local static
+{% block head_scripts %}
+  <!-- <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
 {% block flash_messages %}
 {% endblock %}
 
@@ -88,6 +94,132 @@
         </div>
       </div>
       <!-- End computer info -->
+
+      <!-- Online / offline periods chart -->
+      <div class="d-flex flex-column w-100 justify-content-center mb-4">
+        <div class="d-flex w-100 justify-content-center">
+          <div class="text-grey mb-1 d-flex align-items-center">
+            Online / Offline periods per last
+            <div class="dropdown mr-1 ml-1">
+              <button class="btn border-dark dropdown-toggle btn-sm" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                {{ chart_days }}
+              </button>
+              <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                {% for days_number in [1, 3, 7, 10, 30] %}
+                  <a class="dropdown-item" href="{{ url_for('info.computer_info', computer_id=computer.id) }}?chart_days={{ days_number }}">{{days_number}}</a>
+                {% endfor %}
+              </div>
+            </div>
+            {{ "day" if chart_days == 1 else "days" }}
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-center pr-5 pl-5" style="height: 300px">
+          <canvas id="periodsChart">
+            <p>Just some text...</p>
+          </canvas>
+
+          <script>
+            const ctx = document.getElementById('periodsChart');
+            const notes = {{ chart_notes | tojson }};
+            const greenDataArray = {{ chart_green_data | tojson }};
+            const yellowDataArray = {{ chart_yellow_data | tojson }};
+            const redDataArray = {{ chart_red_data | tojson }};
+            // console.log(notes);
+
+            new Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels: [
+                  {% for label in labels %}
+                    '{{ label.strftime("%Y-%m-%d %H:%M:%S") }}',
+                  {% endfor %}
+                ],
+                datasets: [
+                  {
+                    label: "Online",
+                    barPercentage: 1,
+                    categoryPercentage: 1,
+                    borderSkipped: true,
+                    backgroundColor: "rgb(28, 200, 138 ,0.7)",
+                    hoverBackgroundColor: "rgb(28, 200, 138 ,1)",
+                    data: greenDataArray,
+                    borderWidth: 1,
+                    order: 3,
+                    pointStyle: false,
+                    skipNull: true,
+                  },
+                  {
+                    label: "Offline over 1 hour",
+                    barPercentage: 1,
+                    categoryPercentage: 1,
+                    borderSkipped: true,
+                    backgroundColor: "rgb(246, 194, 62, 0.7)",
+                    hoverBackgroundColor: "rgb(246, 194, 62, 1)",
+                    data: yellowDataArray,
+                    borderWidth: 1,
+                    order: 2,
+                    pointStyle: false,
+                    skipNull: true,
+                  },
+                  {
+                    label: "Offline over 2 hours",
+                    barPercentage: 1,
+                    categoryPercentage: 1,
+                    borderSkipped: true,
+                    backgroundColor: "rgb(231, 74, 59, 0.7)",
+                    data: redDataArray,
+                    borderWidth: 1,
+                    order: 1,
+                    pointStyle: false,
+                    skipNull: true,
+                  },
+                ]
+              },
+              options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    display: false
+                  },
+                  x: {
+                    grid: {
+                      drawTicks: false,
+                    },
+                    // type: 'time',
+                    // display: false,
+                    ticks: {
+                      // maxRotation: 0,
+                      maxTicksLimit: 5,
+                    },
+                  },
+                },
+                plugins: {
+                  tooltip: {
+                      callbacks: {
+                          label: function(context) {
+                              const label = context.dataset.label;
+                              return label;
+                          },
+                          afterLabel: function(context) {
+                              if (context.raw === null || context.dataset.label === "Online") {
+                                return null
+                              }
+
+                              const note = notes[context.dataIndex];
+                              return `Note: ${note}`;
+                          }
+                      }
+                  }
+                }
+              }
+            });
+          </script>
+        </div>
+      </div>
+      <!-- End online / offline periods chart -->
 
       <!-- Backup periods logs table -->
       <div class="d-flex w-100 p-4 justify-content-center">
