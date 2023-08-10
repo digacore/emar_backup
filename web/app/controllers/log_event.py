@@ -17,6 +17,7 @@ def create_log_event(
         computer (m.Computer): Computer object
         log_type (m.LogType): Log type
         data (str, optional): Data for log. Defaults to None.
+        created_at (datetime, optional): log creation time. Defaults to None.
     """
     new_log = m.LogEvent(
         log_type=log_type,

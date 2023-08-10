@@ -65,7 +65,10 @@ class Computer(db.Model, ModelMixin):
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
 
     manager_host = db.Column(db.String(256), default=CFG.DEFAULT_MANAGER_HOST)
+    # Place where backup file was downloaded last time (tempdir)
     last_downloaded = db.Column(db.String(256))
+    # Place where backup file was saved last time (directory inside emar_backups.zip)
+    last_saved_path = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
     # TODO do we need this one? Could computer be deactivated?
     activated = db.Column(db.Boolean, default=False)
@@ -127,7 +130,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "computer_ip",
     ]
 
-    form_excluded_columns = ("log_events",)
+    form_excluded_columns = ("log_events", "backup_logs")
 
     column_searchable_list = column_list
     column_sortable_list = column_list
@@ -154,6 +157,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "alert_status": {"readonly": True},
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
+        "last_saved_path": {"readonly": True},
         "current_msi_version": {"readonly": True},
         "computer_ip": {"readonly": True},
         # "files_checksum": {"readonly": True},

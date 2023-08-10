@@ -10,3 +10,4 @@ class DownloadStatus(BaseModel):
     last_time_online: datetime
     identifier_key: str
     last_downloaded: Optional[str]
+    last_saved_path: Optional[str]
