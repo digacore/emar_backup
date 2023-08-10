@@ -1,4 +1,7 @@
 #!/user/bin/env python
+import click
+from datetime import timedelta
+
 from app import create_app, db, models, forms
 from app.controllers import register_base_alert_controls
 
@@ -58,6 +61,44 @@ def reset_alerts():
     from app.controllers import reset_alert_statuses
 
     reset_alert_statuses()
+
+
+@app.cli.command()
+@click.option("--computer-name", type=str)
+@click.option("--days", type=int)
+def gen_backup_download_logs(computer_name: str | None = None, days: int | None = None):
+    from app.controllers import gen_fake_backup_download_logs
+
+    time_period = timedelta(days=days) if days else timedelta(days=30)
+
+    if computer_name:
+        computer = models.Computer.query.filter_by(computer_name=computer_name).first()
+
+        gen_fake_backup_download_logs(computer, time_period)
+    else:
+        computers = models.Computer.query.all()
+
+        for computer in computers:
+            gen_fake_backup_download_logs(computer, time_period)
+
+
+@app.cli.command()
+@click.option("--computer-name", type=str)
+@click.option("--days", type=int)
+def gen_backup_periods_logs(computer_name: str | None = None, days: int | None = None):
+    from app.controllers import gen_fake_backup_periods_logs
+
+    time_period = timedelta(days=days) if days else timedelta(days=30)
+
+    if computer_name:
+        computer = models.Computer.query.filter_by(computer_name=computer_name).first()
+
+        gen_fake_backup_periods_logs(computer, time_period)
+    else:
+        computers = models.Computer.query.all()
+
+        for computer in computers:
+            gen_fake_backup_periods_logs(computer, time_period)
 
 
 if __name__ == "__main__":

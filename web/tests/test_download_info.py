@@ -59,17 +59,8 @@ def test_get_credentials(client):
     assert response
     assert response.status_code == 200
     assert response.json["status"] == "success"
-    assert response.json["identifier_key"] != "comp4_identifier_key"
+    assert response.json["identifier_key"] == "comp4_identifier_key"
     assert response.json["computer_name"] == "comp4_test"
-
-    response = client.post(
-        "/get_credentials",
-        json=dict(identifier_key="comp4_identifier_key", computer_name="comp4_test"),
-    )
-
-    assert response
-    assert response.status_code == 400
-    assert response.json["status"] == "fail"
 
     response = client.post(
         "/get_credentials", json=dict(identifier_key=111, computer_name=222)

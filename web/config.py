@@ -21,6 +21,10 @@ class BaseConfig(object):
 
     APP_HOST_URL = os.environ.get("APP_HOST_URL")
 
+    # Pagination
+    DEFAULT_PAGE_SIZE = os.environ.get("DEFAULT_PAGE_SIZE", 10)
+    PAGE_LINKS_NUMBER = os.environ.get("DEFAULT_PAGE_SIZE", 5)
+
     SUPER_USER_PASS = os.environ.get("SUPERPASS")
     SUPER_USER_NAME = os.environ.get("SUPER_USER_NAME", "emarsuperuser")
     SUPER_USER_MAIL = os.environ.get("SUPERPASS", "emarsup@email.com")
@@ -68,9 +72,13 @@ class BaseConfig(object):
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(
         minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
     )
+
+    # Flask-Session parameters
     PERMANENT_SESSION_LIFETIME = datetime.timedelta(
         minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
     )
+    SESSION_FILE_THRESHOLD = int(os.environ.get("SESSION_FILE_THRESHOLD", 500))
+    SESSION_TYPE = "filesystem"
 
     # google sso config
     GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", None)

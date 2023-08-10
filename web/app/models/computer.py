@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, or_, and_
+from sqlalchemy import JSON, or_, and_, sql
 from sqlalchemy.orm import relationship
 
 from flask import request
@@ -65,10 +65,15 @@ class Computer(db.Model, ModelMixin):
     identifier_key = db.Column(db.String(128), default="new_computer", nullable=False)
 
     manager_host = db.Column(db.String(256), default=CFG.DEFAULT_MANAGER_HOST)
+    # Place where backup file was downloaded last time (tempdir)
     last_downloaded = db.Column(db.String(256))
+    # Place where backup file was saved last time (directory inside emar_backups.zip)
+    last_saved_path = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
     # TODO do we need this one? Could computer be deactivated?
     activated = db.Column(db.Boolean, default=False)
+
+    logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
     created_at = db.Column(db.DateTime, default=datetime.now)
     computer_ip = db.Column(db.String(128))
 
@@ -92,6 +97,7 @@ class Computer(db.Model, ModelMixin):
             "type",
             "manager_host",
             "activated",
+            "logs_enabled",
             "files_checksum",
             "identifier_key",
             "computer_ip",
@@ -120,8 +126,11 @@ class ComputerView(RowActionListMixin, MyModelView):
         "type",
         "manager_host",
         "activated",
+        "logs_enabled",
         "computer_ip",
     ]
+
+    form_excluded_columns = ("log_events", "backup_logs")
 
     column_searchable_list = column_list
     column_sortable_list = column_list
@@ -148,6 +157,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "alert_status": {"readonly": True},
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
+        "last_saved_path": {"readonly": True},
         "current_msi_version": {"readonly": True},
         "computer_ip": {"readonly": True},
         # "files_checksum": {"readonly": True},
@@ -167,6 +177,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "current_msi_version": {"label": "Current msi version"},
         "manager_host": {"label": "Manager host"},
         "activated": {"label": "Activated"},
+        "logs_enabled:": {"label": "Logs enabled"},
         "alert_status": {"label": "Alert status"},
         "download_status": {"label": "Download status"},
         "last_download_time": {"label": "Last download time"},

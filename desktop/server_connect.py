@@ -594,8 +594,10 @@ def sftp_check_files_for_update_and_load(credentials):
                 else:
                     logger.info("Nothing to zip.")
 
+                last_saved_path = os.path.join(zip_name, new_backup_name)
+
                 update_download_status(
-                    "downloaded", credentials, last_downloaded=str(tempdir)
+                    "downloaded", credentials, last_downloaded=str(tempdir), last_saved_path=last_saved_path
                 )
 
         response = requests.post(
@@ -651,7 +653,7 @@ def send_activity(last_download_time, creds):
     logger.info("User last time download sent.")
 
 
-def update_download_status(status, creds, last_downloaded=""):
+def update_download_status(status, creds, last_downloaded="", last_saved_path=""):
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
@@ -674,10 +676,36 @@ def update_download_status(status, creds, last_downloaded=""):
             "last_time_online": offset_to_est(datetime.datetime.utcnow()),
             "identifier_key": creds["identifier_key"],
             "last_downloaded": last_downloaded,
+            "last_saved_path": last_saved_path,
         },
     )
     logger.info(f"Download status: {status}.")
 
+
+# def download_file_from_pcc(credentials):
+#     """Retrive access token and certs from Web and download files from PCC API"""
+#     # Get access token
+#     access_token_response = requests.post(
+#         f'{credentials["manager_host"]}/get_pcc_access_token',
+#         json={
+#             "computer_name": credentials["computer_name"],
+#             "identifier_key": credentials["identifier_key"],
+#         },
+#     )
+    
+#     # Get certs
+#     certs_response = requests.post(
+#         f'{credentials["manager_host"]}/get_ssl_cert',
+#         json={
+#             "computer_name": credentials["computer_name"],
+#             "identifier_key": credentials["identifier_key"],
+#         },
+#     )
+
+#     # Get backup files
+#     backup_files_response = requests.post(
+#         "https://connect2.pointclickcare.com/api/public/preview1/orgs/11848592-809a-42f4-82e3-5ce14964a007/facs/22/backup-files"
+#     )
 
 @logger.catch
 def main_func():
@@ -693,6 +721,7 @@ def main_func():
             send_activity(last_download_time, credentials)
             logger.info("Downloading proccess finished.")
         except (AppError, FileNotFoundError):
+            update_download_status("error", credentials)
             logger.info("Downloading process interrupted")
 
         # user = getpass.getuser()

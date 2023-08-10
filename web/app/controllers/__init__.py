@@ -7,3 +7,11 @@ from .database import (
     register_base_alert_controls,
 )
 from .stat_company_location import update_companies_locations_statistic
+from .log_event import create_log_event, gen_fake_backup_download_logs
+from .backup_log import (
+    gen_fake_backup_periods_logs,
+    backup_log_on_download_success,
+    backup_log_on_request_to_view,
+    backup_log_on_download_error,
+)
+from .pagination import create_pagination

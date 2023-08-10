@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+#TODO: remove CDN and replace it with local static
+{% block head_scripts %}
+  <!-- <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script> -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block flash_messages %}
+{% endblock %}
+
+{% block content %}
+    <div class="d-flex flex-column justify-content-center w-100">
+
+      <!-- Status header -->
+      {% if not last_log %}
+        <div
+          class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+          style="background-color: #848383; padding: 10px 0;"
+        >
+          <span style="font-size: 25px; font-weight: bold;">Undefined - no logs exist</span>
+        </div>
+      {% elif last_log.error == "Longer than 2 hours without a backup" %}
+        <div
+          class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+          style="background-color: #e74a3b; padding: 10px 0;"
+        >
+          <span style="font-size: 25px; font-weight: bold;">Offline - {{ last_log.duration_as_str }}</span>
+        </div>
+      {% elif last_log.error == "Longer than 1 hour without a backup" %}
+        <div
+          class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+          style="background-color: #f6c23e; padding: 10px 0;"
+        >
+          <span style="font-size: 25px; font-weight: bold;">Offline - {{ last_log.duration_as_str }}</span>
+        </div>
+      {% elif not last_log.error %}
+        <div
+          class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+          style="background-color: #1cc88a; padding: 10px 0;"
+        >
+          <span style="font-size: 25px; font-weight: bold;">Online - {{ last_log.duration_as_str }}</span>
+        </div>
+      {% endif %}
+      <!-- End status header -->
+
+      <!-- Computer info -->
+      <div class="d-flex w-100 p-4">
+        <div class="d-flex w-100 flex-column justify-content-center m-3">
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Company</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.company.name }}</span>
+          </div>
+
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Computer Name</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.computer_name }}</span>
+          </div>
+
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Computer IP Address</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.computer_ip }}</span>
+          </div>
+
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Last Download Time</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.last_download_time }}</span>
+          </div>
+
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Software Version</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.current_msi_version }}</span>
+          </div>
+        </div>
+
+        <div class="d-flex w-100 flex-column justify-content-center m-3">
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Location</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.location.name }}</span>
+          </div>
+
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Device Type</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.type }}</span>
+          </div>
+
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Last Time Online</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.last_time_online }}</span>
+          </div>
+
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Download File Location</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.last_saved_path if computer.last_saved_path else "-" }}</span>
+          </div>
+
+          <div class="d-flex flex-column justify-content-start">
+            <span class="text-grey mb-1 small text-center">Device Added</span>
+            <span class="mb-3 small text-dark text-center">{{ computer.created_at }}</span>
+          </div>
+        </div>
+      </div>
+      <!-- End computer info -->
+
+      <!-- Online / offline periods chart -->
+      {% if labels %}
+        <div class="d-flex flex-column w-100 justify-content-center mb-4">
+          <div class="d-flex w-100 justify-content-center">
+            <div class="text-grey mb-1 d-flex align-items-center">
+              Online / Offline periods per last
+              <div class="dropdown mr-1 ml-1">
+                <button class="btn dropdown-toggle btn-sm" style="border-color: rgb(183, 185, 204, 0.6); border-width: 2px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  {{ chart_days }}
+                </button>
+                <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                  {% for days_number in [1, 3, 7, 10, 30] %}
+                    <a class="dropdown-item" href="{{ url_for('info.computer_info', computer_id=computer.id) }}?page={{ page.page }}&per_page={{ page.per_page }}&chart_days={{ days_number }}">{{days_number}}</a>
+                  {% endfor %}
+                </div>
+              </div>
+              {{ "day" if chart_days == 1 else "days" }}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-center pr-5 pl-5" style="height: 300px">
+            <canvas id="periodsChart">
+              <p>Just some text...</p>
+            </canvas>
+
+            <script>
+              const ctx = document.getElementById('periodsChart');
+              const notes = {{ chart_notes | tojson }};
+              const greenDataArray = {{ chart_green_data | tojson }};
+              const yellowDataArray = {{ chart_yellow_data | tojson }};
+              const redDataArray = {{ chart_red_data | tojson }};
+              // console.log(notes);
+
+              new Chart(ctx, {
+                type: 'bar',
+                data: {
+                  labels: [
+                    {% for label in labels %}
+                      '{{ label.strftime("%Y-%m-%d %H:%M:%S") }}',
+                    {% endfor %}
+                  ],
+                  datasets: [
+                    {
+                      label: "Online",
+                      barPercentage: 1,
+                      categoryPercentage: 1,
+                      borderSkipped: true,
+                      backgroundColor: "rgb(28, 200, 138 ,0.7)",
+                      hoverBackgroundColor: "rgb(28, 200, 138 ,1)",
+                      data: greenDataArray,
+                      borderWidth: 1,
+                      order: 3,
+                      pointStyle: false,
+                      skipNull: true,
+                    },
+                    {
+                      label: "Offline over 1 hour",
+                      barPercentage: 1,
+                      categoryPercentage: 1,
+                      borderSkipped: true,
+                      backgroundColor: "rgb(246, 194, 62, 0.7)",
+                      hoverBackgroundColor: "rgb(246, 194, 62, 1)",
+                      data: yellowDataArray,
+                      borderWidth: 1,
+                      order: 2,
+                      pointStyle: false,
+                      skipNull: true,
+                    },
+                    {
+                      label: "Offline over 2 hours",
+                      barPercentage: 1,
+                      categoryPercentage: 1,
+                      borderSkipped: true,
+                      backgroundColor: "rgb(231, 74, 59, 0.7)",
+                      data: redDataArray,
+                      borderWidth: 1,
+                      order: 1,
+                      pointStyle: false,
+                      skipNull: true,
+                    },
+                  ]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      display: false
+                    },
+                    x: {
+                      grid: {
+                        offset: false,
+                        tickColor: 'rgb(183, 185, 204, 0.6)',
+                        tickLength: 10,
+                        drawOnChartArea: false,
+                      },
+                      ticks: {
+                        maxTicksLimit: 5,
+                      },
+                    },
+                  },
+                  plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.dataset.label;
+                                return label;
+                            },
+                            afterLabel: function(context) {
+                                if (context.raw === null || context.dataset.label === "Online") {
+                                  return null
+                                }
+
+                                const note = notes[context.dataIndex];
+                                return `Note: ${note}`;
+                            }
+                        }
+                    }
+                  }
+                }
+              });
+            </script>
+          </div>
+        </div>
+      {% endif %}
+      <!-- End online / offline periods chart -->
+
+      <!-- Backup periods logs table -->
+      <div class="d-flex w-100 p-4 justify-content-center flex-column align-items-center">
+        {% if not logs %}
+          <span>This device currently has no logs</span>
+        {% else %}
+          <div class="text-grey mb-2 d-flex justify-content-center">
+            Online / Offline periods logs per last 90 days
+          </div>
+          <div class="w-100">
+            <div>
+              <table class="w-full text-xs text-center table table-striped table-bordered table-hover pr-2 pl-2">
+                <thead class="text-sm text-center" style="color: #4e73df">
+                  <tr>
+                    <th scope="col" class="pr-2 pl-2">Status</th>
+                    <th scope="col">Device Name</th>
+                    <th scope="col">Start Time</th>
+                    <th scope="col">End Time</th>
+                    <th scope="col">Duration</th>
+                    <th scope="col">Error</th>
+                    <th scope="col">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for log in logs %}
+                  <tr>
+                    <td>
+                      <div class="flex items-center content-center">
+                        {% if not log.error%}
+                          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" fill="#1cc88a" height="20px" width="20px" version="1.1" id="Capa_1" viewBox="0 0 191.667 191.667" xml:space="preserve">
+                            <path d="M95.833,0C42.991,0,0,42.99,0,95.833s42.991,95.834,95.833,95.834s95.833-42.991,95.833-95.834S148.676,0,95.833,0z   M150.862,79.646l-60.207,60.207c-2.56,2.56-5.963,3.969-9.583,3.969c-3.62,0-7.023-1.409-9.583-3.969l-30.685-30.685  c-2.56-2.56-3.97-5.963-3.97-9.583c0-3.621,1.41-7.024,3.97-9.584c2.559-2.56,5.962-3.97,9.583-3.97c3.62,0,7.024,1.41,9.583,3.971  l21.101,21.1l50.623-50.623c2.56-2.56,5.963-3.969,9.583-3.969c3.62,0,7.023,1.409,9.583,3.969  C156.146,65.765,156.146,74.362,150.862,79.646z"/>
+                          </svg>
+                        {% elif log.error == "Longer than 1 hour without a backup" %}
+                          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="20px" width="20px" version="1.1" id="_x32_" viewBox="0 0 512 512" xml:space="preserve">
+                            <g>
+                              <path fill="#f6c23e" d="M505.095,407.125L300.77,53.208c-9.206-15.944-26.361-25.849-44.774-25.849   c-18.412,0-35.552,9.905-44.751,25.849L6.905,407.109c-9.206,15.944-9.206,35.746,0,51.69   c9.206,15.944,26.354,25.842,44.758,25.842h408.674c18.405,0,35.568-9.897,44.759-25.842   C514.302,442.855,514.302,423.053,505.095,407.125z M256.004,426.437c-17.668,0-32.013-14.33-32.013-32.004   c0-17.668,14.345-31.997,32.013-31.997c17.667,0,31.997,14.329,31.997,31.997C288.001,412.108,273.671,426.437,256.004,426.437z    M275.72,324.011c0,10.89-8.834,19.709-19.716,19.709c-10.898,0-19.717-8.818-19.717-19.709l-12.296-144.724   c0-17.676,14.345-32.005,32.013-32.005c17.667,0,31.997,14.33,31.997,32.005L275.72,324.011z"/>
+                            </g>
+                          </svg>
+                        {% elif log.error == "Longer than 2 hours without a backup" %}
+                          <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" height="25px" width="25px" id="svg2" viewBox="0 0 16 16" version="1.1">
+                            <g id="layer1" transform="translate(0 -1036.4)">
+                              <path id="rect3809" style="fill:#ffffff" d="m5.5312 1039.8-2.125 2.125 2.4687 2.4688-2.4687 2.4687 2.125 2.125 2.4688-2.4687 2.4688 2.4687 2.125-2.125-2.4688-2.4687 2.4688-2.4688-2.125-2.125l-2.469 2.4-2.4688-2.4z"/>
+                              <path id="rect3801" style="stroke-linejoin:round; stroke: #e74a3b; stroke-width:.25; fill:#e74a3b" d="m5.5 2-3.5 3.5v5l3.5 3.5h5l3.5-3.5v-5l-3.5-3.5h-5zm0.0312 1.4062 2.4688 2.4688l2.4688-2.4688 2.125 2.125-2.469 2.4688 2.4688 2.4688-2.125 2.125-2.469-2.469-2.4688 2.469-2.125-2.125 2.4688-2.469-2.4688-2.4688 2.125-2.125z" transform="translate(0 1036.4)"/>
+                            </g>
+                          </svg>
+                        {% endif %}
+                      </div>
+                    </td>
+                    <td class="p-2 text-gray align-middle">
+                        <div>{{ log.computer.computer_name }}</div>
+                    </td>
+                    <td class="p-2 text-gray align-middle">
+                      <span>{{ log.est_start_time }}</span>
+                    </td>
+                    <td class="p-2 text-gray align-middle">
+                      <span>{{ log.est_end_time }}</span>
+                    </td>
+                    {% if not log.error %}
+                      <td class="p-2 text-dark align-middle" style="background-color: #1cc88a;">
+                        <div>{{ log.duration_as_str }}</div>
+                      </td>
+                    {% elif log.error == "Longer than 1 hour without a backup" %}
+                      <td class="p-2 text-dark align-middle" style="background-color: #f6c23e;">
+                        <div>{{ log.duration_as_str }}</div>
+                      </td>
+                    {% elif log.error == "Longer than 2 hours without a backup" %}
+                      <td class="p-2 text-white align-middle" style="background-color: #e74a3b;">
+                        <div>{{ log.duration_as_str }}</div>
+                      </td>
+                    {% endif %}
+                    <td class="p-2 text-gray align-middle">
+                      <div>{{ log.error }}</div>
+                    </td>
+                    <td class="p-2 text-gray align-middle">
+                      <div>{{ log.notes }}</div>
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            {% if page.pages > 1 %}
+              <div class="d-flex justify-content-center mt-1">
+                <nav aria-label="Page navigation" class="mx-auto d-flex align-items-center">
+                  <ul class="d-inline-flex items-center list-unstyled mb-0">
+                    <li>
+                      <!-- prettier-ignore -->
+                      <a href="{{ url_for('info.computer_info', computer_id=computer.id) }}?page=1&per_page={{ page.per_page }}&chart_days={{ chart_days }}" class="text-gray-500">
+                        <span class="sr-only">First</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 21.6" fill="currentColor" width="20px" height="21.6px">
+                          <path fill-rule="evenodd" d="M15.79 14.77a.75.75 0 01-1.06.02l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 111.04 1.08L11.832 10l3.938 3.71a.75.75 0 01.02 1.06zm-6 0a.75.75 0 01-1.06.02l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 111.04 1.08L5.832 10l3.938 3.71a.75.75 0 01.02 1.06z" clip-rule="evenodd" />
+                        </svg>
+                      </a>
+                    </li>
+                    <li>
+                      <!-- prettier-ignore -->
+                      <a href="{{ url_for('info.computer_info', computer_id=computer.id) }}?page={{page.page-1 if page.page > 1 else 1}}&per_page={{ page.per_page }}&chart_days={{ chart_days }}" class="text-gray-500">
+                        <span class="sr-only">Previous</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 21.6" fill="currentColor" width="20px" height="21.6px">
+                          <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                        </svg>
+                      </a>
+                    </li>
+
+                    <!-- prettier-ignore -->
+                    {% for p in page.pages_for_links %}
+                    <li>
+                      <!-- prettier-ignore -->
+                      {% if p == page.page %}
+                        <!-- prettier-ignore -->
+                        <a style="height: 20px" href="{{ url_for('info.computer_info', computer_id=computer.id) }}?page={{p}}&per_page={{ page.per_page }}&chart_days={{ chart_days }}" class="m-1 text-gray-700">{{p}}</a>
+                      {% else %}
+                        <!-- prettier-ignore -->
+                        <a style="height: 20px" href="{{ url_for('info.computer_info', computer_id=computer.id) }}?page={{p}}&per_page={{ page.per_page }}&chart_days={{ chart_days }}" class="m-1 text-gray-500">{{p}}</a>
+                      {% endif %}
+                    </li>
+                    {% endfor %}
+
+                    <li>
+                      <!-- prettier-ignore -->
+                      <a href="{{ url_for('info.computer_info', computer_id=computer.id) }}?page={{page.page+1 if page.page < page.pages else page.pages}}&per_page={{ page.per_page }}&chart_days={{ chart_days }}" class="text-gray-500">
+                        <!-- prettier-ignore -->
+                        <span class="sr-only">Next</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 21.6" fill="currentColor" width="20px" height="21.6px">
+                          <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                        </svg>
+                      </a>
+                    </li>
+                    <li>
+                      <!-- prettier-ignore -->
+                      <a href="{{ url_for('info.computer_info', computer_id=computer.id) }}?page={{page.pages}}&per_page={{ page.per_page }}&chart_days={{ chart_days }}" class="text-gray-500">
+                        <!-- prettier-ignore -->
+                        <span class="sr-only">Last</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 21.6" fill="currentColor" width="20px" height="21.6px">
+                          <path fill-rule="evenodd" d="M10.21 14.77a.75.75 0 01.02-1.06L14.168 10 10.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                          <path fill-rule="evenodd" d="M4.21 14.77a.75.75 0 01.02-1.06L8.168 10 4.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                        </svg>
+                      </a>
+                    </li>
+                  </ul>
+                  <div class="dropdown mr-1 ml-3">
+                    <button class="btn dropdown-toggle btn-sm" style="border-color: rgb(183, 185, 204, 0.6); border-width: 2px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      {{ page.per_page }} per page
+                    </button>
+                    <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                      {% for items_number in [10, 25, 50, 100] %}
+                        <a class="dropdown-item" href="{{ url_for('info.computer_info', computer_id=computer.id) }}?page={{ page.page }}&per_page={{ items_number }}&chart_days={{ chart_days }}">{{ items_number }} per page</a>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </nav>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+{% endblock %}
+
+{% block sidebar_toggle %}
+  <script>
+    document.addEventListener("DOMContentLoaded",
+      function(){
+        $("#sidebarToggle").click();
+      });
+  </script>
+{% endblock sidebar_toggle %}
+
+{% block bootstrap_core %}
+  <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
+  <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+{% endblock bootstrap_core %}
