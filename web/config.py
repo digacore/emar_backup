@@ -19,6 +19,8 @@ class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = False
 
+    # TODO: remove APP_HOST_URL and use SERVER_NAME
+    SERVER_NAME = os.environ.get("APP_HOST_URL")
     APP_HOST_URL = os.environ.get("APP_HOST_URL")
 
     # Pagination
