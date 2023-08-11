@@ -107,3 +107,74 @@ def computer_info(computer_id):
         chart_yellow_data=chart_yellow_data,
         chart_red_data=chart_red_data,
     )
+
+
+@info_blueprint.route("/system-log", methods=["GET"])
+@login_required
+def system_log_info():
+    LOGS_TYPES = ["All", "Computer", "User", "Company", "Location", "Alert"]
+
+    logs_type = request.args.get("type", "All", type=str)
+    days = request.args.get("days", 30, type=int)
+    per_page = request.args.get("per_page", 25, type=int)
+
+    system_logs_query = m.SystemLog.query.filter(
+        m.SystemLog.created_at >= datetime.utcnow() - timedelta(days=days),
+    )
+
+    if logs_type not in LOGS_TYPES:
+        logs_type = "All"
+
+    # Filter query by some specific log type
+    if logs_type == "All":
+        pass
+    elif logs_type == "Computer":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.COMPUTER_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.COMPUTER_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.COMPUTER_DELETED)
+        )
+    elif logs_type == "User":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.USER_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.USER_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.USER_DELETED)
+        )
+    elif logs_type == "Company":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.COMPANY_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.COMPANY_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.COMPANY_DELETED)
+        )
+    elif logs_type == "Location":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.LOCATION_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.LOCATION_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.LOCATION_DELETED)
+        )
+    elif logs_type == "Alert":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.ALERT_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.ALERT_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.ALERT_DELETED)
+        )
+
+    pagination = create_pagination(total=m.count(system_logs_query), page_size=per_page)
+
+    system_logs = (
+        db.session.execute(
+            system_logs_query.order_by(m.SystemLog.created_at.desc())
+            .limit(pagination.per_page)
+            .offset(pagination.skip)
+        )
+        .scalars()
+        .all()
+    )
+    return render_template(
+        "info/system_log.html",
+        system_logs=system_logs,
+        page=pagination,
+        days=days,
+        current_logs_type=logs_type,
+        possible_logs_types=LOGS_TYPES,
+    )

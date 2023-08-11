@@ -16,6 +16,7 @@ from app.utils import MyModelView, get_outdated_status_comps
 from .desktop_client import DesktopClient
 from .company import Company
 from .location import Location
+from .system_log import SystemLogType
 
 from config import BaseConfig as CFG
 
@@ -241,6 +242,21 @@ class ComputerView(RowActionListMixin, MyModelView):
         form.location.query_factory = lambda: Location.query.order_by(Location.name)
 
         return form
+
+    def after_model_change(self, form, model, is_created):
+        from app.controllers import create_system_log
+
+        # Create system log that computer was created or updated
+        if is_created:
+            create_system_log(SystemLogType.COMPUTER_CREATED, model, current_user)
+        else:
+            create_system_log(SystemLogType.COMPUTER_UPDATED, model, current_user)
+
+    def after_model_delete(self, model):
+        from app.controllers import create_system_log
+
+        # Create system log that computer was deleted
+        create_system_log(SystemLogType.COMPUTER_DELETED, model, current_user)
 
     def get_query(self):
 

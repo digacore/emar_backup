@@ -20,7 +20,7 @@ class BaseConfig(object):
     WTF_CSRF_ENABLED = False
 
     # TODO: remove APP_HOST_URL and use SERVER_NAME
-    SERVER_NAME = os.environ.get("APP_HOST_URL")
+    SERVER_NAME = os.environ.get("SERVER_NAME")
     APP_HOST_URL = os.environ.get("APP_HOST_URL")
 
     # Pagination
