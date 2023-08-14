@@ -1,9 +1,7 @@
 {% extends "base.html" %}
 
-#TODO: remove CDN and replace it with local static
 {% block head_scripts %}
-  <!-- <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script> -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="{{ url_for('static', filename='js/chart.js')}}"></script>
 {% endblock %}
 
 {% block flash_messages %}
@@ -11,6 +9,14 @@
 
 {% block content %}
     <div class="d-flex flex-column justify-content-center w-100">
+      <!-- "Go back" button -->
+      <div class="d-flex w-100 mb-4">
+        <a class="text-decoration-none small" href="{{ url_for('computer.index_view') }}">
+          <i class="fas fa-arrow-left"></i>
+          Go back
+        </a>
+      </div>
+      <!-- End "Go back" button -->
 
       <!-- Status header -->
       {% if not last_log %}

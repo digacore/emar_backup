@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
-from flask import render_template, Blueprint, request
-from flask_login import login_required
+from flask import render_template, Blueprint, request, abort
+from flask_login import login_required, current_user
 
 from app import models as m, db
 from app.controllers import create_pagination, backup_log_on_request_to_view
@@ -13,6 +13,14 @@ info_blueprint = Blueprint("info", __name__, url_prefix="/info")
 @login_required
 def computer_info(computer_id):
     computer = m.Computer.query.filter_by(id=computer_id).first_or_404()
+
+    # Check if user has access to computer information
+    if not (
+        current_user.asociated_with.lower() in ["global-full", "global-view"]
+        or current_user.asociated_with == computer.company_name
+        or current_user.asociated_with == computer.location_name
+    ):
+        abort(403, "You don't have access to this computer information.")
 
     # Update the last computer log information
     if computer.logs_enabled:
@@ -112,11 +120,16 @@ def computer_info(computer_id):
 @info_blueprint.route("/system-log", methods=["GET"])
 @login_required
 def system_log_info():
+    # This page is available only for global-full users
+    if current_user.asociated_with.lower() != "global-full":
+        abort(403, "You don't have permission to access this page.")
+
     LOGS_TYPES = ["All", "Computer", "User", "Company", "Location", "Alert"]
 
     logs_type = request.args.get("type", "All", type=str)
     days = request.args.get("days", 30, type=int)
     per_page = request.args.get("per_page", 25, type=int)
+    q = request.args.get("q", type=str, default=None)
 
     system_logs_query = m.SystemLog.query.filter(
         m.SystemLog.created_at >= datetime.utcnow() - timedelta(days=days),
@@ -157,6 +170,15 @@ def system_log_info():
             (m.SystemLog.log_type == m.SystemLogType.ALERT_CREATED)
             | (m.SystemLog.log_type == m.SystemLogType.ALERT_UPDATED)
             | (m.SystemLog.log_type == m.SystemLogType.ALERT_DELETED)
+        )
+
+    # Filter query by search query
+    if q:
+        system_logs_query = system_logs_query.join(
+            m.SystemLog.created_by, aliased=True
+        ).filter(
+            (m.SystemLog.object_name.ilike(f"%{q}%"))
+            | (m.User.username.ilike(f"%{q}%"))
         )
 
     pagination = create_pagination(total=m.count(system_logs_query), page_size=per_page)
