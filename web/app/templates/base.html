@@ -137,6 +137,9 @@
             <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
             <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
             <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
+            {% if current_user.asociated_with.lower() == "global-full" %}
+              <a class="collapse-item" href="{{ url_for('info.system_log_info') }}">System logs</a>
+            {% endif %}
           </div>
         </div>
       </li>

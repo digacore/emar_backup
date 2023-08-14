@@ -6,11 +6,12 @@ from sqlalchemy import or_
 
 from app import models as m
 from app.logger import logger
-from app.controllers.log_event import create_log_event
 
 from config import BaseConfig as CFG
 
 from pprint import pprint
+
+from .log_event import create_log_event
 
 
 def get_timedelta_hours(hours: int) -> datetime:

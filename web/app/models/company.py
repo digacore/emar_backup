@@ -6,6 +6,7 @@ from flask_admin.model.template import EditRowAction, DeleteRowAction
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
+from .system_log import SystemLogType
 
 
 class Company(db.Model, ModelMixin):
@@ -96,6 +97,21 @@ class CompanyView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    def after_model_change(self, form, model, is_created):
+        from app.controllers import create_system_log
+
+        # Create system log that company was created or updated
+        if is_created:
+            create_system_log(SystemLogType.COMPANY_CREATED, model, current_user)
+        else:
+            create_system_log(SystemLogType.COMPANY_UPDATED, model, current_user)
+
+    def after_model_delete(self, model):
+        from app.controllers import create_system_log
+
+        # Create system log that company was deleted
+        create_system_log(SystemLogType.COMPANY_DELETED, model, current_user)
 
     def get_query(self):
 

@@ -6,6 +6,7 @@ from flask_admin.model.template import EditRowAction, DeleteRowAction
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
+from .system_log import SystemLogType
 
 from app.logger import logger
 
@@ -82,6 +83,21 @@ class AlertView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    def after_model_change(self, form, model, is_created):
+        from app.controllers import create_system_log
+
+        # Create system log that alert was created or updated
+        if is_created:
+            create_system_log(SystemLogType.ALERT_CREATED, model, current_user)
+        else:
+            create_system_log(SystemLogType.ALERT_UPDATED, model, current_user)
+
+    def after_model_delete(self, model):
+        from app.controllers import create_system_log
+
+        # Create system log that alert was deleted
+        create_system_log(SystemLogType.ALERT_DELETED, model, current_user)
 
     # list rows depending on current user permissions
     def get_query(self):

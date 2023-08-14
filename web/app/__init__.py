@@ -93,6 +93,9 @@ def create_app(environment="development"):
     login_manager.init_app(app)
     jwt.init_app(app)
 
+    # Pass functions to jinja2 templates
+    app.jinja_env.globals.update(offset_to_east=CFG.offset_to_est)
+
     # Register blueprints.
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(main_blueprint)
