@@ -34,6 +34,7 @@ class BaseConfig(object):
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
     UPDATE_CL_PERIOD = int(os.environ.get("UPDATE_CL_PERIOD", 120))
     DAILY_SUMMARY_PERIOD = int(os.environ.get("DAILY_SUMMARY_PERIOD", 86400))
+    LOGS_DELETION_PERIOD = int(os.environ.get("COMPUTER_LOGS_DELETION_PERIOD", 86400))
 
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
@@ -115,6 +116,15 @@ class BaseConfig(object):
 
     # NOTE special statuses. Transform to some object?
     SPECIAL_STATUSES = ["red - ip blacklisted"]
+
+    # Logs deletion periods in days
+    SYSTEM_LOGS_DELETION_PERIOD = int(
+        os.environ.get("SYSTEM_LOGS_DELETION_PERIOD", 365)
+    )
+    COMPUTER_LOGS_DELETION_PERIOD = int(
+        os.environ.get("COMPUTER_LOGS_DELETION_PERIOD", 90)
+    )
+    LOG_EVENT_DELETION_PERIOD = int(os.environ.get("LOG_EVENT_DELETION_PERIOD", 10))
 
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
