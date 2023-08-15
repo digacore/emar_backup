@@ -64,6 +64,13 @@ def reset_alerts():
 
 
 @app.cli.command()
+def clean_old_logs():
+    from app.controllers import clean_old_logs
+
+    clean_old_logs()
+
+
+@app.cli.command()
 @click.option("--computer-name", type=str)
 @click.option("--days", type=int)
 def gen_backup_download_logs(computer_name: str | None = None, days: int | None = None):
