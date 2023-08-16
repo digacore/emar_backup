@@ -29,7 +29,7 @@ def computer_info(computer_id):
     # Paginated logs for table
     computer_logs_query = m.BackupLog.query.filter(
         m.BackupLog.computer_id == computer_id,
-        m.BackupLog.start_time >= datetime.utcnow() - timedelta(days=90),
+        m.BackupLog.end_time >= datetime.utcnow() - timedelta(days=90),
     )
 
     last_log = computer_logs_query.order_by(m.BackupLog.start_time.desc()).first()
@@ -56,7 +56,7 @@ def computer_info(computer_id):
     logs_for_chart = (
         m.BackupLog.query.filter(
             m.BackupLog.computer_id == computer_id,
-            m.BackupLog.start_time >= datetime.utcnow() - timedelta(days=chart_days),
+            m.BackupLog.end_time >= datetime.utcnow() - timedelta(days=chart_days),
         )
         .order_by(m.BackupLog.start_time.asc())
         .all()
@@ -70,7 +70,11 @@ def computer_info(computer_id):
     chart_red_data = []
 
     if logs_for_chart:
-        log_time = logs_for_chart[0].est_start_time
+        # Set the start time for the chart (eastern time - chart_days)
+        log_time = (
+            datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+            - timedelta(hours=4)
+        ) - timedelta(days=chart_days)
         log_to_use_index = 0
 
         current_log_type = None
