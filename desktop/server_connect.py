@@ -79,6 +79,10 @@ if not ssh_exists:
     open(os.path.join(Path().home(), Path(".ssh/known_hosts")), "a").close()
 
 
+class AppError(Exception):
+    pass
+
+
 def self_update(STORAGE_PATH, credentials, old_credentials):
     logger.debug(
         "Compare version in self_update. {} ?= {}",
@@ -224,7 +228,6 @@ def register_computer():
     return response
 
 
-@logger.catch
 def get_credentials():
     logger.info("Recieving credentials.")
     creds_json = None
@@ -297,7 +300,6 @@ def get_credentials():
         )
 
 
-@logger.catch
 def sftp_check_files_for_update_and_load(credentials):
     # key = path, value = checksum
     files_cheksum = {}
@@ -483,7 +485,8 @@ def sftp_check_files_for_update_and_load(credentials):
                             tempdir,
                             f'-p{credentials["folder_password"]}',
                         ],
-                        stdout=PIPE
+                        stdout=PIPE,
+                        stderr=PIPE
                     )
                     stdout_res, stderr_res = subprs.communicate()
 
@@ -502,7 +505,8 @@ def sftp_check_files_for_update_and_load(credentials):
                                 tempdir,
                                 f'-p{credentials["folder_password"]}',
                             ],
-                            stdout=PIPE
+                            stdout=PIPE,
+                            stderr=PIPE,
                         )
 
                         new_subprs.communicate()
@@ -510,7 +514,11 @@ def sftp_check_files_for_update_and_load(credentials):
                         # Remove the original zip archive with backups and rename the new one
                         os.remove(zip_name)
                         os.rename(new_zip, zip_name)
-
+                    
+                    # Log the situation something happened with 7z operation and throw error
+                    elif not re.search("Everything is Ok", stdout_str):
+                        logger.error("7z can't add archive to emar_backups and delete tmp. Stdout: {}. Stderr: {}.", stdout_res, stderr_res)
+                        raise AppError("7z can't add archive to emar_backups")
 
                     logger.info("Files zipped.")
 
@@ -576,11 +584,20 @@ def sftp_check_files_for_update_and_load(credentials):
                     ddirs.sort(key=lambda x: files[x])
                     pprint.pprint(f"after delete dirs:\n{ddirs}")
 
+                    # Check if new downloaded backup is present in the emar_backups.zip
+                    new_backup_name = re.search(r"(emarbackup_.*)$", tempdir).group(0)
+                    
+                    if not new_backup_name in dirs:
+                        logger.error("The new downloaded backup {} was not founded in the emar_backups.zip", new_backup_name)
+                        raise FileNotFoundError("The new downloaded backup was not found in the emar_backups.zip")
+
                 else:
                     logger.info("Nothing to zip.")
 
+                last_saved_path = os.path.join(zip_name, new_backup_name)
+
                 update_download_status(
-                    "downloaded", credentials, last_downloaded=str(tempdir)
+                    "downloaded", credentials, last_downloaded=str(tempdir), last_saved_path=last_saved_path
                 )
 
         response = requests.post(
@@ -608,7 +625,6 @@ def sftp_check_files_for_update_and_load(credentials):
     return offset_to_est(datetime.datetime.utcnow())
 
 
-@logger.catch
 def send_activity(last_download_time, creds):
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
@@ -637,8 +653,7 @@ def send_activity(last_download_time, creds):
     logger.info("User last time download sent.")
 
 
-@logger.catch
-def update_download_status(status, creds, last_downloaded=""):
+def update_download_status(status, creds, last_downloaded="", last_saved_path=""):
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
@@ -661,10 +676,36 @@ def update_download_status(status, creds, last_downloaded=""):
             "last_time_online": offset_to_est(datetime.datetime.utcnow()),
             "identifier_key": creds["identifier_key"],
             "last_downloaded": last_downloaded,
+            "last_saved_path": last_saved_path,
         },
     )
     logger.info(f"Download status: {status}.")
 
+
+# def download_file_from_pcc(credentials):
+#     """Retrive access token and certs from Web and download files from PCC API"""
+#     # Get access token
+#     access_token_response = requests.post(
+#         f'{credentials["manager_host"]}/get_pcc_access_token',
+#         json={
+#             "computer_name": credentials["computer_name"],
+#             "identifier_key": credentials["identifier_key"],
+#         },
+#     )
+    
+#     # Get certs
+#     certs_response = requests.post(
+#         f'{credentials["manager_host"]}/get_ssl_cert',
+#         json={
+#             "computer_name": credentials["computer_name"],
+#             "identifier_key": credentials["identifier_key"],
+#         },
+#     )
+
+#     # Get backup files
+#     backup_files_response = requests.post(
+#         "https://connect2.pointclickcare.com/api/public/preview1/orgs/11848592-809a-42f4-82e3-5ce14964a007/facs/22/backup-files"
+#     )
 
 @logger.catch
 def main_func():
@@ -674,9 +715,14 @@ def main_func():
         raise ValueError("Credentials not supplayed. Can't continue.")
 
     if credentials["status"] == "success":
-        last_download_time = sftp_check_files_for_update_and_load(credentials)
-        send_activity(last_download_time, credentials)
-        logger.info("Downloading proccess finished.")
+        # Handle errors in files downloading and zip
+        try:
+            last_download_time = sftp_check_files_for_update_and_load(credentials)
+            send_activity(last_download_time, credentials)
+            logger.info("Downloading proccess finished.")
+        except (AppError, FileNotFoundError):
+            update_download_status("error", credentials)
+            logger.info("Downloading process interrupted")
 
         # user = getpass.getuser()
 

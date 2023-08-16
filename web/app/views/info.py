@@ -1,0 +1,208 @@
+from datetime import datetime, timedelta
+from flask import render_template, Blueprint, request, abort
+from flask_login import login_required, current_user
+
+from app import models as m, db
+from app.controllers import create_pagination, backup_log_on_request_to_view
+
+
+info_blueprint = Blueprint("info", __name__, url_prefix="/info")
+
+
+@info_blueprint.route("/computer/<int:computer_id>", methods=["GET"])
+@login_required
+def computer_info(computer_id):
+    computer = m.Computer.query.filter_by(id=computer_id).first_or_404()
+
+    # Check if user has access to computer information
+    if not (
+        current_user.asociated_with.lower() in ["global-full", "global-view"]
+        or current_user.asociated_with == computer.company_name
+        or current_user.asociated_with == computer.location_name
+    ):
+        abort(403, "You don't have access to this computer information.")
+
+    # Update the last computer log information
+    if computer.logs_enabled:
+        backup_log_on_request_to_view(computer)
+
+    # Paginated logs for table
+    computer_logs_query = m.BackupLog.query.filter(
+        m.BackupLog.computer_id == computer_id,
+        m.BackupLog.end_time >= datetime.utcnow() - timedelta(days=90),
+    )
+
+    last_log = computer_logs_query.order_by(m.BackupLog.start_time.desc()).first()
+
+    per_page = request.args.get("per_page", 25, type=int)
+    pagination = create_pagination(
+        total=m.count(computer_logs_query), page_size=per_page
+    )
+
+    # Logs object that will be used for table
+    logs = (
+        db.session.execute(
+            computer_logs_query.order_by(m.BackupLog.start_time.desc())
+            .limit(pagination.per_page)
+            .offset(pagination.skip)
+        )
+        .scalars()
+        .all()
+    )
+
+    # Logs information for chart
+    chart_days = request.args.get("chart_days", 7, type=int)
+
+    logs_for_chart = (
+        m.BackupLog.query.filter(
+            m.BackupLog.computer_id == computer_id,
+            m.BackupLog.end_time >= datetime.utcnow() - timedelta(days=chart_days),
+        )
+        .order_by(m.BackupLog.start_time.asc())
+        .all()
+    )
+
+    # List objects with different data for chart.
+    labels = []
+    notes = []
+    chart_green_data = []
+    chart_yellow_data = []
+    chart_red_data = []
+
+    if logs_for_chart:
+        # Set the start time for the chart (eastern time - chart_days)
+        log_time = (
+            datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+            - timedelta(hours=4)
+        ) - timedelta(days=chart_days)
+        log_to_use_index = 0
+
+        current_log_type = None
+
+        # Fill all the list objects with data for every hour
+        while log_time < datetime.utcnow():
+            labels.append(log_time)
+            notes.append(logs_for_chart[log_to_use_index].notes)
+
+            if log_time < logs_for_chart[log_to_use_index].est_start_time:
+                current_log_type = None
+            elif not logs_for_chart[log_to_use_index].error:
+                current_log_type = "green"
+            elif (
+                logs_for_chart[log_to_use_index].error
+                == "Longer than 1 hour without a backup"
+            ):
+                current_log_type = "yellow"
+            else:
+                current_log_type = "red"
+
+            chart_green_data.append(1 if current_log_type == "green" else None)
+            chart_yellow_data.append(1 if current_log_type == "yellow" else None)
+            chart_red_data.append(1 if current_log_type == "red" else None)
+
+            log_time += timedelta(hours=1)
+
+            if log_time > logs_for_chart[log_to_use_index].est_end_time:
+                log_to_use_index += 1
+
+            if log_to_use_index > len(logs_for_chart) - 1:
+                break
+
+    return render_template(
+        "info/computer.html",
+        computer=computer,
+        last_log=last_log,
+        logs=logs,
+        page=pagination,
+        chart_days=chart_days,
+        labels=labels,
+        chart_notes=notes,
+        chart_green_data=chart_green_data,
+        chart_yellow_data=chart_yellow_data,
+        chart_red_data=chart_red_data,
+    )
+
+
+@info_blueprint.route("/system-log", methods=["GET"])
+@login_required
+def system_log_info():
+    # This page is available only for global-full users
+    if current_user.asociated_with.lower() != "global-full":
+        abort(403, "You don't have permission to access this page.")
+
+    LOGS_TYPES = ["All", "Computer", "User", "Company", "Location", "Alert"]
+
+    logs_type = request.args.get("type", "All", type=str)
+    days = request.args.get("days", 30, type=int)
+    per_page = request.args.get("per_page", 25, type=int)
+    q = request.args.get("q", type=str, default=None)
+
+    system_logs_query = m.SystemLog.query.filter(
+        m.SystemLog.created_at >= datetime.utcnow() - timedelta(days=days),
+    )
+
+    if logs_type not in LOGS_TYPES:
+        logs_type = "All"
+
+    # Filter query by some specific log type
+    if logs_type == "All":
+        pass
+    elif logs_type == "Computer":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.COMPUTER_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.COMPUTER_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.COMPUTER_DELETED)
+        )
+    elif logs_type == "User":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.USER_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.USER_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.USER_DELETED)
+        )
+    elif logs_type == "Company":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.COMPANY_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.COMPANY_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.COMPANY_DELETED)
+        )
+    elif logs_type == "Location":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.LOCATION_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.LOCATION_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.LOCATION_DELETED)
+        )
+    elif logs_type == "Alert":
+        system_logs_query = system_logs_query.filter(
+            (m.SystemLog.log_type == m.SystemLogType.ALERT_CREATED)
+            | (m.SystemLog.log_type == m.SystemLogType.ALERT_UPDATED)
+            | (m.SystemLog.log_type == m.SystemLogType.ALERT_DELETED)
+        )
+
+    # Filter query by search query
+    if q:
+        system_logs_query = system_logs_query.join(
+            m.SystemLog.created_by, aliased=True
+        ).filter(
+            (m.SystemLog.object_name.ilike(f"%{q}%"))
+            | (m.User.username.ilike(f"%{q}%"))
+        )
+
+    pagination = create_pagination(total=m.count(system_logs_query), page_size=per_page)
+
+    system_logs = (
+        db.session.execute(
+            system_logs_query.order_by(m.SystemLog.created_at.desc())
+            .limit(pagination.per_page)
+            .offset(pagination.skip)
+        )
+        .scalars()
+        .all()
+    )
+    return render_template(
+        "info/system_log.html",
+        system_logs=system_logs,
+        page=pagination,
+        days=days,
+        current_logs_type=logs_type,
+        possible_logs_types=LOGS_TYPES,
+    )

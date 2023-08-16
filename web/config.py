@@ -19,7 +19,13 @@ class BaseConfig(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WTF_CSRF_ENABLED = False
 
+    # TODO: remove APP_HOST_URL and use SERVER_NAME
+    SERVER_NAME = os.environ.get("SERVER_NAME")
     APP_HOST_URL = os.environ.get("APP_HOST_URL")
+
+    # Pagination
+    DEFAULT_PAGE_SIZE = os.environ.get("DEFAULT_PAGE_SIZE", 10)
+    PAGE_LINKS_NUMBER = os.environ.get("DEFAULT_PAGE_SIZE", 5)
 
     SUPER_USER_PASS = os.environ.get("SUPERPASS")
     SUPER_USER_NAME = os.environ.get("SUPER_USER_NAME", "emarsuperuser")
@@ -28,6 +34,7 @@ class BaseConfig(object):
     ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
     UPDATE_CL_PERIOD = int(os.environ.get("UPDATE_CL_PERIOD", 120))
     DAILY_SUMMARY_PERIOD = int(os.environ.get("DAILY_SUMMARY_PERIOD", 86400))
+    LOGS_DELETION_PERIOD = int(os.environ.get("COMPUTER_LOGS_DELETION_PERIOD", 86400))
 
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
@@ -116,6 +123,15 @@ class BaseConfig(object):
     PCC_CLIENT_SECRET = os.environ.get("PCC_CLIENT_SECRET", None)
     CERTIFICATE_PATH = os.environ.get("CERTIFICATE_PATH", None)
     PRIVATEKEY_PATH = os.environ.get("PRIVATEKEY_PATH", None)
+    
+    # Logs deletion periods in days
+    SYSTEM_LOGS_DELETION_PERIOD = int(
+        os.environ.get("SYSTEM_LOGS_DELETION_PERIOD", 365)
+    )
+    COMPUTER_LOGS_DELETION_PERIOD = int(
+        os.environ.get("COMPUTER_LOGS_DELETION_PERIOD", 90)
+    )
+    LOG_EVENT_DELETION_PERIOD = int(os.environ.get("LOG_EVENT_DELETION_PERIOD", 10))
 
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time

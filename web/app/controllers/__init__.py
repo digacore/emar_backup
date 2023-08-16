@@ -8,3 +8,13 @@ from .database import (
 )
 from .stat_company_location import update_companies_locations_statistic
 from .pcc_api import get_pcc_2_legged_token
+from .log_event import create_log_event, gen_fake_backup_download_logs
+from .backup_log import (
+    gen_fake_backup_periods_logs,
+    backup_log_on_download_success,
+    backup_log_on_request_to_view,
+    backup_log_on_download_error,
+)
+from .pagination import create_pagination
+from .system_log import create_system_log
+from .clean_log import clean_old_logs

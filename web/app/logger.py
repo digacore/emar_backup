@@ -11,6 +11,6 @@ logger.add(
     serialize=True,
     level="DEBUG",
     colorize=True,
-    rotation="1000 MB",
+    rotation="1 MB",
     compression="zip"
 )

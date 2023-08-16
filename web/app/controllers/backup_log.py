@@ -1,0 +1,303 @@
+import enum
+import random
+from datetime import datetime, timedelta
+
+from app import models as m
+from app.logger import logger
+
+
+class BackupLogError(enum.Enum):
+    ONE_HOUR = "Longer than 1 hour without a backup"
+    TWO_HOURS = "Longer than 2 hours without a backup"
+
+
+def backup_log_on_download_success(
+    computer: m.Computer,
+    current_time: datetime = datetime.utcnow(),
+):
+    """Create or update backup log for computer
+
+    Args:
+        computer (m.Computer): Computer object
+        current_time (datetime, optional): time when log should be updated or created.Should be in UTC not EST.
+        Defaults to datetime.utcnow().
+    """
+    last_computer_log = (
+        m.BackupLog.query.filter_by(computer_id=computer.id)
+        .order_by(m.BackupLog.start_time.desc())
+        .first()
+    )
+
+    # Remove minutes, seconds and microseconds from current time
+    rounded_current_time = current_time.replace(minute=0, second=0, microsecond=0)
+
+    # If there is no backup log for this computer - create the first one
+    if not last_computer_log:
+        new_with_downloads_log = m.BackupLog(
+            backup_log_type=m.BackupLogType.WITH_DOWNLOADS_PERIOD,
+            start_time=rounded_current_time,
+            end_time=rounded_current_time + timedelta(hours=1) - timedelta(seconds=1),
+            computer_id=computer.id,
+        )
+        new_with_downloads_log.save()
+        logger.debug(
+            "Created first backup log (successful) for computer {}",
+            computer.computer_name,
+        )
+    else:
+        # If the last backup log has type WITH_DOWNLOADS_PERIOD
+        if last_computer_log.backup_log_type == m.BackupLogType.WITH_DOWNLOADS_PERIOD:
+            # If the last backup log end time is less than 1 hour ago - update it
+            if last_computer_log.end_time + timedelta(hours=1) > rounded_current_time:
+                last_computer_log.end_time = (
+                    rounded_current_time + timedelta(hours=1) - timedelta(seconds=1)
+                )
+                last_computer_log.update()
+
+                logger.debug(
+                    "Updated WITH_DOWNLOADS_LOG log for computer {}. Log ID: {}",
+                    computer.computer_name,
+                    last_computer_log.id,
+                )
+            # If the last backup log end time is more than 1 hour ago
+            # Create new backup log with type NO_DOWNLOADS_PERIOD and then WITH_DOWNLOADS_PERIOD
+            else:
+                new_no_downloads_log = m.BackupLog(
+                    backup_log_type=m.BackupLogType.NO_DOWNLOADS_PERIOD,
+                    start_time=last_computer_log.end_time + timedelta(seconds=1),
+                    end_time=rounded_current_time - timedelta(seconds=1),
+                    computer_id=computer.id,
+                    notes="Device is offline",
+                )
+                new_no_downloads_log.error = (
+                    BackupLogError.TWO_HOURS.value
+                    if new_no_downloads_log.duration > timedelta(minutes=59, seconds=59)
+                    else BackupLogError.ONE_HOUR.value
+                )
+                new_no_downloads_log.save()
+
+                new_with_downloads_log = m.BackupLog(
+                    backup_log_type=m.BackupLogType.WITH_DOWNLOADS_PERIOD,
+                    start_time=new_no_downloads_log.end_time + timedelta(seconds=1),
+                    end_time=new_no_downloads_log.end_time + timedelta(hours=1),
+                    computer_id=computer.id,
+                )
+                new_with_downloads_log.save()
+
+                logger.debug(
+                    "Created NO_DOWNLOADS_PERIOD and WITH_DOWNLOADS_PERIOD logs for computer {}. Log IDs: {} and {}",
+                    computer.computer_name,
+                    new_no_downloads_log.id,
+                    new_with_downloads_log.id,
+                )
+
+        # If the last backup log has type NO_DOWNLOADS_PERIOD
+        elif last_computer_log.backup_log_type == m.BackupLogType.NO_DOWNLOADS_PERIOD:
+            # Set end time for the last backup log and create new backup log with type WITH_DOWNLOADS_PERIOD
+            last_computer_log.end_time = rounded_current_time - timedelta(seconds=1)
+            # Update error field if necessary
+            last_computer_log.error = (
+                BackupLogError.TWO_HOURS.value
+                if last_computer_log.duration > timedelta(minutes=59, seconds=59)
+                else BackupLogError.ONE_HOUR.value
+            )
+            last_computer_log.update()
+
+            new_with_downloads_log = m.BackupLog(
+                backup_log_type=m.BackupLogType.WITH_DOWNLOADS_PERIOD,
+                start_time=last_computer_log.end_time + timedelta(seconds=1),
+                end_time=last_computer_log.end_time + timedelta(hours=1),
+                computer_id=computer.id,
+            )
+            new_with_downloads_log.save()
+
+            logger.debug(
+                "Updated NO_DOWNLOADS_PERIOD log and created WITH_DOWNLOADS_PERIOD log for computer {}. \
+                    Log IDs: {} and {}",
+                computer.computer_name,
+                last_computer_log.id,
+                new_with_downloads_log.id,
+            )
+
+
+def gen_fake_backup_periods_logs(computer: m.Computer, time_period: timedelta):
+    """Generate fake logs about periods with and without backups downloads for computer
+
+    Args:
+        computer (m.Computer): Computer object
+        time_period (timedelta): Time period for logs
+    """
+    # Set up list of working hours
+    WORKING_HOURS = tuple(range(8, 13)) + tuple(range(14, 23))
+
+    # Check if there are any logs exist for this computer
+    current_logs = m.BackupLog.query.filter_by(computer_id=computer.id).all()
+    if current_logs:
+        logger.info("Backup logs already exist for computer {}", computer)
+        return
+
+    log_time = (datetime.utcnow() - time_period).replace(
+        minute=0, second=0, microsecond=0
+    )
+
+    for hour in range(time_period.days * 24 + time_period.seconds // 3600):
+        random_number = random.randint(1, 10)
+        random_waiting = timedelta(minutes=random.randint(0, 30))
+        if log_time.hour in WORKING_HOURS and random_number != 10:
+            backup_log_on_download_success(computer, log_time + random_waiting)
+
+        log_time += timedelta(hours=1)
+
+    logger.info(
+        "<-----Fake backup periods logs were generated for computer {}----->",
+        computer,
+    )
+
+
+def backup_log_on_request_to_view(computer: m.Computer):
+    """Create or update the last computer backup log on request to view.
+
+    Args:
+        computer (m.Computer): Computer object
+    """
+    last_computer_log = (
+        m.BackupLog.query.filter_by(computer_id=computer.id)
+        .order_by(m.BackupLog.start_time.desc())
+        .first()
+    )
+
+    # Current time in UTC
+    current_time = datetime.utcnow()
+
+    # Current time in UTC rounded to hours
+    rounded_current_time = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+
+    # If there is no backup log for this computer - ignore
+    if not last_computer_log:
+        return
+
+    # If the last backup log has type WITH_DOWNLOADS_PERIOD
+    if last_computer_log.backup_log_type == m.BackupLogType.WITH_DOWNLOADS_PERIOD:
+        # If the last backup log end time + 30 minutes and 1 second is bigger than current time - ignore it
+        if last_computer_log.end_time + timedelta(minutes=30, seconds=1) > current_time:
+            return
+
+        # If the last backup log end time + 30 minutes and 1 second is less than current_time
+        # Create new backup log with type NO_DOWNLOADS_PERIOD
+        else:
+            new_no_downloads_log = m.BackupLog(
+                backup_log_type=m.BackupLogType.NO_DOWNLOADS_PERIOD,
+                start_time=last_computer_log.end_time + timedelta(seconds=1),
+                end_time=rounded_current_time + timedelta(minutes=59, seconds=59),
+                computer_id=computer.id,
+                notes="Device is offline",
+            )
+
+            new_no_downloads_log.error = (
+                BackupLogError.TWO_HOURS.value
+                if new_no_downloads_log.duration > timedelta(minutes=59, seconds=59)
+                else BackupLogError.ONE_HOUR.value
+            )
+            new_no_downloads_log.save()
+
+            logger.debug(
+                "Created NO_DOWNLOADS_PERIOD log for computer {}. Log IDs: {}",
+                computer.computer_name,
+                new_no_downloads_log.id,
+            )
+
+    # If the last backup log has type NO_DOWNLOADS_PERIOD
+    elif last_computer_log.backup_log_type == m.BackupLogType.NO_DOWNLOADS_PERIOD:
+        # Update the end time for the last backup log
+        last_computer_log.end_time = rounded_current_time + timedelta(
+            minutes=59, seconds=59
+        )
+        # Update error field if necessary
+        last_computer_log.error = (
+            BackupLogError.TWO_HOURS.value
+            if last_computer_log.duration > timedelta(minutes=59, seconds=59)
+            else BackupLogError.ONE_HOUR.value
+        )
+
+        last_computer_log.update()
+
+        logger.debug(
+            "Updated NO_DOWNLOADS_PERIOD log for computer {}. Log IDs: {}",
+            computer.computer_name,
+            last_computer_log.id,
+        )
+
+
+def backup_log_on_download_error(computer: m.Computer):
+    """Create or update the last computer backup log on downloading error.
+
+    Args:
+        computer (m.Computer): Computer object
+    """
+    last_computer_log = (
+        m.BackupLog.query.filter_by(computer_id=computer.id)
+        .order_by(m.BackupLog.start_time.desc())
+        .first()
+    )
+
+    # Current time in UTC rounded to hours
+    rounded_current_time = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+
+    # If there is no backup log for this computer - create new one with type NO_DOWNLOADS_PERIOD
+    if not last_computer_log:
+        new_no_downloads_log = m.BackupLog(
+            backup_log_type=m.BackupLogType.NO_DOWNLOADS_PERIOD,
+            start_time=rounded_current_time,
+            end_time=rounded_current_time + timedelta(minutes=59, seconds=59),
+            computer_id=computer.id,
+            error=BackupLogError.ONE_HOUR.value,
+            notes="Unsuccessful backup",
+        )
+        new_no_downloads_log.save()
+        logger.debug(
+            "Created first backup log (unsuccessful) for computer {}",
+            computer.computer_name,
+        )
+
+    else:
+        # If the last backup log has type WITH_DOWNLOADS_PERIOD
+        if last_computer_log.backup_log_type == m.BackupLogType.WITH_DOWNLOADS_PERIOD:
+            # Create new backup log with type NO_DOWNLOADS_PERIOD
+            new_no_downloads_log = m.BackupLog(
+                backup_log_type=m.BackupLogType.NO_DOWNLOADS_PERIOD,
+                start_time=last_computer_log.end_time + timedelta(seconds=1),
+                end_time=rounded_current_time + timedelta(minutes=59, seconds=59),
+                computer_id=computer.id,
+                notes="Unsuccessful backup",
+            )
+            new_no_downloads_log.error = (
+                BackupLogError.TWO_HOURS.value
+                if new_no_downloads_log.duration > timedelta(minutes=59, seconds=59)
+                else BackupLogError.ONE_HOUR.value
+            )
+            new_no_downloads_log.save()
+
+            logger.debug(
+                "Create NO_DOWNLOADS_PERIOD log for computer {}. Log IDs: {}",
+                computer.computer_name,
+                new_no_downloads_log.id,
+            )
+
+        # If the last backup log has type NO_DOWNLOADS_PERIOD - update it
+        elif last_computer_log.backup_log_type == m.BackupLogType.NO_DOWNLOADS_PERIOD:
+            last_computer_log.end_time = (
+                rounded_current_time + timedelta(hours=1) - timedelta(seconds=1)
+            )
+            last_computer_log.error = (
+                BackupLogError.TWO_HOURS.value
+                if last_computer_log.duration > timedelta(minutes=59, seconds=59)
+                else BackupLogError.ONE_HOUR.value
+            )
+            last_computer_log.notes = "Unsuccessful backup"
+            last_computer_log.update()
+
+            logger.debug(
+                "Updated NO_DOWNLOADS_PERIOD log for computer {}. Log ID: {}",
+                computer.computer_name,
+                last_computer_log.id,
+            )

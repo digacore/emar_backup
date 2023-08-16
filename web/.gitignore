@@ -3,6 +3,7 @@ __pycache__/
 env/
 .venv/
 .pytest_cache/
+flask_session/
 
 # ignore files
 .env

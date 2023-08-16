@@ -4,6 +4,7 @@ from werkzeug.datastructures import FileStorage
 from wtforms.validators import InputRequired
 from wtforms.widgets import FileInput
 from wtforms import ValidationError, fields
+import sqlalchemy as sa
 
 from app import db
 
@@ -105,3 +106,10 @@ class BlobMixin(object):
     filename = db.Column(db.Unicode(length=255), nullable=False)
     blob = db.Column(db.LargeBinary(), nullable=False)
     size = db.Column(db.Integer, nullable=False)
+
+
+def count(query: sa.sql.selectable.Select) -> int:
+    # Return count of query.
+    return db.session.execute(
+        sa.select(sa.func.count()).select_from(query.subquery())
+    ).scalar_one()

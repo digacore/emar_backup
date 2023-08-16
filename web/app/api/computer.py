@@ -1,9 +1,10 @@
 import uuid
 from flask import jsonify
 
-from app.models import Computer
+from app.models import Computer, LogType, SystemLogType
 from app.schema import ComputerRegInfo, ComputerSpecialStatus
 from app.views.blueprint import BlueprintApi
+from app.controllers import create_log_event, create_system_log
 from app.logger import logger
 
 from config import BaseConfig as CFG
@@ -45,6 +46,9 @@ def register_computer(body: ComputerRegInfo):
             manager_host=CFG.DEFAULT_MANAGER_HOST,
         )
         new_computer.save()
+
+        # Create system log that computer was created in the system
+        create_system_log(SystemLogType.COMPUTER_CREATED, new_computer, None)
         logger.info(
             "Computer registered. {} identifier_key was set.", body.computer_name
         )
@@ -104,5 +108,8 @@ def special_status(body: ComputerSpecialStatus):
         body.special_status if body.special_status in CFG.SPECIAL_STATUSES else "green"
     )
     computer.save()
+
+    if computer.logs_enabled and body.special_status in CFG.SPECIAL_STATUSES:
+        create_log_event(computer, LogType.SPECIAL_STATUS, body.special_status)
 
     return jsonify({"status": "success"}), 200

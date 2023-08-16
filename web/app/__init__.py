@@ -40,6 +40,7 @@ def create_app(environment="development"):
         main_blueprint,
         auth_blueprint,
         email_blueprint,
+        info_blueprint,
     )
     from app.api import (
         downloads_info_blueprint,
@@ -92,11 +93,15 @@ def create_app(environment="development"):
     login_manager.init_app(app)
     jwt.init_app(app)
 
+    # Pass functions to jinja2 templates
+    app.jinja_env.globals.update(offset_to_east=CFG.offset_to_est)
+
     # Register blueprints.
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(main_blueprint)
     app.register_blueprint(email_blueprint)
     app.register_blueprint(download_msi_fblueprint)
+    app.register_blueprint(info_blueprint)
 
     # Register api.
     app.register_api(downloads_info_blueprint)

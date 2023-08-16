@@ -10,6 +10,7 @@ from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 from .company import Company
+from .system_log import SystemLogType
 
 
 class Location(db.Model, ModelMixin):
@@ -118,6 +119,21 @@ class LocationView(RowActionListMixin, MyModelView):
         form.company.query_factory = lambda: Company.query.order_by(Company.name)
 
         return form
+
+    def after_model_change(self, form, model, is_created):
+        from app.controllers import create_system_log
+
+        # Create system log that location was created or updated
+        if is_created:
+            create_system_log(SystemLogType.LOCATION_CREATED, model, current_user)
+        else:
+            create_system_log(SystemLogType.LOCATION_UPDATED, model, current_user)
+
+    def after_model_delete(self, model):
+        from app.controllers import create_system_log
+
+        # Create system log that location was deleted
+        create_system_log(SystemLogType.LOCATION_DELETED, model, current_user)
 
     def get_query(self):
 
