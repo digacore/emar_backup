@@ -44,4 +44,4 @@ class SystemLog(db.Model, ModelMixin):
     created_by = relationship("User", passive_deletes=False, lazy="select")
 
     def __repr__(self):
-        return f"<{self.id}:{self.log_type} at {self.created_at} by {self.created_by.username}>"
+        return f"<{self.id}:{self.log_type} at {self.created_at}>"
