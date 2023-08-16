@@ -3,7 +3,7 @@ import click
 from datetime import timedelta
 
 from app import create_app, db, models, forms
-from app.controllers import register_base_alert_controls
+from app.controllers import register_base_alert_controls, get_pcc_2_legged_token
 
 
 app = create_app()
@@ -61,6 +61,12 @@ def reset_alerts():
     from app.controllers import reset_alert_statuses
 
     reset_alert_statuses()
+
+
+@app.cli.command()
+def get_pcc_access_key():
+    access_key = get_pcc_2_legged_token()
+    print(access_key)
 
 
 @app.cli.command()

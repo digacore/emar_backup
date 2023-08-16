@@ -1,4 +1,5 @@
 import re
+import base64
 
 
 def get_percentage(all_obj: list, perc_obj: list) -> int:
@@ -47,3 +48,17 @@ def get_outdated_status_comps(
         ]
     )
     return outdated_comps
+
+def get_base64_string(string: str) -> str:
+    """Convert ordinary string to base64 encoded string
+
+    Args:
+        string (str): string to convert
+
+    Returns:
+        str: base64 encoded string
+    """
+
+    base64_bytes = base64.b64encode(string.encode("ascii"))
+    base64_string = base64_bytes.decode("ascii")
+    return base64_string

@@ -55,6 +55,14 @@
         ],
         "projectType": "flask"
       }
-    }
+    },
+    {
+      "name": "get-pcc-access-key",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "justMyCode": false,
+      "args": ["get-pcc-access-key"]
+    },
   ]
 }

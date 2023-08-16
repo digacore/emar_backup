@@ -7,6 +7,7 @@ from .database import (
     register_base_alert_controls,
 )
 from .stat_company_location import update_companies_locations_statistic
+from .pcc_api import get_pcc_2_legged_token
 from .log_event import create_log_event, gen_fake_backup_download_logs
 from .backup_log import (
     gen_fake_backup_periods_logs,

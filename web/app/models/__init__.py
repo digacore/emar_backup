@@ -7,6 +7,7 @@ from .alert import Alert, AlertView
 from .desktop_client import DesktopClient, DesktopClientView
 from .client_version import ClientVersion, ClientVersionView
 from .alert_controls import AlertControls, AlertControlsView
+from .pcc_access_token import PCCAccessToken
 from .log_event import LogEvent, LogType
 from .backup_log import BackupLog, BackupLogType
 from .utils import count
