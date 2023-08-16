@@ -84,7 +84,9 @@ def computer_info(computer_id):
             labels.append(log_time)
             notes.append(logs_for_chart[log_to_use_index].notes)
 
-            if not logs_for_chart[log_to_use_index].error:
+            if log_time < logs_for_chart[log_to_use_index].est_start_time:
+                current_log_type = None
+            elif not logs_for_chart[log_to_use_index].error:
                 current_log_type = "green"
             elif (
                 logs_for_chart[log_to_use_index].error
