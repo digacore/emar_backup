@@ -11,7 +11,7 @@ from app.logger import logger
 from config import BaseConfig as CFG
 
 
-pcc_api_blueprint = BlueprintApi("/pcc_api", __name__)
+pcc_api_blueprint = BlueprintApi("pcc_api", __name__, url_prefix="/pcc_api")
 
 
 @pcc_api_blueprint.post("/download_backup")

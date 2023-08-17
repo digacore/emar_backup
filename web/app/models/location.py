@@ -31,7 +31,7 @@ class Location(db.Model, ModelMixin):
     created_at = db.Column(db.DateTime, default=datetime.now)
     pcc_fac_id = db.Column(db.Integer, nullable=True)
     use_pcc_backup = db.Column(
-        db.Boolean, default=False, server_default=sql.true(), nullable=False
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
 
     def __repr__(self):
