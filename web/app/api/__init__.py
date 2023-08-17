@@ -6,3 +6,4 @@ from .load_msi import download_msi_blueprint, download_msi_fblueprint
 from .search import search_column_blueprint
 from .locations_company import locations_company_blueprint
 from .company_sftp_data import sftp_data_blueprint
+from .pcc_api import pcc_api_blueprint

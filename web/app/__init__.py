@@ -51,6 +51,7 @@ def create_app(environment="development"):
         search_column_blueprint,
         locations_company_blueprint,
         sftp_data_blueprint,
+        pcc_api_blueprint,
     )
     from app.models import (
         User,
@@ -111,6 +112,7 @@ def create_app(environment="development"):
     app.register_api(search_column_blueprint)
     app.register_api(locations_company_blueprint)
     app.register_api(sftp_data_blueprint)
+    app.register_api(pcc_api_blueprint)
 
     # Set up flask login.
     @login_manager.user_loader

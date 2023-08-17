@@ -123,7 +123,7 @@ class BaseConfig(object):
     PCC_CLIENT_SECRET = os.environ.get("PCC_CLIENT_SECRET", None)
     CERTIFICATE_PATH = os.environ.get("CERTIFICATE_PATH", None)
     PRIVATEKEY_PATH = os.environ.get("PRIVATEKEY_PATH", None)
-    
+
     # Logs deletion periods in days
     SYSTEM_LOGS_DELETION_PERIOD = int(
         os.environ.get("SYSTEM_LOGS_DELETION_PERIOD", 365)

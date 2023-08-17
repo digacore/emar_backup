@@ -22,6 +22,7 @@ class Company(db.Model, ModelMixin):
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.now)
+    pcc_org_id = db.Column(db.String(128), nullable=True)
 
     def __repr__(self):
         return self.name
@@ -35,6 +36,7 @@ class Company(db.Model, ModelMixin):
             "total_computers",
             "computers_online",
             "computers_offline",
+            "pcc_org_id",
         ]
 
 
@@ -51,6 +53,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "total_computers",
         "computers_online",
         "computers_offline",
+        "pcc_org_id",
     ]
     column_filters = column_list
 

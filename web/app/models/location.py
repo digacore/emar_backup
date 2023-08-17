@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import or_
+from sqlalchemy import or_, sql
 from sqlalchemy.orm import relationship
 
 from flask_login import current_user
@@ -29,6 +29,10 @@ class Location(db.Model, ModelMixin):
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.now)
+    pcc_fac_id = db.Column(db.Integer, nullable=True)
+    use_pcc_backup = db.Column(
+        db.Boolean, default=False, server_default=sql.true(), nullable=False
+    )
 
     def __repr__(self):
         return self.name
@@ -41,6 +45,8 @@ class Location(db.Model, ModelMixin):
             "computers_per_location",
             "computers_online",
             "computers_offline",
+            "pcc_fac_id",
+            "use_pcc_backup",
         ]
 
 
@@ -58,6 +64,8 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_per_location",
         "computers_online",
         "computers_offline",
+        "pcc_fac_id",
+        "use_pcc_backup",
     ]
     column_searchable_list = column_list
     column_filters = column_list
