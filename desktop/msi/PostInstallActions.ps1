@@ -38,12 +38,11 @@ Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`
 
 $task = Register-ScheduledTask  -TaskName "eMARVaultHourlyCheck" -Description "Periodically check remote sftp and update backups" `
 -Action $action `
+-Principal $principal `
 -Trigger $trigger `
--Settings $taskSettings 2>&1 | tee -Append -filePath $logFile
+-Settings $taskSettings 2>&1 | Tee-Object -Append -filePath $logFile
 
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Register-ScheduledTask - [$task]"
-
-Start-Sleep -Seconds 300
 
 Unregister-ScheduledTask -TaskName "eMARVaultHeartbeat" -Confirm:$false -ErrorAction Continue
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Unregister-ScheduledTask"
