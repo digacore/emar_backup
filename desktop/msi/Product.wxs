@@ -83,7 +83,7 @@
     <SetProperty Id="CA_AddScheduledTask"
                  Before ="CA_AddScheduledTask"
                  Sequence="execute"
-                 Value='&quot;[POWERSHELLEXE]&quot; -ExecutionPolicy Bypass -File "[MY_INSTALL_LOCATION]PostInstallActions.ps1" -propertyValue "[MY_PROPERTY]"' />
+                 Value='&quot;[POWERSHELLEXE]&quot; -ExecutionPolicy Bypass -File &quot;[MY_INSTALL_LOCATION]PostInstallActions.ps1&quot;' />
 
     <CustomAction Id="CA_AddScheduledTask"
                   BinaryKey="WixCA"
