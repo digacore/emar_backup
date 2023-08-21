@@ -1,7 +1,3 @@
-param(
-  [Parameter(Mandatory = $false)][string]$propertyValue
-)
-
 Push-Location $PSScriptRoot
 
 $logFileName = "InstallLog.txt"
@@ -32,12 +28,20 @@ $trigger = New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Hou
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - trigger - [$trigger]"
 
 $principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -RunLevel Highest
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - principal - [$principal]"
 
 $executionTimeLimit = New-TimeSpan -Hours 2
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - executionTimeLimit - [$executionTimeLimit]"
 
-$task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "eMARVaultHourlyCheck" `
--Principal $principal -Description "Periodically check remote sftp and update backups" `
--Settings $(New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit $executionTimeLimit)
+$taskSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit $executionTimeLimit
+Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - taskSettings - [$taskSettings]"
+
+$task = Register-ScheduledTask  -TaskName "eMARVaultHourlyCheck" -Description "Periodically check remote sftp and update backups" `
+-Action $action `
+-Principal $principal `
+-Trigger $trigger `
+-Settings $taskSettings 2>&1 | Tee-Object -Append -filePath $logFile
+
 Add-Content -Path $logFile -Value "`n$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") Register-ScheduledTask - [$task]"
 
 Unregister-ScheduledTask -TaskName "eMARVaultHeartbeat" -Confirm:$false -ErrorAction Continue

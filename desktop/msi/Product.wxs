@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.13.130987">
+           Version="1.0.18.198542">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -83,14 +83,14 @@
     <SetProperty Id="CA_AddScheduledTask"
                  Before ="CA_AddScheduledTask"
                  Sequence="execute"
-                 Value='&quot;[POWERSHELLEXE]&quot; -ExecutionPolicy Bypass -File "[MY_INSTALL_LOCATION]PostInstallActions.ps1" -propertyValue "[MY_PROPERTY]"' />
+                 Value='&quot;[POWERSHELLEXE]&quot; -ExecutionPolicy Bypass -File &quot;[MY_INSTALL_LOCATION]PostInstallActions.ps1&quot;' />
 
     <CustomAction Id="CA_AddScheduledTask"
                   BinaryKey="WixCA"
                   DllEntry="WixQuietExec"
                   Execute="deferred"
                   Return="check"
-                  Impersonate="yes" />
+                  Impersonate="no" />
 
     <InstallExecuteSequence>
     <!-- <Custom Action='CA_AddScheduledTask' After='InstallFiles'>NOT Installed AND NOT WIX_UPGRADE_DETECTED</Custom> -->
