@@ -18,8 +18,13 @@ def get_pcc_2_legged_token() -> str:
     """
     # Try to get existing token
     token = m.PCCAccessToken.query.first()
-    if token and (token.created_at + timedelta(seconds=token.expires_in)) > (datetime.now() + timedelta(seconds=60)):
-        logger.debug("Existing token is valid")
+    if token and (token.created_at + timedelta(seconds=token.expires_in)) > (
+        datetime.now() + timedelta(seconds=60)
+    ):
+        logger.debug(
+            "Existing token is valid till: {}",
+            token.created_at + timedelta(seconds=token.expires_in),
+        )
         return token.token
 
     server_path = os.path.join("auth", "token")
