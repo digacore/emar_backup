@@ -222,7 +222,9 @@ def get_credentials(body: GetCredentials):
                 manager_host=computer.manager_host,
                 files_checksum=json.loads(str(remote_files_checksum)),
                 msi_version=msi.version if msi else "undefined",
-                use_pcc_backup=computer.location.use_pcc_backup,
+                use_pcc_backup=computer.location.use_pcc_backup
+                if computer.location
+                else False,
             ),
             200,
         )

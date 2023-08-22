@@ -5,12 +5,18 @@ from app.controllers import get_pcc_2_legged_token
 from config import BaseConfig as CFG
 
 
+# These tests require PCC API credentials to be set in config.py
+# And presence of Certificate Name of the certificate that is used to sign the requests
+# in PCC Sandbox settings
+IS_NOT_CURRENT_CERT_IN_PCC = True
+
 SHOULD_SKIP_TESTS = (
+    IS_NOT_CURRENT_CERT_IN_PCC,
     not CFG.PCC_BASE_URL
     or not CFG.PCC_CLIENT_ID
     or not CFG.PCC_CLIENT_SECRET
     or not CFG.CERTIFICATE_PATH
-    or not CFG.PRIVATEKEY_PATH
+    or not CFG.PRIVATEKEY_PATH,
 )
 
 
@@ -37,7 +43,7 @@ def test_get_pcc_2_legged_token(client):
 def test_download_backup_from_pcc(client, pcc_test_computer):
     # Test successful download backup from PCC API
     response = client.post(
-        "/download_backup",
+        "/pcc_api/download_backup",
         json=s.GetCredentials(
             identifier_key=pcc_test_computer.identifier_key,
             computer_name=pcc_test_computer.computer_name,
@@ -53,7 +59,7 @@ def test_download_backup_from_pcc(client, pcc_test_computer):
 
     # Test computer that dosn't exist
     not_found_response = client.post(
-        "/download_backup",
+        "/pcc_api/download_backup",
         json=s.GetCredentials(
             identifier_key="not_existing_key",
             computer_name="not_existing_computer_name",
@@ -67,7 +73,7 @@ def test_download_backup_from_pcc(client, pcc_test_computer):
     ).first()
 
     conflict_response = client.post(
-        "/download_backup",
+        "/pcc_api/download_backup",
         json=s.GetCredentials(
             identifier_key=not_pcc_test_computer.identifier_key,
             computer_name=not_pcc_test_computer.computer_name,
