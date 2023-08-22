@@ -78,6 +78,9 @@ class Computer(db.Model, ModelMixin):
     created_at = db.Column(db.DateTime, default=datetime.now)
     computer_ip = db.Column(db.String(128))
 
+    last_time_logs_enabled = db.Column(db.DateTime, default=datetime.now)
+    last_time_logs_disabled = db.Column(db.DateTime)
+
     def __repr__(self):
         return self.computer_name
 
@@ -131,7 +134,12 @@ class ComputerView(RowActionListMixin, MyModelView):
         "computer_ip",
     ]
 
-    form_excluded_columns = ("log_events", "backup_logs")
+    form_excluded_columns = (
+        "log_events",
+        "backup_logs",
+        "last_time_logs_enabled",
+        "last_time_logs_disabled",
+    )
 
     column_searchable_list = column_list
     column_sortable_list = column_list
@@ -237,11 +245,21 @@ class ComputerView(RowActionListMixin, MyModelView):
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
 
+        # Remember the prev value of the field logs_enabled
+        self.logs_enabled_prev_value = obj.logs_enabled
+
         # apply a sort to the relation
         form.company.query_factory = lambda: Company.query.order_by(Company.name)
         form.location.query_factory = lambda: Location.query.order_by(Location.name)
 
         return form
+
+    def on_model_change(self, form, model, is_created):
+        if not is_created and self.logs_enabled_prev_value != model.logs_enabled:
+            if model.logs_enabled:
+                model.last_time_logs_enabled = datetime.utcnow()
+            else:
+                model.last_time_logs_disabled = datetime.utcnow()
 
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log

@@ -28,7 +28,7 @@ def create_log_event(
 
     new_log.save()
 
-    logger.debug("New log event created: {}", new_log)
+    # logger.debug("New log event created: {}", new_log)
 
 
 def gen_fake_backup_download_logs(computer: Computer, time_period: timedelta):

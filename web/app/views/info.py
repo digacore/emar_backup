@@ -5,6 +5,8 @@ from flask_login import login_required, current_user
 from app import models as m, db
 from app.controllers import create_pagination, backup_log_on_request_to_view
 
+from config import BaseConfig as CFG
+
 
 info_blueprint = Blueprint("info", __name__, url_prefix="/info")
 
@@ -71,20 +73,23 @@ def computer_info(computer_id):
 
     if logs_for_chart:
         # Set the start time for the chart (eastern time - chart_days)
-        log_time = (
-            datetime.utcnow().replace(minute=0, second=0, microsecond=0)
-            - timedelta(hours=4)
+        log_time = CFG.offset_to_est(
+            datetime.utcnow().replace(minute=0, second=0, microsecond=0), True
         ) - timedelta(days=chart_days)
         log_to_use_index = 0
 
         current_log_type = None
 
         # Fill all the list objects with data for every hour
-        while log_time < datetime.utcnow():
+        while log_time < CFG.offset_to_est(datetime.utcnow(), True):
             labels.append(log_time)
             notes.append(logs_for_chart[log_to_use_index].notes)
 
-            if log_time < logs_for_chart[log_to_use_index].est_start_time:
+            # Check if the current log_time is in the range of the current log
+            if (
+                log_time < logs_for_chart[log_to_use_index].est_start_time
+                or log_time > logs_for_chart[log_to_use_index].est_end_time
+            ):
                 current_log_type = None
             elif not logs_for_chart[log_to_use_index].error:
                 current_log_type = "green"
@@ -102,11 +107,11 @@ def computer_info(computer_id):
 
             log_time += timedelta(hours=1)
 
-            if log_time > logs_for_chart[log_to_use_index].est_end_time:
+            if (
+                log_time > logs_for_chart[log_to_use_index].est_end_time
+                and (log_to_use_index + 1) <= len(logs_for_chart) - 1
+            ):
                 log_to_use_index += 1
-
-            if log_to_use_index > len(logs_for_chart) - 1:
-                break
 
     return render_template(
         "info/computer.html",

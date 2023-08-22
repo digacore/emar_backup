@@ -19,12 +19,19 @@
       <!-- End "Go back" button -->
 
       <!-- Status header -->
-      {% if not last_log %}
+      {% if not computer.activated %}
         <div
           class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
           style="background-color: #848383; padding: 10px 0;"
         >
-          <span style="font-size: 25px; font-weight: bold;">Undefined - no logs exist</span>
+          <span style="font-size: 25px; font-weight: bold;">Computer is not activated</span>
+        </div>
+      {% elif not computer.logs_enabled %}
+        <div
+          class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+          style="background-color: #848383; padding: 10px 0;"
+        >
+          <span style="font-size: 25px; font-weight: bold;">Logs are not enabled</span>
         </div>
       {% elif last_log.error == "Longer than 2 hours without a backup" %}
         <div
