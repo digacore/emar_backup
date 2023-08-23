@@ -463,7 +463,8 @@ def sftp_check_files_for_update_and_load(credentials):
                 )
                 return offset_to_est(datetime.datetime.utcnow())
             else:
-                raise Exception(e)
+                logger.error("Exception occurred while connecting to sftp: {}", e)
+                raise AppError("Can't connect to sftp server")
 
         with ssh.open_sftp() as sftp:
             # get list of all files and folders on sftp server
@@ -649,16 +650,17 @@ def download_file_from_pcc(credentials):
     est_datetime = datetime.datetime.fromisoformat(
         offset_to_est(datetime.datetime.utcnow())
     )
-    prefix = f"emarbackup_{est_datetime.strftime('%H-%M_%b-%d-%Y')}_splitpoint"
+    download_dir = f"emarbackup_{est_datetime.strftime('%H-%M_%b-%d-%Y')}"
 
     # Create temp directory to save downloaded backup and zip it
-    with tempfile.TemporaryDirectory(prefix=prefix) as raw_tempdir:
+    with tempfile.TemporaryDirectory() as raw_tempdir:
         # this split is required to remove temp string from dir name
-        tempdir = raw_tempdir.split("_splitpoint")[0]
+        download_dir_path = os.path.join(raw_tempdir, download_dir)
+        os.mkdir(download_dir_path)
         last_saved_path = ""
 
         # Download backup file
-        server_route = os.path.join("pcc_api", "download_backup")
+        server_route = "pcc_api/download_backup"
         url = urljoin(credentials["manager_host"], server_route)
         try:
             with requests.post(
@@ -672,7 +674,7 @@ def download_file_from_pcc(credentials):
                 res.raise_for_status()
 
                 filename = re.findall("filename=(.+)", res.headers["Content-Disposition"])[0]
-                filepath = os.path.join(tempdir, filename)
+                filepath = os.path.join(download_dir_path, filename)
                 with open(filepath, "wb") as f:
                     shutil.copyfileobj(res.raw, f)
 
@@ -681,10 +683,10 @@ def download_file_from_pcc(credentials):
             raise AppError("Can't download backup file from PCC API")
         
         # Zip downloaded backup file
-        last_saved_path = add_file_to_zip(credentials, tempdir)
+        last_saved_path = add_file_to_zip(credentials, download_dir_path)
 
     update_download_status(
-        "downloaded", credentials, last_downloaded=str(tempdir), last_saved_path=last_saved_path
+        "downloaded", credentials, last_downloaded=str(download_dir_path), last_saved_path=last_saved_path
     )
 
     try:
