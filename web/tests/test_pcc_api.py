@@ -1,26 +1,37 @@
+import os
 import pytest
+from dotenv import load_dotenv
 
 from app import models as m, schema as s
-from app.controllers import get_pcc_2_legged_token
-from config import BaseConfig as CFG
-
-
-# These tests require PCC API credentials to be set in config.py
-# And presence of Certificate Name of the certificate that is used to sign the requests
-# in PCC Sandbox settings
-IS_NOT_CURRENT_CERT_IN_PCC = True
-
-SHOULD_SKIP_TESTS = (
-    IS_NOT_CURRENT_CERT_IN_PCC,
-    not CFG.PCC_BASE_URL
-    or not CFG.PCC_CLIENT_ID
-    or not CFG.PCC_CLIENT_SECRET
-    or not CFG.CERTIFICATE_PATH
-    or not CFG.PRIVATEKEY_PATH,
+from app.controllers import (
+    get_pcc_2_legged_token,
+    get_activations,
+    get_org_facilities_list,
+    create_pcc_org_facs,
 )
 
 
-@pytest.mark.skipif(SHOULD_SKIP_TESTS, reason="PCC API credentials not set")
+load_dotenv()
+
+# These tests require PCC API credentials to be set in .env
+# And presence of Certificate Name of the certificate that is used to sign the requests
+# in PCC Sandbox settings
+IS_NOT_CURRENT_CERT_IN_PCC = False
+
+SANDBOX_ORG_UUID = "11848592-809A-42F4-82E3-5CE14964A007"
+
+SHOULD_SKIP_TESTS = (
+    IS_NOT_CURRENT_CERT_IN_PCC
+    or not os.environ.get("PCC_BASE_URL", None)
+    or not os.environ.get("PCC_CLIENT_ID", None)
+    or not os.environ.get("PCC_CLIENT_SECRET", None)
+    or not os.environ.get("PCC_APP_NAME", None)
+    or not os.environ.get("CERTIFICATE_PATH", None)
+    or not os.environ.get("PRIVATEKEY_PATH", None)
+)
+
+
+@pytest.mark.skipif(False, reason="PCC API credentials not set")
 def test_get_pcc_2_legged_token(client):
     # Get 2-legged access token first time
     token = get_pcc_2_legged_token()
@@ -81,3 +92,23 @@ def test_download_backup_from_pcc(client, pcc_test_computer):
     )
 
     assert conflict_response and conflict_response.status_code == 409
+
+
+# TODO: create normal tests for this
+@pytest.mark.skip
+def test_get_activations(client):
+    # Test successful get activations list from PCC API
+    activations_list = get_activations()
+    assert isinstance(activations_list, list)
+
+
+@pytest.mark.skip
+def test_get_org_facilities(client):
+    # Test successful get org facilities list from PCC API
+    org_facilities_list = get_org_facilities_list(SANDBOX_ORG_UUID)
+    assert isinstance(org_facilities_list, list)
+
+
+@pytest.mark.skip
+def test_create_pcc_org_facs(client):
+    create_pcc_org_facs()
