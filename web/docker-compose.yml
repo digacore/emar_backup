@@ -27,7 +27,8 @@ services:
     ports:
       - 127.0.0.1:${APP_PORT}:5000
     entrypoint: "bash start_server.sh"
-
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
       - db
 
