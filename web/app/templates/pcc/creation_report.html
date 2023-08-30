@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block links %}
+  <link href="{{ url_for('static', filename='/css/creation-report.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex flex-column justify-content-center w-100 h-100 mb-4">
+    <!-- Scanning button -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <div>
+        Previous scanning:
+        {% if previous_scan_result == "-" %}
+          <span class="text-secondary">{{ previous_scan_result }}</span>
+        {% elif previous_scan_result == "SUCCEED" %}
+          <span class="text-success">{{ previous_scan_result }}</span>
+        {% elif previous_scan_result == "FAILED" %}
+          <span class="text-danger">{{ previous_scan_result }}</span>
+        {% endif %}
+      </div>
+
+      <div>
+        Current status:
+        {% if current_scan_status == "READY" %}
+          <span class="text-success">{{ current_scan_status }}</span>
+        {% elif current_scan_status == "IN PROGRESS" %}
+          <span class="text-primary">{{ current_scan_status }}</span>
+        {% endif %}
+      </div>
+
+      <form action="" method="post">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          {{ "disabled" if current_scan_status == "IN PROGRESS" else None}}
+        >
+          Scan for new activations
+        </button>
+      </form>
+    </div>
+    <!-- End of scanning button -->
+
+    <!-- Reports table -->
+    <div class="d-flex flex-column justify-content-center w-100 h-100">
+      <div class="mb-3">Creation reports:</div>
+
+      {% if not reports %}
+        <span class="text-center">No creation reports found.</span>
+      {% else %}
+      <div class="w-100 h-100 overflow-scroll">
+        <table class="w-full text-xs text-start table table-hover pr-2 pl-2">
+          <thead class="text-sm text-start" style="color: #4e73df">
+            <tr>
+              <th scope="col">Company</th>
+              <th scope="col">Created/Updated objects</th>
+              <th scope="col">Created at</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for report in reports %}
+              <tr>
+                <td class="p-2 text-gray align-middle">
+                  <a class="text-decoration-none" href="{{ url_for('company.edit_view', id=report.company_id) }}">{{ report.company_name }}</a>
+                </td>
+                <td class="p-2 text-gray align-middle">
+                  {% for obj in report.data_as_obj %}
+                    {% if obj["type"] == "Company" %}
+                      <div>
+                        Company
+                        {{ "created" if obj["action"] == "Created" else "updated" }}
+                        <a class="text-decoration-none" href="{{ url_for('company.edit_view', id=obj.id) }}">{{ obj.name }}</a>
+                      </div>
+                    {% elif obj["type"] == "Location" %}
+                      <div>
+                        Location
+                        {{ "created" if obj["action"] == "Created" else "updated" }}
+                        <a class="text-decoration-none" href="{{ url_for('location.edit_view', id=obj.id) }}">{{ obj.name }}</a>
+                      </div>
+                    {% endif %}
+                  {% endfor %}
+                </td>
+                <td class="p-2 text-gray align-middle">
+                  <div>{{ offset_to_east(report.created_at, True).strftime("%Y-%m-%d %H:%M:%S") }}</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    <div class="w-100 d-flex align-items-center mb-2">
+      <span class="text-xs mr-4">{{ page.skip + 1 }}-{{ page.skip + reports.__len__() }} of {{ page.total }} records</span>
+
+      {% if page.pages > 1 %}
+        <nav aria-label="Page navigation" class="mr-4 d-flex align-items-center">
+          <ul class="d-inline-flex items-center list-unstyled mb-0">
+            <li>
+              <!-- prettier-ignore -->
+              <a
+                href="{{ url_for('pcc.creation_report') }}?page=1&per_page={{ page.per_page }}"
+                class="btn text-gray-500 btn-xs border btn-left-rounded-border p-0"
+                role="button"
+              >
+                <span class="sr-only">First</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20px" height="20px">
+                  <path fill-rule="evenodd" d="M15.79 14.77a.75.75 0 01-1.06.02l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 111.04 1.08L11.832 10l3.938 3.71a.75.75 0 01.02 1.06zm-6 0a.75.75 0 01-1.06.02l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 111.04 1.08L5.832 10l3.938 3.71a.75.75 0 01.02 1.06z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            </li>
+            <li>
+              <!-- prettier-ignore -->
+              <a
+                href="{{ url_for('pcc.creation_report') }}?page={{page.page-1 if page.page > 1 else 1}}&per_page={{ page.per_page }}"
+                class="btn text-gray-500 btn-xs border rounded-0 border-left-0 p-0"
+                role="button"
+              >
+                <span class="sr-only">Previous</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20px" height="20px">
+                  <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            </li>
+
+            <!-- prettier-ignore -->
+            {% for p in page.pages_for_links %}
+            <li>
+              <!-- prettier-ignore -->
+              {% if p == page.page %}
+                <!-- prettier-ignore -->
+                <a
+                  href="{{ url_for('pcc.creation_report') }}?page={{p}}&per_page={{ page.per_page }}"
+                  class="btn text-gray-700 btn-xs border rounded-0 border-left-0"
+                  role="button"
+                >
+                  {{p}}
+                </a>
+              {% else %}
+                <!-- prettier-ignore -->
+                <a
+                  href="{{ url_for('pcc.creation_report') }}?page={{p}}&per_page={{ page.per_page }}"
+                  class="btn text-gray-500 btn-xs border rounded-0 border-left-0"
+                  role="button"
+                >
+                  {{p}}
+                </a>
+              {% endif %}
+            </li>
+            {% endfor %}
+
+            <li>
+              <!-- prettier-ignore -->
+              <a
+                href="{{ url_for('pcc.creation_report') }}?page={{page.page+1 if page.page < page.pages else page.pages}}&per_page={{ page.per_page }}"
+                class="btn text-gray-500 btn-xs border rounded-0 border-right-0 border-left-0 p-0"
+                role="button"
+              >
+                <!-- prettier-ignore -->
+                <span class="sr-only">Next</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20px" height="20px">
+                  <path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            </li>
+            <li>
+              <!-- prettier-ignore -->
+              <a
+                href="{{ url_for('pcc.creation_report') }}?page={{page.pages}}&per_page={{ page.per_page }}"
+                class="btn text-gray-500 btn-xs border btn-right-rounded-border p-0"
+                role="button"
+              >
+                <!-- prettier-ignore -->
+                <span class="sr-only">Last</span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="20px" height="20px">
+                  <path fill-rule="evenodd" d="M10.21 14.77a.75.75 0 01.02-1.06L14.168 10 10.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                  <path fill-rule="evenodd" d="M4.21 14.77a.75.75 0 01.02-1.06L8.168 10 4.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" />
+                </svg>
+              </a>
+            </li>
+          </ul>
+        </nav>
+      {% endif %}
+
+      <span class="text-xs mr-1">Rows per page:</span>
+      <div class="dropdown">
+        <button class="btn dropdown-toggle btn-xs" style="border-color: rgb(183, 185, 204, 0.6); border-width: 1px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          {{ page.per_page }}
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          {% for items_number in [25, 50, 100] %}
+            <a class="dropdown-item" href="{{ url_for('pcc.creation_report') }}?page=1&per_page={{ items_number }}">{{ items_number }}</a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <!-- End pagination -->
+  </div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}

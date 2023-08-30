@@ -139,6 +139,7 @@
             <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
             {% if current_user.asociated_with.lower() == "global-full" %}
               <a class="collapse-item" href="{{ url_for('info.system_log_info') }}">System logs</a>
+              <a class="collapse-item" href="{{ url_for('pcc.creation_report') }}">PointClickCare import</a>
             {% endif %}
           </div>
         </div>

@@ -11,7 +11,9 @@ from .pcc_api import (
     get_pcc_2_legged_token,
     get_activations,
     get_org_facilities_list,
-    create_pcc_org_facs,
+    create_pcc_orgs_facs,
+    gen_pcc_creation_report,
+    get_facility_info,
 )
 from .log_event import create_log_event, gen_fake_backup_download_logs
 from .backup_log import (
