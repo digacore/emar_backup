@@ -1,5 +1,7 @@
 import re
+from math import ceil
 
+from flask_admin.base import expose
 from flask_admin.contrib.sqla import ModelView, tools
 from flask_admin._compat import string_types
 from flask_login import current_user
@@ -47,13 +49,13 @@ class MyModelView(ModelView):
         Apply search to a query.
         """
         # Extract column_name from search query
-        column_name_match = re.search(r"\<\<\<(\w*)\>\>\>", search)
+        column_name_match = re.search(r"\<\<(\w*)\>\>:", search)
         if column_name_match:
             column_name = column_name_match.group(1)
             # Create custom search field object on the base of column_name
             custom_search_field_obj = self.create_custom_search_field_obj(column_name)
             # Extract search value from search query
-            search_value = re.search(r".*\>\>\>(.*)", search).group(1)
+            search_value = re.search(r".*\>\>:(.*)", search).group(1)
         else:
             custom_search_field_obj = None
             search_value = search
@@ -102,3 +104,142 @@ class MyModelView(ModelView):
                 count_query = count_query.filter(or_(*count_filter_stmt))
 
         return query, count_query, joins, count_joins
+
+    # NOTE (danil): redefine this method to show in search "column_name: query"
+    @expose("/")
+    def index_view(self):
+        """
+        List view
+        """
+        if self.can_delete:
+            delete_form = self.delete_form()
+        else:
+            delete_form = None
+
+        # Grab parameters from URL
+        view_args = self._get_list_extra_args()
+
+        # Map column index to column name
+        sort_column = self._get_column_by_idx(view_args.sort)
+        if sort_column is not None:
+            sort_column = sort_column[0]
+
+        # Get page size
+        page_size = view_args.page_size or self.page_size
+
+        # Get count and data
+        count, data = self.get_list(
+            view_args.page,
+            sort_column,
+            view_args.sort_desc,
+            view_args.search,
+            view_args.filters,
+            page_size=page_size,
+        )
+
+        list_forms = {}
+        if self.column_editable_list:
+            for row in data:
+                list_forms[self.get_pk_value(row)] = self.list_form(obj=row)
+
+        # Calculate number of pages
+        if count is not None and page_size:
+            num_pages = int(ceil(count / float(page_size)))
+        elif not page_size:
+            num_pages = 0  # hide pager for unlimited page_size
+        else:
+            num_pages = None  # use simple pager
+
+        # Various URL generation helpers
+        def pager_url(p):
+            # Do not add page number if it is first page
+            if p == 0:
+                p = None
+
+            return self._get_list_url(view_args.clone(page=p))
+
+        def sort_url(column, invert=False, desc=None):
+            if not desc and invert and not view_args.sort_desc:
+                desc = 1
+
+            return self._get_list_url(view_args.clone(sort=column, sort_desc=desc))
+
+        def page_size_url(s):
+            if not s:
+                s = self.page_size
+
+            return self._get_list_url(view_args.clone(page_size=s))
+
+        # Actions
+        actions, actions_confirmation = self.get_actions_list()
+        if actions:
+            action_form = self.action_form()
+        else:
+            action_form = None
+
+        clear_search_url = self._get_list_url(
+            view_args.clone(
+                page=0,
+                sort=view_args.sort,
+                sort_desc=view_args.sort_desc,
+                search=None,
+                filters=None,
+            )
+        )
+
+        # Search input value that would be displayed (if search arg present)
+        search_input_value = None
+        if view_args.search:
+            search_column_name = re.search(r"\<\<(\w*)\>\>:", view_args.search)
+            if search_column_name:
+                search_column_name = " ".join(
+                    search_column_name.group(1).split("_")
+                ).capitalize()
+                search_query = re.search(r".*\>\>:(.*)", view_args.search).group(1)
+                search_input_value = f"{search_column_name}: {search_query}"
+
+        return self.render(
+            self.list_template,
+            data=data,
+            list_forms=list_forms,
+            delete_form=delete_form,
+            action_form=action_form,
+            # List
+            list_columns=self._list_columns,
+            sortable_columns=self._sortable_columns,
+            editable_columns=self.column_editable_list,
+            list_row_actions=self.get_list_row_actions(),
+            # Pagination
+            count=count,
+            pager_url=pager_url,
+            num_pages=num_pages,
+            can_set_page_size=self.can_set_page_size,
+            page_size_url=page_size_url,
+            page=view_args.page,
+            page_size=page_size,
+            default_page_size=self.page_size,
+            # Sorting
+            sort_column=view_args.sort,
+            sort_desc=view_args.sort_desc,
+            sort_url=sort_url,
+            # Search
+            search_supported=self._search_supported,
+            clear_search_url=clear_search_url,
+            search=search_input_value if search_input_value else view_args.search,
+            search_placeholder=self.search_placeholder(),
+            # Filters
+            filters=self._filters,
+            filter_groups=self._get_filter_groups(),
+            active_filters=view_args.filters,
+            filter_args=self._get_filters(view_args.filters),
+            # Actions
+            actions=actions,
+            actions_confirmation=actions_confirmation,
+            # Misc
+            enumerate=enumerate,
+            get_pk_value=self.get_pk_value,
+            get_value=self.get_list_value,
+            return_url=self._get_list_url(view_args),
+            # Extras
+            extra_args=view_args.extra_args,
+        )

@@ -8,7 +8,7 @@ document.querySelectorAll(".single-search-form").forEach((form) =>
     async function searchColumn() {
       const globalForm = document.querySelector("#overall-admin-search");
       const globalInput = document.querySelector("#overall-admin-search-input");
-      globalInput.value = `<<<${e.target.dataset.search_value}>>>${e.target.elements[0].value}`;
+      globalInput.value = `<<${e.target.dataset.search_value}>>:${e.target.elements[0].value}`;
 
       globalForm.submit();
     }
