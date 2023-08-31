@@ -334,7 +334,8 @@ def sftp_check_files_for_update_and_load(credentials):
                 )
                 return offset_to_est(datetime.datetime.utcnow())
             else:
-                raise Exception(e)
+                logger.error("Exception occurred while connecting to sftp: {}", e)
+                raise AppError("Can't connect to sftp server")
 
         with ssh.open_sftp() as sftp:
             # get list of all files and folders on sftp server
