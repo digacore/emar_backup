@@ -207,9 +207,17 @@ class UserView(RowActionListMixin, MyModelView):
                 result_query = self.session.query(self.model).filter(
                     self.model.username == "None"
                 )
+        else:
+            result_query = self.session.query(self.model).filter(
+                self.model.username == "None"
+            )
 
         # do not allow to edit superuser
         return result_query
+
+    def get_count_query(self):
+        actual_query = self.get_query()
+        return actual_query.with_entities(func.count())
 
 
 # NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)
