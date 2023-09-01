@@ -25,6 +25,7 @@ class PCCActivationsScan(db.Model, ModelMixin):
         server_default=db.func.now(),
         nullable=False,
     )
+    finished_at = db.Column(db.DateTime)
 
     def __repr__(self):
         return f"<Activations scan ID: {self.id}. Created_at: {self.created_at}>"

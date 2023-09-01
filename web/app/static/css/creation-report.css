@@ -22,3 +22,17 @@
 .form-control:focus {
   box-shadow: none;
 }
+
+.text-xs-bigger {
+  font-size: 0.8rem;
+}
+
+.approving-select {
+  color: gray;
+  border-color: gainsboro;
+  border-radius: 5px;
+}
+
+.form-select {
+  outline: none;
+}

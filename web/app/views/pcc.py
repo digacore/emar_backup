@@ -54,22 +54,27 @@ def creation_report():
     # The first scanning
     if len(all_scan_records) == 0:
         previous_scan_result = "-"
+        previous_scan_finished_at = "-"
         current_scan_status = "READY"
     # Second scanning
     elif len(all_scan_records) == 1:
         if all_scan_records[0].status == m.ScanStatus.IN_PROGRESS:
             previous_scan_result = "-"
+            previous_scan_finished_at = "-"
             current_scan_status = all_scan_records[0].status.value
         else:
             previous_scan_result = all_scan_records[0].status.value
+            previous_scan_finished_at = all_scan_records[0].finished_at
             current_scan_status = "READY"
     # Third and more scanning
     else:
         if all_scan_records[0].status == m.ScanStatus.IN_PROGRESS:
             previous_scan_result = all_scan_records[1].status.value
+            previous_scan_finished_at = all_scan_records[1].finished_at
             current_scan_status = all_scan_records[0].status.value
         else:
             previous_scan_result = all_scan_records[0].status.value
+            previous_scan_finished_at = all_scan_records[0].finished_at
             current_scan_status = "READY"
 
     return render_template(
@@ -77,5 +82,7 @@ def creation_report():
         reports=reports,
         page=pagination,
         previous_scan_result=previous_scan_result,
+        previous_scan_finished_at=previous_scan_finished_at,
         current_scan_status=current_scan_status,
+        reports_page=False,
     )

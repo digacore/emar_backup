@@ -393,10 +393,12 @@ def gen_pcc_creation_report(scan_record_id: int):
     except Exception as e:
         logger.error("Can't create PCC orgs and facilities. Reason: {}", e)
         scan_record.status = m.ScanStatus.FAILED
+        scan_record.finished_at = datetime.utcnow()
         scan_record.error = str(e)
         scan_record.save()
         raise e
 
     scan_record.status = m.ScanStatus.SUCCEED
+    scan_record.finished_at = datetime.utcnow()
     scan_record.save()
     logger.info("PCC orgs and facilities created successfully")
