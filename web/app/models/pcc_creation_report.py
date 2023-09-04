@@ -1,10 +1,18 @@
 import json
+import enum
 from datetime import datetime
 
+from sqlalchemy import Enum
 from sqlalchemy.dialects.postgresql import JSON
 
 from app import db
 from app.models.utils import ModelMixin
+
+
+class CreationReportStatus(enum.Enum):
+    WAITING = "WAITING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
 
 
 # TODO: create logic of not deleting the companies but just marking them as "deleted"
@@ -14,7 +22,7 @@ class PCCCreationReport(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(JSON)
-    company_id = db.Column(db.Integer, nullable=False)
+    company_id = db.Column(db.Integer, nullable=True)
     company_name = db.Column(db.String(255), nullable=False)
     created_at = db.Column(
         db.DateTime,
@@ -22,6 +30,9 @@ class PCCCreationReport(db.Model, ModelMixin):
         server_default=db.func.now(),
         nullable=False,
     )
+    status = db.Column(Enum(CreationReportStatus), nullable=False)
+    status_changed_by = db.Column(db.String(255), nullable=True)
+    status_changed_at = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
         return f"<Creation report: {self.id}. Created_at: {self.created_at}>"

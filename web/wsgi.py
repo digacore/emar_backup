@@ -116,10 +116,10 @@ def gen_backup_periods_logs(computer_name: str | None = None, days: int | None =
 
 @app.cli.command()
 @click.argument("scan_record_id", type=int)
-def create_new_pcc_orgs_facs(scan_record_id: int):
-    from app.controllers import gen_pcc_creation_report
+def scan_pcc_activations(scan_record_id: int):
+    from app.controllers import scan_pcc_activations
 
-    gen_pcc_creation_report(scan_record_id)
+    scan_pcc_activations(scan_record_id)
 
 
 if __name__ == "__main__":

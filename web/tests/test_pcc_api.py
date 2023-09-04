@@ -6,7 +6,7 @@ from app.controllers import (
     get_pcc_2_legged_token,
     get_activations,
     get_org_facilities_list,
-    create_pcc_orgs_facs,
+    create_new_creation_reports,
     get_facility_info,
 )
 
@@ -112,16 +112,16 @@ def test_get_facility_info(client):
     assert isinstance(facility_info, s.Facility)
 
 
-@pytest.mark.skip
-def test_create_pcc_org_facs(client):
-    created_objects = create_pcc_orgs_facs()
-    assert isinstance(created_objects, str)
+# @pytest.mark.skip
+# def test_create_pcc_org_facs(client):
+#     created_objects = create_new_approving_reports()
+#     assert isinstance(created_objects, str)
 
-    # Check that all created objects are in DB
-    objects_list = json.loads(created_objects)
-    for obj in objects_list:
-        parsed_obj = s.PccCreatedObject.parse_obj(obj)
-        if parsed_obj.type == "Company":
-            assert m.Company.query.filter_by(pcc_org_id=parsed_obj.pcc_org_id).first()
-        else:
-            assert m.Location.query.filter_by(pcc_fac_id=parsed_obj.pcc_fac_id).first()
+#     # Check that all created objects are in DB
+#     objects_list = json.loads(created_objects)
+#     for obj in objects_list:
+#         parsed_obj = s.PccCreatedObject.parse_obj(obj)
+#         if parsed_obj.type == "Company":
+#             assert m.Company.query.filter_by(pcc_org_id=parsed_obj.pcc_org_id).first()
+#         else:
+#             assert m.Location.query.filter_by(pcc_fac_id=parsed_obj.pcc_fac_id).first()

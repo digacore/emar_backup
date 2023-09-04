@@ -94,9 +94,9 @@ def clean_old_logs():
 
 
 @app.task
-def create_new_pcc_orgs_facs_task(scan_record_id: int):
+def scan_pcc_activations(scan_record_id: int):
     flask_proc = subprocess.Popen(
-        ["flask", "create-new-pcc-orgs-facs", str(scan_record_id)]
+        ["flask", "scan-pcc-activations", str(scan_record_id)]
     )
     flask_proc.communicate()
 
