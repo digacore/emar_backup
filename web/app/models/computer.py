@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, or_, and_, sql
+from sqlalchemy import JSON, or_, and_, sql, func
 from sqlalchemy.orm import relationship
 
 from flask import request
@@ -376,3 +376,16 @@ class ComputerView(RowActionListMixin, MyModelView):
                         # request.environ["REQUEST_URI"] = "/admin/computer/?search=offline"
 
         return result_query
+
+    def get_count_query(self):
+        actual_query = self.get_query()
+
+        # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
+        # Instead add select_from(self.model) to query to count correctly
+        if (
+            current_user.asociated_with.lower() == "global-full"
+            or current_user.asociated_with.lower() == "global-view"
+        ) and not request.values.get("search"):
+            return actual_query.with_entities(func.count()).select_from(self.model)
+
+        return actual_query.with_entities(func.count())

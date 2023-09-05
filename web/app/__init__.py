@@ -48,7 +48,6 @@ def create_app(environment="development"):
         computer_blueprint,
         download_msi_blueprint,
         download_msi_fblueprint,
-        search_column_blueprint,
         locations_company_blueprint,
         sftp_data_blueprint,
     )
@@ -108,7 +107,6 @@ def create_app(environment="development"):
     app.register_api(api_email_blueprint)
     app.register_api(computer_blueprint)
     app.register_api(download_msi_blueprint)
-    app.register_api(search_column_blueprint)
     app.register_api(locations_company_blueprint)
     app.register_api(sftp_data_blueprint)
 
