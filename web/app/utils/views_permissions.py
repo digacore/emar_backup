@@ -193,8 +193,11 @@ class MyModelView(ModelView):
             search_column_name = re.search(r"\<\<(\w*)\>\>:", view_args.search)
             if search_column_name:
                 search_column_name = " ".join(
-                    search_column_name.group(1).split("_")
-                ).capitalize()
+                    [
+                        word.capitalize()
+                        for word in search_column_name.group(1).split("_")
+                    ]
+                )
                 search_query = re.search(r".*\>\>:(.*)", view_args.search).group(1)
                 search_input_value = f"{search_column_name}: {search_query}"
 
