@@ -1,11 +1,11 @@
 from pydantic import BaseModel
-from typing import Optional
 
 
 class PCCReportObject(BaseModel):
+    id: int | None = None
     type: str
     name: str
-    id: Optional[int]
     action: str
-    pcc_org_id: Optional[str]
-    pcc_fac_id: Optional[int]
+    pcc_org_id: str | None = None
+    pcc_fac_id: int | None = None
+    use_pcc_backup: bool | None = None

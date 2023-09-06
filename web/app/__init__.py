@@ -1,4 +1,5 @@
 import os
+import json
 
 from flask import render_template, url_for
 from flask_openapi3 import OpenAPI
@@ -13,6 +14,8 @@ from flask_mail import Mail
 from flask_jwt_extended import JWTManager
 from oauthlib.oauth2 import WebApplicationClient
 from flask_session import Session
+
+from app.utils import update_report_data
 
 from config import BaseConfig as CFG
 
@@ -97,6 +100,8 @@ def create_app(environment="development"):
 
     # Pass functions to jinja2 templates
     app.jinja_env.globals.update(offset_to_east=CFG.offset_to_est)
+    app.jinja_env.globals.update(to_json=json.dumps)
+    app.jinja_env.globals.update(update_report_data=update_report_data)
 
     # Register blueprints.
     app.register_blueprint(auth_blueprint)

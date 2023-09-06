@@ -21,6 +21,13 @@ def scan_activations():
 
     # If POST, create new report with status "IN_PROGRESS" and run celery task
     if request.method == "POST":
+        waiting_creation_report = m.PCCCreationReport.query.filter_by(
+            status=m.CreationReportStatus.WAITING
+        ).first()
+
+        if waiting_creation_report:
+            abort(409, "There is already a report with status WAITING")
+
         scan_record = m.PCCActivationsScan(status=m.ScanStatus.IN_PROGRESS)
         scan_record.save()
 

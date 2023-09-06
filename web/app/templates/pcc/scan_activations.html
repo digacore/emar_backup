@@ -103,40 +103,56 @@
                     <span>{{ report.company_name }}</span>
                   </td>
                   <td class="p-2 text-gray align-middle">
-                      {% for obj in report.data_as_obj %}
-                        {% if obj["type"] == "Company" %}
-                          <div class="mb-1">
-                            {{ "Create" if obj["action"] == "Create" else "Update" }}
-                            company
-                            <span>{{ obj.name }}.</span>
+                    {% for obj in report.data_as_obj %}
+                      {% if obj["type"] == "Company" %}
+                        <div class="mb-1">
+                          {{ "Create" if obj["action"] == "Create" else "Update" }}
+                          company
+                          <span>{{ obj.name }}.</span>
+                        </div>
+                      {% elif obj["type"] == "Location" %}
+                        {% set data_without_obj = report.data_as_obj %}
+                        {% set popped_obj = data_without_obj.pop(loop.index - 1) %}
+                        <div class="mb-1 d-flex align-items-center">
+                          <a class="mr-1" href="{{ url_for('pcc.scan_activations') }}?page={{ page.page }}&per_page={{ page.per_page }}" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_without_obj}) }})">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-500" width="10px" height="10px" viewBox="0 0 512 512">
+                              <polygon fill="var(--ci-primary-color, currentColor)" points="427.314 107.313 404.686 84.687 256 233.373 107.314 84.687 84.686 107.313 233.373 256 84.686 404.687 107.314 427.313 256 278.627 404.686 427.313 427.314 404.687 278.627 256 427.314 107.313" class="ci-primary"/>
+                            </svg>
+                          </a>
+                          {{ "Create" if obj["action"] == "Create" else "Update" }}
+                          location
+                          <span class="ml-1 mr-1">{{ obj.name }}.</span>
+                          Backup downloading type:
+                          <!-- <select
+                            class="form-select form-select-sm ml-1 approving-select"
+                            aria-label="{{ report.id }}-{{ obj['type'] }}-{{ obj['name'] }}"
+                          >
+                            <option value="SFTP">SFTP</option>
+                            <option value="PCC">PCC</option>
+                          </select> -->
+                          {% set data_pcc = update_report_data(report.data_as_obj, loop.index - 1, {"use_pcc_backup": True}) %}
+                          {% set data_sftp = update_report_data(report.data_as_obj, loop.index - 1, {"use_pcc_backup": False}) %}
+                          <div class="dropdown ml-1">
+                            <button class="btn dropdown-toggle btn-xs" style="border-color: rgb(183, 185, 204, 0.6); border-width: 1px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                              {{ "PCC" if obj["use_pcc_backup"] else "SFTP" }}
+                            </button>
+                            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                              <a class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_pcc }) }})" href="{{ url_for('pcc.scan_activations') }}?page={{ page.page }}&per_page={{ page.per_page }}">PCC</a>
+                              <a class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_sftp }) }})" href="{{ url_for('pcc.scan_activations') }}?page={{ page.page }}&per_page={{ page.per_page }}">SFTP</a>
+                            </div>
                           </div>
-                        {% elif obj["type"] == "Location" %}
-                          <div class="mb-1">
-                            {{ "Create" if obj["action"] == "Create" else "Update" }}
-                            location
-                            <span>{{ obj.name }}.</span>
-                            Backup downloading type:
-                            <select
-                              class="form-select form-select-sm ml-1 approving-select"
-                              aria-label="{{ report.id }}-{{ obj['type'] }}-{{ obj['name'] }}"
-                            >
-                              <option value="SFTP">SFTP</option>
-                              <option value="PCC">PCC</option>
-                              <option value="None">None</option>
-                            </select>
-                          </div>
-                        {% endif %}
-                      {% endfor %}
-                    </div>
+                        </div>
+                      {% endif %}
+                    {% endfor %}
                   </td>
                   <td class="p-2 text-gray align-middle">
                     <div>{{ offset_to_east(report.created_at, True).strftime("%Y-%m-%d %H:%M:%S") }}</div>
                   </td>
                   <td class="p-2 text-gray align-middle">
-                    <a type="button" href="#" class="btn btn-success btn-sm">Approve</a>
+                    <a type="button" href="#" class="btn btn-success btn-sm" onclick="handleChangeData({{ report.id }}, {status: 'APPROVED'}, true)">Approve</a>
                   </td>
                   <td class="p-2 text-gray align-middle">
-                    <a type="button" href="#" class="btn btn-danger btn-sm">Reject</a>
+                    <a type="button" href="#" class="btn btn-danger btn-sm" onclick="handleChangeData({{ report.id }}, {status: 'REJECTED'}, true)">Reject</a>
                   </td>
                 </tr>
               {% endfor %}
@@ -165,22 +181,42 @@
                 {% for report in reports %}
                   <tr>
                     <td class="p-2 text-gray align-middle">
-                      <a class="text-decoration-none" href="{{ url_for('company.edit_view', id=report.company_id) }}">{{ report.company_name }}</a>
+                      {% if report.status.value == "APPROVED" %}
+                        <a class="text-decoration-none" href="{{ url_for('company.edit_view', id=report.company_id) }}">{{ report.company_name }}</a>
+                      {% else %}
+                        <span>{{ report.company_name }}</span>
+                      {% endif %}
                     </td>
                     <td class="p-2 text-gray align-middle">
                       {% for obj in report.data_as_obj %}
                         {% if obj["type"] == "Company" %}
-                          <div>
-                            Company
-                            {{ "created" if obj["action"] == "Create" else "updated" }}
-                            <a class="text-decoration-none" href="{{ url_for('company.edit_view', id=obj.id) }}">{{ obj.name }}</a>
-                          </div>
+                          {% if report.status.value == "APPROVED" %}
+                            <div>
+                              Company
+                              {{ "created" if obj["action"] == "Create" else "updated" }}
+                              <a class="text-decoration-none" href="{{ url_for('company.edit_view', id=obj.id) }}">{{ obj.name }}</a>
+                            </div>
+                          {% else %}
+                            <div>
+                              Company was not
+                              {{ "created" if obj["action"] == "Create" else "updated" }}
+                              <span>{{ obj.name }}</span>
+                            </div>
+                          {% endif %}
                         {% elif obj["type"] == "Location" %}
-                          <div>
-                            Location
-                            {{ "created" if obj["action"] == "Create" else "updated" }}
-                            <a class="text-decoration-none" href="{{ url_for('location.edit_view', id=obj.id) }}">{{ obj.name }}</a>
-                          </div>
+                          {% if report.status.value == "APPROVED" %}
+                            <div>
+                              Location
+                              {{ "created" if obj["action"] == "Create" else "updated" }}
+                              <a class="text-decoration-none" href="{{ url_for('location.edit_view', id=obj.id) }}">{{ obj.name }}</a>
+                            </div>
+                          {% else %}
+                            <div>
+                              Location was not
+                              {{ "created" if obj["action"] == "Create" else "updated" }}
+                              <span>{{ obj.name }}</span>
+                            </div>
+                          {% endif %}
                         {% endif %}
                       {% endfor %}
                     </td>

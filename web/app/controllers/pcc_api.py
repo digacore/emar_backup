@@ -213,7 +213,7 @@ def create_new_creation_reports() -> None:
     # Check the existence of the organization in DB and create if not exists
     for organization in activations_list:
         # List of objects which should be created
-        objects_to_approve: list[s.PccCreatedObject] = []
+        objects_to_approve: list[s.PCCReportObject] = []
 
         facilities_list = (
             organization.facilityInfo
@@ -261,6 +261,7 @@ def create_new_creation_reports() -> None:
                     action="Update",
                     pcc_org_id=organization.orgUuid,
                     name=company_name,
+                    id=company_by_name.id,
                 ).dict()
             )
 
@@ -292,6 +293,7 @@ def create_new_creation_reports() -> None:
                             pcc_fac_id=facility.facId,
                             name=facility.facilityName,
                             pcc_org_id=organization.orgUuid,
+                            use_pcc_backup=True,
                         ).dict()
                     )
                 else:
@@ -305,6 +307,7 @@ def create_new_creation_reports() -> None:
                             pcc_fac_id=facility_info.facId,
                             name=facility_info.facilityName,
                             pcc_org_id=organization.orgUuid,
+                            use_pcc_backup=True,
                         ).dict()
                     )
 
@@ -323,6 +326,7 @@ def create_new_creation_reports() -> None:
                         pcc_fac_id=facility.facId,
                         name=location_by_name.name,
                         pcc_org_id=organization.orgUuid,
+                        use_pcc_backup=True,
                     ).dict()
                 )
 
