@@ -124,6 +124,22 @@ def scan_activations():
             previous_scan_finished_at = all_scan_records[0].finished_at
             current_scan_status = "READY"
 
+    # Check if the scanning button should be enabled or disabled
+    waiting_creation_report = m.PCCCreationReport.query.filter_by(
+        status=m.CreationReportStatus.WAITING
+    ).first()
+
+    if current_scan_status == "READY" and not waiting_creation_report:
+        scan_disabled = False
+        reason = ""
+    else:
+        scan_disabled = True
+        reason = (
+            "Current scanning is in progress"
+            if current_scan_status == m.ScanStatus.IN_PROGRESS.value
+            else "Approve or reject the waiting reports"
+        )
+
     return render_template(
         "pcc/scan_activations.html",
         reports=reports,
@@ -132,4 +148,6 @@ def scan_activations():
         previous_scan_finished_at=previous_scan_finished_at,
         current_scan_status=current_scan_status,
         approved_page=approved_page,
+        scan_disabled=scan_disabled,
+        reason=reason,
     )

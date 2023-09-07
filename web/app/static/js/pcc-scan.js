@@ -1,3 +1,10 @@
+// Tooltips initialization
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+
+// Searching input
 const searchInput = document.querySelector("#reports-search-input");
 if (searchInput) {
   searchInput.addEventListener("keyup", function (e) {
@@ -14,6 +21,7 @@ if (searchInput) {
   });
 }
 
+// X button to clear search input
 const clearSearchInput = (e) => {
   searchInput.value = "";
   let oldParams = (new URL(window.location)).searchParams;
@@ -26,6 +34,7 @@ const clearSearchInput = (e) => {
   window.location.href = "".concat(url.href);
 }
 
+// Function for JWT token refresh
 async function refreshJWT(obj_id, changed_data) {
   const refresh_jwt = ('; '+document.cookie).split(`; refresh_jwt_token=`).pop().split(';')[0];
 
@@ -43,6 +52,7 @@ async function refreshJWT(obj_id, changed_data) {
   });
 }
 
+// Function for handling changes in reports (delete action; set downloading type; approve / reject)
 const handleChangeData = async (obj_id, changed_data, should_reload) => {
   console.log("changed_data", changed_data);
   const url = new URL(`/pcc_api/creation-report/${obj_id}`, window.location.origin).href;
@@ -61,7 +71,7 @@ const handleChangeData = async (obj_id, changed_data, should_reload) => {
     if (response.status === 401) {
       await refreshJWT(obj_id, changed_data)
       window.location.reload();
-    } else if (response.status != 200) {
+    } else if (response.status !== 200) {
       throw new Error(`Error deleting action from report: ${response.status}`);
     }
 
