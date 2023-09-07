@@ -334,7 +334,8 @@ def sftp_check_files_for_update_and_load(credentials):
                 )
                 return offset_to_est(datetime.datetime.utcnow())
             else:
-                raise Exception(e)
+                logger.error("Exception occurred while connecting to sftp: {}", e)
+                raise AppError("Can't connect to sftp server")
 
         with ssh.open_sftp() as sftp:
             # get list of all files and folders on sftp server
@@ -682,6 +683,31 @@ def update_download_status(status, creds, last_downloaded="", last_saved_path=""
     logger.info(f"Download status: {status}.")
 
 
+def create_desktop_icon():
+    # This is path where the shortcut will be created
+    path = r"C:\\Users\\Public\\Desktop\\eMARVault.lnk"
+    icon_path = os.path.join(
+        Path("C:\\") / "Program Files" / "eMARVault" / "eMARVault_256x256.ico"
+    )
+    icon_path_86 = os.path.join(
+        Path("C:\\") / "Program Files (x86)" / "eMARVault" / "eMARVault_256x256.ico"
+    )
+    icon_path_to_use = icon_path_86 if os.path.isfile(icon_path_86) else icon_path
+
+    if not os.path.exists(path):
+        from win32com.client import Dispatch
+
+        # directory to which the shortcut leads
+        target = rf"{os.path.join(STORAGE_PATH, 'emar_backups.zip')}"
+        wDir = rf"{STORAGE_PATH}"
+
+        shell = Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(path)
+        shortcut.IconLocation = str(icon_path_to_use)
+        shortcut.WorkingDirectory = wDir
+        shortcut.Targetpath = target
+        shortcut.save()
+
 # def download_file_from_pcc(credentials):
 #     """Retrive access token and certs from Web and download files from PCC API"""
 #     # Get access token
@@ -726,29 +752,7 @@ def main_func():
 
         # user = getpass.getuser()
 
-        # This is path where the shortcut will be created
-        path = r"C:\\Users\\Public\\Desktop\\eMARVault.lnk"
-        icon_path = os.path.join(
-            Path("C:\\") / "Program Files" / "eMARVault" / "eMARVault_256x256.ico"
-        )
-        icon_path_86 = os.path.join(
-            Path("C:\\") / "Program Files (x86)" / "eMARVault" / "eMARVault_256x256.ico"
-        )
-        icon_path_to_use = icon_path_86 if os.path.isfile(icon_path_86) else icon_path
-
-        if not os.path.exists(path):
-            from win32com.client import Dispatch
-
-            # directory to which the shortcut leads
-            target = rf"{os.path.join(STORAGE_PATH, 'emar_backups.zip')}"
-            wDir = rf"{STORAGE_PATH}"
-
-            shell = Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut(path)
-            shortcut.IconLocation = str(icon_path_to_use)
-            shortcut.WorkingDirectory = wDir
-            shortcut.Targetpath = target
-            shortcut.save()
+        create_desktop_icon()
 
         self_update(STORAGE_PATH, credentials, old_credentials)
 
@@ -756,6 +760,8 @@ def main_func():
         logger.info(
             "New computer registered. Download will start next time if credentials available in DB."
         )
+
+        create_desktop_icon()
 
     else:
         logger.info(
@@ -767,7 +773,18 @@ def main_func():
 try:
     # NOTE wait randomly from 0 to 1800 sec
     # to spread load on the server
-    time.sleep(random.uniform(0, 1800))
+    # NOTE: Check if this is the first script run
+    is_first_run = (
+        not os.path.exists(STORAGE_PATH)
+        or (
+            len(os.listdir(STORAGE_PATH)) == 1
+            and os.listdir(STORAGE_PATH)[0] == "emar_log.txt"
+        )
+    )
+
+    if not is_first_run:
+        time.sleep(random.uniform(0, 1800))
+    
     main_func()
     logger.info("Task finished")
     time.sleep(20)
