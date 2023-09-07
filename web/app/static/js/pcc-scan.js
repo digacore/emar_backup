@@ -54,7 +54,6 @@ async function refreshJWT(obj_id, changed_data) {
 
 // Function for handling changes in reports (delete action; set downloading type; approve / reject)
 const handleChangeData = async (obj_id, changed_data, should_reload) => {
-  console.log("changed_data", changed_data);
   const url = new URL(`/pcc_api/creation-report/${obj_id}`, window.location.origin).href;
   const access_jwt = ('; '+document.cookie).split(`; jwt_token=`).pop().split(';')[0];
 
@@ -76,7 +75,7 @@ const handleChangeData = async (obj_id, changed_data, should_reload) => {
     }
 
   } catch (error) {
-    alert("Error deleting action from report");
+    alert(`Error deleting action from report: ${error}`);
   }
 
   if (should_reload) {
