@@ -131,7 +131,7 @@ def creation_report(
                         name=company_obj.name, pcc_org_id=company_obj.pcc_org_id
                     )
                     company.save()
-                    create_system_log(m.SystemLogType.COMPANY_CREATED, company)
+                    create_system_log(m.SystemLogType.COMPANY_CREATED, company, None)
 
                     new_company_obj = s.PCCReportObject(
                         id=company.id,
@@ -148,7 +148,7 @@ def creation_report(
                     company = m.Company.query.filter_by(name=company_obj.name).first()
                     company.pcc_org_id = company_obj.pcc_org_id
                     company.update()
-                    create_system_log(m.SystemLogType.COMPANY_UPDATED, company)
+                    create_system_log(m.SystemLogType.COMPANY_UPDATED, company, None)
 
                     new_company_obj = s.PCCReportObject(
                         id=company.id,
@@ -174,7 +174,7 @@ def creation_report(
                         use_pcc_backup=bool(obj.use_pcc_backup),
                     )
                     location.save()
-                    create_system_log(m.SystemLogType.LOCATION_CREATED, location)
+                    create_system_log(m.SystemLogType.LOCATION_CREATED, location, None)
 
                     new_obj = s.PCCReportObject(
                         id=location.id,
@@ -196,7 +196,7 @@ def creation_report(
                     location.pcc_fac_id = obj.pcc_fac_id
                     location.use_pcc_backup = bool(obj.use_pcc_backup)
                     location.update()
-                    create_system_log(m.SystemLogType.LOCATION_UPDATED, location)
+                    create_system_log(m.SystemLogType.LOCATION_UPDATED, location, None)
 
                     new_obj = s.PCCReportObject(
                         id=location.id,
