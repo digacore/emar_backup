@@ -22,7 +22,9 @@ class PCCCreationReport(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(JSON)
-    company_id = db.Column(db.Integer, nullable=True)
+    company_id = db.Column(
+        db.Integer, db.ForeignKey("companies.id", ondelete="SET NULL"), nullable=True
+    )
     company_name = db.Column(db.String(255), nullable=False)
     created_at = db.Column(
         db.DateTime,
@@ -31,7 +33,9 @@ class PCCCreationReport(db.Model, ModelMixin):
         nullable=False,
     )
     status = db.Column(Enum(CreationReportStatus), nullable=False)
-    status_changed_by = db.Column(db.String(255), nullable=True)
+    status_changed_by_id = db.Column(
+        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     status_changed_at = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
