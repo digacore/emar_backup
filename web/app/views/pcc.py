@@ -1,8 +1,19 @@
-from flask import render_template, Blueprint, request, abort, redirect, url_for
+import json
+from datetime import datetime
+
+from flask import (
+    render_template,
+    Blueprint,
+    request,
+    abort,
+    redirect,
+    url_for,
+    Response,
+)
 from flask_login import login_required, current_user
 
-from app import models as m, db
-from app.controllers import create_pagination
+from app import db, models as m, schema as s
+from app.controllers import create_pagination, create_system_log
 
 from worker import scan_pcc_activations
 
@@ -12,9 +23,9 @@ from app.logger import logger
 pcc_blueprint = Blueprint("pcc", __name__, url_prefix="/pcc")
 
 
-@pcc_blueprint.route("/scan-activations", methods=["GET", "POST"])
+@pcc_blueprint.route("/creation-reports", methods=["GET", "POST"])
 @login_required
-def scan_activations():
+def creation_reports():
     # This page is available only for global-full users
     if current_user.asociated_with.lower() != "global-full":
         abort(403, "You don't have permission to access this page.")
@@ -34,7 +45,7 @@ def scan_activations():
         scan_pcc_activations.delay(scan_record.id)
         logger.debug("Celery task for PCC activations scanning started")
 
-        return redirect(url_for("pcc.scan_activations"))
+        return redirect(url_for("pcc.creation_reports"))
 
     # Paginated reports or waiting for approve objects
     approved_page = request.args.get(
@@ -141,7 +152,7 @@ def scan_activations():
         )
 
     return render_template(
-        "pcc/scan_activations.html",
+        "pcc/creation-reports.html",
         reports=reports,
         page=pagination,
         previous_scan_result=previous_scan_result,
@@ -151,3 +162,146 @@ def scan_activations():
         scan_disabled=scan_disabled,
         reason=reason,
     )
+
+
+@pcc_blueprint.route("/creation-reports/<int:report_id>", methods=["GET", "POST"])
+@login_required
+def get_creation_report(report_id: int):
+    # This page is available only for global-full users
+    if current_user.asociated_with.lower() != "global-full":
+        abort(403, "You don't have permission to access this page.")
+
+    # Query params
+    status = request.args.get("status", type=str, default=None)
+    report = m.PCCCreationReport.query.get(report_id)
+
+    if not report:
+        abort(404, f"Report with id {report_id} not found")
+
+    if request.method == "POST":
+        new_data = request.form.get("data", type=str, default=None)
+        if new_data:
+            report.data = new_data
+            report.update()
+
+        return Response(status=200)
+
+    elif request.method == "GET":
+        # If status is "REJECTED" just change it
+        if status == "REJECTED":
+            report.status = m.CreationReportStatus.REJECTED
+            report.update()
+
+        # If status is "APPROVED" we need to create new company and locations
+        elif status == "APPROVED":
+            # Create company if it doesn't exist or update if it doesn't have pcc_org_id
+            parsed_data = json.loads(report.data)
+            objects_to_create = [
+                s.PCCReportObject.parse_obj(obj) for obj in parsed_data
+            ]
+
+            created_objects = []
+
+            # Find object with company creation or update
+            company_obj = None
+            for obj in objects_to_create:
+                if obj.type == "Company":
+                    company_obj = obj
+                    break
+
+            # If company_obj is None, it means that company already exists and we can find it by name
+            if not company_obj:
+                company = m.Company.query.filter_by(name=report.company_name).first()
+            else:
+                # Create the new company
+                if company_obj.action == "Create":
+                    company = m.Company(
+                        name=company_obj.name, pcc_org_id=company_obj.pcc_org_id
+                    )
+                    company.save()
+                    create_system_log(m.SystemLogType.COMPANY_CREATED, company, None)
+
+                    new_company_obj = s.PCCReportObject(
+                        id=company.id,
+                        type="Company",
+                        name=company.name,
+                        action="Create",
+                        pcc_org_id=company.pcc_org_id,
+                    )
+
+                    created_objects.append(new_company_obj.dict())
+
+                # Update the existing company
+                elif company_obj.action == "Update":
+                    company = m.Company.query.filter_by(name=company_obj.name).first()
+                    company.pcc_org_id = company_obj.pcc_org_id
+                    company.update()
+                    create_system_log(m.SystemLogType.COMPANY_UPDATED, company, None)
+
+                    new_company_obj = s.PCCReportObject(
+                        id=company.id,
+                        type="Company",
+                        name=company.name,
+                        action="Update",
+                        pcc_org_id=company.pcc_org_id,
+                    )
+
+                    created_objects.append(new_company_obj.dict())
+
+            # Create and update locations
+            for obj in objects_to_create:
+                if obj.type != "Location":
+                    continue
+
+                # Create the new location
+                if obj.action == "Create":
+                    location = m.Location(
+                        name=obj.name,
+                        company_name=company.name,
+                        pcc_fac_id=obj.pcc_fac_id,
+                        use_pcc_backup=bool(obj.use_pcc_backup),
+                    )
+                    location.save()
+                    create_system_log(m.SystemLogType.LOCATION_CREATED, location, None)
+
+                    new_obj = s.PCCReportObject(
+                        id=location.id,
+                        type="Location",
+                        name=location.name,
+                        action="Create",
+                        pcc_fac_id=location.pcc_fac_id,
+                        use_pcc_backup=location.use_pcc_backup,
+                    )
+
+                    created_objects.append(new_obj.dict())
+
+                # Update the existing location
+                elif obj.action == "Update":
+                    location = m.Location.query.filter(
+                        m.Location.name == obj.name,
+                        m.Location.company_name == company.name,
+                    ).first()
+                    location.pcc_fac_id = obj.pcc_fac_id
+                    location.use_pcc_backup = bool(obj.use_pcc_backup)
+                    location.update()
+                    create_system_log(m.SystemLogType.LOCATION_UPDATED, location, None)
+
+                    new_obj = s.PCCReportObject(
+                        id=location.id,
+                        type="Location",
+                        name=location.name,
+                        action="Update",
+                        pcc_fac_id=location.pcc_fac_id,
+                        use_pcc_backup=location.use_pcc_backup,
+                    )
+
+                    created_objects.append(new_obj.dict())
+
+            # Update report
+            report.status = m.CreationReportStatus.APPROVED
+            report.data = json.dumps(created_objects)
+            report.company_id = company.id
+            report.status_changed_at = datetime.utcnow()
+            report.update()
+
+        return redirect(url_for("pcc.creation_reports"))

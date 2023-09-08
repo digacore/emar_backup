@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block links %}
-  <link href="{{ url_for('static', filename='/css/scan-activations.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='/css/creation-reports.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -78,8 +78,8 @@
 
       <!-- Buttons -->
       <div class="d-flex justify-content-start mb-3">
-        <a type="button" href="{{ url_for('pcc.scan_activations') }}?page=1&per_page={{ page.per_page }}" class="btn {{ 'btn-primary' if not approved_page else 'btn-outline-primary' }} btn-sm mr-2">Waiting for approval</a>
-        <a type="button" href="{{ url_for('pcc.scan_activations') }}?page=1&per_page={{ page.per_page }}&approved_page=True" class="btn {{ 'btn-primary' if approved_page else 'btn-outline-primary' }} btn-sm mr-2">Approved / Rejected</a>
+        <a type="button" href="{{ url_for('pcc.creation_reports') }}?page=1&per_page={{ page.per_page }}" class="btn {{ 'btn-primary' if not approved_page else 'btn-outline-primary' }} btn-sm mr-2">Waiting for approval</a>
+        <a type="button" href="{{ url_for('pcc.creation_reports') }}?page=1&per_page={{ page.per_page }}&approved_page=True" class="btn {{ 'btn-primary' if approved_page else 'btn-outline-primary' }} btn-sm mr-2">Approved / Rejected</a>
       </div>
       <!-- End of buttons -->
 
@@ -145,10 +145,10 @@
                     <div>{{ offset_to_east(report.created_at, True).strftime("%Y-%m-%d %H:%M:%S") }}</div>
                   </td>
                   <td class="p-2 text-gray align-middle">
-                    <a type="button" href="#" class="btn btn-success btn-sm" onclick="handleChangeData({{ report.id }}, {status: 'APPROVED'}, true)">Approve</a>
+                    <a type="button" href="{{ url_for('pcc.get_creation_report', report_id=report.id) }}?status=APPROVED" class="btn btn-success btn-sm">Approve</a>
                   </td>
                   <td class="p-2 text-gray align-middle">
-                    <a type="button" href="#" class="btn btn-danger btn-sm" onclick="handleChangeData({{ report.id }}, {status: 'REJECTED'}, true)">Reject</a>
+                    <a type="button" href="{{ url_for('pcc.get_creation_report', report_id=report.id) }}?status=REJECTED" class="btn btn-danger btn-sm">Reject</a>
                   </td>
                 </tr>
               {% endfor %}
@@ -241,7 +241,7 @@
               <li>
                 <!-- prettier-ignore -->
                 <a
-                  href="{{ url_for('pcc.scan_activations') }}?page=1&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
+                  href="{{ url_for('pcc.creation_reports') }}?page=1&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
                   class="btn text-gray-500 btn-xs border btn-left-rounded-border p-0"
                   role="button"
                 >
@@ -254,7 +254,7 @@
               <li>
                 <!-- prettier-ignore -->
                 <a
-                  href="{{ url_for('pcc.scan_activations') }}?page={{page.page-1 if page.page > 1 else 1}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
+                  href="{{ url_for('pcc.creation_reports') }}?page={{page.page-1 if page.page > 1 else 1}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
                   class="btn text-gray-500 btn-xs border rounded-0 border-left-0 p-0"
                   role="button"
                 >
@@ -272,7 +272,7 @@
                 {% if p == page.page %}
                   <!-- prettier-ignore -->
                   <a
-                    href="{{ url_for('pcc.scan_activations') }}?page={{p}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
+                    href="{{ url_for('pcc.creation_reports') }}?page={{p}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
                     class="btn text-gray-700 btn-xs border rounded-0 border-left-0"
                     role="button"
                   >
@@ -281,7 +281,7 @@
                 {% else %}
                   <!-- prettier-ignore -->
                   <a
-                    href="{{ url_for('pcc.scan_activations') }}?page={{p}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
+                    href="{{ url_for('pcc.creation_reports') }}?page={{p}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
                     class="btn text-gray-500 btn-xs border rounded-0 border-left-0"
                     role="button"
                   >
@@ -294,7 +294,7 @@
               <li>
                 <!-- prettier-ignore -->
                 <a
-                  href="{{ url_for('pcc.scan_activations') }}?page={{page.page+1 if page.page < page.pages else page.pages}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
+                  href="{{ url_for('pcc.creation_reports') }}?page={{page.page+1 if page.page < page.pages else page.pages}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
                   class="btn text-gray-500 btn-xs border rounded-0 border-right-0 border-left-0 p-0"
                   role="button"
                 >
@@ -308,7 +308,7 @@
               <li>
                 <!-- prettier-ignore -->
                 <a
-                  href="{{ url_for('pcc.scan_activations') }}?page={{page.pages}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
+                  href="{{ url_for('pcc.creation_reports') }}?page={{page.pages}}&per_page={{ page.per_page }}&q={{ page.query }}&approved_page={{ approved_page }}"
                   class="btn text-gray-500 btn-xs border btn-right-rounded-border p-0"
                   role="button"
                 >
@@ -331,7 +331,7 @@
           </button>
           <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
             {% for items_number in [10, 25, 50] %}
-              <a class="dropdown-item" href="{{ url_for('pcc.scan_activations') }}?page=1&per_page={{ items_number }}&q={{ page.query }}&approved_page={{ approved_page }}">{{ items_number }}</a>
+              <a class="dropdown-item" href="{{ url_for('pcc.creation_reports') }}?page=1&per_page={{ items_number }}&q={{ page.query }}&approved_page={{ approved_page }}">{{ items_number }}</a>
             {% endfor %}
           </div>
         </div>
@@ -342,5 +342,5 @@
 {% endblock %}
 
 {% block scripts %}
-  <script src="{{ url_for('static', filename='/js/pcc-scan.js') }}"></script>
+  <script src="{{ url_for('static', filename='/js/creation-reports.js') }}"></script>
 {% endblock %}

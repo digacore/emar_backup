@@ -69,7 +69,7 @@ def update_report_data(
     report_data: list[dict], obj_id: int, new_data: dict
 ) -> list[dict]:
     """Update report data field.
-    We need this function in /pcc/scan_activations.html template to change the values in data (JSON field)
+    We need this function in /pcc/creation-reports.html template to change the values in data (JSON field)
 
     Args:
         report_data (list[dict]): report data

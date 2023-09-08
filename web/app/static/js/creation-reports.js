@@ -34,48 +34,27 @@ const clearSearchInput = (e) => {
   window.location.href = "".concat(url.href);
 }
 
-// Function for JWT token refresh
-async function refreshJWT(obj_id, changed_data) {
-  const refresh_jwt = ('; '+document.cookie).split(`; refresh_jwt_token=`).pop().split(';')[0];
 
-  $.ajax({
-    url: '/refresh',
-    beforeSend: (request) => {
-      request.setRequestHeader('Authorization', `Bearer ${refresh_jwt}`);
-    },
-    success: async () => {
-      await handleChangeData(obj_id, changed_data);
-    },
-    error: (xhr)=> {
-      console.log("error in refreshJWT", xhr);
-    }
-  });
-}
-
-// Function for handling changes in reports (delete action; set downloading type; approve / reject)
+// Function for handling changes in reports (delete action; set downloading type)
 const handleChangeData = async (obj_id, changed_data, should_reload) => {
-  const url = new URL(`/pcc_api/creation-report/${obj_id}`, window.location.origin).href;
-  const access_jwt = ('; '+document.cookie).split(`; jwt_token=`).pop().split(';')[0];
+  const url = new URL(`/pcc/creation-reports/${obj_id}`, window.location.origin).href;
+  const newData = new FormData();
+  for (const [key, value] of Object.entries(changed_data)) {
+    newData.append(key, JSON.stringify(value));
+  }
 
   try {
     response = await fetch(url, {
-      method: 'PATCH',
-      headers: {
-          'Content-type': 'application/json; charset=UTF-8',
-          'Authorization': `Bearer ${access_jwt}`
-      },
-      body: JSON.stringify(changed_data),
+      method: 'POST',
+      body: newData,
     });
 
-    if (response.status === 401) {
-      await refreshJWT(obj_id, changed_data)
-      window.location.reload();
-    } else if (response.status !== 200) {
-      throw new Error(`Error deleting action from report: ${response.status}`);
+    if (response.status !== 200) {
+      throw new Error(`Unsuccessful change of report data: ${response.status}`);
     }
 
   } catch (error) {
-    alert(`Error deleting action from report: ${error}`);
+    alert(`Error while changing report data: ${error}`);
   }
 
   if (should_reload) {

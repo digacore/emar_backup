@@ -1,14 +1,11 @@
 import os
-import json
 import requests
-from datetime import datetime
 from urllib.parse import urljoin
 from flask import Response, abort
-from flask_jwt_extended import jwt_required
 
 from app import schema as s, models as m
 from app.views.blueprint import BlueprintApi
-from app.controllers import get_pcc_2_legged_token, create_system_log
+from app.controllers import get_pcc_2_legged_token
 from app.logger import logger
 from config import BaseConfig as CFG
 
@@ -80,140 +77,3 @@ def download_backup_from_pcc(body: s.GetCredentials) -> Response:
         content_type=res.headers["Content-Type"],
         headers={"Content-Disposition": "attachment; filename=emar_backup.zip"},
     )
-
-
-@pcc_api_blueprint.patch("/creation-report/<int:report_id>")
-@jwt_required()
-def creation_report(
-    body: s.PartialCreationReport, path: s.CreationReportAPIPath
-) -> Response:
-    # Find report in DB
-    report = m.PCCCreationReport.query.get(path.report_id)
-    if not report:
-        abort(404, f"Report with id {path.report_id} not found")
-
-    # Update report data field
-    if body.data:
-        report.data = json.dumps(body.data)
-        report.update()
-
-    # Update report status
-    if body.status:
-        # If status is "REJECTED" just change it
-        if body.status == "REJECTED":
-            report.status = body.status
-            report.update()
-
-        # If status is "APPROVED" we need to create new company and locations
-        elif body.status == "APPROVED":
-            # Create company if it doesn't exist or update if it doesn't have pcc_org_id
-            parsed_data = json.loads(report.data)
-            objects_to_create = [
-                s.PCCReportObject.parse_obj(obj) for obj in parsed_data
-            ]
-
-            created_objects = []
-
-            # Find object with company creation or update
-            company_obj = None
-            for obj in objects_to_create:
-                if obj.type == "Company":
-                    company_obj = obj
-                    break
-
-            # If company_obj is None, it means that company already exists and we can find it by name
-            if not company_obj:
-                company = m.Company.query.filter_by(name=report.company_name).first()
-            else:
-                # Create the new company
-                if company_obj.action == "Create":
-                    company = m.Company(
-                        name=company_obj.name, pcc_org_id=company_obj.pcc_org_id
-                    )
-                    company.save()
-                    create_system_log(m.SystemLogType.COMPANY_CREATED, company, None)
-
-                    new_company_obj = s.PCCReportObject(
-                        id=company.id,
-                        type="Company",
-                        name=company.name,
-                        action="Create",
-                        pcc_org_id=company.pcc_org_id,
-                    )
-
-                    created_objects.append(new_company_obj.dict())
-
-                # Update the existing company
-                elif company_obj.action == "Update":
-                    company = m.Company.query.filter_by(name=company_obj.name).first()
-                    company.pcc_org_id = company_obj.pcc_org_id
-                    company.update()
-                    create_system_log(m.SystemLogType.COMPANY_UPDATED, company, None)
-
-                    new_company_obj = s.PCCReportObject(
-                        id=company.id,
-                        type="Company",
-                        name=company.name,
-                        action="Update",
-                        pcc_org_id=company.pcc_org_id,
-                    )
-
-                    created_objects.append(new_company_obj.dict())
-
-            # Create and update locations
-            for obj in objects_to_create:
-                if obj.type != "Location":
-                    continue
-
-                # Create the new location
-                if obj.action == "Create":
-                    location = m.Location(
-                        name=obj.name,
-                        company_name=company.name,
-                        pcc_fac_id=obj.pcc_fac_id,
-                        use_pcc_backup=bool(obj.use_pcc_backup),
-                    )
-                    location.save()
-                    create_system_log(m.SystemLogType.LOCATION_CREATED, location, None)
-
-                    new_obj = s.PCCReportObject(
-                        id=location.id,
-                        type="Location",
-                        name=location.name,
-                        action="Create",
-                        pcc_fac_id=location.pcc_fac_id,
-                        use_pcc_backup=location.use_pcc_backup,
-                    )
-
-                    created_objects.append(new_obj.dict())
-
-                # Update the existing location
-                elif obj.action == "Update":
-                    location = m.Location.query.filter(
-                        m.Location.name == obj.name,
-                        m.Location.company_name == company.name,
-                    ).first()
-                    location.pcc_fac_id = obj.pcc_fac_id
-                    location.use_pcc_backup = bool(obj.use_pcc_backup)
-                    location.update()
-                    create_system_log(m.SystemLogType.LOCATION_UPDATED, location, None)
-
-                    new_obj = s.PCCReportObject(
-                        id=location.id,
-                        type="Location",
-                        name=location.name,
-                        action="Update",
-                        pcc_fac_id=location.pcc_fac_id,
-                        use_pcc_backup=location.use_pcc_backup,
-                    )
-
-                    created_objects.append(new_obj.dict())
-
-            # Update report
-            report.status = body.status
-            report.data = json.dumps(created_objects)
-            report.company_id = company.id
-            report.status_changed_at = datetime.utcnow()
-            report.update()
-
-    return Response(status=200)
