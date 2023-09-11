@@ -33,6 +33,9 @@ class Location(db.Model, ModelMixin):
     use_pcc_backup = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
+    created_from_pcc = db.Column(
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
 
     def __repr__(self):
         return self.name
@@ -66,6 +69,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_offline",
         "pcc_fac_id",
         "use_pcc_backup",
+        "created_from_pcc",
     ]
     column_searchable_list = column_list
     column_filters = column_list
@@ -79,6 +83,8 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_offline": {"readonly": True},
         "created_at": {"readonly": True},
     }
+
+    form_excluded_columns = ("created_from_pcc",)
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field

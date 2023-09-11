@@ -216,7 +216,9 @@ def get_creation_report(report_id: int):
                 # Create the new company
                 if company_obj.action == "Create":
                     company = m.Company(
-                        name=company_obj.name, pcc_org_id=company_obj.pcc_org_id
+                        name=company_obj.name,
+                        pcc_org_id=company_obj.pcc_org_id,
+                        created_from_pcc=True,
                     )
                     company.save()
                     create_system_log(m.SystemLogType.COMPANY_CREATED, company, None)
@@ -260,6 +262,7 @@ def get_creation_report(report_id: int):
                         company_name=company.name,
                         pcc_fac_id=obj.pcc_fac_id,
                         use_pcc_backup=bool(obj.use_pcc_backup),
+                        created_from_pcc=True,
                     )
                     location.save()
                     create_system_log(m.SystemLogType.LOCATION_CREATED, location, None)

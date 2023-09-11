@@ -95,12 +95,12 @@
                                         <span class="fa fa-chevron-down glyphicon glyphicon-chevron-down"></span>
                                     {% endif %}
                                 </a>
-                                
+
                             {% else %}
                             <a href="{{ sort_url(column, True) }}" title="{{ _gettext('Sort by %(name)s', name=name) }}">{{ name }}</a>
                             {% endif %}
-    
-                            <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"  
+
+                            <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"
                                 role="search">
                                 <div class="form-inline">
                                     <input class="single-search-cls" size="20" type="text" name="search" value=""
@@ -112,7 +112,7 @@
                                     ">
                                 </div>
                             </form>
-    
+
                         {% else %}
                             {{ name }}
                         {% endif %}
@@ -148,7 +148,7 @@
                     </td>
                     {%- endif -%}
                 {% endblock %}
-                
+
                 {% set loc_compn_name = namespace(loc='loc') %}
                 {% set comp_or_loc = namespace(col='0_21') %}
                 {% for c, name in list_columns %}
@@ -159,7 +159,15 @@
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
                                 {% else %}
-                                {{ get_value(row, c) }}
+                                    {% set created_from_pcc = True if "created_from_pcc: true" in get_value(row, "created_from_pcc").unescape() else False %}
+                                    {% if created_from_pcc %}
+                                        <div class="d-flex align-items-center">
+                                            {{ get_value(row, c) }}
+                                            <img src="{{ url_for('static', filename='/img/pcc_logo.png') }}" alt="PCC logo" style="height: 20px; width: 20px;" class="ml-2">
+                                        </div>
+                                    {% else %}
+                                        {{ get_value(row, c) }}
+                                    {% endif %}
                                 {% endif %}
                         {%elif c=="computers_per_location" or c=="total_computers"%}
                             <a href="https://emarvault.com/admin/computer/?search={{loc_compn_name.loc}}">

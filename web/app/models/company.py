@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from sqlalchemy import sql
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
@@ -23,6 +24,9 @@ class Company(db.Model, ModelMixin):
     computers_offline = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.now)
     pcc_org_id = db.Column(db.String(128), nullable=True)
+    created_from_pcc = db.Column(
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
 
     def __repr__(self):
         return self.name
@@ -54,6 +58,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "computers_online",
         "computers_offline",
         "pcc_org_id",
+        "created_from_pcc",
     ]
     column_filters = column_list
 
@@ -68,6 +73,8 @@ class CompanyView(RowActionListMixin, MyModelView):
         "computers_offline": {"readonly": True},
         "created_at": {"readonly": True},
     }
+
+    form_excluded_columns = ("created_from_pcc",)
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
