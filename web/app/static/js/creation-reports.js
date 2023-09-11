@@ -4,6 +4,15 @@ const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
   return new bootstrap.Tooltip(tooltipTriggerEl)
 })
 
+// Reloading function
+const autoReload = (shouldReload) => {
+  setTimeout(() => {
+    if (shouldReload) {
+      window.location.reload();
+    }
+  }, 5000);
+}
+
 // Searching input
 const searchInput = document.querySelector("#reports-search-input");
 if (searchInput) {

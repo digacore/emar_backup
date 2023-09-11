@@ -343,4 +343,7 @@
 
 {% block scripts %}
   <script src="{{ url_for('static', filename='/js/creation-reports.js') }}"></script>
+  <script>
+    autoReload({{ "true" if current_scan_status == "IN PROGRESS" else "false" }})
+  </script>
 {% endblock %}
