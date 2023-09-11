@@ -11,6 +11,7 @@ from flask import (
     Response,
 )
 from flask_login import login_required, current_user
+from sqlalchemy import cast, String
 
 from app import db, models as m, schema as s
 from app.controllers import create_pagination, create_system_log
@@ -60,10 +61,11 @@ def creation_reports():
         )
 
         # Filter query by search query
+        # NOTE: search over the JSON field converted to string by substring is not the best idea
         if q:
             reports_query = reports_query.filter(
                 (m.PCCCreationReport.company_name.ilike(f"%{q}%"))
-                # | (m.PCCCreationReport.data.ilike(f"%{q}%"))
+                | cast(m.PCCCreationReport.data, String).ilike(f"%{q}%")
             )
 
         pagination = create_pagination(total=m.count(reports_query), page_size=per_page)
@@ -88,7 +90,7 @@ def creation_reports():
         if q:
             reports_query = reports_query.filter(
                 (m.PCCCreationReport.company_name.ilike(f"%{q}%"))
-                # | (m.PCCCreationReport.data.ilike(f"%{q}%"))
+                | cast(m.PCCCreationReport.data, String).ilike(f"%{q}%")
             )
 
         pagination = create_pagination(total=m.count(reports_query), page_size=per_page)
@@ -178,6 +180,8 @@ def get_creation_report(report_id: int):
     if not report:
         abort(404, f"Report with id {report_id} not found")
 
+    # TODO: validation through the Flask form
+    # validate_on_submit()
     if request.method == "POST":
         new_data = request.form.get("data", type=str, default=None)
         if new_data:
@@ -205,7 +209,7 @@ def get_creation_report(report_id: int):
             # Find object with company creation or update
             company_obj = None
             for obj in objects_to_create:
-                if obj.type == "Company":
+                if obj.type == s.PCCReportType.COMPANY.value:
                     company_obj = obj
                     break
 
@@ -214,7 +218,7 @@ def get_creation_report(report_id: int):
                 company = m.Company.query.filter_by(name=report.company_name).first()
             else:
                 # Create the new company
-                if company_obj.action == "Create":
+                if company_obj.action == s.PCCReportAction.CREATE.value:
                     company = m.Company(
                         name=company_obj.name, pcc_org_id=company_obj.pcc_org_id
                     )
@@ -223,16 +227,16 @@ def get_creation_report(report_id: int):
 
                     new_company_obj = s.PCCReportObject(
                         id=company.id,
-                        type="Company",
+                        type=s.PCCReportType.COMPANY.value,
                         name=company.name,
-                        action="Create",
+                        action=s.PCCReportAction.CREATE.value,
                         pcc_org_id=company.pcc_org_id,
                     )
 
                     created_objects.append(new_company_obj.dict())
 
                 # Update the existing company
-                elif company_obj.action == "Update":
+                elif company_obj.action == s.PCCReportAction.UPDATE.value:
                     company = m.Company.query.filter_by(name=company_obj.name).first()
                     company.pcc_org_id = company_obj.pcc_org_id
                     company.update()
@@ -240,9 +244,9 @@ def get_creation_report(report_id: int):
 
                     new_company_obj = s.PCCReportObject(
                         id=company.id,
-                        type="Company",
+                        type=s.PCCReportType.COMPANY.value,
                         name=company.name,
-                        action="Update",
+                        action=s.PCCReportAction.UPDATE.value,
                         pcc_org_id=company.pcc_org_id,
                     )
 
@@ -250,11 +254,11 @@ def get_creation_report(report_id: int):
 
             # Create and update locations
             for obj in objects_to_create:
-                if obj.type != "Location":
+                if obj.type != s.PCCReportType.LOCATION.value:
                     continue
 
                 # Create the new location
-                if obj.action == "Create":
+                if obj.action == s.PCCReportAction.CREATE.value:
                     location = m.Location(
                         name=obj.name,
                         company_name=company.name,
@@ -266,9 +270,9 @@ def get_creation_report(report_id: int):
 
                     new_obj = s.PCCReportObject(
                         id=location.id,
-                        type="Location",
+                        type=s.PCCReportType.LOCATION.value,
                         name=location.name,
-                        action="Create",
+                        action=s.PCCReportAction.CREATE.value,
                         pcc_fac_id=location.pcc_fac_id,
                         use_pcc_backup=location.use_pcc_backup,
                     )
@@ -276,7 +280,7 @@ def get_creation_report(report_id: int):
                     created_objects.append(new_obj.dict())
 
                 # Update the existing location
-                elif obj.action == "Update":
+                elif obj.action == s.PCCReportAction.UPDATE.value:
                     location = m.Location.query.filter(
                         m.Location.name == obj.name,
                         m.Location.company_name == company.name,
@@ -288,9 +292,9 @@ def get_creation_report(report_id: int):
 
                     new_obj = s.PCCReportObject(
                         id=location.id,
-                        type="Location",
+                        type=s.PCCReportType.LOCATION.value,
                         name=location.name,
-                        action="Update",
+                        action=s.PCCReportAction.UPDATE.value,
                         pcc_fac_id=location.pcc_fac_id,
                         use_pcc_backup=location.use_pcc_backup,
                     )

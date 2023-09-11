@@ -221,6 +221,7 @@ def create_new_creation_reports() -> None:
             else get_org_facilities_list(organization.orgUuid)
         )
 
+        # TODO: use match case instead of if-else if upgrade python to >3.10
         if isinstance(facilities_list[0], s.Facility):
             company_name = facilities_list[0].orgName
         elif isinstance(facilities_list[0], s.FacilityActivationData):
@@ -242,8 +243,8 @@ def create_new_creation_reports() -> None:
         if not company_by_org_uuid and not company_by_name:
             objects_to_approve.append(
                 s.PCCReportObject(
-                    type="Company",
-                    action="Create",
+                    type=s.PCCReportType.COMPANY.value,
+                    action=s.PCCReportAction.CREATE.value,
                     pcc_org_id=organization.orgUuid,
                     name=company_name,
                 ).dict()
@@ -257,8 +258,8 @@ def create_new_creation_reports() -> None:
         elif company_by_name and not company_by_org_uuid:
             objects_to_approve.append(
                 s.PCCReportObject(
-                    type="Company",
-                    action="Update",
+                    type=s.PCCReportType.COMPANY.value,
+                    action=s.PCCReportAction.UPDATE.value,
                     pcc_org_id=organization.orgUuid,
                     name=company_name,
                     id=company_by_name.id,
@@ -271,6 +272,7 @@ def create_new_creation_reports() -> None:
                 organization.orgUuid,
             )
 
+        # TODO: think about the reduce of db queries amount
         # Check the existence of the facility in DB and add to approving list if not exists
         for facility in facilities_list:
             location_by_fac_id = m.Location.query.filter(
@@ -288,8 +290,8 @@ def create_new_creation_reports() -> None:
                     facility_info = facility
                     objects_to_approve.append(
                         s.PCCReportObject(
-                            type="Location",
-                            action="Create",
+                            type=s.PCCReportType.LOCATION.value,
+                            action=s.PCCReportAction.CREATE.value,
                             pcc_fac_id=facility.facId,
                             name=facility.facilityName,
                             pcc_org_id=organization.orgUuid,
@@ -302,8 +304,8 @@ def create_new_creation_reports() -> None:
                     )
                     objects_to_approve.append(
                         s.PCCReportObject(
-                            type="Location",
-                            action="Create",
+                            type=s.PCCReportType.LOCATION.value,
+                            action=s.PCCReportAction.CREATE.value,
                             pcc_fac_id=facility_info.facId,
                             name=facility_info.facilityName,
                             pcc_org_id=organization.orgUuid,
@@ -321,8 +323,8 @@ def create_new_creation_reports() -> None:
             elif location_by_name and not location_by_fac_id:
                 objects_to_approve.append(
                     s.PCCReportObject(
-                        type="Location",
-                        action="Update",
+                        type=s.PCCReportType.LOCATION.value,
+                        action=s.PCCReportAction.UPDATE.value,
                         pcc_fac_id=facility.facId,
                         name=location_by_name.name,
                         pcc_org_id=organization.orgUuid,
