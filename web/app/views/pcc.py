@@ -14,6 +14,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import cast, String
 
 from app import db, models as m, schema as s
+from app.forms import CreationReportForm
 from app.controllers import create_pagination, create_system_log
 
 from worker import scan_pcc_activations
@@ -180,135 +181,129 @@ def get_creation_report(report_id: int):
     if not report:
         abort(404, f"Report with id {report_id} not found")
 
-    # TODO: validation through the Flask form
-    # validate_on_submit()
-    if request.method == "POST":
-        new_data = request.form.get("data", type=str, default=None)
-        if new_data:
-            report.data = new_data
-            report.update()
+    form = CreationReportForm(request.form)
+    if form.validate_on_submit():
+        report.data = form.data.data
+        report.update()
 
         return Response(status=200)
 
-    elif request.method == "GET":
-        # If status is "REJECTED" just change it
-        if status == "REJECTED":
-            report.status = m.CreationReportStatus.REJECTED
-            report.update()
+    # If status is "REJECTED" just change it
+    if status == "REJECTED":
+        report.status = m.CreationReportStatus.REJECTED
+        report.update()
 
-        # If status is "APPROVED" we need to create new company and locations
-        elif status == "APPROVED":
-            # Create company if it doesn't exist or update if it doesn't have pcc_org_id
-            parsed_data = json.loads(report.data)
-            objects_to_create = [
-                s.PCCReportObject.parse_obj(obj) for obj in parsed_data
-            ]
+    # If status is "APPROVED" we need to create new company and locations
+    elif status == "APPROVED":
+        # Create company if it doesn't exist or update if it doesn't have pcc_org_id
+        parsed_data = json.loads(report.data)
+        objects_to_create = [s.PCCReportObject.parse_obj(obj) for obj in parsed_data]
 
-            created_objects = []
+        created_objects = []
 
-            # Find object with company creation or update
-            company_obj = None
-            for obj in objects_to_create:
-                if obj.type == s.PCCReportType.COMPANY.value:
-                    company_obj = obj
-                    break
+        # Find object with company creation or update
+        company_obj = None
+        for obj in objects_to_create:
+            if obj.type == s.PCCReportType.COMPANY.value:
+                company_obj = obj
+                break
 
-            # If company_obj is None, it means that company already exists and we can find it by name
-            if not company_obj:
-                company = m.Company.query.filter_by(name=report.company_name).first()
-            else:
-                # Create the new company
-                if company_obj.action == s.PCCReportAction.CREATE.value:
-                    company = m.Company(
-                        name=company_obj.name,
-                        pcc_org_id=company_obj.pcc_org_id,
-                        created_from_pcc=True,
-                    )
-                    company.save()
-                    create_system_log(m.SystemLogType.COMPANY_CREATED, company, None)
+        # If company_obj is None, it means that company already exists and we can find it by name
+        if not company_obj:
+            company = m.Company.query.filter_by(name=report.company_name).first()
+        else:
+            # Create the new company
+            if company_obj.action == s.PCCReportAction.CREATE.value:
+                company = m.Company(
+                    name=company_obj.name,
+                    pcc_org_id=company_obj.pcc_org_id,
+                    created_from_pcc=True,
+                )
+                company.save()
+                create_system_log(m.SystemLogType.COMPANY_CREATED, company, None)
 
-                    new_company_obj = s.PCCReportObject(
-                        id=company.id,
-                        type=s.PCCReportType.COMPANY.value,
-                        name=company.name,
-                        action=s.PCCReportAction.CREATE.value,
-                        pcc_org_id=company.pcc_org_id,
-                    )
+                new_company_obj = s.PCCReportObject(
+                    id=company.id,
+                    type=s.PCCReportType.COMPANY.value,
+                    name=company.name,
+                    action=s.PCCReportAction.CREATE.value,
+                    pcc_org_id=company.pcc_org_id,
+                )
 
-                    created_objects.append(new_company_obj.dict())
+                created_objects.append(new_company_obj.dict())
 
-                # Update the existing company
-                elif company_obj.action == s.PCCReportAction.UPDATE.value:
-                    company = m.Company.query.filter_by(name=company_obj.name).first()
-                    company.pcc_org_id = company_obj.pcc_org_id
-                    company.update()
-                    create_system_log(m.SystemLogType.COMPANY_UPDATED, company, None)
+            # Update the existing company
+            elif company_obj.action == s.PCCReportAction.UPDATE.value:
+                company = m.Company.query.filter_by(name=company_obj.name).first()
+                company.pcc_org_id = company_obj.pcc_org_id
+                company.update()
+                create_system_log(m.SystemLogType.COMPANY_UPDATED, company, None)
 
-                    new_company_obj = s.PCCReportObject(
-                        id=company.id,
-                        type=s.PCCReportType.COMPANY.value,
-                        name=company.name,
-                        action=s.PCCReportAction.UPDATE.value,
-                        pcc_org_id=company.pcc_org_id,
-                    )
+                new_company_obj = s.PCCReportObject(
+                    id=company.id,
+                    type=s.PCCReportType.COMPANY.value,
+                    name=company.name,
+                    action=s.PCCReportAction.UPDATE.value,
+                    pcc_org_id=company.pcc_org_id,
+                )
 
-                    created_objects.append(new_company_obj.dict())
+                created_objects.append(new_company_obj.dict())
 
-            # Create and update locations
-            for obj in objects_to_create:
-                if obj.type != s.PCCReportType.LOCATION.value:
-                    continue
+        # Create and update locations
+        for obj in objects_to_create:
+            if obj.type != s.PCCReportType.LOCATION.value:
+                continue
 
-                # Create the new location
-                if obj.action == s.PCCReportAction.CREATE.value:
-                    location = m.Location(
-                        name=obj.name,
-                        company_name=company.name,
-                        pcc_fac_id=obj.pcc_fac_id,
-                        use_pcc_backup=bool(obj.use_pcc_backup),
-                        created_from_pcc=True,
-                    )
-                    location.save()
-                    create_system_log(m.SystemLogType.LOCATION_CREATED, location, None)
+            # Create the new location
+            if obj.action == s.PCCReportAction.CREATE.value:
+                location = m.Location(
+                    name=obj.name,
+                    company_name=company.name,
+                    pcc_fac_id=obj.pcc_fac_id,
+                    use_pcc_backup=bool(obj.use_pcc_backup),
+                    created_from_pcc=True,
+                )
+                location.save()
+                create_system_log(m.SystemLogType.LOCATION_CREATED, location, None)
 
-                    new_obj = s.PCCReportObject(
-                        id=location.id,
-                        type=s.PCCReportType.LOCATION.value,
-                        name=location.name,
-                        action=s.PCCReportAction.CREATE.value,
-                        pcc_fac_id=location.pcc_fac_id,
-                        use_pcc_backup=location.use_pcc_backup,
-                    )
+                new_obj = s.PCCReportObject(
+                    id=location.id,
+                    type=s.PCCReportType.LOCATION.value,
+                    name=location.name,
+                    action=s.PCCReportAction.CREATE.value,
+                    pcc_fac_id=location.pcc_fac_id,
+                    use_pcc_backup=location.use_pcc_backup,
+                )
 
-                    created_objects.append(new_obj.dict())
+                created_objects.append(new_obj.dict())
 
-                # Update the existing location
-                elif obj.action == s.PCCReportAction.UPDATE.value:
-                    location = m.Location.query.filter(
-                        m.Location.name == obj.name,
-                        m.Location.company_name == company.name,
-                    ).first()
-                    location.pcc_fac_id = obj.pcc_fac_id
-                    location.use_pcc_backup = bool(obj.use_pcc_backup)
-                    location.update()
-                    create_system_log(m.SystemLogType.LOCATION_UPDATED, location, None)
+            # Update the existing location
+            elif obj.action == s.PCCReportAction.UPDATE.value:
+                location = m.Location.query.filter(
+                    m.Location.name == obj.name,
+                    m.Location.company_name == company.name,
+                ).first()
+                location.pcc_fac_id = obj.pcc_fac_id
+                location.use_pcc_backup = bool(obj.use_pcc_backup)
+                location.update()
+                create_system_log(m.SystemLogType.LOCATION_UPDATED, location, None)
 
-                    new_obj = s.PCCReportObject(
-                        id=location.id,
-                        type=s.PCCReportType.LOCATION.value,
-                        name=location.name,
-                        action=s.PCCReportAction.UPDATE.value,
-                        pcc_fac_id=location.pcc_fac_id,
-                        use_pcc_backup=location.use_pcc_backup,
-                    )
+                new_obj = s.PCCReportObject(
+                    id=location.id,
+                    type=s.PCCReportType.LOCATION.value,
+                    name=location.name,
+                    action=s.PCCReportAction.UPDATE.value,
+                    pcc_fac_id=location.pcc_fac_id,
+                    use_pcc_backup=location.use_pcc_backup,
+                )
 
-                    created_objects.append(new_obj.dict())
+                created_objects.append(new_obj.dict())
 
-            # Update report
-            report.status = m.CreationReportStatus.APPROVED
-            report.data = json.dumps(created_objects)
-            report.company_id = company.id
-            report.status_changed_at = datetime.utcnow()
-            report.update()
+        # Update report
+        report.status = m.CreationReportStatus.APPROVED
+        report.data = json.dumps(created_objects)
+        report.company_id = company.id
+        report.status_changed_at = datetime.utcnow()
+        report.update()
 
-        return redirect(url_for("pcc.creation_reports"))
+    return redirect(url_for("pcc.creation_reports"))

@@ -221,24 +221,29 @@ def create_new_creation_reports() -> None:
             else get_org_facilities_list(organization.orgUuid)
         )
 
-        # TODO: use match case instead of if-else if upgrade python to >3.10
-        if isinstance(facilities_list[0], s.Facility):
-            company_name = facilities_list[0].orgName
-        elif isinstance(facilities_list[0], s.FacilityActivationData):
-            facility_info = get_facility_info(
-                organization.orgUuid, facilities_list[0].facId
-            )
-            company_name = facility_info.orgName
-        else:
-            raise UnknownTypeError(
-                "Can't get company name from PCC API. Unknown response type"
-            )
+        match type(facilities_list[0]):
+            case s.Facility:
+                company_name = facilities_list[0].orgName
+
+            case s.FacilityActivationData:
+                facility_info = get_facility_info(
+                    organization.orgUuid, facilities_list[0].facId
+                )
+
+            case _:
+                raise UnknownTypeError(
+                    "Can't get company name from PCC API. Unknown response type"
+                )
 
         # There can be companies which are already exist but do not have pcc_org_id
-        company_by_org_uuid = m.Company.query.filter_by(
-            pcc_org_id=organization.orgUuid
+        company_by_org_uuid = m.Company.query.filter(
+            m.Company.pcc_org_id == organization.orgUuid, m.Company.name == company_name
         ).first()
-        company_by_name = m.Company.query.filter_by(name=company_name).first()
+
+        # Try to find company just by name
+        company_by_name = None
+        if not company_by_org_uuid:
+            company_by_name = m.Company.query.filter_by(name=company_name).first()
 
         if not company_by_org_uuid and not company_by_name:
             objects_to_approve.append(
@@ -255,7 +260,7 @@ def create_new_creation_reports() -> None:
                 company_name,
                 organization.orgUuid,
             )
-        elif company_by_name and not company_by_org_uuid:
+        elif company_by_name:
             objects_to_approve.append(
                 s.PCCReportObject(
                     type=s.PCCReportType.COMPANY.value,
@@ -272,17 +277,21 @@ def create_new_creation_reports() -> None:
                 organization.orgUuid,
             )
 
-        # TODO: think about the reduce of db queries amount
         # Check the existence of the facility in DB and add to approving list if not exists
         for facility in facilities_list:
             location_by_fac_id = m.Location.query.filter(
                 m.Location.company_name == company_name,
                 m.Location.pcc_fac_id == facility.facId,
-            ).first()
-            location_by_name = m.Location.query.filter(
-                m.Location.company_name == company_name,
                 m.Location.name == facility.facilityName,
             ).first()
+
+            # Try to find location just by name
+            location_by_name = None
+            if not location_by_fac_id:
+                location_by_name = m.Location.query.filter(
+                    m.Location.company_name == company_name,
+                    m.Location.name == facility.facilityName,
+                ).first()
 
             # Add new location to approving list if not exists
             if not location_by_fac_id and not location_by_name:
@@ -320,7 +329,7 @@ def create_new_creation_reports() -> None:
                 )
 
             # Update location if it doesn't have pcc_fac_id
-            elif location_by_name and not location_by_fac_id:
+            elif location_by_name:
                 objects_to_approve.append(
                     s.PCCReportObject(
                         type=s.PCCReportType.LOCATION.value,

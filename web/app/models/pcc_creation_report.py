@@ -15,8 +15,6 @@ class CreationReportStatus(enum.Enum):
     REJECTED = "REJECTED"
 
 
-# TODO: create logic of not deleting the companies but just marking them as "deleted"
-# Then make company_id field as foreign key
 class PCCCreationReport(db.Model, ModelMixin):
     __tablename__ = "pcc_creation_reports"
 
