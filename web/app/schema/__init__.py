@@ -20,3 +20,4 @@ from .pcc_activation import (
 from .pcc_facility import FacilitiesListResponse, Facility
 from .pcc_report_object import PCCReportObject, PCCReportType, PCCReportAction
 from .creation_report import PartialCreationReport, CreationReportAPIPath
+from .search import SearchCompanyObj

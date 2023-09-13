@@ -107,3 +107,62 @@ function startTime() {
   document.getElementById("js-clock").innerHTML = today;
   setTimeout(startTime, 1000);
 }
+
+function selectCompany(hintsContainer) {
+  const allHintsParagraphs = document.querySelectorAll(".search-company-hint");
+  allHintsParagraphs.forEach((hint) => {
+    hint.addEventListener("click", (e) => {
+      const input = hintsContainer.parentElement.querySelector(
+        ".search-company-input"
+      );
+      input.value = e.target.innerHTML.trim();
+      hintsContainer.setAttribute("hidden", "");
+
+      const confirmButton = hintsContainer.parentElement.parentElement.parentElement.querySelector(".confirm-modal-button");
+      console.log("confirmButton", confirmButton);
+      confirmButton.removeAttribute("disabled");
+    });
+  });
+};
+
+const searchCompanyParagraph = document.querySelector(".search-company-hint");
+const searchComapnyInputs = document.querySelectorAll(".search-company-input");
+searchComapnyInputs.forEach((searchComapnyInput) => {
+  searchComapnyInput.addEventListener("input", async (e) => {
+    try {
+      const response = await fetch(`/search/company?q=${e.target.value}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.status !== 200) {
+        throw new Error(`Error in searching ${response.status}`);
+      }
+
+      companiesArray = await response.json();
+    } catch (error) {
+      alert(`Error in searching company ${error}`);
+    }
+
+    companyHintsContainer = searchComapnyInput.parentElement.querySelector(".search-company-hints-div");
+
+    if (companiesArray.results.length > 0) {
+      companyHintsContainer.removeAttribute("hidden");
+
+      companyHintsContainer.innerHTML = "";
+      // Copy paragraph with hints
+      companiesArray.results.forEach((company) => {
+        const companyHint = searchCompanyParagraph.cloneNode(true);
+        companyHint.innerHTML = company.name;
+        companyHintsContainer.appendChild(companyHint);
+      });
+    } else {
+      companyHintsContainer.setAttribute("hidden", "");
+    }
+
+    selectCompany(companyHintsContainer);
+  });
+});
+
+
