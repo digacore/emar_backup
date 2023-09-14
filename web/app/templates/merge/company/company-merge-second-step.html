@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block flash_messages %}
+{% endblock %}
+
+{% block links %}
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex w-100 h-100 justify-content-center flex-column">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="text-gray font-weight-bold">Review data for merging:</h4>
+    </div>
+    <!-- End header -->
+  </div>
+{% endblock %}
+
+{% block sidebar_toggle %}
+  <script>
+    document.addEventListener("DOMContentLoaded",
+      function(){
+        $("#sidebarToggle").click();
+      });
+  </script>
+{% endblock sidebar_toggle %}
+
+{% block bootstrap_core %}
+  <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
+  <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+{% endblock bootstrap_core %}
+
+{% block scripts %}
+{% endblock %}
