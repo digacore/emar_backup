@@ -155,7 +155,7 @@
                         <div class="modal fade" id="mergeModal{{ get_pk_value(row) }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
-                                    <form action="/merge/company/{{ get_pk_value(row) }}" method="POST">
+                                    <form action="/merge/company/{{ get_pk_value(row) }}/first-step" method="POST">
                                         <div class="modal-header">
                                             <h5 class="modal-title text-primary" id="exampleModalLabel">Merge company {{ get_value(row, "name") }} with:</h5>
                                             <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">

@@ -119,7 +119,6 @@ function selectCompany(hintsContainer) {
       hintsContainer.setAttribute("hidden", "");
 
       const confirmButton = hintsContainer.parentElement.parentElement.parentElement.querySelector(".confirm-modal-button");
-      console.log("confirmButton", confirmButton);
       confirmButton.removeAttribute("disabled");
     });
   });

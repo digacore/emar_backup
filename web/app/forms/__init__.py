@@ -2,4 +2,4 @@
 from .auth import LoginForm
 from .email import EmailForm
 from .pcc_creation_report import CreationReportForm
-from .merge import MergeSecondaryCompany
+from .merge import MergeFirstStepForm, MainMergeForm
