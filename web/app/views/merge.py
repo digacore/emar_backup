@@ -1,7 +1,7 @@
-from flask import Blueprint, request, abort, render_template
+from flask import Blueprint, request, abort, render_template, redirect, url_for
 from flask_login import login_required, current_user
 
-from app import models as m
+from app import db, models as m
 from app.forms import CompanyMergeFirstStepForm, CompanyMergeSelectForm
 from app.views.utils import (
     get_companies_merged_locations,
@@ -62,6 +62,9 @@ def merge_company_second_step(company_id: int):
     # Get primary company and secondary companies
     primary_company = m.Company.query.get_or_404(company_id)
 
+    is_confirmed_param = request.args.get("confirmed", None)
+    is_confirmed = True if is_confirmed_param == "True" else False
+
     sec_comp_id = request.args.get("secondary_company", None)
     sec_comp_id = int(sec_comp_id) if sec_comp_id else None
     secondary_company = m.Company.query.get_or_404(sec_comp_id)
@@ -91,11 +94,64 @@ def merge_company_second_step(company_id: int):
     if not merge_select_form.validate_on_submit():
         abort(400, "Invalid form data.")
 
-    return render_template(
-        "merge/company/company-merge-second-step.html",
-        primary_company=primary_company,
-        secondary_company=secondary_company,
-        merge_select_form=merge_select_form,
-        selected_locations=selected_locations,
-        selected_computers=selected_computers,
-    )
+    if not is_confirmed:
+        return render_template(
+            "merge/company/company-merge-second-step.html",
+            primary_company=primary_company,
+            secondary_company=secondary_company,
+            merge_select_form=merge_select_form,
+            selected_locations=selected_locations,
+            selected_computers=selected_computers,
+        )
+
+    # Merging process
+    # Change data of primary company
+    # primary_company.name = reviewed_form.name.data
+    primary_company.default_sftp_username = merge_select_form.default_sftp_username.data
+    primary_company.default_sftp_password = merge_select_form.default_sftp_password.data
+    primary_company.pcc_org_id = merge_select_form.pcc_org_id.data
+
+    # Add new computers from secondary company to primary company
+    for computer in selected_computers:
+        computer.company_name = primary_company.name
+        computer.update()
+
+        # If location is not selected, remove it from computer
+        if computer.location not in selected_locations:
+            computer.location_name = None
+            computer.update()
+
+    # Delete primary company computers that were not selected
+    for computer in primary_company.computers:
+        if computer not in selected_computers:
+            db.session.delete(computer)
+            db.session.commit()
+
+    # Delete secondary company computers that were not selected
+    for computer in secondary_company.computers:
+        if computer not in selected_computers:
+            db.session.delete(computer)
+            db.session.commit()
+
+    # Add new locations from secondary company to primary company
+    for location in selected_locations:
+        location.company_name = primary_company.name
+        location.update()
+
+    # Delete primary company locations that were not selected
+    for location in primary_company.locations:
+        if location not in selected_locations:
+            db.session.delete(location)
+            db.session.commit()
+
+    # Delete secondary company locations that were not selected
+    for location in secondary_company.locations:
+        if location not in selected_locations:
+            db.session.delete(location)
+            db.session.commit()
+
+    # Delete secondary company
+    db.session.delete(secondary_company)
+    db.session.commit()
+
+    return redirect(url_for("company.edit_view", id=primary_company.id))
