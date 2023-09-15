@@ -77,6 +77,16 @@ def merge_company_second_step(company_id: int):
         request.form, locations=merged_locations, computers=merged_computers
     )
 
+    selected_locations = [
+        m.Location.query.get(location_id)
+        for location_id in merge_select_form.merged_locations_list.data
+    ]
+
+    selected_computers = [
+        m.Computer.query.get(computer_id)
+        for computer_id in merge_select_form.merged_computers_list.data
+    ]
+
     # Validate the form
     if not merge_select_form.validate_on_submit():
         abort(400, "Invalid form data.")
@@ -86,4 +96,6 @@ def merge_company_second_step(company_id: int):
         primary_company=primary_company,
         secondary_company=secondary_company,
         merge_select_form=merge_select_form,
+        selected_locations=selected_locations,
+        selected_computers=selected_computers,
     )

@@ -7,10 +7,11 @@ const handleListCheckboxClick = (checkbox) => {
     const selectOption = document.getElementById(selectOptionId);
 
     if (checkbox.checked) {
-        selectOption.setAttribute('selected', '');
+        selectOption.setAttribute('selected', 'selected');
     } else {
         selectOption.removeAttribute('selected');
     }
+    console.log(selectOption);
 };
 
 const handleUseSecondaryClick = (checkbox, primaryValue, secondaryValue) => {

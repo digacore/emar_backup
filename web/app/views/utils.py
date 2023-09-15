@@ -13,9 +13,9 @@ def get_companies_merged_locations(
     Returns:
         list[m.Location]: List of merged locations
     """
-    primary_company_locations: list[m.Location] = primary_company.locations
+    primary_company_locations: list[m.Location] = primary_company.locations.copy()
 
-    secondary_company_locations: list[m.Location] = secondary_company.locations
+    secondary_company_locations: list[m.Location] = secondary_company.locations.copy()
 
     merged_locations = primary_company_locations
     for location in secondary_company_locations:
@@ -37,9 +37,9 @@ def get_companies_merged_computers(
     Returns:
         list[m.Computer]: List of merged computers
     """
-    primary_company_computers: list[m.Computer] = primary_company.computers
+    primary_company_computers: list[m.Computer] = primary_company.computers.copy()
 
-    secondary_company_computers: list[m.Computer] = secondary_company.computers
+    secondary_company_computers: list[m.Computer] = secondary_company.computers.copy()
 
     merged_computers = primary_company_computers
     for computer in secondary_company_computers:
