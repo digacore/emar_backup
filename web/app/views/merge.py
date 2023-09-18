@@ -127,12 +127,6 @@ def merge_company_second_step(company_id: int):
             db.session.delete(computer)
             db.session.commit()
 
-    # Delete secondary company computers that were not selected
-    for computer in secondary_company.computers:
-        if computer not in selected_computers:
-            db.session.delete(computer)
-            db.session.commit()
-
     # Add new locations from secondary company to primary company
     for location in selected_locations:
         location.company_name = primary_company.name
@@ -140,12 +134,6 @@ def merge_company_second_step(company_id: int):
 
     # Delete primary company locations that were not selected
     for location in primary_company.locations:
-        if location not in selected_locations:
-            db.session.delete(location)
-            db.session.commit()
-
-    # Delete secondary company locations that were not selected
-    for location in secondary_company.locations:
         if location not in selected_locations:
             db.session.delete(location)
             db.session.commit()

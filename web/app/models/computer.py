@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import JSON, or_, and_, sql
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 from flask import request
 
@@ -37,13 +37,19 @@ class Computer(db.Model, ModelMixin):
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
 
     company = relationship(
-        "Company", passive_deletes=True, backref="computers", lazy="select"
+        "Company",
+        passive_deletes=True,
+        backref=backref("computers", cascade="delete"),
+        lazy="select",
     )
     company_name = db.Column(
         db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
     )
     location = relationship(
-        "Location", passive_deletes=True, backref="computers", lazy="select"
+        "Location",
+        passive_deletes=True,
+        backref=backref("computers", cascade="delete"),
+        lazy="select",
     )
     location_name = db.Column(
         db.String, db.ForeignKey("locations.name", ondelete="CASCADE")
