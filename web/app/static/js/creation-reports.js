@@ -51,13 +51,11 @@ const handleChangeData = async (obj_id, changed_data, csrf_token) => {
   for (const [key, value] of Object.entries(changed_data)) {
     newData.append(key, JSON.stringify(value));
   }
+  newData.append('csrf_token', csrf_token);
 
   try {
     response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'X-CSRFToken': csrf_token,
-      },
       body: newData,
     });
 
