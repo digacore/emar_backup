@@ -9,6 +9,7 @@
 {% block head %}
     {{ super() }}
     {{ lib.form_css() }}
+    <link href="{{ url_for('static', filename='/css/company-location.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block body %}
@@ -173,9 +174,11 @@
                                                     >
                                                     <input
                                                         id="search-company-input-{{ get_pk_value(row) }}"
-                                                        class="search-company-input"
+                                                        class="search-company-input w-100 p-2 border rounded"
+                                                        placeholder="Search company"
+                                                        autocomplete="off"
                                                     >
-                                                    <div class="search-company-hints-div" hidden data-company-container="{{ get_pk_value(row) }}">
+                                                    <div class="search-company-hints-div mt-2" hidden>
                                                         <p class="search-company-hint"></p>
                                                     </div>
                                                 </div>
