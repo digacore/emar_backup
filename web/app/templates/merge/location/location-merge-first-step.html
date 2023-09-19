@@ -16,7 +16,7 @@
     <!-- End header -->
 
     <!-- Merging form -->
-    <form action="/merge/location/{{ primary_location.id }}/second-step?secondary_location={{ secondary_location.id }}" method="POST">
+    <form action="/merge/location/{{ primary_location.id }}/second-step?secondary_company={{ secondary_company_id }}&secondary_location={{ secondary_location.id }}" method="POST">
       <div class="form-group mb-4">
         <label for="name-input" class="text-gray-900 font-weight-bold">Location Name:</label>
         <input id="name-input" type="text" name="name" class="form-control" value="{{ primary_location.name }}" readonly>
@@ -35,22 +35,41 @@
 
       <div class="form-group mb-4">
         <label for="company-input" class="text-gray-900 font-weight-bold">Company:</label>
-        <input id="company-input" type="text" name="company_name" class="form-control" value="{{ primary_location.company.name }}" readonly>
+        <input
+          id="company-input"
+          type="text"
+          name="company_name"
+          class="form-control"
+          value="{{ primary_location.company_name or ''}}"
+          readonly
+          >
 
         <div class="form-check mt-2">
           <input
             type="checkbox"
             class="form-check-input"
             id="use-secondary-company-input"
-            onclick="handleUseSecondaryClick(this, '{{ primary_location.company.name }}', '{{ secondary_location.company.name }}')"
+            onclick="handleUseSecondaryClick(this, '{{ primary_location.company_name }}', '{{ secondary_location.company_name }}')"
           >
-          <label class="form-check-label" for="use-secondary-company-input">Use secondary ({{ secondary_location.company.name }})</label>
+          <label
+            class="form-check-label"
+            for="use-secondary-company-input"
+          >
+            Use secondary ({{ secondary_location.company_name or '' }})
+          </label>
         </div>
       </div>
 
       <div class="form-group mb-4">
         <label for="sftp-path-input" class="text-gray-900 font-weight-bold">Default SFTP Path:</label>
-        <input id="sftp-path-input" type="text" name="default_sftp_path" class="form-control" value="{{ primary_location.default_sftp_path }}" readonly>
+        <input
+          id="sftp-path-input"
+          type="text"
+          name="default_sftp_path"
+          class="form-control"
+          value="{{ primary_location.default_sftp_path or '' }}"
+          readonly
+        >
 
         <div class="form-check mt-2">
           <input
@@ -59,7 +78,12 @@
             id="use-secondary-sftp-path-input"
             onclick="handleUseSecondaryClick(this, '{{ primary_location.default_sftp_path }}', '{{ secondary_location.default_sftp_path }}')"
           >
-          <label class="form-check-label" for="use-secondary-sftp-path-input">Use secondary ({{ secondary_location.default_sftp_path }})</label>
+          <label
+            class="form-check-label"
+            for="use-secondary-sftp-path-input"
+          >
+            Use secondary ({{ secondary_location.default_sftp_path or '' }})
+          </label>
         </div>
       </div>
 
@@ -67,7 +91,14 @@
         <label for="pcc-fac-id-input" class="text-gray-900 font-weight-bold">PCC Facility ID:</label>
         <br>
         <span class="text-danger" style="font-size: 0.75em">** Change it only if you change location's company and name</span>
-        <input id="pcc-fac-id-input" type="text" name="pcc_fac_id" class="form-control" value="{{ primary_location.pcc_fac_id }}" readonly>
+        <input
+          id="pcc-fac-id-input"
+          type="text"
+          name="pcc_fac_id"
+          class="form-control"
+          value="{{ primary_location.pcc_fac_id or '' }}"
+          readonly
+        >
 
         <div class="form-check mt-2">
           <input
@@ -76,7 +107,12 @@
             id="use-secondary-pcc-fac-id-input"
             onclick="handleUseSecondaryClick(this, '{{ primary_location.pcc_fac_id }}', '{{ secondary_location.pcc_fac_id }}')"
           >
-          <label class="form-check-label" for="use-secondary-pcc-fac-id-input">Use secondary ({{ secondary_location.pcc_fac_id }})</label>
+          <label
+            class="form-check-label"
+            for="use-secondary-pcc-fac-id-input"
+          >
+            Use secondary ({{ secondary_location.pcc_fac_id or '' }})
+          </label>
         </div>
       </div>
 

@@ -30,23 +30,48 @@
 
         <div class="text-gray-900 font-weight-bold mb-2">Default SFTP Username:</div>
         <div class="d-flex align-items-center mb-4 w-100">
-          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_company.default_sftp_username }}" readonly>
+          <input
+            class="d-block w-25 border rounded mr-4 p-2"
+            value="{{ primary_company.default_sftp_username or '' }}"
+            readonly
+          >
           <i class="fas fa-arrow-right mr-4"></i>
-          <input id="sftp-username-input" type="text" name="default_sftp_username" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.default_sftp_username.data }}" readonly>
+          <input
+            id="sftp-username-input"
+            type="text"
+            name="default_sftp_username"
+            class="d-block border rounded p-2 w-25"
+            value="{{ merge_select_form.default_sftp_username.data or '' }}"
+            readonly
+          >
         </div>
 
         <div class="text-gray-900 font-weight-bold mb-2">Default SFTP Password:</div>
         <div class="d-flex align-items-center mb-4 w-100">
-          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_company.default_sftp_password }}" readonly>
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_company.default_sftp_password or '' }}" readonly>
           <i class="fas fa-arrow-right mr-4"></i>
-          <input id="sftp-password-input" type="text" name="default_sftp_password" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.default_sftp_password.data }}" readonly>
+          <input
+            id="sftp-password-input"
+            type="text"
+            name="default_sftp_password"
+            class="d-block border rounded p-2 w-25"
+            value="{{ merge_select_form.default_sftp_password.data or '' }}"
+            readonly
+          >
         </div>
 
         <div class="text-gray-900 font-weight-bold mb-2">PCC organization ID:</div>
         <div class="d-flex align-items-center mb-4 w-100">
-          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_company.pcc_org_id }}" readonly>
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_company.pcc_org_id or '' }}" readonly>
           <i class="fas fa-arrow-right mr-4"></i>
-          <input id="pcc-org-id-input" type="text" name="pcc_org_id" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.pcc_org_id.data }}" readonly>
+          <input
+            id="pcc-org-id-input"
+            type="text"
+            name="pcc_org_id"
+            class="d-block border rounded p-2 w-25"
+            value="{{ merge_select_form.pcc_org_id.data or '' }}"
+            readonly
+          >
         </div>
 
         <!-- Lists with selected locations and computers -->

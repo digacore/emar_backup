@@ -76,6 +76,10 @@ def merge_company_second_step(company_id: int):
         request.form, locations=merged_locations, computers=merged_computers
     )
 
+    # Validate the form
+    if not merge_select_form.validate_on_submit():
+        abort(400, "Invalid form data.")
+
     selected_locations = [
         m.Location.query.get(location_id)
         for location_id in merge_select_form.merged_locations_list.data
@@ -85,10 +89,6 @@ def merge_company_second_step(company_id: int):
         m.Computer.query.get(computer_id)
         for computer_id in merge_select_form.merged_computers_list.data
     ]
-
-    # Validate the form
-    if not merge_select_form.validate_on_submit():
-        abort(400, "Invalid form data.")
 
     if not is_confirmed:
         return render_template(
@@ -152,6 +152,7 @@ def merge_location_first_step(location_id: int):
     # Get the primary and secondary locations
     primary_location = m.Location.query.get_or_404(location_id)
 
+    secondary_company_param = request.args.get("secondary_company", None)
     secondary_location_param = request.args.get("secondary_location", None)
     secondary_location_id = (
         int(secondary_location_param) if secondary_location_param else None
@@ -169,6 +170,7 @@ def merge_location_first_step(location_id: int):
         "merge/location/location-merge-first-step.html",
         primary_location=primary_location,
         secondary_location=secondary_location,
+        secondary_company_id=secondary_company_param,
         merged_computers=merged_computers,
     )
 
@@ -187,10 +189,10 @@ def merge_location_second_step(location_id: int):
     # Get primary and secondary locations
     primary_location = m.Location.query.get_or_404(location_id)
 
+    secondary_company_param = request.args.get("secondary_company", None)
     sec_location_id = request.args.get("secondary_location", None)
     sec_location_id = int(sec_location_id) if sec_location_id else None
     secondary_location = m.Location.query.get_or_404(sec_location_id)
-    secondary_company = secondary_location.company
 
     # Form with selected data
     merged_computers = get_merged_computers_list(primary_location, secondary_location)
@@ -212,6 +214,7 @@ def merge_location_second_step(location_id: int):
             "merge/location/location-merge-second-step.html",
             primary_location=primary_location,
             secondary_location=secondary_location,
+            secondary_company_id=secondary_company_param,
             merge_select_form=merge_select_form,
             selected_computers=selected_computers,
         )
@@ -245,6 +248,6 @@ def merge_location_second_step(location_id: int):
         url_for(
             "merge.merge_company_first_step",
             company_id=primary_location.company.id,
-            secondary_company=secondary_company.id,
+            secondary_company=secondary_company_param,
         )
     )

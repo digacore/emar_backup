@@ -18,17 +18,17 @@ const handleUseSecondaryClick = (checkbox, primaryValue, secondaryValue) => {
     const connectedInput = document.getElementById(inputId);
 
     if (checkbox.checked) {
-        connectedInput.value = secondaryValue;
+        connectedInput.value = secondaryValue !== "None" ? secondaryValue : "";
     } else {
-        connectedInput.value = primaryValue;
+        connectedInput.value = primaryValue !== "None" ? primaryValue : "";
     }
 };
 
 const handleLocationMergingSelect = (locationId) => {
     const confirmButton = document.getElementById(`confirm-merge-${locationId}`);
     const secondLocationSelect = confirmButton.parentElement.parentElement.querySelector('.secondary-location-select');
-    const newHref = confirmButton.getAttribute('href').replace(/\?secondary_location=.*$/, "")
-        + `?secondary_location=${secondLocationSelect.value}`;
+    const newHref = confirmButton.getAttribute('href').replace(/\&secondary_location=.*$/, "")
+        + `&secondary_location=${secondLocationSelect.value}`;
     confirmButton.setAttribute('href', newHref);
     confirmButton.removeAttribute('disabled');
 }

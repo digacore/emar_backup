@@ -5,9 +5,13 @@ from wtforms.validators import DataRequired
 
 class CompanyMergeSelectForm(FlaskForm):
     name = StringField("Name", [DataRequired()])
-    default_sftp_username = StringField("Default SFTP Username")
-    default_sftp_password = StringField("Default SFTP Password")
-    pcc_org_id = StringField("PCC Org ID")
+    default_sftp_username = StringField(
+        "Default SFTP Username", default=None, filters=[lambda x: x or None]
+    )
+    default_sftp_password = StringField(
+        "Default SFTP Password", default=None, filters=[lambda x: x or None]
+    )
+    pcc_org_id = StringField("PCC Org ID", default=None, filters=[lambda x: x or None])
     merged_locations_list = SelectMultipleField("Locations")
     merged_computers_list = SelectMultipleField("Computers")
 
@@ -23,10 +27,16 @@ class CompanyMergeSelectForm(FlaskForm):
 
 class LocationMergeSelectForm(FlaskForm):
     name = StringField("Name", [DataRequired()])
-    company_name = StringField("Company Name")
-    default_sftp_path = StringField("Default SFTP Username")
-    pcc_fac_id = StringField("Default SFTP Password")
-    use_pcc_backup = BooleanField("Use PCC Backup", [DataRequired()])
+    company_name = StringField(
+        "Company Name", default=None, filters=[lambda x: x or None]
+    )
+    default_sftp_path = StringField(
+        "Default SFTP Username", default=None, filters=[lambda x: x or None]
+    )
+    pcc_fac_id = StringField(
+        "Default SFTP Password", default=None, filters=[lambda x: x or None]
+    )
+    use_pcc_backup = BooleanField("Use PCC Backup", default=False)
     merged_computers_list = SelectMultipleField("Computers")
 
     def __init__(self, *args, **kwargs):

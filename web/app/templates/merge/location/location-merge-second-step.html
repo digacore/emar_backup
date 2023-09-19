@@ -17,7 +17,7 @@
 
     <!-- Content -->
     <form
-      action="/merge/location/{{ primary_location.id }}/second-step?secondary_location={{ secondary_location.id }}&confirmed=True"
+      action="/merge/location/{{ primary_location.id }}/second-step?secondary_company={{ secondary_company_id }}&secondary_location={{ secondary_location.id }}&confirmed=True"
       method="POST"
     >
       <div class="d-flex flex-column w-100">
@@ -30,23 +30,23 @@
 
         <div class="text-gray-900 font-weight-bold mb-2">Company:</div>
         <div class="d-flex align-items-center mb-4 w-100">
-          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.company.name }}" readonly>
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.company.name or '' }}" readonly>
           <i class="fas fa-arrow-right mr-4"></i>
-          <input id="company-input" type="text" name="company_name" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.company_name.data }}" readonly>
+          <input id="company-input" type="text" name="company_name" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.company_name.data or '' }}" readonly>
         </div>
 
         <div class="text-gray-900 font-weight-bold mb-2">Default SFTP Path:</div>
         <div class="d-flex align-items-center mb-4 w-100">
-          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.default_sftp_path }}" readonly>
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.default_sftp_path or '' }}" readonly>
           <i class="fas fa-arrow-right mr-4"></i>
-          <input id="sftp-path-input" type="text" name="default_sftp_path" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.default_sftp_path.data }}" readonly>
+          <input id="sftp-path-input" type="text" name="default_sftp_path" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.default_sftp_path.data or '' }}" readonly>
         </div>
 
         <div class="text-gray-900 font-weight-bold mb-2">PCC Facility ID:</div>
         <div class="d-flex align-items-center mb-4 w-100">
-          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.pcc_fac_id }}" readonly>
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.pcc_fac_id or '' }}" readonly>
           <i class="fas fa-arrow-right mr-4"></i>
-          <input id="pcc-fac-d-input" type="text" name="pcc_fac_id" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.pcc_fac_id.data }}" readonly>
+          <input id="pcc-fac-d-input" type="text" name="pcc_fac_id" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.pcc_fac_id.data or '' }}" readonly>
         </div>
 
         <div class="d-flex align-items-center mb-4">

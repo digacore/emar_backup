@@ -36,7 +36,15 @@
 
       <div class="form-group mb-4">
         <label for="sftp-username-input" class="text-gray-900 font-weight-bold">Default SFTP Username:</label>
-        <input form="main-first-step-form" id="sftp-username-input" type="text" name="default_sftp_username" class="form-control" value="{{ primary_company.default_sftp_username }}" readonly>
+        <input
+          form="main-first-step-form"
+          id="sftp-username-input"
+          type="text"
+          name="default_sftp_username"
+          class="form-control"
+          value="{{ primary_company.default_sftp_username or '' }}"
+          readonly
+        >
 
         <div class="form-check mt-2">
           <input
@@ -45,13 +53,26 @@
             id="use-secondary-sftp-username-input"
             onclick="handleUseSecondaryClick(this, '{{ primary_company.default_sftp_username }}', '{{ secondary_company.default_sftp_username }}')"
           >
-          <label class="form-check-label" for="use-secondary-sftp-username-input">Use secondary ({{ secondary_company.default_sftp_username }})</label>
+          <label
+            class="form-check-label"
+            for="use-secondary-sftp-username-input"
+          >
+            Use secondary ({{ secondary_company.default_sftp_username or '' }})
+          </label>
         </div>
       </div>
 
       <div class="form-group mb-4">
         <label for="sftp-password-input" class="text-gray-900 font-weight-bold">Default SFTP Password:</label>
-        <input form="main-first-step-form" id="sftp-password-input" type="text" name="default_sftp_password" class="form-control" value="{{ primary_company.default_sftp_password }}" readonly>
+        <input
+          form="main-first-step-form"
+          id="sftp-password-input"
+          type="text"
+          name="default_sftp_password"
+          class="form-control"
+          value="{{ primary_company.default_sftp_password or '' }}"
+          readonly
+        >
 
         <div class="form-check mt-2">
           <input
@@ -60,13 +81,26 @@
             id="use-secondary-sftp-password-input"
             onclick="handleUseSecondaryClick(this, '{{ primary_company.default_sftp_password }}', '{{ secondary_company.default_sftp_password }}')"
           >
-          <label class="form-check-label" for="use-secondary-sftp-password-input">Use secondary ({{ secondary_company.default_sftp_password }})</label>
+          <label
+            class="form-check-label"
+            for="use-secondary-sftp-password-input"
+          >
+            Use secondary ({{ secondary_company.default_sftp_password or '' }})
+          </label>
         </div>
       </div>
 
       <div class="form-group mb-4">
         <label for="pcc-org-id-input" class="text-gray-900 font-weight-bold">PCC organization ID:</label>
-        <input form="main-first-step-form" id="pcc-org-id-input" type="text" name="pcc_org_id" class="form-control" value="{{ primary_company.pcc_org_id }}" readonly>
+        <input
+          form="main-first-step-form"
+          id="pcc-org-id-input"
+          type="text"
+          name="pcc_org_id"
+          class="form-control"
+          value="{{ primary_company.pcc_org_id or '' }}"
+          readonly
+        >
 
         <div class="form-check mt-2">
           <input
@@ -75,7 +109,12 @@
             id="use-secondary-pcc-org-id-input"
             onclick="handleUseSecondaryClick(this, '{{ primary_company.pcc_org_id }}', '{{ secondary_company.pcc_org_id }}')"
           >
-          <label class="form-check-label" for="use-secondary-pcc-org-id-input">Use secondary ({{ secondary_company.pcc_org_id }})</label>
+          <label
+            class="form-check-label"
+            for="use-secondary-pcc-org-id-input"
+          >
+            Use secondary ({{ secondary_company.pcc_org_id or '' }})
+          </label>
         </div>
       </div>
 
@@ -155,7 +194,7 @@
               <button type="button" class="btn btn-light" data-dismiss="modal">
                 <span class="text-secondary">Cancel</span>
               </button>
-              <a id="confirm-merge-{{ location.id }}" href="/merge/location/{{ location.id }}/first-step" type="button" disabled class="btn btn-primary">Confirm</a>
+              <a id="confirm-merge-{{ location.id }}" href="/merge/location/{{ location.id }}/first-step?secondary_company={{ secondary_company.id }}" type="button" disabled class="btn btn-primary">Confirm</a>
             </div>
           </div>
         </div>
