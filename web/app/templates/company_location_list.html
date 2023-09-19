@@ -146,46 +146,53 @@
                             {% endfor %}
                         {% endblock %}
 
-                        <!-- Button trigger modal -->
-                        <a href="#mergeModal{{ get_pk_value(row) }}" data-toggle="modal">
-                            <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge company" style="height: 18px; width: 18px;">
-                        </a>
+                        {% if "/admin/company/" in return_url %}
+                            <!-- Button trigger modal -->
+                            <a href="#mergeModal{{ get_pk_value(row) }}" data-toggle="modal">
+                                <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge company" style="height: 18px; width: 18px;">
+                            </a>
 
-                        <!-- Modal -->
-                        <div class="modal fade" id="mergeModal{{ get_pk_value(row) }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <form action="/merge/company/{{ get_pk_value(row) }}/first-step" method="POST">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title text-primary" id="exampleModalLabel">Merge company {{ get_value(row, "name") }} with:</h5>
-                                            <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
-                                                <span aria-hidden="true" class="text-secondary">&times;</span>
-                                            </button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div class="search-company-input-div">
-                                                <input
-                                                    id="search-company-input-{{ get_pk_value(row) }}"
-                                                    name="secondary_company"
-                                                    class="search-company-input"
-                                                >
-                                                <div class="search-company-hints-div" hidden data-company-container="{{ get_pk_value(row) }}">
-                                                    <p class="search-company-hint"></p>
+                            <!-- Modal -->
+                            <div class="modal fade" id="mergeModal{{ get_pk_value(row) }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form class="merging-form" action="/merge/company/{{ get_pk_value(row) }}/first-step" method="GET">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title text-primary" id="exampleModalLabel">Merge company {{ get_value(row, "name") }} with:</h5>
+                                                <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true" class="text-secondary">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="search-company-input-div">
+                                                    <input
+                                                        id="search-company-id-input-{{ get_pk_value(row) }}"
+                                                        type="hidden"
+                                                        name="secondary_company"
+                                                        class="search-company-id-input"
+                                                    >
+                                                    <input
+                                                        id="search-company-input-{{ get_pk_value(row) }}"
+                                                        class="search-company-input"
+                                                    >
+                                                    <div class="search-company-hints-div" hidden data-company-container="{{ get_pk_value(row) }}">
+                                                        <p class="search-company-hint"></p>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-light" data-dismiss="modal">
-                                                <span class="text-secondary">Cancel</span>
-                                            </button>
-                                            <button type="submit" disabled class="btn btn-primary confirm-modal-button">Confirm</button>
-                                        </div>
-                                    </form>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-light" data-dismiss="modal">
+                                                    <span class="text-secondary">Cancel</span>
+                                                </button>
+                                                <button type="submit" disabled class="btn btn-primary confirm-modal-button">Confirm</button>
+                                            </div>
+                                        </form>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        {% endif %}
                     </td>
-                    {%- endif -%}
+                    {% endif %}
                 {% endblock %}
 
                 {% set loc_compn_name = namespace(loc='loc') %}

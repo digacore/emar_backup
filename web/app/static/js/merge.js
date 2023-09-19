@@ -11,7 +11,6 @@ const handleListCheckboxClick = (checkbox) => {
     } else {
         selectOption.removeAttribute('selected');
     }
-    console.log(selectOption);
 };
 
 const handleUseSecondaryClick = (checkbox, primaryValue, secondaryValue) => {
@@ -24,3 +23,12 @@ const handleUseSecondaryClick = (checkbox, primaryValue, secondaryValue) => {
         connectedInput.value = primaryValue;
     }
 };
+
+const handleLocationMergingSelect = (locationId) => {
+    const confirmButton = document.getElementById(`confirm-merge-${locationId}`);
+    const secondLocationSelect = confirmButton.parentElement.parentElement.querySelector('.secondary-location-select');
+    const newHref = confirmButton.getAttribute('href').replace(/\?secondary_location=.*$/, "")
+        + `?secondary_location=${secondLocationSelect.value}`;
+    confirmButton.setAttribute('href', newHref);
+    confirmButton.removeAttribute('disabled');
+}

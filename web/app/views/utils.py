@@ -25,24 +25,24 @@ def get_companies_merged_locations(
     return merged_locations
 
 
-def get_companies_merged_computers(
-    primary_company: m.Company, secondary_company: m.Company
+def get_merged_computers_list(
+    primary_object: m.Company | m.Location, secondary_object: m.Company | m.Location
 ) -> list[m.Computer]:
-    """Get merged computers from two companies
+    """Get merged computers from two companies/locations
 
     Args:
-        primary_company (m.Company): Primary company
-        secondary_company (m.Company): Secondary company
+        primary_object (m.Company | m.Location): Primary company / location
+        secondary_object(m.Company | m.Location): Secondary company / location
 
     Returns:
         list[m.Computer]: List of merged computers
     """
-    primary_company_computers: list[m.Computer] = primary_company.computers.copy()
+    primary_object_computers: list[m.Computer] = primary_object.computers.copy()
 
-    secondary_company_computers: list[m.Computer] = secondary_company.computers.copy()
+    secondary_object_computers: list[m.Computer] = secondary_object.computers.copy()
 
-    merged_computers = primary_company_computers
-    for computer in secondary_company_computers:
+    merged_computers = primary_object_computers
+    for computer in secondary_object_computers:
         if computer not in merged_computers:
             merged_computers.append(computer)
 

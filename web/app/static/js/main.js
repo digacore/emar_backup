@@ -112,10 +112,12 @@ function selectCompany(hintsContainer) {
   const allHintsParagraphs = document.querySelectorAll(".search-company-hint");
   allHintsParagraphs.forEach((hint) => {
     hint.addEventListener("click", (e) => {
-      const input = hintsContainer.parentElement.querySelector(
+      const nameInput = hintsContainer.parentElement.querySelector(
         ".search-company-input"
       );
-      input.value = e.target.innerHTML.trim();
+      const idInput = hintsContainer.parentElement.querySelector(".search-company-id-input");
+      nameInput.value = e.target.innerHTML.trim();
+      idInput.value = e.target.id.replace("search-company-hint-", "");
       hintsContainer.setAttribute("hidden", "");
 
       const confirmButton = hintsContainer.parentElement.parentElement.parentElement.querySelector(".confirm-modal-button");
@@ -154,6 +156,7 @@ searchComapnyInputs.forEach((searchComapnyInput) => {
       companiesArray.results.forEach((company) => {
         const companyHint = searchCompanyParagraph.cloneNode(true);
         companyHint.innerHTML = company.name;
+        companyHint.id = `search-company-hint-${company.id}`;
         companyHintsContainer.appendChild(companyHint);
       });
     } else {

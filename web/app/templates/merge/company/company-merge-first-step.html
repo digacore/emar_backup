@@ -16,17 +16,19 @@
     <!-- End header -->
 
     <!-- Merging form -->
-    <form action="/merge/company/{{ primary_company.id }}/second-step?secondary_company={{ secondary_company.id }}" method="POST">
+    <form id="main-first-step-form" action="/merge/company/{{ primary_company.id }}/second-step?secondary_company={{ secondary_company.id }}" method="POST">
       <div class="form-group mb-4">
         <label for="name-input" class="text-gray-900 font-weight-bold">Company Name:</label>
-        <input id="name-input" type="text" name="name" class="form-control" value="{{ primary_company.name }}"placeholder="Company Name"  readonly>
+        <input form="main-first-step-form" id="name-input" type="text" name="name" class="form-control" value="{{ primary_company.name }}" readonly>
 
+        <!-- Currently disable option with name changing because of constraints -->
         <div class="form-check mt-2">
           <input
             type="checkbox"
             class="form-check-input"
             id="use-secondary-name-input"
             onclick="handleUseSecondaryClick(this, '{{ primary_company.name }}', '{{ secondary_company.name }}')"
+            disabled
           >
           <label class="form-check-label" for="use-secondary-name-input">Use secondary ({{ secondary_company.name }})</label>
         </div>
@@ -34,7 +36,7 @@
 
       <div class="form-group mb-4">
         <label for="sftp-username-input" class="text-gray-900 font-weight-bold">Default SFTP Username:</label>
-        <input id="sftp-username-input" type="text" name="default_sftp_username" class="form-control" value="{{ primary_company.default_sftp_username }}"placeholder="Default SFTP Username"  readonly>
+        <input form="main-first-step-form" id="sftp-username-input" type="text" name="default_sftp_username" class="form-control" value="{{ primary_company.default_sftp_username }}" readonly>
 
         <div class="form-check mt-2">
           <input
@@ -49,7 +51,7 @@
 
       <div class="form-group mb-4">
         <label for="sftp-password-input" class="text-gray-900 font-weight-bold">Default SFTP Password:</label>
-        <input id="sftp-password-input" type="text" name="default_sftp_password" class="form-control" value="{{ primary_company.default_sftp_password }}"placeholder="Default SFTP Password"  readonly>
+        <input form="main-first-step-form" id="sftp-password-input" type="text" name="default_sftp_password" class="form-control" value="{{ primary_company.default_sftp_password }}" readonly>
 
         <div class="form-check mt-2">
           <input
@@ -64,7 +66,7 @@
 
       <div class="form-group mb-4">
         <label for="pcc-org-id-input" class="text-gray-900 font-weight-bold">PCC organization ID:</label>
-        <input id="pcc-org-id-input" type="text" name="pcc_org_id" class="form-control" value="{{ primary_company.pcc_org_id }}"placeholder="PCC organization ID"  readonly>
+        <input form="main-first-step-form" id="pcc-org-id-input" type="text" name="pcc_org_id" class="form-control" value="{{ primary_company.pcc_org_id }}" readonly>
 
         <div class="form-check mt-2">
           <input
@@ -77,15 +79,15 @@
         </div>
       </div>
 
-      <select name="merged_locations_list" multiple id="merged-locations-select" class="from-control" hidden>
+      <select form="main-first-step-form" name="merged_locations_list" multiple id="merged-locations-select" class="from-control" hidden>
         {% for location in merged_locations %}
           <option selected id="option-location-{{ location.id }}" value="{{ location.id }}">{{ location.name }}</option>
         {% endfor %}
       </select>
 
-      <select name="merged_computers_list" multiple id="merged-computers-select" class="from-control" hidden>
+      <select form="main-first-step-form" name="merged_computers_list" multiple id="merged-computers-select" class="from-control" hidden>
         {% for computer in merged_computers %}
-          <option selected id="option-location-{{ computer.id }}" value="{{ computer.id }}">{{ computer.computer_name }}</option>
+          <option selected id="option-computer-{{ computer.id }}" value="{{ computer.id }}">{{ computer.computer_name }}</option>
         {% endfor %}
       </select>
 
@@ -96,6 +98,10 @@
           {% for location in merged_locations %}
             <label for="checkbox-location-{{ location.id }}">
               <input checked type="checkbox" id="checkbox-location-{{ location.id }}" onclick="handleListCheckboxClick(this)"/>
+              <!-- Button trigger modal -->
+              <a href="#merge-modal-{{ location.id }}" class="text-decoration-none" data-toggle="modal">
+                <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge location" style="height: 18px; width: 18px;">
+              </a>
               {{ location.name }}
             </label>
           {% endfor %}
@@ -107,8 +113,8 @@
 
         <div class="d-flex flex-column w-100 p-2 border rounded checkboxes-container-overflow">
           {% for computer in merged_computers %}
-            <label for="checkbox-location-{{ computer.id }}">
-              <input checked type="checkbox" id="checkbox-location-{{ computer.id }}" onclick="handleListCheckboxClick(this)"/>
+            <label for="checkbox-computer-{{ computer.id }}">
+              <input checked type="checkbox" id="checkbox-computer-{{ computer.id }}" onclick="handleListCheckboxClick(this)"/>
               {{ computer.computer_name }}
             </label>
           {% endfor %}
@@ -117,10 +123,44 @@
 
       <div class="d-flex justify-content-between">
         <button type="button" class="btn btn-primary" onclick="handleBackClick()">Back</button>
-        <button type="submit" class="btn btn-primary">Next</button>
+        <button form="main-first-step-form" type="submit" class="btn btn-primary">Next</button>
       </div>
     </form>
     <!-- End merging form -->
+
+    <!-- Modals for locations merging -->
+    {% for location in merged_locations %}
+      <div class="modal fade" id="merge-modal-{{ location.id }}" tabindex="-1" aria-labelledby="merge-location-modal-label-{{ location.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title text-primary" id="merge-location-modal-label-{{ location.id }}">Merge location {{ location.name }} with:</h5>
+              <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true" class="text-secondary">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <select class="form-control secondary-location-select" onchange="handleLocationMergingSelect({{ location.id }})">
+                  <option selected disabled>Select secondary location</option>
+                  {% for secondary_location in merged_locations %}
+                    {% if location.id != secondary_location.id %}
+                      <option value="{{ secondary_location.id }}">{{ secondary_location.name }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-dismiss="modal">
+                <span class="text-secondary">Cancel</span>
+              </button>
+              <a id="confirm-merge-{{ location.id }}" href="/merge/location/{{ location.id }}/first-step" type="button" disabled class="btn btn-primary">Confirm</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
   </div>
 {% endblock %}
 

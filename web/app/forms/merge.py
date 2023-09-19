@@ -1,10 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectMultipleField
+from wtforms import StringField, SelectMultipleField, BooleanField
 from wtforms.validators import DataRequired
-
-
-class CompanyMergeFirstStepForm(FlaskForm):
-    secondary_company = StringField("Secondary company for merge", [DataRequired()])
 
 
 class CompanyMergeSelectForm(FlaskForm):
@@ -20,6 +16,21 @@ class CompanyMergeSelectForm(FlaskForm):
         self.merged_locations_list.choices = [
             str(location.id) for location in kwargs["locations"]
         ]
+        self.merged_computers_list.choices = [
+            str(computer.id) for computer in kwargs["computers"]
+        ]
+
+
+class LocationMergeSelectForm(FlaskForm):
+    name = StringField("Name", [DataRequired()])
+    company_name = StringField("Company Name")
+    default_sftp_path = StringField("Default SFTP Username")
+    pcc_fac_id = StringField("Default SFTP Password")
+    use_pcc_backup = BooleanField("Use PCC Backup", [DataRequired()])
+    merged_computers_list = SelectMultipleField("Computers")
+
+    def __init__(self, *args, **kwargs):
+        super(LocationMergeSelectForm, self).__init__(*args, **kwargs)
         self.merged_computers_list.choices = [
             str(computer.id) for computer in kwargs["computers"]
         ]
