@@ -45,7 +45,7 @@ const clearSearchInput = (e) => {
 
 
 // Function for handling changes in reports (delete action; set downloading type)
-const handleChangeData = async (obj_id, changed_data, should_reload) => {
+const handleChangeData = async (obj_id, changed_data, csrf_token) => {
   const url = new URL(`/pcc/creation-reports/${obj_id}`, window.location.origin).href;
   const newData = new FormData();
   for (const [key, value] of Object.entries(changed_data)) {
@@ -55,6 +55,9 @@ const handleChangeData = async (obj_id, changed_data, should_reload) => {
   try {
     response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'X-CSRFToken': csrf_token,
+      },
       body: newData,
     });
 
@@ -66,7 +69,5 @@ const handleChangeData = async (obj_id, changed_data, should_reload) => {
     alert(`Error while changing report data: ${error}`);
   }
 
-  if (should_reload) {
-    window.location.reload();
-  }
+  window.location.reload();
 }

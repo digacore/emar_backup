@@ -2,6 +2,7 @@ from flask import Blueprint, request, abort, render_template, redirect, url_for
 from flask_login import login_required, current_user
 
 from app import db, models as m
+from app.logger import logger
 from app.forms import (
     CompanyMergeSelectForm,
     LocationMergeSelectForm,
@@ -20,6 +21,11 @@ merge_blueprint = Blueprint("merge", __name__, url_prefix="/merge")
 def merge_company_first_step(company_id: int):
     # This page is available only for global-full users
     if current_user.asociated_with.lower() != "global-full":
+        logger.error(
+            "User {} tried to access company merge page. His permission level: {}",
+            current_user.username,
+            current_user.asociated_with.lower(),
+        )
         abort(403, "You don't have permission to access this page.")
 
     # Get the primary company
@@ -33,6 +39,11 @@ def merge_company_first_step(company_id: int):
 
     # Prevent from merging company with itself
     if primary_company.id == secondary_company.id:
+        logger.error(
+            "User {} tried to merge company {} with itself.",
+            current_user.username,
+            primary_company.name,
+        )
         abort(400, "You can't merge company with itself.")
 
     # Create merged lists of locations and computers
@@ -55,6 +66,11 @@ def merge_company_first_step(company_id: int):
 def merge_company_second_step(company_id: int):
     # This page is available only for global-full users
     if current_user.asociated_with.lower() != "global-full":
+        logger.error(
+            "User {} tried to access company merge page (second step). His permission level: {}",
+            current_user.username,
+            current_user.asociated_with.lower(),
+        )
         abort(403, "You don't have permission to access this page.")
 
     # Get primary company and secondary companies
@@ -78,6 +94,12 @@ def merge_company_second_step(company_id: int):
 
     # Validate the form
     if not merge_select_form.validate_on_submit():
+        logger.error(
+            "Invalid form data for merging companies {} and {}. Error: {}",
+            primary_company.name,
+            secondary_company.name,
+            merge_select_form.errors,
+        )
         abort(400, "Invalid form data.")
 
     selected_locations = [
@@ -135,6 +157,12 @@ def merge_company_second_step(company_id: int):
             db.session.delete(location)
             db.session.commit()
 
+    logger.info(
+        "Successful merging of companies {} and {}",
+        primary_company.name,
+        secondary_company.name,
+    )
+
     # Delete secondary company
     db.session.delete(secondary_company)
     db.session.commit()
@@ -147,6 +175,11 @@ def merge_company_second_step(company_id: int):
 def merge_location_first_step(location_id: int):
     # This page is available only for global-full users
     if current_user.asociated_with.lower() != "global-full":
+        logger.error(
+            "User {} tried to access location merge page. His permission level: {}",
+            current_user.username,
+            current_user.asociated_with.lower(),
+        )
         abort(403, "You don't have permission to access this page.")
 
     # Get the primary and secondary locations
@@ -161,6 +194,11 @@ def merge_location_first_step(location_id: int):
 
     # Prevent from merging company with itself
     if primary_location.id == secondary_location.id:
+        logger.error(
+            "User {} tried to merge location {} with itself.",
+            current_user.username,
+            primary_location.name,
+        )
         abort(400, "You can't merge location with itself.")
 
     # Create merged list computers
@@ -180,6 +218,11 @@ def merge_location_first_step(location_id: int):
 def merge_location_second_step(location_id: int):
     # This page is available only for global-full users
     if current_user.asociated_with.lower() != "global-full":
+        logger.error(
+            "User {} tried to access location merge page (second step). His permission level: {}",
+            current_user.username,
+            current_user.asociated_with.lower(),
+        )
         abort(403, "You don't have permission to access this page.")
 
     # Is data confirmed
@@ -200,14 +243,20 @@ def merge_location_second_step(location_id: int):
         request.form, computers=merged_computers
     )
 
+    # Validate the form
+    if not merge_select_form.validate_on_submit():
+        logger.error(
+            "Invalid form data for merging locations {} and {}. Error: {}",
+            primary_location.name,
+            secondary_location.name,
+            merge_select_form.errors,
+        )
+        abort(400, "Invalid form data.")
+
     selected_computers = [
         m.Computer.query.get(computer_id)
         for computer_id in merge_select_form.merged_computers_list.data
     ]
-
-    # Validate the form
-    if not merge_select_form.validate_on_submit():
-        abort(400, "Invalid form data.")
 
     if not is_confirmed:
         return render_template(
@@ -241,6 +290,11 @@ def merge_location_second_step(location_id: int):
             db.session.commit()
 
     # Delete secondary location
+    logger.info(
+        "Successful merging of locations {} and {}",
+        primary_location,
+        secondary_location,
+    )
     db.session.delete(secondary_location)
     db.session.commit()
 
