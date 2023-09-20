@@ -29,13 +29,13 @@ def merge_company_first_step(company_id: int):
         abort(403, "You don't have permission to access this page.")
 
     # Get the primary company
-    primary_company = m.Company.query.get_or_404(company_id)
+    primary_company: m.Company = m.Company.query.get_or_404(company_id)
 
-    secondary_company_param = request.args.get("secondary_company", None)
-    secondary_company_id = (
+    secondary_company_param: str | None = request.args.get("secondary_company", None)
+    secondary_company_id: int | None = (
         int(secondary_company_param) if secondary_company_param else None
     )
-    secondary_company = m.Company.query.get_or_404(secondary_company_id)
+    secondary_company: m.Company = m.Company.query.get_or_404(secondary_company_id)
 
     # Prevent from merging company with itself
     if primary_company.id == secondary_company.id:
@@ -74,14 +74,14 @@ def merge_company_second_step(company_id: int):
         abort(403, "You don't have permission to access this page.")
 
     # Get primary company and secondary companies
-    primary_company = m.Company.query.get_or_404(company_id)
+    primary_company: m.Company = m.Company.query.get_or_404(company_id)
 
-    is_confirmed_param = request.args.get("confirmed", None)
-    is_confirmed = True if is_confirmed_param == "True" else False
+    is_confirmed_param: str | None = request.args.get("confirmed", None)
+    is_confirmed: bool = True if is_confirmed_param == "True" else False
 
-    sec_comp_id = request.args.get("secondary_company", None)
-    sec_comp_id = int(sec_comp_id) if sec_comp_id else None
-    secondary_company = m.Company.query.get_or_404(sec_comp_id)
+    sec_comp_id: str | None = request.args.get("secondary_company", None)
+    sec_comp_id: int | None = int(sec_comp_id) if sec_comp_id else None
+    secondary_company: m.Company = m.Company.query.get_or_404(sec_comp_id)
 
     # Form with selected data
     merged_locations = get_companies_merged_locations(
@@ -102,12 +102,12 @@ def merge_company_second_step(company_id: int):
         )
         abort(400, "Invalid form data.")
 
-    selected_locations = [
+    selected_locations: list[m.Location] = [
         m.Location.query.get(location_id)
         for location_id in merge_select_form.merged_locations_list.data
     ]
 
-    selected_computers = [
+    selected_computers: list[m.Computer] = [
         m.Computer.query.get(computer_id)
         for computer_id in merge_select_form.merged_computers_list.data
     ]
@@ -121,6 +121,10 @@ def merge_company_second_step(company_id: int):
             selected_locations=selected_locations,
             selected_computers=selected_computers,
         )
+
+    # TODO: one transaction for all changes (ModelMixin as example)
+    # The copy of secondary company name for log
+    secondary_company_name: str = secondary_company.name
 
     # Merging process
     # Change data of primary company
@@ -157,15 +161,15 @@ def merge_company_second_step(company_id: int):
             db.session.delete(location)
             db.session.commit()
 
-    logger.info(
-        "Successful merging of companies {} and {}",
-        primary_company.name,
-        secondary_company.name,
-    )
-
     # Delete secondary company
     db.session.delete(secondary_company)
     db.session.commit()
+
+    logger.info(
+        "Successful merging of companies {} and {}",
+        primary_company.name,
+        secondary_company_name,
+    )
 
     return redirect(url_for("company.edit_view", id=primary_company.id))
 
@@ -183,14 +187,14 @@ def merge_location_first_step(location_id: int):
         abort(403, "You don't have permission to access this page.")
 
     # Get the primary and secondary locations
-    primary_location = m.Location.query.get_or_404(location_id)
+    primary_location: m.Location = m.Location.query.get_or_404(location_id)
 
-    secondary_company_param = request.args.get("secondary_company", None)
-    secondary_location_param = request.args.get("secondary_location", None)
-    secondary_location_id = (
+    secondary_company_param: str | None = request.args.get("secondary_company", None)
+    secondary_location_param: str | None = request.args.get("secondary_location", None)
+    secondary_location_id: int | None = (
         int(secondary_location_param) if secondary_location_param else None
     )
-    secondary_location = m.Location.query.get_or_404(secondary_location_id)
+    secondary_location: m.Location = m.Location.query.get_or_404(secondary_location_id)
 
     # Prevent from merging company with itself
     if primary_location.id == secondary_location.id:
@@ -226,16 +230,16 @@ def merge_location_second_step(location_id: int):
         abort(403, "You don't have permission to access this page.")
 
     # Is data confirmed
-    is_confirmed_param = request.args.get("confirmed", None)
-    is_confirmed = True if is_confirmed_param == "True" else False
+    is_confirmed_param: str | None = request.args.get("confirmed", None)
+    is_confirmed: bool = True if is_confirmed_param == "True" else False
 
     # Get primary and secondary locations
-    primary_location = m.Location.query.get_or_404(location_id)
+    primary_location: m.Location = m.Location.query.get_or_404(location_id)
 
-    secondary_company_param = request.args.get("secondary_company", None)
-    sec_location_id = request.args.get("secondary_location", None)
-    sec_location_id = int(sec_location_id) if sec_location_id else None
-    secondary_location = m.Location.query.get_or_404(sec_location_id)
+    secondary_company_param: str | None = request.args.get("secondary_company", None)
+    sec_location_id: str | None = request.args.get("secondary_location", None)
+    sec_location_id: int | None = int(sec_location_id) if sec_location_id else None
+    secondary_location: m.Location = m.Location.query.get_or_404(sec_location_id)
 
     # Form with selected data
     merged_computers = get_merged_computers_list(primary_location, secondary_location)
@@ -253,7 +257,7 @@ def merge_location_second_step(location_id: int):
         )
         abort(400, "Invalid form data.")
 
-    selected_computers = [
+    selected_computers: list[m.Computer] = [
         m.Computer.query.get(computer_id)
         for computer_id in merge_select_form.merged_computers_list.data
     ]
@@ -269,6 +273,8 @@ def merge_location_second_step(location_id: int):
         )
 
     # Merging process
+    secondary_location_name = secondary_location.name
+
     # Change data of primary company
     # primary_location.name = merge_select_form.name.data
     primary_location.company_name = merge_select_form.company_name.data
@@ -290,13 +296,14 @@ def merge_location_second_step(location_id: int):
             db.session.commit()
 
     # Delete secondary location
-    logger.info(
-        "Successful merging of locations {} and {}",
-        primary_location,
-        secondary_location,
-    )
     db.session.delete(secondary_location)
     db.session.commit()
+
+    logger.info(
+        "Successful merging of locations {} and {}",
+        primary_location.name,
+        secondary_location_name,
+    )
 
     return redirect(
         url_for(
