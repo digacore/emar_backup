@@ -41,6 +41,8 @@ def create_app(environment="development"):
         auth_blueprint,
         email_blueprint,
         info_blueprint,
+        company_blueprint,
+        location_blueprint,
     )
     from app.api import (
         downloads_info_blueprint,
@@ -49,7 +51,6 @@ def create_app(environment="development"):
         download_msi_blueprint,
         download_msi_fblueprint,
         locations_company_blueprint,
-        sftp_data_blueprint,
     )
     from app.models import (
         User,
@@ -101,6 +102,8 @@ def create_app(environment="development"):
     app.register_blueprint(email_blueprint)
     app.register_blueprint(download_msi_fblueprint)
     app.register_blueprint(info_blueprint)
+    app.register_blueprint(company_blueprint)
+    app.register_blueprint(location_blueprint)
 
     # Register api.
     app.register_api(downloads_info_blueprint)
@@ -108,7 +111,6 @@ def create_app(environment="development"):
     app.register_api(computer_blueprint)
     app.register_api(download_msi_blueprint)
     app.register_api(locations_company_blueprint)
-    app.register_api(sftp_data_blueprint)
 
     # Set up flask login.
     @login_manager.user_loader

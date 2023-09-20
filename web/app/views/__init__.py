@@ -3,3 +3,5 @@ from .auth import auth_blueprint
 from .main import main_blueprint
 from .email import email_blueprint
 from .info import info_blueprint
+from .company import company_blueprint
+from .location import location_blueprint

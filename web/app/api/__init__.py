@@ -4,4 +4,3 @@ from .email import api_email_blueprint
 from .computer import computer_blueprint
 from .load_msi import download_msi_blueprint, download_msi_fblueprint
 from .locations_company import locations_company_blueprint
-from .company_sftp_data import sftp_data_blueprint

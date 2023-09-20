@@ -34,24 +34,28 @@ def init_db(test_me: bool = False):
                 "username": "test_user_view",
                 "email": "test_user_view@mail.com",
                 "password": "test_user_view",
+                "activated": True,
                 "asociated_with": "global-view",
             },
             "company_user": {
                 "username": "test_user_company",
                 "email": "test_user_company@mail.com",
                 "password": "test_user_company",
+                "activated": True,
                 "asociated_with": "Atlas",
             },
             "location_user": {
                 "username": "test_user_location",
                 "email": "test_user_location@mail.com",
                 "password": "test_user_location",
+                "activated": True,
                 "asociated_with": "Maywood",
             },
             "location_dro_user": {
                 "username": "location_dro_user",
                 "email": "location_dro_user@mail.com",
                 "password": "test_user_location",
+                "activated": True,
                 "asociated_with": "SpringField",
             },
         }
@@ -220,6 +224,7 @@ def init_db(test_me: bool = False):
                 username=users[user]["username"],
                 email=users[user]["email"],
                 password=users[user]["password"],
+                activated=users[user]["activated"],
                 asociated_with=users[user]["asociated_with"],
             ).save()
 
