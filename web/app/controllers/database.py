@@ -61,7 +61,7 @@ def init_db(test_me: bool = False):
         }
 
         companies = ["Atlas", "Dro", "WRC"]
-        locations = {"Maywood": "Atlas", "SpringField": "Dro"}
+        locations = {"Maywood": "Atlas", "Ararat": "Atlas", "SpringField": "Dro"}
 
         computers = {
             "comp1_intime": {
