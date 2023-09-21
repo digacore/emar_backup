@@ -1,7 +1,9 @@
+// Back button
 const handleBackClick = () => {
     window.history.back();
 }
 
+// Select computers or locations
 const handleListCheckboxClick = (checkbox) => {
     const selectOptionId = checkbox.id.replace('checkbox', 'option');
     const selectOption = document.getElementById(selectOptionId);
@@ -13,6 +15,7 @@ const handleListCheckboxClick = (checkbox) => {
     }
 };
 
+// Select primary or secondary value for the field
 const handleUseSecondaryClick = (checkbox, primaryValue, secondaryValue) => {
     const inputId = checkbox.id.replace('use-secondary-', '');
     const connectedInput = document.getElementById(inputId);
@@ -24,6 +27,7 @@ const handleUseSecondaryClick = (checkbox, primaryValue, secondaryValue) => {
     }
 };
 
+// Select secondary location for merging
 const handleLocationMergingSelect = (locationId) => {
     const confirmButton = document.getElementById(`confirm-merge-${locationId}`);
     const secondLocationSelect = confirmButton.parentElement.parentElement.querySelector('.secondary-location-select');

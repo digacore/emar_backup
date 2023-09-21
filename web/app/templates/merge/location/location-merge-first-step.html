@@ -16,7 +16,7 @@
     <!-- End header -->
 
     <!-- Merging form -->
-    <form action="/merge/location/{{ primary_location.id }}/second-step?primary_company={{ primary_company_id }}&secondary_company={{ secondary_company_id }}&secondary_location={{ secondary_location.id }}" method="POST">
+    <form autocomplete="off" action="/merge/location/{{ primary_location.id }}/second-step?primary_company={{ primary_company_id }}&secondary_company={{ secondary_company_id }}&secondary_location={{ secondary_location.id }}" method="POST">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
       <div class="form-group mb-4">
         <label for="name-input" class="text-gray-900 font-weight-bold">Location Name:</label>
