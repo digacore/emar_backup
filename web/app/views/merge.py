@@ -190,8 +190,8 @@ def merge_location_first_step(location_id: int):
     # Get the primary and secondary locations
     primary_location: m.Location = m.Location.query.get_or_404(location_id)
 
-    primary_company_param: str | None = request.args.get("primary_company", None)
-    secondary_company_param: str | None = request.args.get("secondary_company", None)
+    primary_company_param: str | None = request.args.get("primary_company", "")
+    secondary_company_param: str | None = request.args.get("secondary_company", "")
     secondary_location_param: str | None = request.args.get("secondary_location", None)
     secondary_location_id: int | None = (
         int(secondary_location_param) if secondary_location_param else None
@@ -239,8 +239,8 @@ def merge_location_second_step(location_id: int):
     # Get primary and secondary locations
     primary_location: m.Location = m.Location.query.get_or_404(location_id)
 
-    primary_company_param: str | None = request.args.get("primary_company", None)
-    secondary_company_param: str | None = request.args.get("secondary_company", None)
+    primary_company_param: str | None = request.args.get("primary_company", "")
+    secondary_company_param: str | None = request.args.get("secondary_company", "")
     sec_location_id: str | None = request.args.get("secondary_location", None)
     sec_location_id: int | None = int(sec_location_id) if sec_location_id else None
     secondary_location: m.Location = m.Location.query.get_or_404(sec_location_id)
@@ -310,10 +310,19 @@ def merge_location_second_step(location_id: int):
         secondary_location_name,
     )
 
+    # If there are primary and secondary companies, redirect to company merge page
+    if primary_company_param and secondary_company_param:
+        return redirect(
+            url_for(
+                "merge.merge_company_first_step",
+                company_id=primary_company_param,
+                secondary_company=secondary_company_param,
+            )
+        )
+
     return redirect(
         url_for(
-            "merge.merge_company_first_step",
-            company_id=primary_company_param,
-            secondary_company=secondary_company_param,
+            "location.edit_view",
+            id=primary_location.id,
         )
     )

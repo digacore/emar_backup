@@ -147,39 +147,44 @@
                             {% endfor %}
                         {% endblock %}
 
-                        {% if "/admin/company/" in return_url %}
+                        {% if current_user.asociated_with.lower() == "global-full" %}
+                            {% set merge_object = "company" if "/admin/company/" in return_url else "location" %}
                             <!-- Button trigger modal -->
                             <a href="#mergeModal{{ get_pk_value(row) }}" data-toggle="modal">
-                                <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge company" style="height: 18px; width: 18px;">
+                                <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge {{ merge_object }}" style="height: 18px; width: 18px;">
                             </a>
 
                             <!-- Modal -->
                             <div class="modal fade" id="mergeModal{{ get_pk_value(row) }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
-                                        <form class="merging-form" action="/merge/company/{{ get_pk_value(row) }}/first-step" method="GET">
+                                        <form
+                                            class="merging-form"
+                                            action="/merge/{{ merge_object }}/{{ get_pk_value(row) }}/first-step"
+                                            method="GET"
+                                        >
                                             <div class="modal-header">
-                                                <h5 class="modal-title text-primary" id="exampleModalLabel">Merge company {{ get_value(row, "name") }} with:</h5>
+                                                <h5 class="modal-title text-primary" id="exampleModalLabel">Merge {{ merge_object }} {{ get_value(row, "name") }} with:</h5>
                                                 <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
                                                     <span aria-hidden="true" class="text-secondary">&times;</span>
                                                 </button>
                                             </div>
                                             <div class="modal-body">
-                                                <div class="search-company-input-div">
+                                                <div class="search-object-input-div">
                                                     <input
-                                                        id="search-company-id-input-{{ get_pk_value(row) }}"
+                                                        id="search-object-id-input-{{ get_pk_value(row) }}"
                                                         type="hidden"
-                                                        name="secondary_company"
-                                                        class="search-company-id-input"
+                                                        name="secondary_{{ merge_object }}"
+                                                        class="search-object-id-input"
                                                     >
                                                     <input
-                                                        id="search-company-input-{{ get_pk_value(row) }}"
-                                                        class="search-company-input w-100 p-2 border rounded"
-                                                        placeholder="Search company"
+                                                        id="search-object-input-{{ get_pk_value(row) }}"
+                                                        class="search-object-input w-100 p-2 border rounded"
+                                                        placeholder="Search {{ merge_object }}"
                                                         autocomplete="off"
                                                     >
-                                                    <div class="search-company-hints-div mt-2" hidden>
-                                                        <p class="search-company-hint"></p>
+                                                    <div class="search-object-hints-div mt-2" hidden>
+                                                        <p class="search-object-hint"></p>
                                                     </div>
                                                 </div>
                                             </div>

@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class SearchCompanyObj(BaseModel):
+class SearchObj(BaseModel):
     id: int
     name: str
 

@@ -61,16 +61,17 @@ $("#company").change((event) => {
   actionsWithCompany()
 });
 
-function selectCompany(hintsContainer) {
-  const allHintsParagraphs = document.querySelectorAll(".search-company-hint");
+// Insert founded company or location name and id to inputs
+function selectSecondaryMergeObject(hintsContainer) {
+  const allHintsParagraphs = document.querySelectorAll(".search-object-hint");
   allHintsParagraphs.forEach((hint) => {
     hint.addEventListener("click", (e) => {
       const nameInput = hintsContainer.parentElement.querySelector(
-        ".search-company-input"
+        ".search-object-input"
       );
-      const idInput = hintsContainer.parentElement.querySelector(".search-company-id-input");
+      const idInput = hintsContainer.parentElement.querySelector(".search-object-id-input");
       nameInput.value = e.target.innerHTML.trim();
-      idInput.value = e.target.id.replace("search-company-hint-", "");
+      idInput.value = e.target.id.replace("search-object-hint-", "");
       hintsContainer.setAttribute("hidden", "");
 
       const confirmButton = hintsContainer.parentElement.parentElement.parentElement.querySelector(".confirm-modal-button");
@@ -79,16 +80,18 @@ function selectCompany(hintsContainer) {
   });
 };
 
-const searchCompanyParagraph = document.querySelector(".search-company-hint");
-const searchComapnyInputs = document.querySelectorAll(".search-company-input");
-searchComapnyInputs.forEach((searchComapnyInput) => {
-  searchComapnyInput.addEventListener("input", async (e) => {
-    companyHintsContainer = searchComapnyInput.parentElement.querySelector(".search-company-hints-div");
-    confirmButton = searchComapnyInput.parentElement.parentElement.parentElement.querySelector(".confirm-modal-button");
+const searchObjectParagraph = document.querySelector(".search-object-hint");
+const searchObjectInputs = document.querySelectorAll(".search-object-input");
+searchObjectInputs.forEach((searchObjectInput) => {
+  searchObjectInput.addEventListener("input", async (e) => {
+    objectHintsContainer = searchObjectInput.parentElement.querySelector(".search-object-hints-div");
+    confirmButton = searchObjectInput.parentElement.parentElement.parentElement.querySelector(".confirm-modal-button");
     confirmButton.setAttribute("disabled", "disabled");
 
+    searchObject = window.location.pathname.includes("/admin/company/") ? "company" : "location";
+
     try {
-      const response = await fetch(`/search/company?q=${e.target.value}`, {
+      const response = await fetch(`/search/${searchObject}?q=${e.target.value}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -98,26 +101,26 @@ searchComapnyInputs.forEach((searchComapnyInput) => {
         throw new Error(`Error in searching ${response.status}`);
       }
 
-      companiesArray = await response.json();
+      objectsArray = await response.json();
     } catch (error) {
-      alert(`Error in searching company ${error}`);
+      alert(`Error in searching ${searchObject} ${error}`);
     }
 
-    if (companiesArray.results.length > 0) {
-      companyHintsContainer.removeAttribute("hidden");
+    if (objectsArray.results.length > 0) {
+      objectHintsContainer.removeAttribute("hidden");
 
-      companyHintsContainer.innerHTML = "";
+      objectHintsContainer.innerHTML = "";
       // Copy paragraph with hints
-      companiesArray.results.forEach((company) => {
-        const companyHint = searchCompanyParagraph.cloneNode(true);
-        companyHint.innerHTML = company.name;
-        companyHint.id = `search-company-hint-${company.id}`;
-        companyHintsContainer.appendChild(companyHint);
+      objectsArray.results.forEach((foundObj) => {
+        const objectHint = searchObjectParagraph.cloneNode(true);
+        objectHint.innerHTML = foundObj.name;
+        objectHint.id = `search-object-hint-${foundObj.id}`;
+        objectHintsContainer.appendChild(objectHint);
       });
     } else {
-      companyHintsContainer.setAttribute("hidden", "");
+      objectHintsContainer.setAttribute("hidden", "");
     }
 
-    selectCompany(companyHintsContainer);
+    selectSecondaryMergeObject(objectHintsContainer);
   });
 });
