@@ -204,7 +204,8 @@
                             <div>
                               Location
                               {{ "created" if obj["action"] == "CREATE" else "updated" }}
-                              <a class="text-decoration-none" href="{{ url_for('location.edit_view', id=obj.id) }}">{{ obj.name }}</a>
+                              <a class="text-decoration-none" href="{{ url_for('location.edit_view', id=obj.id) }}">{{ obj.name }}</a>.
+                              Backup downloading type: {{ "PCC" if obj["use_pcc_backup"] else "SFTP" }}
                             </div>
                           {% else %}
                             <div>
