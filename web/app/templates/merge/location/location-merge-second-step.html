@@ -17,7 +17,7 @@
 
     <!-- Content -->
     <form
-      action="/merge/location/{{ primary_location.id }}/second-step?secondary_company={{ secondary_company_id }}&secondary_location={{ secondary_location.id }}&confirmed=True"
+      action="/merge/location/{{ primary_location.id }}/second-step?primary_company={{ primary_company_id }}&secondary_company={{ secondary_company_id }}&secondary_location={{ secondary_location.id }}&confirmed=True"
       method="POST"
     >
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

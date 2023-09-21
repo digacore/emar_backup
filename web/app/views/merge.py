@@ -122,7 +122,6 @@ def merge_company_second_step(company_id: int):
             selected_computers=selected_computers,
         )
 
-    # TODO: one transaction for all changes (ModelMixin as example)
     # The copy of secondary company name for log
     secondary_company_name: str = secondary_company.name
 
@@ -132,34 +131,36 @@ def merge_company_second_step(company_id: int):
     primary_company.default_sftp_username = merge_select_form.default_sftp_username.data
     primary_company.default_sftp_password = merge_select_form.default_sftp_password.data
     primary_company.pcc_org_id = merge_select_form.pcc_org_id.data
-    primary_company.update()
 
     # Add new computers from secondary company to primary company
     for computer in selected_computers:
         computer.company_name = primary_company.name
-        computer.update()
 
         # If location is not selected, remove it from computer
         if computer.location not in selected_locations:
             computer.location_name = None
-            computer.update()
 
     # Delete primary company computers that were not selected
     for computer in primary_company.computers:
         if computer not in selected_computers:
             db.session.delete(computer)
-            db.session.commit()
+
+    # NOTE: It is necessary to commit session changes here
+    # Otherwise computers even with changed company and location will be marked for deletion because of cascade deleting
+    # If remove cascade deleting behavior, remove this commit command and leave the only one in the end
+    db.session.commit()
 
     # Add new locations from secondary company to primary company
     for location in selected_locations:
         location.company_name = primary_company.name
-        location.update()
 
     # Delete primary company locations that were not selected
     for location in primary_company.locations:
         if location not in selected_locations:
             db.session.delete(location)
-            db.session.commit()
+
+    # NOTE: the same behavior as for computers
+    db.session.commit()
 
     # Delete secondary company
     db.session.delete(secondary_company)
@@ -189,6 +190,7 @@ def merge_location_first_step(location_id: int):
     # Get the primary and secondary locations
     primary_location: m.Location = m.Location.query.get_or_404(location_id)
 
+    primary_company_param: str | None = request.args.get("primary_company", None)
     secondary_company_param: str | None = request.args.get("secondary_company", None)
     secondary_location_param: str | None = request.args.get("secondary_location", None)
     secondary_location_id: int | None = (
@@ -212,6 +214,7 @@ def merge_location_first_step(location_id: int):
         "merge/location/location-merge-first-step.html",
         primary_location=primary_location,
         secondary_location=secondary_location,
+        primary_company_id=primary_company_param,
         secondary_company_id=secondary_company_param,
         merged_computers=merged_computers,
     )
@@ -236,6 +239,7 @@ def merge_location_second_step(location_id: int):
     # Get primary and secondary locations
     primary_location: m.Location = m.Location.query.get_or_404(location_id)
 
+    primary_company_param: str | None = request.args.get("primary_company", None)
     secondary_company_param: str | None = request.args.get("secondary_company", None)
     sec_location_id: str | None = request.args.get("secondary_location", None)
     sec_location_id: int | None = int(sec_location_id) if sec_location_id else None
@@ -267,13 +271,14 @@ def merge_location_second_step(location_id: int):
             "merge/location/location-merge-second-step.html",
             primary_location=primary_location,
             secondary_location=secondary_location,
+            primary_company_id=primary_company_param,
             secondary_company_id=secondary_company_param,
             merge_select_form=merge_select_form,
             selected_computers=selected_computers,
         )
 
     # Merging process
-    secondary_location_name = secondary_location.name
+    secondary_location_name: str = secondary_location.name
 
     # Change data of primary company
     # primary_location.name = merge_select_form.name.data
@@ -281,19 +286,19 @@ def merge_location_second_step(location_id: int):
     primary_location.default_sftp_path = merge_select_form.default_sftp_path.data
     primary_location.pcc_fac_id = merge_select_form.pcc_fac_id.data
     primary_location.use_pcc_backup = merge_select_form.use_pcc_backup.data
-    primary_location.update()
 
     # Add new computers from secondary to primary location
     for computer in selected_computers:
         computer.location_name = primary_location.name
         computer.company_name = primary_location.company.name
-        computer.update()
 
     # Delete primary location computers that were not selected
     for computer in primary_location.computers:
         if computer not in selected_computers:
             db.session.delete(computer)
-            db.session.commit()
+
+    # NOTE: the same reason as mentioned in companies merging procedure (line 148)
+    db.session.commit()
 
     # Delete secondary location
     db.session.delete(secondary_location)
@@ -308,7 +313,7 @@ def merge_location_second_step(location_id: int):
     return redirect(
         url_for(
             "merge.merge_company_first_step",
-            company_id=primary_location.company.id,
+            company_id=primary_company_param,
             secondary_company=secondary_company_param,
         )
     )
