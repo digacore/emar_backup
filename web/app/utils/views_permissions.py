@@ -201,6 +201,17 @@ class MyModelView(ModelView):
                 search_query = re.search(r".*\>\>:(.*)", view_args.search).group(1)
                 search_input_value = f"{search_column_name}: {search_query}"
 
+        # Query params for /info/computers/ page
+        url_with_all_params = self._get_list_url(view_args)
+        params_for_computers_page = ""
+        if "/admin/computer/" in url_with_all_params:
+            params_for_computers_page = url_with_all_params.replace(
+                "/admin/computer/", ""
+            )
+            params_for_computers_page = params_for_computers_page.replace(
+                "search", "computers_search"
+            ).replace("page", "computers_page")
+
         return self.render(
             self.list_template,
             data=data,
@@ -230,7 +241,6 @@ class MyModelView(ModelView):
             clear_search_url=clear_search_url,
             search=search_input_value if search_input_value else view_args.search,
             search_placeholder=self.search_placeholder(),
-            raw_search_value=view_args.search,
             # Filters
             filters=self._filters,
             filter_groups=self._get_filter_groups(),
@@ -246,4 +256,5 @@ class MyModelView(ModelView):
             return_url=self._get_list_url(view_args),
             # Extras
             extra_args=view_args.extra_args,
+            params_for_computers_page=params_for_computers_page,
         )
