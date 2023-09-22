@@ -81,7 +81,7 @@
           <div class="d-flex flex-column w-25 p-2 mr-4 border rounded checkboxes-container-overflow text-gray-900 bg-white">
             <ul class="ul-with-no-decoration">
               {% for location in primary_company.locations %}
-                <li>
+                <li class="li-with-hover">
                   {{ location.name }}
                 </li>
               {% endfor %}
@@ -93,7 +93,7 @@
           <div class="d-flex flex-column w-25 p-2 border rounded checkboxes-container-overflow text-gray-900 bg-white">
             <ul class="ul-with-no-decoration">
               {% for location in selected_locations %}
-                <li>
+                <li class="li-with-hover">
                   {{ location.name }}
                 </li>
               {% endfor %}
@@ -106,7 +106,7 @@
           <div class="d-flex flex-column w-25 p-2 mr-4 border rounded checkboxes-container-overflow text-gray-900 bg-white">
             <ul class="ul-with-no-decoration">
               {% for computer in primary_company.computers %}
-                <li>
+                <li class="li-with-hover">
                   {{ computer.computer_name }}
                 </li>
               {% endfor %}
@@ -118,7 +118,7 @@
           <div class="d-flex flex-column w-25 p-2 border rounded checkboxes-container-overflow text-gray-900 bg-white">
             <ul class="ul-with-no-decoration">
               {% for computer in selected_computers %}
-                <li>
+                <li class="li-with-hover">
                   {{ computer.computer_name }}
                 </li>
               {% endfor %}

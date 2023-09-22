@@ -9,7 +9,7 @@
     margin: 0;
 }
 
-li:hover{
+.li-with-hover:hover{
     cursor: pointer;
     background-color: gainsboro;
 }
