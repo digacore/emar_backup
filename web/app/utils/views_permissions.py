@@ -230,6 +230,7 @@ class MyModelView(ModelView):
             clear_search_url=clear_search_url,
             search=search_input_value if search_input_value else view_args.search,
             search_placeholder=self.search_placeholder(),
+            raw_search_value=view_args.search,
             # Filters
             filters=self._filters,
             filter_groups=self._get_filter_groups(),
