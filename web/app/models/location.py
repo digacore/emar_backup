@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import or_, sql
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
@@ -19,11 +19,18 @@ class Location(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
-    company = relationship("Company", passive_deletes=True, lazy="select")
+    company = relationship(
+        "Company",
+        passive_deletes=True,
+        backref=backref("locations", cascade="delete"),
+        lazy="select",
+    )
     # TODO swap company name to company id. Same for all models
     company_name = db.Column(
-        db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
+        db.String,
+        db.ForeignKey("companies.name", ondelete="CASCADE"),
     )
+
     default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
@@ -31,6 +38,9 @@ class Location(db.Model, ModelMixin):
     created_at = db.Column(db.DateTime, default=datetime.now)
     pcc_fac_id = db.Column(db.Integer, nullable=True)
     use_pcc_backup = db.Column(
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
+    created_from_pcc = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
 
@@ -66,6 +76,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_offline",
         "pcc_fac_id",
         "use_pcc_backup",
+        "created_from_pcc",
     ]
     column_searchable_list = column_list
     column_filters = column_list
@@ -79,6 +90,8 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_offline": {"readonly": True},
         "created_at": {"readonly": True},
     }
+
+    form_excluded_columns = ("created_from_pcc",)
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field

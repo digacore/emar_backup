@@ -3,8 +3,7 @@ import requests
 from urllib.parse import urljoin
 from flask import Response, abort
 
-from app.models import Computer
-from app.schema import GetCredentials
+from app import schema as s, models as m
 from app.views.blueprint import BlueprintApi
 from app.controllers import get_pcc_2_legged_token
 from app.logger import logger
@@ -15,10 +14,10 @@ pcc_api_blueprint = BlueprintApi("pcc_api", __name__, url_prefix="/pcc_api")
 
 
 @pcc_api_blueprint.post("/download_backup")
-def download_backup_from_pcc(body: GetCredentials) -> Response:
+def download_backup_from_pcc(body: s.GetCredentials) -> Response:
     # Find computer in DB
-    computer: Computer = (
-        Computer.query.filter_by(
+    computer: m.Computer = (
+        m.Computer.query.filter_by(
             identifier_key=body.identifier_key, computer_name=body.computer_name
         ).first()
         if body.identifier_key and body.computer_name

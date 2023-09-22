@@ -12,3 +12,5 @@ from .log_event import LogEvent, LogType
 from .backup_log import BackupLog, BackupLogType
 from .utils import count
 from .system_log import SystemLog, SystemLogType
+from .pcc_creation_report import PCCCreationReport, CreationReportStatus
+from .pcc_activations_scan import PCCActivationsScan, ScanStatus

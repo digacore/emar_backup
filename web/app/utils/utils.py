@@ -49,6 +49,7 @@ def get_outdated_status_comps(
     )
     return outdated_comps
 
+
 def get_base64_string(string: str) -> str:
     """Convert ordinary string to base64 encoded string
 
@@ -62,3 +63,22 @@ def get_base64_string(string: str) -> str:
     base64_bytes = base64.b64encode(string.encode("ascii"))
     base64_string = base64_bytes.decode("ascii")
     return base64_string
+
+
+def update_report_data(
+    report_data: list[dict], obj_id: int, new_data: dict
+) -> list[dict]:
+    """Update report data field.
+    We need this function in /pcc/creation-reports.html template to change the values in data (JSON field)
+
+    Args:
+        report_data (list[dict]): report data
+        obj_id (int): id of the object to update
+        new_data (dict): new data to update
+
+    Returns:
+        list[dict]: updated report data field
+    """
+    report_data[obj_id].update(new_data)
+
+    return report_data

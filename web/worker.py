@@ -93,6 +93,14 @@ def clean_old_logs():
     flask_proc.communicate()
 
 
+@app.task
+def scan_pcc_activations(scan_record_id: int):
+    flask_proc = subprocess.Popen(
+        ["flask", "scan-pcc-activations", str(scan_record_id)]
+    )
+    flask_proc.communicate()
+
+
 # @app.task
 # def do_backup():
 #     all_backups = [f for f in os.listdir(BACKUP_DIR) if (Path(BACKUP_DIR) / f).is_file()]

@@ -114,6 +114,14 @@ def gen_backup_periods_logs(computer_name: str | None = None, days: int | None =
             gen_fake_backup_periods_logs(computer, time_period)
 
 
+@app.cli.command()
+@click.argument("scan_record_id", type=int)
+def scan_pcc_activations(scan_record_id: int):
+    from app.controllers import scan_pcc_activations
+
+    scan_pcc_activations(scan_record_id)
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()

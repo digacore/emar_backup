@@ -137,6 +137,30 @@
                         <a class="text-decoration-none" href="{{ log.object_url }}">{{ log.object_name }}</a>
                         was automatically registered to the system.
                       </span>
+                    {% elif log.log_type.value == "COMPANY_CREATED" %}
+                      <span>
+                        Company
+                        <a class="text-decoration-none" href="{{ log.object_url }}">{{ log.object_name }}</a>
+                        was automatically registered to the system.
+                      </span>
+                    {% elif log.log_type.value == "COMPANY_UPDATED" %}
+                      <span>
+                        Company
+                        <a class="text-decoration-none" href="{{ log.object_url }}">{{ log.object_name }}</a>
+                        was automatically updated.
+                      </span>
+                    {% elif log.log_type.value == "LOCATION_CREATED" %}
+                      <span>
+                        Location
+                        <a class="text-decoration-none" href="{{ log.object_url }}">{{ log.object_name }}</a>
+                        was automatically registered to the system.
+                      </span>
+                    {% elif log.log_type.value == "LOCATION_UPDATED" %}
+                      <span>
+                        Location
+                        <a class="text-decoration-none" href="{{ log.object_url }}">{{ log.object_name }}</a>
+                        was automatically updated.
+                      </span>
                     {% endif %}
                   {% endif %}
                 </td>

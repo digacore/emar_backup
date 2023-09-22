@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block flash_messages %}
+{% endblock %}
+
+{% block links %}
+  <link href="{{ url_for('static', filename='/css/merge.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex w-100 h-100 justify-content-center flex-column">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="text-gray font-weight-bold">Select data for merging:</h4>
+    </div>
+    <!-- End header -->
+
+    <!-- Merging form -->
+    <form id="main-first-step-form" autocomplete="off" action="/merge/company/{{ primary_company.id }}/second-step?secondary_company={{ secondary_company.id }}" method="POST">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="form-group mb-4">
+        <label for="name-input" class="text-gray-900 font-weight-bold">Company Name:</label>
+        <input form="main-first-step-form" id="name-input" type="text" name="name" class="form-control" value="{{ primary_company.name }}" readonly>
+
+        <!-- Currently disable option with name changing because of constraints -->
+        <div class="form-check mt-2">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="use-secondary-name-input"
+            onclick="handleUseSecondaryClick(this, '{{ primary_company.name }}', '{{ secondary_company.name }}')"
+            disabled
+          >
+          <label class="form-check-label" for="use-secondary-name-input">Use secondary ({{ secondary_company.name }})</label>
+        </div>
+      </div>
+
+      <div class="form-group mb-4">
+        <label for="sftp-username-input" class="text-gray-900 font-weight-bold">Default SFTP Username:</label>
+        <input
+          form="main-first-step-form"
+          id="sftp-username-input"
+          type="text"
+          name="default_sftp_username"
+          class="form-control"
+          value="{{ primary_company.default_sftp_username or '' }}"
+          readonly
+        >
+
+        <div class="form-check mt-2">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="use-secondary-sftp-username-input"
+            onclick="handleUseSecondaryClick(this, '{{ primary_company.default_sftp_username }}', '{{ secondary_company.default_sftp_username }}')"
+          >
+          <label
+            class="form-check-label"
+            for="use-secondary-sftp-username-input"
+          >
+            Use secondary ({{ secondary_company.default_sftp_username or '' }})
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group mb-4">
+        <label for="sftp-password-input" class="text-gray-900 font-weight-bold">Default SFTP Password:</label>
+        <input
+          form="main-first-step-form"
+          id="sftp-password-input"
+          type="text"
+          name="default_sftp_password"
+          class="form-control"
+          value="{{ primary_company.default_sftp_password or '' }}"
+          readonly
+        >
+
+        <div class="form-check mt-2">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="use-secondary-sftp-password-input"
+            onclick="handleUseSecondaryClick(this, '{{ primary_company.default_sftp_password }}', '{{ secondary_company.default_sftp_password }}')"
+          >
+          <label
+            class="form-check-label"
+            for="use-secondary-sftp-password-input"
+          >
+            Use secondary ({{ secondary_company.default_sftp_password or '' }})
+          </label>
+        </div>
+      </div>
+
+      <div class="form-group mb-4">
+        <label for="pcc-org-id-input" class="text-gray-900 font-weight-bold">PCC organization ID:</label>
+        <input
+          form="main-first-step-form"
+          id="pcc-org-id-input"
+          type="text"
+          name="pcc_org_id"
+          class="form-control"
+          value="{{ primary_company.pcc_org_id or '' }}"
+          readonly
+        >
+
+        <div class="form-check mt-2">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            id="use-secondary-pcc-org-id-input"
+            onclick="handleUseSecondaryClick(this, '{{ primary_company.pcc_org_id }}', '{{ secondary_company.pcc_org_id }}')"
+          >
+          <label
+            class="form-check-label"
+            for="use-secondary-pcc-org-id-input"
+          >
+            Use secondary ({{ secondary_company.pcc_org_id or '' }})
+          </label>
+        </div>
+      </div>
+
+      <select form="main-first-step-form" name="merged_locations_list" multiple id="merged-locations-select" class="from-control" hidden>
+        {% for location in merged_locations %}
+          <option selected id="option-location-{{ location.id }}" value="{{ location.id }}">{{ location.name }}</option>
+        {% endfor %}
+      </select>
+
+      <select form="main-first-step-form" name="merged_computers_list" multiple id="merged-computers-select" class="from-control" hidden>
+        {% for computer in merged_computers %}
+          <option selected id="option-computer-{{ computer.id }}" value="{{ computer.id }}">{{ computer.computer_name }}</option>
+        {% endfor %}
+      </select>
+
+      <div class="d-flex flex-column mb-4">
+        <div class="text-gray-900 font-weight-bold mb-2">Merged locations list:</div>
+
+        <div class="d-flex flex-column w-100 p-2 border rounded checkboxes-container-overflow">
+          {% for location in merged_locations %}
+            <label for="checkbox-location-{{ location.id }}">
+              <input checked type="checkbox" id="checkbox-location-{{ location.id }}" onclick="handleListCheckboxClick(this)"/>
+              <!-- Button trigger modal -->
+              <a href="#merge-modal-{{ location.id }}" class="text-decoration-none" data-toggle="modal">
+                <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge location" style="height: 18px; width: 18px;">
+              </a>
+              {{ location.name }}
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="d-flex flex-column mb-4">
+        <div class="text-gray-900 font-weight-bold mb-2">Merged computers list:</div>
+
+        <div class="d-flex flex-column w-100 p-2 border rounded checkboxes-container-overflow">
+          {% for computer in merged_computers %}
+            <label for="checkbox-computer-{{ computer.id }}">
+              <input checked type="checkbox" id="checkbox-computer-{{ computer.id }}" onclick="handleListCheckboxClick(this)"/>
+              {{ computer.computer_name }}
+            </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-primary" onclick="handleBackClick()">Back</button>
+        <button form="main-first-step-form" type="submit" class="btn btn-primary">Next</button>
+      </div>
+    </form>
+    <!-- End merging form -->
+
+    <!-- Modals for locations merging -->
+    {% for location in merged_locations %}
+      <div class="modal fade" id="merge-modal-{{ location.id }}" tabindex="-1" aria-labelledby="merge-location-modal-label-{{ location.id }}" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title text-primary" id="merge-location-modal-label-{{ location.id }}">Merge location {{ location.name }} with:</h5>
+              <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true" class="text-secondary">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <div class="form-group">
+                <select class="form-control secondary-location-select" onchange="handleLocationMergingSelect({{ location.id }})">
+                  <option selected disabled>Select secondary location</option>
+                  {% for secondary_location in merged_locations %}
+                    {% if location.id != secondary_location.id %}
+                      <option value="{{ secondary_location.id }}">{{ secondary_location.name }}</option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-light" data-dismiss="modal">
+                <span class="text-secondary">Cancel</span>
+              </button>
+              <a id="confirm-merge-{{ location.id }}" href="/merge/location/{{ location.id }}/first-step?primary_company={{ primary_company.id }}&secondary_company={{ secondary_company.id }}" type="button" disabled class="btn btn-primary">Confirm</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}
+
+{% block sidebar_toggle %}
+  <script>
+    document.addEventListener("DOMContentLoaded",
+      function(){
+        $("#sidebarToggle").click();
+      });
+  </script>
+{% endblock sidebar_toggle %}
+
+{% block bootstrap_core %}
+  <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
+  <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+{% endblock bootstrap_core %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='/js/merge.js') }}"></script>
+{% endblock %}

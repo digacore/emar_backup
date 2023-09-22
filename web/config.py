@@ -121,6 +121,7 @@ class BaseConfig(object):
     PCC_BASE_URL = os.environ.get("PCC_BASE_URL", None)
     PCC_CLIENT_ID = os.environ.get("PCC_CLIENT_ID", None)
     PCC_CLIENT_SECRET = os.environ.get("PCC_CLIENT_SECRET", None)
+    PCC_APP_NAME = os.environ.get("PCC_APP_NAME", None)
     CERTIFICATE_PATH = os.environ.get("CERTIFICATE_PATH", None)
     PRIVATEKEY_PATH = os.environ.get("PRIVATEKEY_PATH", None)
 
