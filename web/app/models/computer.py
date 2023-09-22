@@ -54,6 +54,7 @@ class Computer(db.Model, ModelMixin):
     location_name = db.Column(
         db.String, db.ForeignKey("locations.name", ondelete="CASCADE")
     )
+    location_id = db.Column(db.Integer, nullable=True)
 
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
     sftp_username = db.Column(db.String(64), default=CFG.DEFAULT_SFTP_USERNAME)

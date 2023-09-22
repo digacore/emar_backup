@@ -122,6 +122,21 @@ def scan_pcc_activations(scan_record_id: int):
     scan_pcc_activations(scan_record_id)
 
 
+@app.cli.command()
+def fill_location_id_computers():
+    from app import models as m
+    from app.logger import logger
+
+    logger.info("<-----Start script fill_location_id_computers----->")
+    computers = m.Computer.query.all()
+    for computer in computers:
+        if computer.location:
+            computer.location_id = computer.location.id
+
+    db.session.commit()
+    logger.info("<-----End script fill_location_id_computers----->")
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()
