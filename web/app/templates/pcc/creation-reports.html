@@ -117,7 +117,7 @@
                         {% set data_without_obj = report.data_as_obj %}
                         {% set popped_obj = data_without_obj.pop(loop.index - 1) %}
                         <div class="mb-1 d-flex align-items-center">
-                          <a type="button" class="mr-1" href="#" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_without_obj}) }}, true)">
+                          <a type="button" class="mr-1" href="#" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_without_obj}) }}, '{{ csrf_token() }}')">
                             <svg xmlns="http://www.w3.org/2000/svg" class="text-gray-500" width="10px" height="10px" viewBox="0 0 512 512">
                               <polygon fill="var(--ci-primary-color, currentColor)" points="427.314 107.313 404.686 84.687 256 233.373 107.314 84.687 84.686 107.313 233.373 256 84.686 404.687 107.314 427.313 256 278.627 404.686 427.313 427.314 404.687 278.627 256 427.314 107.313" class="ci-primary"/>
                             </svg>
@@ -133,8 +133,8 @@
                               {{ "PCC" if obj["use_pcc_backup"] else "SFTP" }}
                             </button>
                             <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                              <a type="button" class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_pcc }) }}, true)" href="#">PCC</a>
-                              <a type="button" class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_sftp }) }}, true)" href="#">SFTP</a>
+                              <a type="button" class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_pcc }) }}, '{{ csrf_token() }}')" href="#">PCC</a>
+                              <a type="button" class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_sftp }) }}, '{{ csrf_token() }}')" href="#">SFTP</a>
                             </div>
                           </div>
                         </div>
@@ -204,7 +204,8 @@
                             <div>
                               Location
                               {{ "created" if obj["action"] == "CREATE" else "updated" }}
-                              <a class="text-decoration-none" href="{{ url_for('location.edit_view', id=obj.id) }}">{{ obj.name }}</a>
+                              <a class="text-decoration-none" href="{{ url_for('location.edit_view', id=obj.id) }}">{{ obj.name }}</a>.
+                              Backup downloading type: {{ "PCC" if obj["use_pcc_backup"] else "SFTP" }}
                             </div>
                           {% else %}
                             <div>

@@ -5,6 +5,7 @@ from flask import render_template, url_for
 from flask_openapi3 import OpenAPI
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import generate_csrf
 from werkzeug.exceptions import HTTPException
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_migrate import Migrate
@@ -45,6 +46,8 @@ def create_app(environment="development"):
         email_blueprint,
         info_blueprint,
         pcc_blueprint,
+        search_blueprint,
+        merge_blueprint,
     )
     from app.api import (
         downloads_info_blueprint,
@@ -102,6 +105,7 @@ def create_app(environment="development"):
     app.jinja_env.globals.update(offset_to_east=CFG.offset_to_est)
     app.jinja_env.globals.update(to_json=json.dumps)
     app.jinja_env.globals.update(update_report_data=update_report_data)
+    app.jinja_env.globals.update(csrf_token=generate_csrf)
 
     # Register blueprints.
     app.register_blueprint(auth_blueprint)
@@ -110,6 +114,8 @@ def create_app(environment="development"):
     app.register_blueprint(download_msi_fblueprint)
     app.register_blueprint(info_blueprint)
     app.register_blueprint(pcc_blueprint)
+    app.register_blueprint(search_blueprint)
+    app.register_blueprint(merge_blueprint)
 
     # Register api.
     app.register_api(downloads_info_blueprint)
