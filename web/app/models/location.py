@@ -18,7 +18,7 @@ class Location(db.Model, ModelMixin):
     __tablename__ = "locations"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False)
+    name = db.Column(db.String(64), nullable=False)
     company = relationship(
         "Company",
         passive_deletes=True,

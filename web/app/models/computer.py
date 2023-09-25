@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, or_, and_, sql
+from sqlalchemy import JSON, or_, and_, sql, select
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from flask import request
 
@@ -51,10 +52,10 @@ class Computer(db.Model, ModelMixin):
         backref=backref("computers", cascade="delete"),
         lazy="select",
     )
-    location_name = db.Column(
-        db.String, db.ForeignKey("locations.name", ondelete="CASCADE")
+
+    location_id = db.Column(
+        db.Integer, db.ForeignKey("locations.id", ondelete="CASCADE"), nullable=True
     )
-    location_id = db.Column(db.Integer, nullable=True)
 
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
     sftp_username = db.Column(db.String(64), default=CFG.DEFAULT_SFTP_USERNAME)
@@ -96,7 +97,7 @@ class Computer(db.Model, ModelMixin):
             "computer_name",
             "alert_status",
             "company_name",
-            "location_name",
+            "location_id",
             "download_status",
             "last_download_time",
             "last_time_online",
@@ -113,6 +114,19 @@ class Computer(db.Model, ModelMixin):
             "identifier_key",
             "computer_ip",
         ]
+
+    @hybrid_property
+    def location_name(self):
+        return self.location.name if self.location else None
+
+    @location_name.expression
+    def location_name(cls):
+        return select([Location.name]).where(cls.location_id == Location.id).as_scalar()
+
+    @location_name.setter
+    def location_name(self, value):
+        new_location = Location.query.filter_by(name=value).first()
+        self.location_id = new_location.id if new_location else None
 
 
 class ComputerView(RowActionListMixin, MyModelView):
@@ -183,7 +197,7 @@ class ComputerView(RowActionListMixin, MyModelView):
     form_args = {
         "computer_name": {"label": "Computer name"},
         "company_name": {"label": "Company name", "id": "company_name"},
-        "location_name": {"label": "Location name", "id": "location_name"},
+        "location_id": {"label": "Location id", "id": "location_id"},
         "sftp_host": {"label": "SFTP host"},
         "sftp_username": {"label": "SFTP username"},
         "sftp_password": {"label": "SFTP password"},

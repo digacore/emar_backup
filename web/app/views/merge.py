@@ -138,7 +138,7 @@ def merge_company_second_step(company_id: int):
 
         # If location is not selected, remove it from computer
         if computer.location not in selected_locations:
-            computer.location_name = None
+            computer.location_id = None
 
     # Delete primary company computers that were not selected
     for computer in primary_company.computers:
@@ -289,7 +289,7 @@ def merge_location_second_step(location_id: int):
 
     # Add new computers from secondary to primary location
     for computer in selected_computers:
-        computer.location_name = primary_location.name
+        computer.location_id = primary_location.id
         computer.company_name = primary_location.company.name
 
     # Delete primary location computers that were not selected
