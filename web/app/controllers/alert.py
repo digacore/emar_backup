@@ -53,7 +53,7 @@ def get_html_body(
 
     computers_table = [
         f"<tr> <td>{comp.computer_name}</td> <td>{comp.location_name}</td> <td>{comp.last_time_online}</td>\
-            <td>{comp.last_download_time}</td> <td>{comp.folder_password}</td> <td>{comp.type}</td> </tr>"
+            <td>{comp.last_download_time}</td> <td>{comp.folder_password}</td> <td>{comp.device_role.capitalize()}</td> </tr>"
         for comp in computers
     ]
 
@@ -782,7 +782,7 @@ def daily_summary():
                         f'<tr style="background-color: #{get_status_color(computer.alert_status)};"> <td></td> \
                         <td></td> <td>{computer.computer_name}</td> <td>{computer.last_time_online}</td> \
                         <td>{computer.last_download_time}</td> <td>{computer.alert_status}</td> \
-                        <td>{computer.type}</td> </tr>'
+                        <td>{computer.device_role.capitalize()}</td> </tr>'
                     )
                     if "red" in str(computer.alert_status):
                         company_offline_comps += 1
