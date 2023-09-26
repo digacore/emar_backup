@@ -18,6 +18,7 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
 
     id = db.Column(db.Integer, primary_key=True)
 
+    flag_id = db.Column(db.Integer, nullable=True)
     flag_name = db.Column(
         db.String, db.ForeignKey("client_versions.name", ondelete="CASCADE")
     )

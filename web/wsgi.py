@@ -161,6 +161,21 @@ def fill_company_id_computers_locations():
     logger.info("<-----End filling company_id for locations----->")
 
 
+@app.cli.command()
+def fill_flag_id_desktop_client():
+    from app import models as m
+    from app.logger import logger
+
+    logger.info("<-----Start filling flag_id DesktopClient----->")
+    clients = m.DesktopClient.query.all()
+    for client in clients:
+        if client.flag:
+            client.flag_id = client.flag.id
+
+    db.session.commit()
+    logger.info("<-----End filling flag_id DesktopClient----->")
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()
