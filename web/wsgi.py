@@ -122,6 +122,23 @@ def scan_pcc_activations(scan_record_id: int):
     scan_pcc_activations(scan_record_id)
 
 
+@app.cli.command()
+def fill_device_type():
+    from app.models import Computer, DeviceType
+    from app.logger import logger
+
+    logger.info("<------Filling device type------>")
+    computers = Computer.query.all()
+    for computer in computers:
+        if computer.type and computer.type.lower() == "laptop":
+            computer.device_type = DeviceType.LAPTOP
+        elif computer.type and computer.type.lower() == "desktop":
+            computer.device_type = DeviceType.DESKTOP
+
+    db.session.commit()
+    logger.info("<------Filling device type finished------>")
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()

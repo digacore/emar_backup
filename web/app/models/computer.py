@@ -1,6 +1,7 @@
+import enum
 from datetime import datetime
 
-from sqlalchemy import JSON, or_, and_, sql, select
+from sqlalchemy import JSON, or_, and_, sql, select, Enum
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -30,6 +31,16 @@ from config import BaseConfig as CFG
 #     form_base_class = SecureForm
 
 
+class DeviceType(enum.Enum):
+    LAPTOP = "LAPTOP"
+    DESKTOP = "DESKTOP"
+
+
+class DeviceRole(enum.Enum):
+    PRIMARY = "PRIMARY"
+    ALTERNATE = "ALTERNATE"
+
+
 class Computer(db.Model, ModelMixin):
 
     __tablename__ = "computers"
@@ -51,6 +62,13 @@ class Computer(db.Model, ModelMixin):
     folder_password = db.Column(db.String(128), default=CFG.DEFAULT_FOLDER_PASSWORD)
 
     type = db.Column(db.String(128))
+    device_type = db.Column(Enum(DeviceType), nullable=True)
+    device_role = db.Column(
+        Enum(DeviceRole),
+        nullable=False,
+        default=DeviceRole.PRIMARY,
+        server_default=sql.text("'PRIMARY'"),
+    )
     msi_version = db.Column(db.String(64), default="stable")
     current_msi_version = db.Column(db.String(64))
 
@@ -108,6 +126,8 @@ class Computer(db.Model, ModelMixin):
             "sftp_username",
             "sftp_folder_path",
             "type",
+            "device_type",
+            "device_role",
             "manager_host",
             "activated",
             "logs_enabled",
@@ -163,6 +183,8 @@ class ComputerView(RowActionListMixin, MyModelView):
         "sftp_username",
         "sftp_folder_path",
         "type",
+        "device_type",
+        "device_role",
         "manager_host",
         "activated",
         "logs_enabled",
@@ -204,6 +226,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_saved_path": {"readonly": True},
         "current_msi_version": {"readonly": True},
         "computer_ip": {"readonly": True},
+        "type": {"readonly": True},
         # "files_checksum": {"readonly": True},
     }
 
@@ -217,6 +240,8 @@ class ComputerView(RowActionListMixin, MyModelView):
         "sftp_password": {"label": "SFTP password"},
         "sftp_folder_path": {"label": "SFTP folder path"},
         "type": {"label": "Type"},
+        "device_type": {"label": "Device type"},
+        "device_role": {"label": "Device role"},
         "msi_version": {"label": "Msi version"},
         "current_msi_version": {"label": "Current msi version"},
         "manager_host": {"label": "Manager host"},
