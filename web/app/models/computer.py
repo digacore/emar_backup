@@ -39,10 +39,9 @@ class Computer(db.Model, ModelMixin):
     location_id = db.Column(
         db.Integer, db.ForeignKey("locations.id", ondelete="CASCADE"), nullable=True
     )
-    company_name = db.Column(
-        db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
+    company_id = db.Column(
+        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=True
     )
-    company_id = db.Column(db.Integer, nullable=True)
 
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
@@ -98,7 +97,7 @@ class Computer(db.Model, ModelMixin):
         return [
             "computer_name",
             "alert_status",
-            "company_name",
+            "company_id",
             "location_id",
             "download_status",
             "last_download_time",
@@ -129,6 +128,19 @@ class Computer(db.Model, ModelMixin):
     def location_name(self, value):
         new_location = Location.query.filter_by(name=value).first()
         self.location_id = new_location.id if new_location else None
+
+    @hybrid_property
+    def company_name(self):
+        return self.company.name if self.company else None
+
+    @company_name.expression
+    def company_name(cls):
+        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+
+    @company_name.setter
+    def company_name(self, value):
+        new_company = Company.query.filter_by(name=value).first()
+        self.company_id = new_company.id if new_company else None
 
 
 class ComputerView(RowActionListMixin, MyModelView):
@@ -198,7 +210,7 @@ class ComputerView(RowActionListMixin, MyModelView):
     # form_args control fields order. It is dict though...
     form_args = {
         "computer_name": {"label": "Computer name"},
-        "company_name": {"label": "Company name", "id": "company_name"},
+        "company_id": {"label": "Company id", "id": "company_id"},
         "location_id": {"label": "Location id", "id": "location_id"},
         "sftp_host": {"label": "SFTP host"},
         "sftp_username": {"label": "SFTP username"},

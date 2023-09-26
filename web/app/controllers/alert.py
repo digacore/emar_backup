@@ -689,9 +689,7 @@ def daily_summary():
         m.User.asociated_with != "global-full", m.User.asociated_with != "global-view"
     ).all()
     companies: list[m.Company] = m.Company.query.all()
-    locations: list[m.Location] = m.Location.query.with_entities(
-        m.Location.name, m.Location.company_name
-    ).all()
+    locations: list[m.Location] = m.Location.query.all()
 
     companies_names = [company.name for company in companies]
     locations_names = {loc.name: loc.company_name for loc in locations}
