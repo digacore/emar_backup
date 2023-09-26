@@ -18,19 +18,14 @@ class Location(db.Model, ModelMixin):
     __tablename__ = "locations"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), nullable=False)
-    company = relationship(
-        "Company",
-        passive_deletes=True,
-        backref=backref("locations", cascade="delete"),
-        lazy="select",
-    )
-    # TODO swap company name to company id. Same for all models
+
     company_name = db.Column(
         db.String,
         db.ForeignKey("companies.name", ondelete="CASCADE"),
     )
+    company_id = db.Column(db.Integer, nullable=True)
 
+    name = db.Column(db.String(64), nullable=False)
     default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
@@ -42,6 +37,13 @@ class Location(db.Model, ModelMixin):
     )
     created_from_pcc = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
+
+    company = relationship(
+        "Company",
+        passive_deletes=True,
+        backref=backref("locations", cascade="delete"),
+        lazy="select",
     )
 
     def __repr__(self):

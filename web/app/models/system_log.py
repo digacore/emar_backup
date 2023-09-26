@@ -35,12 +35,15 @@ class SystemLog(db.Model, ModelMixin):
     __tablename__ = "system_logs"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
     log_type = db.Column(Enum(SystemLogType), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now, nullable=False)
     object_id = db.Column(db.Integer, nullable=False)
     object_name = db.Column(db.String(128), nullable=False)
     object_url = db.Column(db.String(256), nullable=False)
-    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
     created_by = relationship("User", passive_deletes=False, lazy="select")
 
     def __repr__(self):

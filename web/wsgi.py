@@ -137,6 +137,30 @@ def fill_location_id_computers():
     logger.info("<-----End script fill_location_id_computers----->")
 
 
+@app.cli.command()
+def fill_company_id_computers_locations():
+    from app import models as m
+    from app.logger import logger
+
+    logger.info("<-----Start filling company_id for computers----->")
+    computers = m.Computer.query.all()
+    for computer in computers:
+        if computer.company:
+            computer.company_id = computer.company.id
+
+    db.session.commit()
+    logger.info("<-----End filling company_id for computers----->")
+
+    logger.info("<-----Start filling company_id for locations----->")
+    locations = m.Location.query.all()
+    for location in locations:
+        if location.company:
+            location.company_id = location.company.id
+
+    db.session.commit()
+    logger.info("<-----End filling company_id for locations----->")
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()

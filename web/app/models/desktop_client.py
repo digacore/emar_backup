@@ -17,15 +17,17 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
     __tablename__ = "desktop_clients"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    flag_name = db.Column(
+        db.String, db.ForeignKey("client_versions.name", ondelete="CASCADE")
+    )
+
     name = db.Column(db.String(64), unique=True, nullable=False)
     version = db.Column(db.String(64))
     description = db.Column(db.String(512))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     flag = relationship("ClientVersion", passive_deletes=True)
-    flag_name = db.Column(
-        db.String, db.ForeignKey("client_versions.name", ondelete="CASCADE")
-    )
 
     def __repr__(self):
         return self.name

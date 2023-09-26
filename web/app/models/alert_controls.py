@@ -19,15 +19,18 @@ class AlertControls(db.Model, ModelMixin):
     __tablename__ = "alert_controls"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    alert_associated = db.Column(
+        db.Integer, db.ForeignKey("alerts.id", ondelete="CASCADE")
+    )
+
     name = db.Column(db.String(64), unique=True, nullable=False)
     alert_interval = db.Column(db.String(64), nullable=False)
     alert_period = db.Column(db.Integer)  # in minutes
     key = db.Column(db.String(128))
-    alert = relationship("Alert", passive_deletes=True, lazy="select")
-    alert_associated = db.Column(
-        db.Integer, db.ForeignKey("alerts.id", ondelete="CASCADE")
-    )
     created_at = db.Column(db.DateTime, default=datetime.now)
+
+    alert = relationship("Alert", passive_deletes=True, lazy="select")
 
     def __repr__(self):
         return self.name

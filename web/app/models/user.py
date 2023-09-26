@@ -31,12 +31,14 @@ class User(db.Model, UserMixin, ModelMixin):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     asociated_with = db.Column(db.String(64))
+    last_time_online = db.Column(db.DateTime)
 
     alerts = relationship(
         "Alert",
@@ -45,8 +47,6 @@ class User(db.Model, UserMixin, ModelMixin):
         backref="users",
         lazy="select",
     )
-
-    last_time_online = db.Column(db.DateTime)
 
     @hybrid_property
     def password(self):

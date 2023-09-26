@@ -16,6 +16,7 @@ class Alert(db.Model, ModelMixin):
     __tablename__ = "alerts"
 
     id = db.Column(db.Integer, primary_key=True)
+
     name = db.Column(db.String(64), unique=True, nullable=False)
     from_email = db.Column(db.String(128))
     to_addresses = db.Column(db.String(128))

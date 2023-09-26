@@ -15,6 +15,7 @@ class Company(db.Model, ModelMixin):
     __tablename__ = "companies"
 
     id = db.Column(db.Integer, primary_key=True)
+
     name = db.Column(db.String(64), unique=True, nullable=False)
     default_sftp_username = db.Column(db.String(128))
     default_sftp_password = db.Column(db.String(128))

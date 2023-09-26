@@ -24,10 +24,13 @@ class LogEvent(db.Model, ModelMixin):
     __tablename__ = "log_events"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    computer_id = db.Column(db.Integer, db.ForeignKey("computers.id"))
+
     log_type = db.Column(Enum(LogType), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     data = db.Column(db.String(128), server_default="", default="")
-    computer_id = db.Column(db.Integer, db.ForeignKey("computers.id"))
+
     computer = relationship(
         "Computer", passive_deletes=True, backref="log_events", lazy="select"
     )

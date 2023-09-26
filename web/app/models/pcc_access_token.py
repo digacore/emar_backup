@@ -8,6 +8,7 @@ class PCCAccessToken(db.Model, ModelMixin):
     __tablename__ = "pcc_access_tokens"
 
     id = db.Column(db.Integer, primary_key=True)
+
     token = db.Column(db.String(64), unique=True, nullable=False)
     expires_in = db.Column(db.Integer, nullable=False)
     created_at = db.Column(

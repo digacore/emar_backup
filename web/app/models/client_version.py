@@ -13,6 +13,7 @@ class ClientVersion(db.Model, ModelMixin):
     __tablename__ = "client_versions"
 
     id = db.Column(db.Integer, primary_key=True)
+
     name = db.Column(db.String(64), unique=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
 

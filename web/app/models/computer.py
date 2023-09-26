@@ -35,28 +35,16 @@ class Computer(db.Model, ModelMixin):
     __tablename__ = "computers"
 
     id = db.Column(db.Integer, primary_key=True)
-    computer_name = db.Column(db.String(64), unique=True, nullable=False)
-
-    company = relationship(
-        "Company",
-        passive_deletes=True,
-        backref=backref("computers", cascade="delete"),
-        lazy="select",
-    )
-    company_name = db.Column(
-        db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
-    )
-    location = relationship(
-        "Location",
-        passive_deletes=True,
-        backref=backref("computers", cascade="delete"),
-        lazy="select",
-    )
 
     location_id = db.Column(
         db.Integer, db.ForeignKey("locations.id", ondelete="CASCADE"), nullable=True
     )
+    company_name = db.Column(
+        db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
+    )
+    company_id = db.Column(db.Integer, nullable=True)
 
+    computer_name = db.Column(db.String(64), unique=True, nullable=False)
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
     sftp_username = db.Column(db.String(64), default=CFG.DEFAULT_SFTP_USERNAME)
     sftp_password = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_PASSWORD)
@@ -88,6 +76,20 @@ class Computer(db.Model, ModelMixin):
 
     last_time_logs_enabled = db.Column(db.DateTime, default=datetime.now)
     last_time_logs_disabled = db.Column(db.DateTime)
+
+    company = relationship(
+        "Company",
+        passive_deletes=True,
+        backref=backref("computers", cascade="delete"),
+        lazy="select",
+    )
+
+    location = relationship(
+        "Location",
+        passive_deletes=True,
+        backref=backref("computers", cascade="delete"),
+        lazy="select",
+    )
 
     def __repr__(self):
         return self.computer_name
