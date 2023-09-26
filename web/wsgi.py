@@ -122,6 +122,60 @@ def scan_pcc_activations(scan_record_id: int):
     scan_pcc_activations(scan_record_id)
 
 
+@app.cli.command()
+def fill_location_id_computers():
+    from app import models as m
+    from app.logger import logger
+
+    logger.info("<-----Start script fill_location_id_computers----->")
+    computers = m.Computer.query.all()
+    for computer in computers:
+        if computer.location:
+            computer.location_id = computer.location.id
+
+    db.session.commit()
+    logger.info("<-----End script fill_location_id_computers----->")
+
+
+@app.cli.command()
+def fill_company_id_computers_locations():
+    from app import models as m
+    from app.logger import logger
+
+    logger.info("<-----Start filling company_id for computers----->")
+    computers = m.Computer.query.all()
+    for computer in computers:
+        if computer.company:
+            computer.company_id = computer.company.id
+
+    db.session.commit()
+    logger.info("<-----End filling company_id for computers----->")
+
+    logger.info("<-----Start filling company_id for locations----->")
+    locations = m.Location.query.all()
+    for location in locations:
+        if location.company:
+            location.company_id = location.company.id
+
+    db.session.commit()
+    logger.info("<-----End filling company_id for locations----->")
+
+
+@app.cli.command()
+def fill_flag_id_desktop_client():
+    from app import models as m
+    from app.logger import logger
+
+    logger.info("<-----Start filling flag_id DesktopClient----->")
+    clients = m.DesktopClient.query.all()
+    for client in clients:
+        if client.flag:
+            client.flag_id = client.flag.id
+
+    db.session.commit()
+    logger.info("<-----End filling flag_id DesktopClient----->")
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()

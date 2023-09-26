@@ -127,18 +127,17 @@ def merge_company_second_step(company_id: int):
 
     # Merging process
     # Change data of primary company
-    # primary_company.name = reviewed_form.name.data
     primary_company.default_sftp_username = merge_select_form.default_sftp_username.data
     primary_company.default_sftp_password = merge_select_form.default_sftp_password.data
     primary_company.pcc_org_id = merge_select_form.pcc_org_id.data
 
     # Add new computers from secondary company to primary company
     for computer in selected_computers:
-        computer.company_name = primary_company.name
+        computer.company_id = primary_company.id
 
         # If location is not selected, remove it from computer
         if computer.location not in selected_locations:
-            computer.location_name = None
+            computer.location_id = None
 
     # Delete primary company computers that were not selected
     for computer in primary_company.computers:
@@ -152,7 +151,7 @@ def merge_company_second_step(company_id: int):
 
     # Add new locations from secondary company to primary company
     for location in selected_locations:
-        location.company_name = primary_company.name
+        location.company_id = primary_company.id
 
     # Delete primary company locations that were not selected
     for location in primary_company.locations:
@@ -164,6 +163,10 @@ def merge_company_second_step(company_id: int):
 
     # Delete secondary company
     db.session.delete(secondary_company)
+    db.session.commit()
+
+    # Change primary company name after deletion of secondary company to avoid unique constraint error
+    primary_company.name = merge_select_form.name.data
     db.session.commit()
 
     logger.info(
@@ -281,7 +284,7 @@ def merge_location_second_step(location_id: int):
     secondary_location_name: str = secondary_location.name
 
     # Change data of primary company
-    # primary_location.name = merge_select_form.name.data
+    primary_location.name = merge_select_form.name.data
     primary_location.company_name = merge_select_form.company_name.data
     primary_location.default_sftp_path = merge_select_form.default_sftp_path.data
     primary_location.pcc_fac_id = merge_select_form.pcc_fac_id.data
@@ -289,8 +292,8 @@ def merge_location_second_step(location_id: int):
 
     # Add new computers from secondary to primary location
     for computer in selected_computers:
-        computer.location_name = primary_location.name
-        computer.company_name = primary_location.company.name
+        computer.location_id = primary_location.id
+        computer.company_id = primary_location.company.id
 
     # Delete primary location computers that were not selected
     for computer in primary_location.computers:

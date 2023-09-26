@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from sqlalchemy import or_, sql
+from sqlalchemy import or_, sql, select
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
@@ -18,19 +19,12 @@ class Location(db.Model, ModelMixin):
     __tablename__ = "locations"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False)
-    company = relationship(
-        "Company",
-        passive_deletes=True,
-        backref=backref("locations", cascade="delete"),
-        lazy="select",
-    )
-    # TODO swap company name to company id. Same for all models
-    company_name = db.Column(
-        db.String,
-        db.ForeignKey("companies.name", ondelete="CASCADE"),
+
+    company_id = db.Column(
+        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=True
     )
 
+    name = db.Column(db.String(64), nullable=False)
     default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
@@ -44,13 +38,20 @@ class Location(db.Model, ModelMixin):
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
 
+    company = relationship(
+        "Company",
+        passive_deletes=True,
+        backref=backref("locations", cascade="delete"),
+        lazy="select",
+    )
+
     def __repr__(self):
         return self.name
 
     def _cols(self):
         return [
             "name",
-            "company_name",
+            "company_id",
             "default_sftp_path",
             "computers_per_location",
             "computers_online",
@@ -58,6 +59,19 @@ class Location(db.Model, ModelMixin):
             "pcc_fac_id",
             "use_pcc_backup",
         ]
+
+    @hybrid_property
+    def company_name(self):
+        return self.company.name if self.company else None
+
+    @company_name.expression
+    def company_name(cls):
+        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+
+    @company_name.setter
+    def company_name(self, value):
+        new_company = Company.query.filter_by(name=value).first()
+        self.company_id = new_company.id if new_company else None
 
 
 class LocationView(RowActionListMixin, MyModelView):

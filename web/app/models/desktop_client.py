@@ -1,6 +1,8 @@
 from datetime import datetime
 
+from sqlalchemy import select
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
@@ -8,6 +10,7 @@ from markupsafe import Markup
 
 from app import db
 
+from app.models.client_version import ClientVersion
 from app.models.utils import ModelMixin, RowActionListMixin, BlobMixin, BlobUploadField
 from app.utils import MyModelView
 
@@ -17,15 +20,19 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
     __tablename__ = "desktop_clients"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    flag_id = db.Column(
+        db.Integer,
+        db.ForeignKey("client_versions.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
     name = db.Column(db.String(64), unique=True, nullable=False)
     version = db.Column(db.String(64))
     description = db.Column(db.String(512))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     flag = relationship("ClientVersion", passive_deletes=True)
-    flag_name = db.Column(
-        db.String, db.ForeignKey("client_versions.name", ondelete="CASCADE")
-    )
 
     def __repr__(self):
         return self.name
@@ -34,6 +41,23 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
         return "name : {name}; filename : {filename})".format(
             name=self.name, filename=self.filename
         )
+
+    @hybrid_property
+    def flag_name(self):
+        return self.flag.name if self.flag else None
+
+    @flag_name.expression
+    def flag_name(cls):
+        return (
+            select([ClientVersion.name])
+            .where(cls.flag_id == ClientVersion.id)
+            .as_scalar()
+        )
+
+    @flag_name.setter
+    def flag_name(self, value):
+        new_flag = ClientVersion.query.filter_by(name=value).first()
+        self.flag_id = new_flag.id if new_flag else None
 
 
 class DesktopClientView(RowActionListMixin, MyModelView):
@@ -129,11 +153,4 @@ class DesktopClientView(RowActionListMixin, MyModelView):
                 self.model.name == "None"
             )
 
-        return result_query.with_entities(
-            DesktopClient.name,
-            DesktopClient.id,
-            DesktopClient.version,
-            DesktopClient.description,
-            DesktopClient.filename,
-            DesktopClient.flag_name,
-        )
+        return result_query

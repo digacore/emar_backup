@@ -17,6 +17,7 @@ class PCCActivationsScan(db.Model, ModelMixin):
     __tablename__ = "pcc_activations_scans"
 
     id = db.Column(db.Integer, primary_key=True)
+
     error = db.Column(db.Text)
     status = db.Column(Enum(ScanStatus), nullable=False)
     created_at = db.Column(
