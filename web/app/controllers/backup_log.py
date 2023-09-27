@@ -24,7 +24,7 @@ def backup_log_on_download_success(
     """
     last_computer_log = (
         m.BackupLog.query.filter_by(computer_id=computer.id)
-        .order_by(m.BackupLog.start_time.desc())
+        .order_by(m.BackupLog.start_time.desc(), m.BackupLog.end_time.desc())
         .first()
     )
 
@@ -191,14 +191,30 @@ def backup_log_on_download_success(
             # If all the time logs were enabled - computer was offline in that time
 
             if computer.last_time_logs_enabled <= last_computer_log.end_time:
-                last_computer_log.end_time = rounded_current_time - timedelta(seconds=1)
+                if last_computer_log.start_time < rounded_current_time:
+                    last_computer_log.end_time = rounded_current_time - timedelta(
+                        seconds=1
+                    )
 
-                # Update error field if necessary
-                last_computer_log.error = (
-                    BackupLogError.TWO_HOURS.value
-                    if last_computer_log.duration > timedelta(minutes=59, seconds=59)
-                    else BackupLogError.ONE_HOUR.value
-                )
+                    # Update error field if necessary
+                    last_computer_log.error = (
+                        BackupLogError.TWO_HOURS.value
+                        if last_computer_log.duration
+                        > timedelta(minutes=59, seconds=59)
+                        else BackupLogError.ONE_HOUR.value
+                    )
+                # When computer just was activated, user looked at the logs (NO_DOWLOADS log was created)
+                # And then computer downloaded backup in the same hour
+                else:
+                    last_computer_log.end_time = rounded_current_time + timedelta(
+                        minutes=59, seconds=59
+                    )
+                    last_computer_log.backup_log_type = (
+                        m.BackupLogType.WITH_DOWNLOADS_PERIOD
+                    )
+                    last_computer_log.error = ""
+                    last_computer_log.notes = ""
+
                 last_computer_log.update()
 
                 logger.debug(
