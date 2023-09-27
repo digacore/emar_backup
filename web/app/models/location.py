@@ -92,6 +92,13 @@ class LocationView(RowActionListMixin, MyModelView):
         "use_pcc_backup",
         "created_from_pcc",
     ]
+
+    column_labels = dict(
+        pcc_fac_id="PointClickCare Facility ID",
+        use_pcc_backup="Use PointClickCare Backup",
+        created_from_pcc="Created from PointClickCare",
+    )
+
     column_searchable_list = column_list
     column_filters = column_list
     column_sortable_list = column_list

@@ -130,10 +130,10 @@
                           {% set data_sftp = update_report_data(report.data_as_obj, loop.index - 1, {"use_pcc_backup": False}) %}
                           <div class="dropdown ml-1">
                             <button class="btn dropdown-toggle btn-xs" style="border-color: rgb(183, 185, 204, 0.6); border-width: 1px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                              {{ "PCC" if obj["use_pcc_backup"] else "SFTP" }}
+                              {{ "PointClickCare" if obj["use_pcc_backup"] else "SFTP" }}
                             </button>
                             <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                              <a type="button" class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_pcc }) }}, '{{ csrf_token() }}')" href="#">PCC</a>
+                              <a type="button" class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_pcc }) }}, '{{ csrf_token() }}')" href="#">PointClickCare</a>
                               <a type="button" class="dropdown-item" onclick="handleChangeData({{ report.id }}, {{ to_json({'data': data_sftp }) }}, '{{ csrf_token() }}')" href="#">SFTP</a>
                             </div>
                           </div>
@@ -205,7 +205,7 @@
                               Location
                               {{ "created" if obj["action"] == "CREATE" else "updated" }}
                               <a class="text-decoration-none" href="{{ url_for('location.edit_view', id=obj.id) }}">{{ obj.name }}</a>.
-                              Backup downloading type: {{ "PCC" if obj["use_pcc_backup"] else "SFTP" }}
+                              Backup downloading type: {{ "PointClickCare" if obj["use_pcc_backup"] else "SFTP" }}
                             </div>
                           {% else %}
                             <div>

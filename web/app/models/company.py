@@ -61,6 +61,12 @@ class CompanyView(RowActionListMixin, MyModelView):
         "pcc_org_id",
         "created_from_pcc",
     ]
+
+    column_labels = dict(
+        pcc_org_id="PointClickCare Org ID",
+        created_from_pcc="Created from PointClickCare",
+    )
+
     column_filters = column_list
 
     column_searchable_list = column_list
