@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import requests
 from urllib.parse import urljoin
 from datetime import datetime, timedelta
@@ -14,6 +15,10 @@ from config import BaseConfig as CFG
 
 
 class UnknownTypeError(Exception):
+    pass
+
+
+class SpikeArrestError(Exception):
     pass
 
 
@@ -132,11 +137,65 @@ def get_pcc_2_legged_token() -> str:
     return token.token
 
 
+def execute_pcc_request(
+    url: str,
+    params: dict | None = None,
+    headers: dict | None = None,
+    stream: bool | None = None,
+):
+    """Execute PCC API request and handle all necessary errors
+
+    Args:
+        url (str): pcc api url
+        params (dict): query params
+        headers (dict): request headers
+
+    Raises:
+        SpikeArrestError: SpikeArrest error (minute quota)
+
+    Returns:
+        Response: response object
+    """
+    # Two retries for the case when we have SpikeArrest error (frequency 20 ms)
+    for i in range(2):
+        # Check daily requests count and raise error if it's exceeded
+        check_daily_requests_count()
+        try:
+            res = requests.get(
+                url,
+                params=params,
+                headers=headers,
+                stream=stream,
+                cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
+            )
+
+            update_daily_requests_count(
+                int(res.headers["X-Quota-Time-To-Reset"]),
+                int(res.headers["X-Quota-Remaining"]),
+            )
+
+            if res.status_code in (429, 503):
+                # When we have SpikeArrest error because of minute quota - raise exception
+                if res.headers["X-Quota-Minute-Remaining"] == 0:
+                    logger.error("SpikeArrest error (minute quota). Retry in 1 minute")
+                    raise SpikeArrestError(
+                        "SpikeArrest error (minute quota). Retry in 1 minute"
+                    )
+                # When we have SpikeArrest error because of frequency (20 ms) - retry after 400 ms
+                else:
+                    time.sleep(0.4)
+                    continue
+        except SpikeArrestError as e:
+            logger.error("Can't get data from PCC API. Reason: {}", str(e))
+            raise e
+
+        return res
+
+
 def get_activations() -> list[s.OrgActivationData]:
     """Get the list of all existing AppActivations (companies)
 
     Raises:
-        HTTPException: status_code == 429, daily requests limit exceeded
         e (ValidationError): response parsing error while getting data from PCC API.
 
     Returns:
@@ -153,27 +212,14 @@ def get_activations() -> list[s.OrgActivationData]:
         "api", "public", "preview1", "applications", CFG.PCC_APP_NAME, "activations"
     )
     url: str = urljoin(CFG.PCC_BASE_URL, server_path)
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     page = 1
 
     while should_download:
-        # Check daily requests count and raise error if it's exceeded
-        check_daily_requests_count()
+        params = {"page": page, "page_size": 200}
+        res = execute_pcc_request(url, params, headers)
 
         try:
-            res = requests.get(
-                url,
-                params={"page": page, "page_size": 200},
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
-                cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
-            )
-
-            update_daily_requests_count(
-                int(res.headers["X-Quota-Time-To-Reset"]),
-                int(res.headers["X-Quota-Remaining"]),
-            )
             parsed_res = s.ActivationsResponse.parse_obj(res.json())
         except ValidationError as e:
             logger.error("Can't get data from PCC API. Reason: {}", e)
@@ -193,7 +239,6 @@ def get_org_facilities_list(pcc_org_uuid: str) -> list[s.Facility]:
         pcc_org_uuid (str): PCC organization UUID
 
     Raises:
-        HTTPException: status_code == 429, daily requests limit exceeded
         e (ValidationError): response parsing error while getting data from PCC API.
 
     Returns:
@@ -210,27 +255,14 @@ def get_org_facilities_list(pcc_org_uuid: str) -> list[s.Facility]:
         "api", "public", "preview1", "orgs", pcc_org_uuid, "facs"
     )
     url: str = urljoin(CFG.PCC_BASE_URL, server_path)
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     page = 1
 
     while should_download:
-        # Check daily requests count and raise error if it's exceeded
-        check_daily_requests_count()
+        params = {"page": page, "page_size": 200}
+        res = execute_pcc_request(url, params, headers)
 
         try:
-            res = requests.get(
-                url,
-                params={"page": page, "page_size": 200},
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json",
-                },
-                cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
-            )
-
-            update_daily_requests_count(
-                int(res.headers["X-Quota-Time-To-Reset"]),
-                int(res.headers["X-Quota-Remaining"]),
-            )
             parsed_res = s.FacilitiesListResponse.parse_obj(res.json())
         except ValidationError as e:
             logger.error("Can't get data from PCC API. Reason: {}", e)
@@ -251,7 +283,6 @@ def get_facility_info(pcc_org_uuid: str, pcc_facility_id: str) -> s.Facility:
         pcc_facility_id (str): PCC facility ID
 
     Raises:
-        HTTPException: status_code == 429, daily requests limit exceeded
         e (ValidationError): response parsing error while getting data from PCC API.
 
     Returns:
@@ -264,24 +295,11 @@ def get_facility_info(pcc_org_uuid: str, pcc_facility_id: str) -> s.Facility:
         "api", "public", "preview1", "orgs", pcc_org_uuid, "facs", str(pcc_facility_id)
     )
     url: str = urljoin(CFG.PCC_BASE_URL, server_path)
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    # Check daily requests count and raise error if it's exceeded
-    check_daily_requests_count()
+    res = execute_pcc_request(url, None, headers)
 
     try:
-        res = requests.get(
-            url,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            },
-            cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
-        )
-
-        update_daily_requests_count(
-            int(res.headers["X-Quota-Time-To-Reset"]),
-            int(res.headers["X-Quota-Remaining"]),
-        )
         parsed_res = s.Facility.parse_obj(res.json())
     except ValidationError as e:
         logger.error("Can't get data from PCC API. Reason: {}", e)

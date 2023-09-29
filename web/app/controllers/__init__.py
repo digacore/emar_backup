@@ -16,6 +16,7 @@ from .pcc_api import (
     get_facility_info,
     update_daily_requests_count,
     check_daily_requests_count,
+    execute_pcc_request,
 )
 from .log_event import create_log_event, gen_fake_backup_download_logs
 from .backup_log import (

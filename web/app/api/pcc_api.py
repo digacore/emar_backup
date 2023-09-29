@@ -1,15 +1,10 @@
 import os
-import requests
 from urllib.parse import urljoin
 from flask import Response, abort
 
 from app import schema as s, models as m
 from app.views.blueprint import BlueprintApi
-from app.controllers import (
-    get_pcc_2_legged_token,
-    check_daily_requests_count,
-    update_daily_requests_count,
-)
+from app.controllers import get_pcc_2_legged_token, execute_pcc_request
 from app.logger import logger
 from config import BaseConfig as CFG
 
@@ -58,33 +53,12 @@ def download_backup_from_pcc(body: s.GetCredentials) -> Response:
         "backup-files",
     )
     url = urljoin(CFG.PCC_BASE_URL, backup_route)
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+    }
 
-    # Check daily requests count and raise error if limit is exceeded
-    check_daily_requests_count()
-
-    try:
-        res = requests.get(
-            url,
-            headers={
-                "Authorization": f"Bearer {token}",
-                "Content-Type": "application/json",
-            },
-            cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
-            stream=True,
-        )
-
-        # Update daily requests count
-        update_daily_requests_count(
-            int(res.headers["X-Quota-Time-To-Reset"]),
-            int(res.headers["X-Quota-Remaining"]),
-        )
-    except Exception as e:
-        logger.error(
-            "Can't download backup from PCC API for computer {}. Reason: {}",
-            computer.computer_name,
-            e,
-        )
-        raise e
+    res = execute_pcc_request(url, headers=headers, stream=True)
 
     return Response(
         res.iter_content(chunk_size=10 * 1024),
