@@ -1,3 +1,9 @@
+// Tooltips initialization
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-toggle="tooltip"]'))
+const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+  return new bootstrap.Tooltip(tooltipTriggerEl)
+})
+
 const searchInput = document.querySelector("#logs-search-input");
 if (searchInput) {
   searchInput.addEventListener("keyup", function (e) {

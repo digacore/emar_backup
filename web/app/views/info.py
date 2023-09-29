@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from flask import render_template, Blueprint, request, abort
+from flask import render_template, Blueprint, request, abort, current_app
 from flask_login import login_required, current_user
 
 from app import models as m, db
@@ -203,6 +203,17 @@ def system_log_info():
         .scalars()
         .all()
     )
+
+    pcc_daily_requests_limit: int = int(current_app.config["PCC_DAILY_QUOTA_LIMIT"])
+    pcc_daily_requests_count: m.PCCDailyRequest | None = m.PCCDailyRequest.query.filter(
+        m.PCCDailyRequest.reset_time >= datetime.utcnow()
+    ).first()
+    usage_percent = (
+        int(pcc_daily_requests_count.requests_count / pcc_daily_requests_limit * 100)
+        if pcc_daily_requests_count
+        else 0
+    )
+
     return render_template(
         "info/system_log.html",
         system_logs=system_logs,
@@ -210,4 +221,7 @@ def system_log_info():
         days=days,
         current_logs_type=logs_type,
         possible_logs_types=LOGS_TYPES,
+        daily_limit=pcc_daily_requests_limit,
+        current_requests_count=pcc_daily_requests_count,
+        usage_percent=usage_percent,
     )

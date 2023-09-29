@@ -5,7 +5,11 @@ from flask import Response, abort
 
 from app import schema as s, models as m
 from app.views.blueprint import BlueprintApi
-from app.controllers import get_pcc_2_legged_token
+from app.controllers import (
+    get_pcc_2_legged_token,
+    check_daily_requests_count,
+    update_daily_requests_count,
+)
 from app.logger import logger
 from config import BaseConfig as CFG
 
@@ -54,6 +58,10 @@ def download_backup_from_pcc(body: s.GetCredentials) -> Response:
         "backup-files",
     )
     url = urljoin(CFG.PCC_BASE_URL, backup_route)
+
+    # Check daily requests count and raise error if limit is exceeded
+    check_daily_requests_count()
+
     try:
         res = requests.get(
             url,
@@ -63,6 +71,12 @@ def download_backup_from_pcc(body: s.GetCredentials) -> Response:
             },
             cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
             stream=True,
+        )
+
+        # Update daily requests count
+        update_daily_requests_count(
+            int(res.headers["X-Quota-Time-To-Reset"]),
+            int(res.headers["X-Quota-Remaining"]),
         )
     except Exception as e:
         logger.error(

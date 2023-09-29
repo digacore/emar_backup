@@ -5,6 +5,8 @@ from urllib.parse import urljoin
 from datetime import datetime, timedelta
 from pydantic import ValidationError
 
+from flask import current_app, abort
+
 from app.logger import logger
 from app import models as m, schema as s
 from app.utils import get_base64_string
@@ -13,6 +15,68 @@ from config import BaseConfig as CFG
 
 class UnknownTypeError(Exception):
     pass
+
+
+def update_daily_requests_count(reset_time: int, remaining_requests: int) -> None:
+    """Update daily requests count
+
+    Args:
+        reset_time (int): epoch reset time in milliseconds
+        remaining_requests (int): remaining requests count
+    """
+    # Convert epoch time to datetime
+    reset_time_as_date: datetime = datetime.utcfromtimestamp(reset_time / 1000)
+
+    used_requests = current_app.config["PCC_DAILY_QUOTA_LIMIT"] - remaining_requests
+
+    # Check if reset time is already exists
+    daily_requests: m.PCCDailyRequest | None = m.PCCDailyRequest.query.filter_by(
+        reset_time=reset_time_as_date
+    ).first()
+
+    # If not - create new
+    if not daily_requests:
+        daily_requests = m.PCCDailyRequest(
+            reset_time=reset_time_as_date, requests_count=used_requests
+        )
+        daily_requests.save()
+    # If exists - update
+    else:
+        daily_requests.requests_count = used_requests
+        daily_requests.update()
+
+
+def check_daily_requests_count() -> None:
+    """
+    Check daily requests count and raise error if it's exceeded
+    """
+    # Get the valid requests count for current time
+    current_requests_number: m.PCCDailyRequest | None = m.PCCDailyRequest.query.filter(
+        m.PCCDailyRequest.reset_time > datetime.utcnow()
+    ).first()
+
+    # If there is no suitable counter for current time - skip
+    if (
+        not current_requests_number
+        or current_requests_number.requests_count
+        < current_app.config["PCC_DAILY_QUOTA_LIMIT"]
+    ):
+        return True
+
+    # If requests count is exceeded - raise error
+    if (
+        current_requests_number.requests_count
+        >= current_app.config["PCC_DAILY_QUOTA_LIMIT"]
+    ):
+        logger.error(
+            "Daily requests limit exceeded [{}]. Current requests count: {}",
+            datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            current_requests_number.requests_count,
+        )
+        abort(
+            429,
+            f"Daily requests limit exceeded. Current requests count: {current_requests_number.requests_count}",
+        )
 
 
 def get_pcc_2_legged_token() -> str:
@@ -72,6 +136,7 @@ def get_activations() -> list[s.OrgActivationData]:
     """Get the list of all existing AppActivations (companies)
 
     Raises:
+        HTTPException: status_code == 429, daily requests limit exceeded
         e (ValidationError): response parsing error while getting data from PCC API.
 
     Returns:
@@ -91,6 +156,9 @@ def get_activations() -> list[s.OrgActivationData]:
     page = 1
 
     while should_download:
+        # Check daily requests count and raise error if it's exceeded
+        check_daily_requests_count()
+
         try:
             res = requests.get(
                 url,
@@ -102,6 +170,10 @@ def get_activations() -> list[s.OrgActivationData]:
                 cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
             )
 
+            update_daily_requests_count(
+                int(res.headers["X-Quota-Time-To-Reset"]),
+                int(res.headers["X-Quota-Remaining"]),
+            )
             parsed_res = s.ActivationsResponse.parse_obj(res.json())
         except ValidationError as e:
             logger.error("Can't get data from PCC API. Reason: {}", e)
@@ -121,6 +193,7 @@ def get_org_facilities_list(pcc_org_uuid: str) -> list[s.Facility]:
         pcc_org_uuid (str): PCC organization UUID
 
     Raises:
+        HTTPException: status_code == 429, daily requests limit exceeded
         e (ValidationError): response parsing error while getting data from PCC API.
 
     Returns:
@@ -140,6 +213,9 @@ def get_org_facilities_list(pcc_org_uuid: str) -> list[s.Facility]:
     page = 1
 
     while should_download:
+        # Check daily requests count and raise error if it's exceeded
+        check_daily_requests_count()
+
         try:
             res = requests.get(
                 url,
@@ -151,6 +227,10 @@ def get_org_facilities_list(pcc_org_uuid: str) -> list[s.Facility]:
                 cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
             )
 
+            update_daily_requests_count(
+                int(res.headers["X-Quota-Time-To-Reset"]),
+                int(res.headers["X-Quota-Remaining"]),
+            )
             parsed_res = s.FacilitiesListResponse.parse_obj(res.json())
         except ValidationError as e:
             logger.error("Can't get data from PCC API. Reason: {}", e)
@@ -171,6 +251,7 @@ def get_facility_info(pcc_org_uuid: str, pcc_facility_id: str) -> s.Facility:
         pcc_facility_id (str): PCC facility ID
 
     Raises:
+        HTTPException: status_code == 429, daily requests limit exceeded
         e (ValidationError): response parsing error while getting data from PCC API.
 
     Returns:
@@ -184,6 +265,9 @@ def get_facility_info(pcc_org_uuid: str, pcc_facility_id: str) -> s.Facility:
     )
     url: str = urljoin(CFG.PCC_BASE_URL, server_path)
 
+    # Check daily requests count and raise error if it's exceeded
+    check_daily_requests_count()
+
     try:
         res = requests.get(
             url,
@@ -194,6 +278,10 @@ def get_facility_info(pcc_org_uuid: str, pcc_facility_id: str) -> s.Facility:
             cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
         )
 
+        update_daily_requests_count(
+            int(res.headers["X-Quota-Time-To-Reset"]),
+            int(res.headers["X-Quota-Remaining"]),
+        )
         parsed_res = s.Facility.parse_obj(res.json())
     except ValidationError as e:
         logger.error("Can't get data from PCC API. Reason: {}", e)
