@@ -122,7 +122,7 @@ class BaseConfig(object):
     PCC_CLIENT_ID = os.environ.get("PCC_CLIENT_ID", None)
     PCC_CLIENT_SECRET = os.environ.get("PCC_CLIENT_SECRET", None)
     PCC_APP_NAME = os.environ.get("PCC_APP_NAME", None)
-    PCC_DAILY_QUOTA_LIMIT = os.environ.get("PCC_DAILY_QUOTA_LIMIT", 10000)
+    PCC_DAILY_QUOTA_LIMIT = int(os.environ.get("PCC_DAILY_QUOTA_LIMIT", 10000))
     CERTIFICATE_PATH = os.environ.get("CERTIFICATE_PATH", None)
     PRIVATEKEY_PATH = os.environ.get("PRIVATEKEY_PATH", None)
 
@@ -184,7 +184,7 @@ class ProductionConfig(BaseConfig):
         "DATABASE_URL", "sqlite:///" + os.path.join(base_dir, "database.sqlite3")
     )
     WTF_CSRF_ENABLED = True
-    PCC_DAILY_QUOTA_LIMIT = os.environ.get("PCC_DAILY_QUOTA_LIMIT", 50000)
+    PCC_DAILY_QUOTA_LIMIT = int(os.environ.get("PCC_DAILY_QUOTA_LIMIT", 50000))
 
 
 config = dict(
