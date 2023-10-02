@@ -2,6 +2,7 @@ import os
 import json
 import time
 import requests
+from requests.exceptions import HTTPError
 from urllib.parse import urljoin
 from datetime import datetime, timedelta
 from pydantic import ValidationError
@@ -116,8 +117,10 @@ def get_pcc_2_legged_token() -> str:
             data={"grant_type": "client_credentials"},
             cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
         )
+        response.raise_for_status()
+
         access_token_info = s.TwoLeggedAuthResult.parse_obj(response.json())
-    except ValidationError as e:
+    except (ValidationError, HTTPError) as e:
         logger.error("Can't get PCC API access token. Reason: {}", e)
         raise e
 
@@ -169,24 +172,34 @@ def execute_pcc_request(
                 cert=(CFG.CERTIFICATE_PATH, CFG.PRIVATEKEY_PATH),
             )
 
-            update_daily_requests_count(
-                int(res.headers["X-Quota-Time-To-Reset"]),
-                int(res.headers["X-Quota-Remaining"]),
-            )
+            if res.headers.get("X-Quota-Time-To-Reset") and res.headers.get(
+                "X-Quota-Remaining"
+            ):
+                update_daily_requests_count(
+                    int(res.headers["X-Quota-Time-To-Reset"]),
+                    int(res.headers["X-Quota-Remaining"]),
+                )
 
             if res.status_code in (429, 503):
                 # When we have SpikeArrest error because of minute quota - raise exception
                 if res.headers["X-Quota-Minute-Remaining"] == 0:
-                    logger.error("SpikeArrest error (minute quota). Retry in 1 minute")
                     raise SpikeArrestError(
                         "SpikeArrest error (minute quota). Retry in 1 minute"
                     )
-                # When we have SpikeArrest error because of frequency (20 ms) - retry after 400 ms
+                # When we have SpikeArrest error because of frequency (20 ms)
                 else:
-                    time.sleep(0.4)
-                    continue
-        except SpikeArrestError as e:
-            logger.error("Can't get data from PCC API. Reason: {}", str(e))
+                    # If that is first time - retry after 400 ms
+                    if i == 0:
+                        time.sleep(0.4)
+                        continue
+                    else:
+                        raise SpikeArrestError(
+                            "SpikeArrest error (too high frequency of requests)"
+                        )
+
+            res.raise_for_status()
+        except (SpikeArrestError, HTTPError) as e:
+            logger.error(str(e))
             raise e
 
         return res
@@ -222,7 +235,9 @@ def get_activations() -> list[s.OrgActivationData]:
         try:
             parsed_res = s.ActivationsResponse.parse_obj(res.json())
         except ValidationError as e:
-            logger.error("Can't get data from PCC API. Reason: {}", e)
+            logger.error(
+                "Error in validation of app activations response. Reason: {}", e
+            )
             raise e
 
         activations_list.extend(parsed_res.data)
@@ -265,7 +280,9 @@ def get_org_facilities_list(pcc_org_uuid: str) -> list[s.Facility]:
         try:
             parsed_res = s.FacilitiesListResponse.parse_obj(res.json())
         except ValidationError as e:
-            logger.error("Can't get data from PCC API. Reason: {}", e)
+            logger.error(
+                "Error in validation of facilities list response. Reason: {}", e
+            )
             raise e
 
         facilities_list.extend(parsed_res.data)
@@ -302,7 +319,7 @@ def get_facility_info(pcc_org_uuid: str, pcc_facility_id: str) -> s.Facility:
     try:
         parsed_res = s.Facility.parse_obj(res.json())
     except ValidationError as e:
-        logger.error("Can't get data from PCC API. Reason: {}", e)
+        logger.error("Error in validation of facility info response. Reason: {}", e)
         raise e
 
     return parsed_res
