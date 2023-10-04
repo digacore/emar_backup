@@ -12,6 +12,7 @@ from flask import (
     request,
     make_response,
     session,
+    abort,
 )
 import identity
 import identity.web
@@ -26,7 +27,7 @@ from flask_jwt_extended import (
 )
 
 from app.models import User
-from app.forms import LoginForm
+from app.forms import LoginForm, ChangePasswordForm
 from app import google_client
 
 from config import BaseConfig as CFG
@@ -71,6 +72,25 @@ def login():
 
         flash("Wrong user ID or password.", "danger")
     return render_template("auth/login.html", form=form)
+
+
+@auth_blueprint.route("/change-password", methods=["POST"])
+@login_required
+def change_password():
+    if current_user.asociated_with.lower() != "global-full":
+        abort(403, "You don't have permission to access this route.")
+
+    form = ChangePasswordForm(request.form)
+    if form.validate_on_submit():
+        user: User = User.query.get_or_404(form.user_id.data)
+
+        user.password = form.new_password.data
+        user.update()
+        flash("Password changed successfully.", "success")
+        return redirect(url_for("user.edit_view", id=form.user_id.data))
+
+    flash(f"Password was not changed. Reason: <{form.errors}>", "danger")
+    return redirect(url_for("user.edit_view", id=form.user_id.data))
 
 
 @auth_blueprint.route("/glogin", methods=["GET", "POST"])
