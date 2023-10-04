@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import or_, sql, select
+from sqlalchemy import or_, func, sql, select
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -209,3 +209,16 @@ class LocationView(RowActionListMixin, MyModelView):
                 self.model.computer_name == "None"
             )
         return result_query
+
+    def get_count_query(self):
+        actual_query = self.get_query()
+
+        # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
+        # Instead add select_from(self.model) to query to count correctly
+        if (
+            current_user.asociated_with.lower() == "global-full"
+            or current_user.asociated_with.lower() == "global-view"
+        ):
+            return actual_query.with_entities(func.count()).select_from(self.model)
+
+        return actual_query.with_entities(func.count())

@@ -45,6 +45,8 @@ def create_app(environment="development"):
         auth_blueprint,
         email_blueprint,
         info_blueprint,
+        company_blueprint,
+        location_blueprint,
         pcc_blueprint,
         search_blueprint,
         merge_blueprint,
@@ -55,9 +57,6 @@ def create_app(environment="development"):
         computer_blueprint,
         download_msi_blueprint,
         download_msi_fblueprint,
-        search_column_blueprint,
-        locations_company_blueprint,
-        sftp_data_blueprint,
         pcc_api_blueprint,
     )
     from app.models import (
@@ -116,15 +115,14 @@ def create_app(environment="development"):
     app.register_blueprint(pcc_blueprint)
     app.register_blueprint(search_blueprint)
     app.register_blueprint(merge_blueprint)
+    app.register_blueprint(company_blueprint)
+    app.register_blueprint(location_blueprint)
 
     # Register api.
     app.register_api(downloads_info_blueprint)
     app.register_api(api_email_blueprint)
     app.register_api(computer_blueprint)
     app.register_api(download_msi_blueprint)
-    app.register_api(search_column_blueprint)
-    app.register_api(locations_company_blueprint)
-    app.register_api(sftp_data_blueprint)
     app.register_api(pcc_api_blueprint)
 
     # Set up flask login.

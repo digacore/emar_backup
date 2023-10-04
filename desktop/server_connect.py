@@ -321,14 +321,17 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
             f'-p{credentials["folder_password"]}',
         ],
         stdout=PIPE,
-        stderr=PIPE
+        stderr=PIPE,
     )
     stdout_res, stderr_res = subprs.communicate()
 
     # Check if archive can be changed by 7z and it is not corrupted
     stdout_str = str(stdout_res)
     if re.search("is not supported archive", stdout_str):
-        logger.info("{} is not supported archive. Create new zip and delete the old one.", zip_name)
+        logger.info(
+            "{} is not supported archive. Create new zip and delete the old one.",
+            zip_name,
+        )
 
         # Create new zip archive and save pulled backup to it
         new_zip = os.path.join(STORAGE_PATH, "emar_backups_new.zip")
@@ -345,14 +348,18 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
         )
 
         new_subprs.communicate()
-        
+
         # Remove the original zip archive with backups and rename the new one
         os.remove(zip_name)
         os.rename(new_zip, zip_name)
-    
+
     # Log the situation something happened with 7z operation and throw error
     elif not re.search("Everything is Ok", stdout_str):
-        logger.error("7z can't add archive to emar_backups and delete tmp. Stdout: {}. Stderr: {}.", stdout_res, stderr_res)
+        logger.error(
+            "7z can't add archive to emar_backups and delete tmp. Stdout: {}. Stderr: {}.",
+            stdout_res,
+            stderr_res,
+        )
         raise AppError("7z can't add archive to emar_backups")
 
     logger.info("Files zipped.")
@@ -361,16 +368,12 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
         [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
         stdout=PIPE,
     )
-    raw_list_stdout = [
-        f for f in proc.stdout.read().decode().splitlines()
-    ]
+    raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
     # NOTE f.split("Path = ")[1] is folder name
     # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
     files = {
         f.split("Path = ")[1]: datetime.datetime.strptime(
-            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip(
-                "Modified = "
-            ),
+            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
             "%Y-%m-%d %H:%M:%S",
         )
         for f in raw_list_stdout
@@ -400,16 +403,12 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
         [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
         stdout=PIPE,
     )
-    raw_list_stdout = [
-        f for f in proc.stdout.read().decode().splitlines()
-    ]
+    raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
     # NOTE f.split("Path = ")[1] is folder name
     # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
     files = {
         f.split("Path = ")[1]: datetime.datetime.strptime(
-            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip(
-                "Modified = "
-            ),
+            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
             "%Y-%m-%d %H:%M:%S",
         )
         for f in raw_list_stdout
@@ -421,11 +420,16 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
 
     # Check if new downloaded backup is present in the emar_backups.zip
     new_backup_name = re.search(r"(emarbackup_.*)$", tempdir).group(0)
-    
+
     if not new_backup_name in dirs:
-        logger.error("The new downloaded backup {} was not founded in the emar_backups.zip", new_backup_name)
-        raise FileNotFoundError("The new downloaded backup was not found in the emar_backups.zip")
-    
+        logger.error(
+            "The new downloaded backup {} was not founded in the emar_backups.zip",
+            new_backup_name,
+        )
+        raise FileNotFoundError(
+            "The new downloaded backup was not found in the emar_backups.zip"
+        )
+
     return os.path.join(zip_name, new_backup_name)
 
 
@@ -611,7 +615,10 @@ def sftp_check_files_for_update_and_load(credentials):
                     logger.info("Nothing to zip.")
 
                 update_download_status(
-                    "downloaded", credentials, last_downloaded=str(tempdir), last_saved_path=last_saved_path
+                    "downloaded",
+                    credentials,
+                    last_downloaded=str(tempdir),
+                    last_saved_path=last_saved_path,
                 )
 
         response = requests.post(
@@ -669,11 +676,13 @@ def download_file_from_pcc(credentials):
                     "computer_name": credentials["computer_name"],
                     "identifier_key": credentials["identifier_key"],
                 },
-                stream=True
+                stream=True,
             ) as res:
                 res.raise_for_status()
 
-                filename = re.findall("filename=(.+)", res.headers["Content-Disposition"])[0]
+                filename = re.findall(
+                    "filename=(.+)", res.headers["Content-Disposition"]
+                )[0]
                 filepath = os.path.join(download_dir_path, filename)
                 with open(filepath, "wb") as f:
                     shutil.copyfileobj(res.raw, f)
@@ -681,12 +690,15 @@ def download_file_from_pcc(credentials):
         except Exception as e:
             logger.error("Exception occurred while downloading: {}", e)
             raise AppError("Can't download backup file from PCC API")
-        
+
         # Zip downloaded backup file
         last_saved_path = add_file_to_zip(credentials, download_dir_path)
 
     update_download_status(
-        "downloaded", credentials, last_downloaded=str(download_dir_path), last_saved_path=last_saved_path
+        "downloaded",
+        credentials,
+        last_downloaded=str(download_dir_path),
+        last_saved_path=last_saved_path,
     )
 
     try:
@@ -763,6 +775,58 @@ def update_download_status(status, creds, last_downloaded="", last_saved_path=""
     logger.info(f"Download status: {status}.")
 
 
+def create_desktop_icon():
+    # This is path where the shortcut will be created
+    path = r"C:\\Users\\Public\\Desktop\\eMARVault.lnk"
+    icon_path = os.path.join(
+        Path("C:\\") / "Program Files" / "eMARVault" / "eMARVault_256x256.ico"
+    )
+    icon_path_86 = os.path.join(
+        Path("C:\\") / "Program Files (x86)" / "eMARVault" / "eMARVault_256x256.ico"
+    )
+    icon_path_to_use = icon_path_86 if os.path.isfile(icon_path_86) else icon_path
+
+    if not os.path.exists(path):
+        from win32com.client import Dispatch
+
+        # directory to which the shortcut leads
+        target = rf"{os.path.join(STORAGE_PATH, 'emar_backups.zip')}"
+        wDir = rf"{STORAGE_PATH}"
+
+        shell = Dispatch("WScript.Shell")
+        shortcut = shell.CreateShortCut(path)
+        shortcut.IconLocation = str(icon_path_to_use)
+        shortcut.WorkingDirectory = wDir
+        shortcut.Targetpath = target
+        shortcut.save()
+
+
+# def download_file_from_pcc(credentials):
+#     """Retrive access token and certs from Web and download files from PCC API"""
+#     # Get access token
+#     access_token_response = requests.post(
+#         f'{credentials["manager_host"]}/get_pcc_access_token',
+#         json={
+#             "computer_name": credentials["computer_name"],
+#             "identifier_key": credentials["identifier_key"],
+#         },
+#     )
+
+#     # Get certs
+#     certs_response = requests.post(
+#         f'{credentials["manager_host"]}/get_ssl_cert',
+#         json={
+#             "computer_name": credentials["computer_name"],
+#             "identifier_key": credentials["identifier_key"],
+#         },
+#     )
+
+#     # Get backup files
+#     backup_files_response = requests.post(
+#         "https://connect2.pointclickcare.com/api/public/preview1/orgs/11848592-809a-42f4-82e3-5ce14964a007/facs/22/backup-files"
+#     )
+
+
 @logger.catch
 def main_func():
     logger.info("Downloading proccess started.")
@@ -788,29 +852,7 @@ def main_func():
 
         # user = getpass.getuser()
 
-        # This is path where the shortcut will be created
-        path = r"C:\\Users\\Public\\Desktop\\eMARVault.lnk"
-        icon_path = os.path.join(
-            Path("C:\\") / "Program Files" / "eMARVault" / "eMARVault_256x256.ico"
-        )
-        icon_path_86 = os.path.join(
-            Path("C:\\") / "Program Files (x86)" / "eMARVault" / "eMARVault_256x256.ico"
-        )
-        icon_path_to_use = icon_path_86 if os.path.isfile(icon_path_86) else icon_path
-
-        if not os.path.exists(path):
-            from win32com.client import Dispatch
-
-            # directory to which the shortcut leads
-            target = rf"{os.path.join(STORAGE_PATH, 'emar_backups.zip')}"
-            wDir = rf"{STORAGE_PATH}"
-
-            shell = Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut(path)
-            shortcut.IconLocation = str(icon_path_to_use)
-            shortcut.WorkingDirectory = wDir
-            shortcut.Targetpath = target
-            shortcut.save()
+        create_desktop_icon()
 
         self_update(STORAGE_PATH, credentials, old_credentials)
 
@@ -818,6 +860,8 @@ def main_func():
         logger.info(
             "New computer registered. Download will start next time if credentials available in DB."
         )
+
+        create_desktop_icon()
 
     else:
         logger.info(
@@ -829,7 +873,15 @@ def main_func():
 try:
     # NOTE wait randomly from 0 to 1800 sec
     # to spread load on the server
-    time.sleep(random.uniform(0, 1800))
+    # NOTE: Check if this is the first script run
+    is_first_run = not os.path.exists(STORAGE_PATH) or (
+        len(os.listdir(STORAGE_PATH)) == 1
+        and os.listdir(STORAGE_PATH)[0] == "emar_log.txt"
+    )
+
+    if not is_first_run:
+        time.sleep(random.uniform(0, 1800))
+
     main_func()
     logger.info("Task finished")
     time.sleep(20)

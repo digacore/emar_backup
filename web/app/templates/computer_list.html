@@ -168,7 +168,12 @@
                             {% set form = list_forms[get_pk_value(row)] %}
                             {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
                         {% else %}
-                            <a href="{{url_for('info.computer_info', computer_id=get_pk_value(row))}}">{{ get_value(row, c) }}</a>
+
+                            <a
+                                href="{{url_for('info.computer_info', computer_id=get_pk_value(row))}}{{ params_for_computers_page }}"
+                            >
+                                {{ get_value(row, c) }}
+                            </a>
                         {% endif %}
                         </td>
                     {% else %}

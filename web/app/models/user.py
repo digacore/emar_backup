@@ -113,6 +113,10 @@ class UserView(RowActionListMixin, MyModelView):
         "created_at",
     ]
 
+    column_labels = {
+        "password_hash": "Password",
+    }
+
     column_searchable_list = column_list
     column_filters = column_list
 
@@ -144,7 +148,8 @@ class UserView(RowActionListMixin, MyModelView):
         create_system_log(SystemLogType.USER_DELETED, model, current_user)
 
     def on_model_change(self, form, model, is_created):
-        model.password_hash = generate_password_hash(model.password_hash)
+        if is_created:
+            model.password_hash = generate_password_hash(model.password_hash)
         # as another example
         # if is_created:
         #     model.created_at = datetime.now()
@@ -164,7 +169,10 @@ class UserView(RowActionListMixin, MyModelView):
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            str(current_user.asociated_with).lower() == "global-full"
+            and model.id != current_user.id
+        ):
             return True
         else:
             return False
@@ -183,6 +191,7 @@ class UserView(RowActionListMixin, MyModelView):
     def edit_form(self, obj):
         form = super(UserView, self).edit_form(obj)
         form.asociated_with.choices = asociated_with_query_factory()
+        delattr(form, "password_hash")
         return form
 
     def create_form(self, obj=None):
@@ -207,9 +216,17 @@ class UserView(RowActionListMixin, MyModelView):
                 result_query = self.session.query(self.model).filter(
                     self.model.username == "None"
                 )
+        else:
+            result_query = self.session.query(self.model).filter(
+                self.model.username == "None"
+            )
 
         # do not allow to edit superuser
         return result_query
+
+    def get_count_query(self):
+        actual_query = self.get_query()
+        return actual_query.with_entities(func.count())
 
 
 # NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)

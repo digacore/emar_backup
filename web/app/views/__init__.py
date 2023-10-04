@@ -3,6 +3,8 @@ from .auth import auth_blueprint
 from .main import main_blueprint
 from .email import email_blueprint
 from .info import info_blueprint
+from .company import company_blueprint
+from .location import location_blueprint
 from .pcc import pcc_blueprint
 from .search import search_blueprint
 from .merge import merge_blueprint

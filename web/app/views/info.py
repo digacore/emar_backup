@@ -14,6 +14,15 @@ info_blueprint = Blueprint("info", __name__, url_prefix="/info")
 @info_blueprint.route("/computer/<int:computer_id>", methods=["GET"])
 @login_required
 def computer_info(computer_id):
+    # Query params from computers list page for "Go back" button
+    LOCAL_PARAMS_NAMES = ["chart_days", "per_page", "q", "page"]
+    computers_list_params = []
+    for arg_name, arg_value in request.args.items():
+        if arg_name not in LOCAL_PARAMS_NAMES:
+            computers_list_params.append(f"{arg_name}={arg_value}")
+
+    computers_search_params = "&".join(computers_list_params)
+
     computer = m.Computer.query.filter_by(id=computer_id).first_or_404()
 
     # Check if user has access to computer information
@@ -125,6 +134,7 @@ def computer_info(computer_id):
         chart_green_data=chart_green_data,
         chart_yellow_data=chart_yellow_data,
         chart_red_data=chart_red_data,
+        computers_search_params=computers_search_params,
     )
 
 
