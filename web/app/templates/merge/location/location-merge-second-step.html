@@ -43,7 +43,7 @@
           <input id="sftp-path-input" type="text" name="default_sftp_path" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.default_sftp_path.data or '' }}" readonly>
         </div>
 
-        <div class="text-gray-900 font-weight-bold mb-2">PCC Facility ID:</div>
+        <div class="text-gray-900 font-weight-bold mb-2">PointClickCare Facility ID:</div>
         <div class="d-flex align-items-center mb-4 w-100">
           <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.pcc_fac_id or '' }}" readonly>
           <i class="fas fa-arrow-right mr-4"></i>
@@ -51,7 +51,7 @@
         </div>
 
         <div class="d-flex align-items-center mb-4">
-          <span class="text-gray-900 font-weight-bold mr-4">Use PCC Backup:</span>
+          <span class="text-gray-900 font-weight-bold mr-4">Use PointClickCare Backup:</span>
           <!-- Use 2 inputs here: first (disabled) just to show information for use; second (hidden) send value -->
           <input
             disabled

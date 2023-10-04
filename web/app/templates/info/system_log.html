@@ -22,56 +22,92 @@
 
   <div class="d-flex flex-column justify-content-center w-100 h-100">
     <div class="d-flex w-100 mb-4 align-items-center">
-      <span class="mr-1">Logs for the last:</span>
-      <div class="dropdown">
-        <button class="btn dropdown-toggle btn-sm" style="border-color: rgb(183, 185, 204, 0.6); border-width: 1px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <div class="d-flex w-75 align-items-center justify-content-start">
+        <span class="mr-1">Logs for the last:</span>
+        <div class="dropdown">
+          <button class="btn dropdown-toggle btn-sm" style="border-color: rgb(183, 185, 204, 0.6); border-width: 1px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {% if days == 30 %}
+              1
+            {% elif days == 180 %}
+              6
+            {% elif days == 365 %}
+              1
+            {% else %}
+              {{ days }}
+            {% endif %}
+          </button>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            {% for days_number in [3, 7, 10, 30, 180, 365] %}
+              <a class="dropdown-item" href="{{ url_for('info.system_log_info') }}?q={{ page.query }}&page={{ page.page }}&per_page={{ page.page_size }}&days={{ days_number }}&type={{ current_logs_type }}">
+                {% if days_number == 30 %}
+                  1 month
+                {% elif days_number == 180 %}
+                  6 months
+                {% elif days_number == 365 %}
+                  1 year
+                {% else %}
+                  {{ days_number }} days
+                {% endif %}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+        <span class="ml-1 mr-5">
           {% if days == 30 %}
-            1
+            month
           {% elif days == 180 %}
-            6
+            months
           {% elif days == 365 %}
-            1
+            year
           {% else %}
-            {{ days }}
+            days
           {% endif %}
-        </button>
-        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-          {% for days_number in [3, 7, 10, 30, 180, 365] %}
-            <a class="dropdown-item" href="{{ url_for('info.system_log_info') }}?q={{ page.query }}&page={{ page.page }}&per_page={{ page.page_size }}&days={{ days_number }}&type={{ current_logs_type }}">
-              {% if days_number == 30 %}
-                1 month
-              {% elif days_number == 180 %}
-                6 months
-              {% elif days_number == 365 %}
-                1 year
-              {% else %}
-                {{ days_number }} days
-              {% endif %}
-            </a>
-          {% endfor %}
+        </span>
+
+        <span class="mr-1">Logs type:</span>
+        <div class="dropdown mr-5">
+          <button class="btn dropdown-toggle btn-sm" style="border-color: rgb(183, 185, 204, 0.6); border-width: 1px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            {{ current_logs_type }}
+          </button>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            {% for type in possible_logs_types %}
+              <a class="dropdown-item" href="{{ url_for('info.system_log_info') }}?q={{ page.query }}&page={{ page.page }}&per_page={{ page.page_size }}&days={{ days }}&type={{ type }}">{{ type }}</a>
+            {% endfor %}
+          </div>
         </div>
       </div>
-      <span class="ml-1 mr-5">
-        {% if days == 30 %}
-          month
-        {% elif days == 180 %}
-          months
-        {% elif days == 365 %}
-          year
-        {% else %}
-          days
-        {% endif %}
-      </span>
 
-      <span class="mr-1">Logs type:</span>
-      <div class="dropdown mr-5">
-        <button class="btn dropdown-toggle btn-sm" style="border-color: rgb(183, 185, 204, 0.6); border-width: 1px;" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-          {{ current_logs_type }}
-        </button>
-        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-          {% for type in possible_logs_types %}
-            <a class="dropdown-item" href="{{ url_for('info.system_log_info') }}?q={{ page.query }}&page={{ page.page }}&per_page={{ page.page_size }}&days={{ days }}&type={{ type }}">{{ type }}</a>
-          {% endfor %}
+      <!-- Button trigger modal -->
+      <div class="d-flex justify-content-end w-25">
+        <span data-toggle="modal" data-target="#daily-limit-modal">
+          <button type="button" class="btn btn-primary p-0" data-toggle="tooltip" data-placement="top" title="PointClickCare daily limit">
+            <img src="{{ url_for('static', filename='/img/white_progress_bar.png') }}" alt="progress_bar_icon" style="height: 30px; width: 30px;">
+          </button>
+        </span>
+      </div>
+    </div>
+
+    <!-- Daily Limit Modal -->
+    <div class="modal fade" id="daily-limit-modal" tabindex="-1" aria-labelledby="daily-limit-modal-label" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="daily-limit-modal-label">PointClickCare daily requests limit</h5>
+            <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true" class="text-secondary">&times;</span>
+          </button>
+          </div>
+          <div class="modal-body">
+            <span>Next reset time: {{ offset_to_east(current_requests_count.reset_time) if current_requests_count else "-" }}</span>
+            <div class="progress mt-3">
+              <div class="progress-bar" role="progressbar" style="width: {{ usage_percent }}%" aria-valuenow="{{ usage_percent }}" aria-valuemin="0" aria-valuemax="100">
+                <span class="text-dark justify-content-center position-absolute" style="width: 90%">{{ current_requests_count.requests_count or 0 }}/{{ daily_limit }}</span>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+          </div>
         </div>
       </div>
     </div>
