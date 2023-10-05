@@ -113,9 +113,17 @@
         </li>
         <!-- Nav Item - Location -->
         <li class="nav-item active">
-          <a class="nav-link" href="/admin/location/">
+          <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLocation" aria-expanded="true" aria-controls="collapseLocation">
             <i class="fas fa-fw fa-map-marker"></i>
-            <span style="color: lawngreen;" title="View Sites/Locations, Add Sites/Locations associated with a company, View Site Overview (Offline Online devices etc..) ">Location</span></a>
+            <span style="color: lawngreen;" title="View Sites/Locations, Add Sites/Locations associated with a company, View Site Overview (Offline Online devices etc..) ">Location</span>
+          </a>
+          <div id="collapseLocation" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+              <h6 class="collapse-header">Location tabs:</h6>
+              <a class="collapse-item" href="/admin/location/">Location</a>
+              <a class="collapse-item" href="/admin/locationgroup/">Location Groups</a>
+            </div>
+          </div>
         </li>
         <!-- Nav Item - Alert fa-bell fa-flash-->
         <li class="nav-item active">

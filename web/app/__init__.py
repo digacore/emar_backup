@@ -69,6 +69,8 @@ def create_app(environment="development"):
         ComputerView,
         Location,
         LocationView,
+        LocationGroup,
+        LocationGroupView,
         Alert,
         AlertView,
         DesktopClient,
@@ -162,6 +164,7 @@ def create_app(environment="development"):
     admin.add_view(DesktopClientView(DesktopClient, db.session))
     admin.add_view(ClientVersionView(ClientVersion, db.session))
     admin.add_view(AlertControlsView(AlertControls, db.session))
+    admin.add_view(LocationGroupView(LocationGroup, db.session))
 
     # Error handlers.
     @app.errorhandler(HTTPException)
