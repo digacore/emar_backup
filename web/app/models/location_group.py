@@ -77,6 +77,8 @@ class LocationGroupView(RowActionListMixin, MyModelView):
     column_sortable_list = column_list
     action_disallowed_list = ["delete"]
 
+    form_excluded_columns = ["users"]
+
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
 

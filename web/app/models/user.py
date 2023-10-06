@@ -1,6 +1,7 @@
+import enum
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -25,12 +26,60 @@ users_alerts = db.Table(
     db.Column("alerts_id", db.Integer, db.ForeignKey("alerts.id")),
 )
 
+users_to_group = db.Table(
+    "users_to_group",
+    db.metadata,
+    db.Column("id", db.Integer, primary_key=True),
+    db.Column(
+        "user_id",
+        db.Integer,
+        db.ForeignKey("users.id"),
+        unique=True,
+        nullable=False,
+    ),
+    db.Column(
+        "location_group_id",
+        db.Integer,
+        db.ForeignKey("location_groups.id"),
+        nullable=False,
+    ),
+)
+
+users_to_location = db.Table(
+    "users_to_location",
+    db.metadata,
+    db.Column("id", db.Integer, primary_key=True),
+    db.Column(
+        "user_id",
+        db.Integer,
+        db.ForeignKey("users.id"),
+        unique=True,
+        nullable=False,
+    ),
+    db.Column(
+        "location_id",
+        db.Integer,
+        db.ForeignKey("locations.id"),
+        nullable=False,
+    ),
+)
+
+
+class UserRole(enum.Enum):
+    ADMIN = "ADMIN"
+    USER = "USER"
+
 
 class User(db.Model, UserMixin, ModelMixin):
 
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("companies.id"),
+    )
 
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
@@ -40,6 +89,13 @@ class User(db.Model, UserMixin, ModelMixin):
     asociated_with = db.Column(db.String(64))
     last_time_online = db.Column(db.DateTime)
 
+    role = db.Column(
+        Enum(UserRole),
+        nullable=False,
+        default=UserRole.USER,
+        server_default=UserRole.ADMIN.value,
+    )
+
     alerts = relationship(
         "Alert",
         secondary=users_alerts,
@@ -47,6 +103,12 @@ class User(db.Model, UserMixin, ModelMixin):
         backref="users",
         lazy="select",
     )
+
+    company = relationship("Company", backref="users", lazy="select")
+    location_group = relationship(
+        "LocationGroup", secondary=users_to_group, backref="users"
+    )
+    location = relationship("Location", secondary=users_to_location, backref="users")
 
     @hybrid_property
     def password(self):

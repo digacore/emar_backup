@@ -84,7 +84,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "locations", "is_global")
+    form_excluded_columns = ("created_from_pcc", "locations", "is_global", "users")
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
