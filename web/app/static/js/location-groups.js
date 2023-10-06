@@ -12,7 +12,7 @@ $("#company").change((event) => {
       $.ajax({
         url: groupId
           ? `/company/${selectedId}/locations-for-groups?group_id=${groupId}`
-          : `/company/${selectedId}/locations-for-groups/`,
+          : `/company/${selectedId}/locations-for-groups`,
         success: (data) => {
           let $el = $("#locations");
           $el.empty(); // remove old options

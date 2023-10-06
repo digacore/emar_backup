@@ -13,6 +13,7 @@ from app.utils import MyModelView
 locations_to_group = db.Table(
     "locations_to_groups",
     db.metadata,
+    db.Column("id", db.Integer, primary_key=True),
     db.Column(
         "location_id",
         db.Integer,

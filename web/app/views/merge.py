@@ -152,6 +152,7 @@ def merge_company_second_step(company_id: int):
     # Add new locations from secondary company to primary company
     for location in selected_locations:
         location.company_id = primary_company.id
+        location.group.clear()
 
     # Delete primary company locations that were not selected
     for location in primary_company.locations:
@@ -284,6 +285,11 @@ def merge_location_second_step(location_id: int):
     secondary_location_name: str = secondary_location.name
 
     # Change data of primary company
+
+    # If company changed - remove location from group
+    if primary_location.company_name != merge_select_form.company_name.data:
+        primary_location.group.clear()
+
     primary_location.name = merge_select_form.name.data
     primary_location.company_name = merge_select_form.company_name.data
     primary_location.default_sftp_path = merge_select_form.default_sftp_path.data

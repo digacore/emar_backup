@@ -1,8 +1,8 @@
 """location_groups
 
-Revision ID: 789883fdab63
+Revision ID: 2897a3e5a4f1
 Revises: 76ec624a6886
-Create Date: 2023-10-05 16:22:04.807962
+Create Date: 2023-10-06 10:50:44.258632
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "789883fdab63"
+revision = "2897a3e5a4f1"
 down_revision = "76ec624a6886"
 branch_labels = None
 depends_on = None
@@ -28,6 +28,7 @@ def upgrade():
     )
     op.create_table(
         "locations_to_groups",
+        sa.Column("id", sa.Integer(), nullable=False),
         sa.Column("location_id", sa.Integer(), nullable=False),
         sa.Column("location_group_id", sa.Integer(), nullable=False),
         sa.ForeignKeyConstraint(
@@ -38,6 +39,7 @@ def upgrade():
             ["location_id"],
             ["locations.id"],
         ),
+        sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("location_id"),
     )
     # ### end Alembic commands ###
