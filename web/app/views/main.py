@@ -16,7 +16,9 @@ def index():
     viewer: User = User.query.filter_by(username=current_user.username).first()
 
     if str(viewer.asociated_with).lower() in global_users:
-        total_companies: list[Company] = Company.query.all()
+        total_companies: list[Company] = Company.query.filter(
+            Company.is_global.is_(False)
+        ).all()
         total_locations: list[Location] = Location.query.all()
         total_computers: list[Computer] = Computer.query.all()
 

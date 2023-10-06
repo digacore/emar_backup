@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import sql
+from sqlalchemy import sql, func
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
@@ -96,13 +96,19 @@ class CompanyView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            str(current_user.asociated_with).lower() == "global-full"
+            and not model.is_global
+        ):
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            str(current_user.asociated_with).lower() == "global-full"
+            and not model.is_global
+        ):
             return True
         else:
             return False
@@ -160,4 +166,8 @@ class CompanyView(RowActionListMixin, MyModelView):
             result_query = self.session.query(self.model).filter(
                 self.model.computer_name == "None"
             )
-        return result_query
+        return result_query.filter(self.model.is_global.is_(False))
+
+    def get_count_query(self):
+        actual_query = self.get_query()
+        return actual_query.with_entities(func.count())

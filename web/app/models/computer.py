@@ -297,7 +297,9 @@ class ComputerView(RowActionListMixin, MyModelView):
         form = super().create_form(obj)
 
         # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.company.query_factory = lambda: Company.query.filter(
+            Company.is_global.is_(False)
+        ).order_by(Company.name)
         form.location.query_factory = lambda: Location.query.order_by(Location.name)
 
         return form
@@ -309,7 +311,9 @@ class ComputerView(RowActionListMixin, MyModelView):
         self.logs_enabled_prev_value = obj.logs_enabled
 
         # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.company.query_factory = lambda: Company.query.filter(
+            Company.is_global.is_(False)
+        ).order_by(Company.name)
         form.location.query_factory = lambda: Location.query.order_by(Location.name)
 
         return form

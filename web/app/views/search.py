@@ -19,12 +19,17 @@ def search_company() -> Response:
     if not search_query:
         search_results = [
             s.SearchObj.from_orm(company).dict()
-            for company in m.Company.query.order_by(m.Company.name).limit(10).all()
+            for company in m.Company.query.filter(m.Company.is_global.is_(False))
+            .order_by(m.Company.name)
+            .limit(10)
+            .all()
         ]
         return jsonify({"results": search_results})
 
     search_results = (
-        m.Company.query.filter(m.Company.name.ilike(f"%{search_query}%"))
+        m.Company.query.filter(
+            m.Company.name.ilike(f"%{search_query}%"), m.Company.is_global.is_(False)
+        )
         .order_by(m.Company.name)
         .limit(10)
         .all()

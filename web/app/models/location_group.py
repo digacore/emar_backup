@@ -108,3 +108,23 @@ class LocationGroupView(RowActionListMixin, MyModelView):
 
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
+
+    def create_form(self, obj=None):
+        form = super().create_form(obj)
+
+        # apply a sort to the relation
+        form.company.query_factory = lambda: m.Company.query.filter(
+            m.Company.is_global.is_(False)
+        ).order_by(m.Company.name)
+
+        return form
+
+    def edit_form(self, obj=None):
+        form = super().edit_form(obj)
+
+        # apply a sort to the relation
+        form.company.query_factory = lambda: m.Company.query.filter(
+            m.Company.is_global.is_(False)
+        ).order_by(m.Company.name)
+
+        return form

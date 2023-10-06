@@ -150,7 +150,9 @@ class LocationView(RowActionListMixin, MyModelView):
         form = super().create_form(obj)
 
         # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.company.query_factory = lambda: Company.query.filter(
+            Company.is_global.is_(False)
+        ).order_by(Company.name)
 
         return form
 
@@ -158,7 +160,9 @@ class LocationView(RowActionListMixin, MyModelView):
         form = super().edit_form(obj)
 
         # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.company.query_factory = lambda: Company.query.filter(
+            Company.is_global.is_(False)
+        ).order_by(Company.name)
 
         return form
 
