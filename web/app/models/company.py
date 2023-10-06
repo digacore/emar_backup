@@ -28,6 +28,9 @@ class Company(db.Model, ModelMixin):
     created_from_pcc = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
+    is_global = db.Column(
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
 
     def __repr__(self):
         return self.name
@@ -81,7 +84,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "locations")
+    form_excluded_columns = ("created_from_pcc", "locations", "is_global")
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
