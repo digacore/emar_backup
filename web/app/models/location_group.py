@@ -1,6 +1,6 @@
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -88,14 +88,23 @@ class LocationGroupView(RowActionListMixin, MyModelView):
         return "Search by all text columns"
 
     def _can_edit(self, model):
-        # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        from app.models.user import UserPermissionLevel, UserRole
+
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        from app.models.user import UserPermissionLevel, UserRole
+
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
@@ -130,3 +139,49 @@ class LocationGroupView(RowActionListMixin, MyModelView):
         ).order_by(m.Company.name)
 
         return form
+
+    def get_query(self):
+        from app.models.user import UserPermissionLevel, UserRole
+
+        # NOTE handle permissions - meaning which details current user could view
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
+        else:
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                result_query = self.session.query(self.model)
+            case UserPermissionLevel.COMPANY:
+                result_query = self.session.query(self.model).filter(
+                    self.model.company_id == current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION_GROUP:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == current_user.location_group[0].id
+                )
+            case _:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == -1
+                )
+
+        return result_query
+
+    def get_count_query(self):
+        from app.models.user import UserPermissionLevel
+
+        actual_query = self.get_query()
+
+        # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
+        # Instead add select_from(self.model) to query to count correctly
+        if current_user.permission == UserPermissionLevel.GLOBAL:
+            return actual_query.with_entities(func.count()).select_from(self.model)
+
+        return actual_query.with_entities(func.count())
