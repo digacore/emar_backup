@@ -19,12 +19,16 @@ merge_blueprint = Blueprint("merge", __name__, url_prefix="/merge")
 @merge_blueprint.route("/company/<int:company_id>/first-step", methods=["GET"])
 @login_required
 def merge_company_first_step(company_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for GLOBAL admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         logger.error(
-            "User {} tried to access company merge page. His permission level: {}",
+            "User {} tried to access company merge page. His permission level: {}. Role: {}",
             current_user.username,
-            current_user.asociated_with.lower(),
+            current_user.permission.value,
+            current_user.role.value,
         )
         abort(403, "You don't have permission to access this page.")
 
@@ -64,12 +68,16 @@ def merge_company_first_step(company_id: int):
 @merge_blueprint.route("/company/<int:company_id>/second-step", methods=["POST"])
 @login_required
 def merge_company_second_step(company_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for GLOBAL admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         logger.error(
-            "User {} tried to access company merge page (second step). His permission level: {}",
+            "User {} tried to access company merge page (second step). His permission level: {}. Role {}",
             current_user.username,
-            current_user.asociated_with.lower(),
+            current_user.permission.value,
+            current_user.role.value,
         )
         abort(403, "You don't have permission to access this page.")
 
@@ -148,6 +156,22 @@ def merge_company_second_step(company_id: int):
     # Otherwise computers even with changed company and location will be marked for deletion because of cascade deleting
     # If remove cascade deleting behavior, remove this commit command and leave the only one in the end
     db.session.commit()
+
+    # Move users
+    for user in secondary_company.users:
+        match user.permission:
+            case m.UserPermissionLevel.COMPANY:
+                user.company_id = primary_company.id
+            # If user has location group permission, just make it primary company company level user
+            case m.UserPermissionLevel.LOCATION_GROUP:
+                user.location_group.clear()
+                user.company_id = primary_company.id
+                user.role = m.UserRole.USER
+            case m.UserPermissionLevel.LOCATION:
+                if user.location[0] in selected_locations:
+                    user.company_id = primary_company.id
+                else:
+                    db.session.delete(user)
 
     # Add new locations from secondary company to primary company
     for location in selected_locations:

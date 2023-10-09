@@ -95,9 +95,12 @@ class CompanyView(RowActionListMixin, MyModelView):
         return "Search by all text columns"
 
     def _can_edit(self, model):
+        from .user import UserPermissionLevel, UserRole
+
         # return True to allow edit
         if (
-            str(current_user.asociated_with).lower() == "global-full"
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
             and not model.is_global
         ):
             return True
@@ -105,8 +108,11 @@ class CompanyView(RowActionListMixin, MyModelView):
             return False
 
     def _can_delete(self, model):
+        from .user import UserPermissionLevel, UserRole
+
         if (
-            str(current_user.asociated_with).lower() == "global-full"
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
             and not model.is_global
         ):
             return True
@@ -140,32 +146,33 @@ class CompanyView(RowActionListMixin, MyModelView):
         create_system_log(SystemLogType.COMPANY_DELETED, model, current_user)
 
     def get_query(self):
+        from .user import UserPermissionLevel, UserRole
 
         # NOTE handle permissions - meaning which details current user could view
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
-
-            user_permission: str = current_user.asociated_with
-            if (
-                user_permission.lower() == "global-full"
-                or user_permission.lower() == "global-view"
-            ):
-                result_query = self.session.query(self.model)
-            else:
-                result_query = self.session.query(self.model).filter(
-                    self.model.name == user_permission
-                )
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
         else:
-            result_query = self.session.query(self.model).filter(
-                self.model.computer_name == "None"
-            )
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                result_query = self.session.query(self.model)
+            case UserPermissionLevel.COMPANY:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == current_user.company_id
+                )
+            case _:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == -1
+                )
+
         return result_query.filter(self.model.is_global.is_(False))
 
     def get_count_query(self):
