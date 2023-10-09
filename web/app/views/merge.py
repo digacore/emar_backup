@@ -206,12 +206,16 @@ def merge_company_second_step(company_id: int):
 @merge_blueprint.route("/location/<int:location_id>/first-step", methods=["GET"])
 @login_required
 def merge_location_first_step(location_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for Global users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         logger.error(
-            "User {} tried to access location merge page. His permission level: {}",
+            "User {} tried to access location merge page. His permission level: {}. Role: {}",
             current_user.username,
-            current_user.asociated_with.lower(),
+            current_user.permission.value,
+            current_user.role.value,
         )
         abort(403, "You don't have permission to access this page.")
 
@@ -251,12 +255,16 @@ def merge_location_first_step(location_id: int):
 @merge_blueprint.route("/location/<int:location_id>/second-step", methods=["POST"])
 @login_required
 def merge_location_second_step(location_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for Global admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         logger.error(
-            "User {} tried to access location merge page (second step). His permission level: {}",
+            "User {} tried to access location merge page (second step). His permission level: {}. Role {}",
             current_user.username,
-            current_user.asociated_with.lower(),
+            current_user.permission.value,
+            current_user.role.value,
         )
         abort(403, "You don't have permission to access this page.")
 
@@ -319,6 +327,11 @@ def merge_location_second_step(location_id: int):
     primary_location.default_sftp_path = merge_select_form.default_sftp_path.data
     primary_location.pcc_fac_id = merge_select_form.pcc_fac_id.data
     primary_location.use_pcc_backup = merge_select_form.use_pcc_backup.data
+
+    # Move users from secondary location
+    for user in secondary_location.users.copy():
+        user.company_id = primary_location.company.id
+        user.location = [primary_location]
 
     # Add new computers from secondary to primary location
     for computer in selected_computers:
