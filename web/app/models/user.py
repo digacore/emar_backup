@@ -65,6 +65,13 @@ users_to_location = db.Table(
 )
 
 
+class UserPermissionLevel(enum.Enum):
+    GLOBAL = "GLOBAL"
+    COMPANY = "COMPANY"
+    LOCATION_GROUP = "LOCATION_GROUP"
+    LOCATION = "LOCATION"
+
+
 class UserRole(enum.Enum):
     ADMIN = "ADMIN"
     USER = "USER"
@@ -128,6 +135,22 @@ class User(db.Model, UserMixin, ModelMixin):
         ).first()
         if user is not None and check_password_hash(user.password, password):
             return user
+
+    @property
+    def permission(self):
+        """Return user permission level"""
+        # User has global permission
+        if self.company.is_global:
+            return UserPermissionLevel.GLOBAL
+        # User has company permission
+        elif not self.location_group and not self.location:
+            return UserPermissionLevel.COMPANY
+        # User has location group permission
+        elif self.location_group:
+            return UserPermissionLevel.LOCATION_GROUP
+        # User has location permission
+        elif self.location:
+            return UserPermissionLevel.LOCATION
 
     def __repr__(self):
         return f"<User: {self.username}>"
