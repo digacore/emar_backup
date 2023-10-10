@@ -272,13 +272,19 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
