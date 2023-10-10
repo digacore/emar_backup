@@ -28,8 +28,11 @@ pcc_blueprint = Blueprint("pcc", __name__, url_prefix="/pcc")
 @pcc_blueprint.route("/creation-reports", methods=["GET", "POST"])
 @login_required
 def creation_reports():
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for global admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         abort(403, "You don't have permission to access this page.")
 
     # If POST, create new report with status "IN_PROGRESS" and run celery task
@@ -170,8 +173,11 @@ def creation_reports():
 @pcc_blueprint.route("/creation-reports/<int:report_id>", methods=["GET", "POST"])
 @login_required
 def get_creation_report(report_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for global admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         abort(403, "You don't have permission to access this page.")
 
     # Query params

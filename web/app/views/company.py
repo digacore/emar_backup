@@ -5,6 +5,8 @@ from app import models as m
 
 from app.logger import logger
 
+from .utils import has_access_to_company
+
 
 company_blueprint = Blueprint("company_blueprint", __name__, url_prefix="/company")
 
@@ -23,14 +25,11 @@ def company_sftp_data(company_id: int):
     company: m.Company = m.Company.query.get_or_404(company_id)
 
     # Check if user has access to company information
-    if (
-        current_user.asociated_with.lower() not in ["global-full", "global-view"]
-        and current_user.asociated_with != company.name
-    ):
+    if not has_access_to_company(current_user, company):
         logger.error(
             "User [{}] with access level [{}] tried to access company [{}] information",
             current_user.username,
-            current_user.asociated_with,
+            current_user.permission.value,
             company.name,
         )
         abort(403, "You don't have access to this company information.")
@@ -59,31 +58,23 @@ def company_locations_list(company_id: int):
     company: m.Company = m.Company.query.get_or_404(company_id)
 
     # Check if user has access to company information
-    if (
-        current_user.asociated_with.lower() not in ["global-full", "global-view"]
-        and current_user.asociated_with != company.name
-        and current_user.asociated_with
-        not in [
-            location.name
-            for location in m.Location.query.filter_by(company_name=company.name).all()
-        ]
-    ):
+    if not has_access_to_company(current_user, company):
         abort(403, "You don't have access to this company locations information.")
 
     # If user has global access or associated with company, return all locations
-    if (
-        current_user.asociated_with.lower() in ["global-full", "global-view"]
-        or current_user.asociated_with == company.name
-    ):
-        locations = (
-            m.Location.query.filter_by(company_name=company.name)
-            .order_by(m.Location.name)
-            .all()
-        )
-    else:
-        locations = [
-            m.Location.query.filter_by(name=current_user.asociated_with).first()
-        ]
+    match current_user.permission:
+        case m.UserPermissionLevel.GLOBAL | m.UserPermissionLevel.COMPANY:
+            locations = (
+                m.Location.query.filter_by(company_id=company.id)
+                .order_by(m.Location.name)
+                .all()
+            )
+        case m.UserPermissionLevel.LOCATION_GROUP:
+            locations = current_user.location_group[0].locations
+        case m.UserPermissionLevel.LOCATION:
+            locations = current_user.location
+        case _:
+            locations = []
 
     res = [(location.id, location.name) for location in locations]
 
@@ -104,7 +95,10 @@ def company_locations_for_groups(company_id: int):
         JSON: company locations
     """
     # Check if user has access to information
-    if current_user.asociated_with.lower() != "global-full":
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         abort(403, "You don't have access to this information.")
 
     # Find all company locations that are not associated with any group

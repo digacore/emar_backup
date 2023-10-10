@@ -5,6 +5,8 @@ from app import models as m
 
 from app.logger import logger
 
+from .utils import has_access_to_location
+
 
 location_blueprint = Blueprint("location_blueprint", __name__, url_prefix="/location")
 
@@ -23,11 +25,7 @@ def location_sftp_data(location_id: int):
     location: m.Location = m.Location.query.get_or_404(location_id)
 
     # Check if user has access to location information
-    if (
-        current_user.asociated_with.lower() not in ["global-full", "global-view"]
-        and current_user.asociated_with != location.name
-        and current_user.asociated_with != location.company.name
-    ):
+    if not has_access_to_location(current_user, location):
         abort(403, "You don't have access to this location information.")
 
     logger.info("Sending sftp data of location {}", location.name)
@@ -48,26 +46,32 @@ def all_locations_list():
         JSON: all locations list
     """
     # If user has global access return all locations
-    if current_user.asociated_with.lower() in ["global-full", "global-view"]:
-        locations = m.Location.query.order_by(m.Location.name).all()
-    elif current_user.asociated_with in [
-        company.name for company in m.Company.query.all()
-    ]:
-        locations = (
-            m.Location.query.filter_by(company_name=current_user.asociated_with)
-            .order_by(m.Location.name)
-            .all()
-        )
-    elif current_user.asociated_with in [
-        location.name for location in m.Location.query.all()
-    ]:
-        locations = (
-            m.Location.query.filter_by(name=current_user.asociated_with)
-            .order_by(m.Location.name)
-            .all()
-        )
-    else:
-        locations = []
+    match current_user.permission:
+        case m.UserPermissionLevel.GLOBAL:
+            locations = m.Location.query.order_by(m.Location.name).all()
+        case m.UserPermissionLevel.COMPANY:
+            locations = (
+                m.Location.query.filter_by(company_id=current_user.company_id)
+                .order_by(m.Location.name)
+                .all()
+            )
+        case m.UserPermissionLevel.LOCATION_GROUP:
+            locations = (
+                m.Location.query.filter(
+                    m.Location.id.in_(
+                        [
+                            location.id
+                            for location in current_user.location_group[0].locations
+                        ]
+                    )
+                )
+                .order_by(m.Location.name)
+                .all()
+            )
+        case m.UserPermissionLevel.LOCATION:
+            locations = m.Location.query.filter_by(id=current_user.location[0].id).all()
+        case _:
+            locations = []
 
     res = [(location.id, location.name) for location in locations]
 
