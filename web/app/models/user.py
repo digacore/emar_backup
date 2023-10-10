@@ -16,6 +16,7 @@ from app.utils import MyModelView
 
 from .company import Company
 from .location import Location
+from .location_group import LocationGroup
 
 from .system_log import SystemLogType
 
@@ -192,6 +193,7 @@ class UserView(RowActionListMixin, MyModelView):
         "id",
         "username",
         "email",
+        "role",
         "asociated_with",
         "activated",
         "last_time_online",
@@ -241,21 +243,31 @@ class UserView(RowActionListMixin, MyModelView):
 
     def _can_create(self, model):
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            or current_user.permission == UserPermissionLevel.COMPANY
+        ) and current_user.role == UserRole.ADMIN:
             return True
         else:
             return False
 
     def _can_edit(self, model):
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            or current_user.permission == UserPermissionLevel.COMPANY
+        ) and current_user.role == UserRole.ADMIN:
             return True
         else:
             return False
 
     def _can_delete(self, model):
         if (
-            str(current_user.asociated_with).lower() == "global-full"
+            (
+                current_user.permission == UserPermissionLevel.GLOBAL
+                or current_user.permission == UserPermissionLevel.COMPANY
+            )
+            and current_user.role == UserRole.ADMIN
             and model.id != current_user.id
         ):
             return True
@@ -285,26 +297,47 @@ class UserView(RowActionListMixin, MyModelView):
         return form
 
     def get_query(self):
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            or current_user.permission == UserPermissionLevel.COMPANY
+        ) and current_user.role == UserRole.ADMIN:
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
+        else:
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
 
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
                 result_query = self.session.query(self.model).filter(
                     self.model.username != "emarsuperuser"
                 )
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
+            case UserPermissionLevel.COMPANY:
                 result_query = self.session.query(self.model).filter(
-                    self.model.username == "None"
+                    self.model.company_id == current_user.company_id
                 )
-        else:
-            result_query = self.session.query(self.model).filter(
-                self.model.username == "None"
-            )
+            case UserPermissionLevel.LOCATION_GROUP:
+                result_query = self.session.query(self.model).filter(
+                    self.model.location_group.any(
+                        LocationGroup.id.in_(
+                            [group.id for group in current_user.location_group]
+                        )
+                    )
+                )
+            case UserPermissionLevel.LOCATION:
+                result_query = self.session.query(self.model).filter(
+                    self.model.location.any(
+                        Location.id.in_(
+                            [location.id for location in current_user.location]
+                        )
+                    )
+                )
+            case _:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == -1
+                )
 
         # do not allow to edit superuser
         return result_query

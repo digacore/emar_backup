@@ -78,7 +78,8 @@ def login():
 @login_required
 def change_password():
     if (
-        current_user.permission != UserPermissionLevel.GLOBAL
+        current_user.permission
+        not in [UserPermissionLevel.GLOBAL, UserPermissionLevel.COMPANY]
         or current_user.role != UserRole.ADMIN
     ):
         abort(403, "You don't have permission to access this route.")
