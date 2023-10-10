@@ -11,6 +11,19 @@ from config import BaseConfig as CFG
 info_blueprint = Blueprint("info", __name__, url_prefix="/info")
 
 
+def has_access_to_computer(computer: m.Computer) -> bool:
+    if current_user.permission == m.UserPermissionLevel.GLOBAL:
+        return True
+    elif current_user.permission == m.UserPermissionLevel.COMPANY:
+        return computer.company_id == current_user.company_id
+    elif current_user.permission == m.UserPermissionLevel.LOCATION_GROUP:
+        return computer.location_id in [
+            loc.id for loc in current_user.location_group[0].locations
+        ]
+    elif current_user.permission == m.UserPermissionLevel.LOCATION:
+        return computer.location_id == current_user.location[0].id
+
+
 @info_blueprint.route("/computer/<int:computer_id>", methods=["GET"])
 @login_required
 def computer_info(computer_id):
@@ -26,11 +39,7 @@ def computer_info(computer_id):
     computer = m.Computer.query.filter_by(id=computer_id).first_or_404()
 
     # Check if user has access to computer information
-    if not (
-        current_user.asociated_with.lower() in ["global-full", "global-view"]
-        or current_user.asociated_with == computer.company_name
-        or current_user.asociated_with == computer.location_name
-    ):
+    if not has_access_to_computer(computer):
         abort(403, "You don't have access to this computer information.")
 
     # Update the last computer log information
@@ -141,8 +150,11 @@ def computer_info(computer_id):
 @info_blueprint.route("/system-log", methods=["GET"])
 @login_required
 def system_log_info():
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for Global admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         abort(403, "You don't have permission to access this page.")
 
     LOGS_TYPES = ["All", "Computer", "User", "Company", "Location", "Alert"]

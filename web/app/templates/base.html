@@ -145,7 +145,7 @@
             <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
             <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
             <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
-            {% if current_user.asociated_with.lower() == "global-full" %}
+            {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
               <a class="collapse-item" href="{{ url_for('info.system_log_info') }}">System logs</a>
               <a class="collapse-item" href="{{ url_for('pcc.creation_reports') }}">PointClickCare import</a>
             {% endif %}

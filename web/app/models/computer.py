@@ -16,6 +16,7 @@ from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView, get_outdated_status_comps
 
 from .desktop_client import DesktopClient
+from .user import UserPermissionLevel, UserRole
 from .company import Company
 from .location import Location
 from .system_log import SystemLogType
@@ -368,33 +369,44 @@ class ComputerView(RowActionListMixin, MyModelView):
         # NOTE handle permissions - meaning which details current user could view
         self.form_choices = CFG.CLIENT_VERSIONS
 
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
+        else:
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
 
-            user_permission: str = current_user.asociated_with
-            if (
-                user_permission.lower() == "global-full"
-                or user_permission.lower() == "global-view"
-            ):
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
                 result_query = self.session.query(self.model)
-            else:
+            case UserPermissionLevel.COMPANY:
                 result_query = self.session.query(self.model).filter(
                     or_(
-                        self.model.location_name == user_permission,
-                        self.model.company_name == user_permission,
+                        self.model.company_id == current_user.company_id,
+                        self.model.location_id.in_(
+                            [loc.id for loc in current_user.company.locations]
+                        ),
                     )
                 )
-        else:
-            result_query = self.session.query(self.model).filter(
-                self.model.computer_name == "None"
-            )
+            case UserPermissionLevel.LOCATION_GROUP:
+                result_query = self.session.query(self.model).filter(
+                    self.model.location_id.in_(
+                        [loc.id for loc in current_user.location_group[0].locations]
+                    )
+                )
+            case UserPermissionLevel.LOCATION:
+                result_query = self.session.query(self.model).filter(
+                    self.model.location_id == current_user.location[0].id
+                )
+            case _:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == -1
+                )
 
         # NOTE this if closure is used for Dashboard cards searches (index.html)
         if "search" in request.values:
@@ -447,9 +459,9 @@ class ComputerView(RowActionListMixin, MyModelView):
         # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
         # Instead add select_from(self.model) to query to count correctly
         if (
-            current_user.asociated_with.lower() == "global-full"
-            or current_user.asociated_with.lower() == "global-view"
-        ) and not request.values.get("search"):
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and not request.values.get("search")
+        ):
             return actual_query.with_entities(func.count()).select_from(self.model)
 
         return actual_query.with_entities(func.count())
