@@ -6,7 +6,7 @@ from app.controllers import (
     empty_to_stable,
     daily_summary,
 )
-from app.models import User, Computer, Alert
+from app.models import User, Computer, Alert, UserRole, UserPermissionLevel
 
 from config import BaseConfig as CFG
 
@@ -15,7 +15,9 @@ def test_create_superuser(client):
     create_superuser()
     superuser: User = User.query.filter_by(username=CFG.SUPER_USER_NAME).first()
     assert superuser
-    assert superuser.asociated_with == "global-full"
+    assert superuser.company.is_global
+    assert superuser.role == UserRole.ADMIN
+    assert superuser.permission == UserPermissionLevel.GLOBAL
 
 
 # @pytest.mark.skip

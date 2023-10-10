@@ -36,8 +36,23 @@ def test_company_sftp_data(client, test_db):
     logout_response = logout(client)
     assert b"You were logged out." in logout_response.data
 
-    # Unsuccessful case with user not associated with the company and not global-view
+    # Successful case with user that connected to the company's location
     login_response = login(client, "test_user_location", "test_user_location")
+    assert b"Login successful." in login_response.data
+
+    response = client.get(
+        f"/company/{test_company.id}/sftp_data",
+    )
+
+    assert response and response.status_code == 200
+    assert response.json["company_sftp_username"] == test_company.default_sftp_username
+    assert response.json["company_sftp_password"] == test_company.default_sftp_password
+
+    logout_response = logout(client)
+    assert b"You were logged out." in logout_response.data
+
+    # Unsuccessful case with user that connected to another company
+    login_response = login(client, "location_dro_user", "test_user_location")
     assert b"Login successful." in login_response.data
 
     response = client.get(
@@ -46,6 +61,9 @@ def test_company_sftp_data(client, test_db):
 
     assert response and response.status_code == 403
     assert b"You don&#39;t have access to this company information." in response.data
+
+    logout_response = logout(client)
+    assert b"You were logged out." in logout_response.data
 
     # Unsuccessful case with not existing company
     login_response = login(client, "test_user_view", "test_user_view")
