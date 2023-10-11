@@ -6,6 +6,10 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
+from flask_admin.form import Select2Widget
+from flask_admin.contrib.sqla.fields import QuerySelectField
+
+from wtforms import validators
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
@@ -156,13 +160,26 @@ class LocationView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
+    # All these manipulations with group field are needed because
+    # between Location and LocationGroup many-to-many relationship (Location can have only one group or no group)
+    # But Flask-Admin builds form for many-to-many relationship as SelectMultipleField (we need SelectField)
+    def get_create_form(self):
+        form = super().get_create_form()
+        form.group = QuerySelectField(
+            "Group",
+            validators=[validators.Optional()],
+            allow_blank=True,
+        )
+
+        return form
+
     def create_form(self, obj=None):
         form = super().create_form(obj)
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.filter(
-            Company.is_global.is_(False)
-        ).order_by(Company.name)
+        form.company.query_factory = self._available_companies
+
+        form.group.widget = Select2Widget()
+        form.group.query_factory = self._available_location_groups
 
         return form
 
@@ -170,11 +187,20 @@ class LocationView(RowActionListMixin, MyModelView):
         form = super().edit_form(obj)
 
         # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.filter(
-            Company.is_global.is_(False)
-        ).order_by(Company.name)
+        form.company.query_factory = self._available_companies
+        form.group.query_factory = self._available_location_groups
 
         return form
+
+    def create_model(self, form):
+        group_data = form.group.data
+        del form.group
+        model = super().create_model(form)
+        model.group = [group_data]
+        self.session.add(model)
+        self.session.commit()
+
+        return model
 
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log

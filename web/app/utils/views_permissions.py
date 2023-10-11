@@ -68,17 +68,17 @@ class MyModelView(ModelView):
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
-                available_locations: Query = Location.query.order_by(Location.name)
+                available_locations: Query = Location.query
             case UserPermissionLevel.COMPANY:
                 available_locations: Query = Location.query.filter_by(
                     company_id=current_user.company_id
-                ).order_by(Location.name)
+                )
             case UserPermissionLevel.LOCATION_GROUP:
                 available_locations: Query = Location.query.filter(
                     Location.id.in_(
                         [loc.id for loc in current_user.location_group[0].locations]
                     )
-                ).order_by(Location.name)
+                )
             case UserPermissionLevel.LOCATION:
                 available_locations: Query = Location.query.filter_by(
                     id=current_user.location[0].id
@@ -86,7 +86,33 @@ class MyModelView(ModelView):
             case _:
                 available_locations: Query = Location.query.filter_by(id=-1)
 
-        return available_locations
+        return available_locations.order_by(Location.name)
+
+    def _available_location_groups(self):
+        """
+        Returns query object with location groups available for current user.
+        This constructor should be used in the create and edit forms.
+
+        Returns:
+            query (Query): query object with location groups available for current user
+        """
+        from app.models import LocationGroup, UserPermissionLevel
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                available_groups: Query = LocationGroup.query
+            case UserPermissionLevel.COMPANY:
+                available_groups: Query = LocationGroup.query.filter_by(
+                    company_id=current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION_GROUP:
+                available_groups: Query = LocationGroup.query.filter_by(
+                    id=current_user.location_group[0].id
+                )
+            case _:
+                available_groups: Query = LocationGroup.query.filter_by(id=-1)
+
+        return available_groups.order_by(LocationGroup.name)
 
     def create_custom_search_field_obj(self, column_name):
         """Create custom search field object"""

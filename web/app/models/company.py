@@ -94,6 +94,14 @@ class CompanyView(RowActionListMixin, MyModelView):
         """
         return "Search by all text columns"
 
+    def is_accessible(self):
+        from .user import UserPermissionLevel
+
+        return current_user.permission.value in [
+            UserPermissionLevel.GLOBAL.value,
+            UserPermissionLevel.COMPANY.value,
+        ]
+
     def _can_edit(self, model):
         from .user import UserPermissionLevel, UserRole
 
