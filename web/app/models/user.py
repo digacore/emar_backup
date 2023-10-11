@@ -288,12 +288,18 @@ class UserView(RowActionListMixin, MyModelView):
     def edit_form(self, obj):
         form = super(UserView, self).edit_form(obj)
         form.asociated_with.choices = asociated_with_query_factory()
+        form.company.query_factory = self._available_companies
+        form.location_group.query_factory = self._available_location_groups
+        form.location.query_factory = self._available_locations
         delattr(form, "password_hash")
         return form
 
     def create_form(self, obj=None):
         form = super(UserView, self).create_form(obj)
         form.asociated_with.choices = asociated_with_query_factory()
+        form.company.query_factory = self._available_companies
+        form.location_group.query_factory = self._available_location_groups
+        form.location.query_factory = self._available_locations
         return form
 
     def get_query(self):
