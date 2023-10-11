@@ -196,7 +196,7 @@ class LocationView(RowActionListMixin, MyModelView):
         group_data = form.group.data
         del form.group
         model = super().create_model(form)
-        model.group = [group_data]
+        model.group = [group_data] if group_data else []
         self.session.add(model)
         self.session.commit()
 
