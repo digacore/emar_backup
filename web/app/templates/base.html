@@ -100,11 +100,13 @@
         </div>
 
         <!-- Nav Item - Company -->
-        <li class="nav-item active">
-          <a class="nav-link" href="/admin/company/">
-            <i class="fas fa-fw fa-hospital"></i>
-            <span style="color: lawngreen;" title='Create or view overview of a "Company"'>Company</span></a>
-        </li>
+        {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
+          <li class="nav-item active">
+            <a class="nav-link" href="/admin/company/">
+              <i class="fas fa-fw fa-hospital"></i>
+              <span style="color: lawngreen;" title='Create or view overview of a "Company"'>Company</span></a>
+          </li>
+        {% endif %}
         <!-- Nav Item - Computer -->
         <li class="nav-item active">
           <a class="nav-link" href="/admin/computer/">

@@ -272,19 +272,13 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        if (
-            current_user.permission == UserPermissionLevel.GLOBAL
-            and current_user.role == UserRole.ADMIN
-        ):
+        if current_user.role == UserRole.ADMIN:
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if (
-            current_user.permission == UserPermissionLevel.GLOBAL
-            and current_user.role == UserRole.ADMIN
-        ):
+        if current_user.role == UserRole.ADMIN:
             return True
         else:
             return False
@@ -303,11 +297,9 @@ class ComputerView(RowActionListMixin, MyModelView):
     def create_form(self, obj=None):
         form = super().create_form(obj)
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.filter(
-            Company.is_global.is_(False)
-        ).order_by(Company.name)
-        form.location.query_factory = lambda: Location.query.order_by(Location.name)
+        # Put only available for user companies and locations in the select field
+        form.company.query_factory = self._available_companies
+        form.location.query_factory = self._available_locations
 
         return form
 
@@ -317,11 +309,9 @@ class ComputerView(RowActionListMixin, MyModelView):
         # Remember the prev value of the field logs_enabled
         self.logs_enabled_prev_value = obj.logs_enabled
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.filter(
-            Company.is_global.is_(False)
-        ).order_by(Company.name)
-        form.location.query_factory = lambda: Location.query.order_by(Location.name)
+        # Put only available for user companies and locations in the select field
+        form.company.query_factory = self._available_companies
+        form.location.query_factory = self._available_locations
 
         return form
 
@@ -375,10 +365,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         # NOTE handle permissions - meaning which details current user could view
         self.form_choices = CFG.CLIENT_VERSIONS
 
-        if (
-            current_user.permission == UserPermissionLevel.GLOBAL
-            and current_user.role == UserRole.ADMIN
-        ):
+        if current_user.role == UserRole.ADMIN:
             if "delete" in self.action_disallowed_list:
                 self.action_disallowed_list.remove("delete")
             self.can_create = True

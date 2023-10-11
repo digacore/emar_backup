@@ -8,6 +8,7 @@ from flask_login import current_user
 
 from sqlalchemy.sql.expression import cast
 from sqlalchemy import Unicode, or_
+from sqlalchemy.orm.query import Query
 
 
 class MyModelView(ModelView):
@@ -22,6 +23,70 @@ class MyModelView(ModelView):
 
     def __repr__(self):
         return "MyModelView"
+
+    def _available_companies(self):
+        """
+        Returns query object with companies available for current user.
+        This constructor should be used in the create and edit forms.
+
+        Returns:
+            query (Query): query object with companies available for current user
+        """
+        from app.models import Company, UserPermissionLevel
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                available_companies: Query = Company.query.filter(
+                    Company.is_global.is_(False)
+                ).order_by(Company.name)
+            case UserPermissionLevel.COMPANY:
+                available_companies: Query = Company.query.filter_by(
+                    id=current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION_GROUP:
+                available_companies: Query = Company.query.filter_by(
+                    id=current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION:
+                available_companies: Query = Company.query.filter_by(
+                    id=current_user.company_id
+                )
+            case _:
+                available_companies: Query = Company.query.filter_by(id=-1)
+
+        return available_companies
+
+    def _available_locations(self):
+        """
+        Returns query object with locations available for current user.
+        This constructor should be used in the create and edit forms.
+
+        Returns:
+            query (Query): query object with locations available for current user
+        """
+        from app.models import Location, UserPermissionLevel
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                available_locations: Query = Location.query.order_by(Location.name)
+            case UserPermissionLevel.COMPANY:
+                available_locations: Query = Location.query.filter_by(
+                    company_id=current_user.company_id
+                ).order_by(Location.name)
+            case UserPermissionLevel.LOCATION_GROUP:
+                available_locations: Query = Location.query.filter(
+                    Location.id.in_(
+                        [loc.id for loc in current_user.location_group[0].locations]
+                    )
+                ).order_by(Location.name)
+            case UserPermissionLevel.LOCATION:
+                available_locations: Query = Location.query.filter_by(
+                    id=current_user.location[0].id
+                )
+            case _:
+                available_locations: Query = Location.query.filter_by(id=-1)
+
+        return available_locations
 
     def create_custom_search_field_obj(self, column_name):
         """Create custom search field object"""
