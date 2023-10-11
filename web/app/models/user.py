@@ -14,7 +14,6 @@ from app.models.utils import ModelMixin, RowActionListMixin
 
 from app.utils import MyModelView
 
-from .company import Company
 from .location import Location
 from .location_group import LocationGroup
 
@@ -157,29 +156,6 @@ class User(db.Model, UserMixin, ModelMixin):
         return f"<User: {self.username}>"
 
 
-def asociated_with_query_factory():
-    USER_PERMISSIONS = [
-        ("Global-full", "Global-full"),
-        ("Global-view", "Global-view"),
-    ]
-
-    # NOTE this try block is used to avoid appending during app launch
-    try:
-        locations = db.session.query(Location).all()
-        companies = db.session.query(Company).all()
-
-        for location in locations:
-            USER_PERMISSIONS.append((location, f"Location-{location}"))
-
-        for company in companies:
-            USER_PERMISSIONS.append((company, f"Company-{company}"))
-    except RuntimeError:
-        # NOTE avoid situation when app starts and asociated_with_query_factory() is called in UserView
-        pass
-
-    return USER_PERMISSIONS
-
-
 class AnonymousUser(AnonymousUserMixin):
     pass
 
@@ -194,7 +170,6 @@ class UserView(RowActionListMixin, MyModelView):
         "username",
         "email",
         "role",
-        "asociated_with",
         "activated",
         "last_time_online",
         "created_at",
@@ -207,7 +182,7 @@ class UserView(RowActionListMixin, MyModelView):
     column_searchable_list = column_list
     column_filters = column_list
 
-    form_choices = {"asociated_with": asociated_with_query_factory()}
+    form_excluded_columns = ["asociated_with"]
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
@@ -287,7 +262,6 @@ class UserView(RowActionListMixin, MyModelView):
 
     def edit_form(self, obj):
         form = super(UserView, self).edit_form(obj)
-        form.asociated_with.choices = asociated_with_query_factory()
         form.company.query_factory = self._available_companies
         form.location_group.query_factory = self._available_location_groups
         form.location.query_factory = self._available_locations
@@ -296,7 +270,6 @@ class UserView(RowActionListMixin, MyModelView):
 
     def create_form(self, obj=None):
         form = super(UserView, self).create_form(obj)
-        form.asociated_with.choices = asociated_with_query_factory()
         form.company.query_factory = self._available_companies
         form.location_group.query_factory = self._available_location_groups
         form.location.query_factory = self._available_locations
