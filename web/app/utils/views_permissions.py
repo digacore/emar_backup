@@ -24,7 +24,7 @@ class MyModelView(ModelView):
     def __repr__(self):
         return "MyModelView"
 
-    def _available_companies(self):
+    def _available_companies(self, show_global: bool = False):
         """
         Returns query object with companies available for current user.
         This constructor should be used in the create and edit forms.
@@ -36,9 +36,12 @@ class MyModelView(ModelView):
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
-                available_companies: Query = Company.query.filter(
-                    Company.is_global.is_(False)
-                ).order_by(Company.name)
+                if show_global:
+                    available_companies: Query = Company.query.order_by(Company.name)
+                else:
+                    available_companies: Query = Company.query.filter(
+                        Company.is_global.is_(False)
+                    ).order_by(Company.name)
             case UserPermissionLevel.COMPANY:
                 available_companies: Query = Company.query.filter_by(
                     id=current_user.company_id

@@ -118,3 +118,30 @@ def company_locations_for_groups(company_id: int):
         ]
 
     return jsonify(locations=res), 200
+
+
+@company_blueprint.route("/<int:company_id>/location-groups", methods=["GET"])
+@login_required
+def company_location_groups(company_id: int):
+    """
+    Returns company location groups (id and name) as JSON
+
+    Args:
+        company_id (int): company id
+
+    Returns:
+        JSON: company location groups
+    """
+    # Check if user has access to information
+    if (
+        current_user.permission.value
+        not in [m.UserPermissionLevel.GLOBAL.value, m.UserPermissionLevel.COMPANY.value]
+        or current_user.role != m.UserRole.ADMIN
+    ):
+        abort(403, "You don't have access to this information.")
+
+    # Find all company location groups
+    location_groups = m.LocationGroup.query.filter_by(company_id=company_id).all()
+    res = [(group.id, group.name) for group in location_groups]
+
+    return jsonify(location_groups=res), 200

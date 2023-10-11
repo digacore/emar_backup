@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import func, Enum
+from sqlalchemy import func, Enum, select
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -14,6 +14,7 @@ from app.models.utils import ModelMixin, RowActionListMixin
 
 from app.utils import MyModelView
 
+from .company import Company
 from .location import Location
 from .location_group import LocationGroup
 
@@ -70,6 +71,7 @@ class UserPermissionLevel(enum.Enum):
     COMPANY = "COMPANY"
     LOCATION_GROUP = "LOCATION_GROUP"
     LOCATION = "LOCATION"
+    ANONYMOUS = "ANONYMOUS"
 
 
 class UserRole(enum.Enum):
@@ -86,6 +88,7 @@ class User(db.Model, UserMixin, ModelMixin):
     company_id = db.Column(
         db.Integer,
         db.ForeignKey("companies.id"),
+        nullable=False,
     )
 
     username = db.Column(db.String(64), unique=True, nullable=False)
@@ -152,12 +155,22 @@ class User(db.Model, UserMixin, ModelMixin):
         elif self.location:
             return UserPermissionLevel.LOCATION
 
+    @hybrid_property
+    def company_name(self):
+        return self.company.name if self.company else None
+
+    @company_name.expression
+    def company_name(cls):
+        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+
     def __repr__(self):
         return f"<User: {self.username}>"
 
 
 class AnonymousUser(AnonymousUserMixin):
-    pass
+    @property
+    def permission(self):
+        return UserPermissionLevel.ANONYMOUS
 
 
 # NOTE option 1: set hashed password through model (flask-admin field only)
@@ -170,6 +183,7 @@ class UserView(RowActionListMixin, MyModelView):
         "username",
         "email",
         "role",
+        "company_name",
         "activated",
         "last_time_online",
         "created_at",
@@ -262,7 +276,7 @@ class UserView(RowActionListMixin, MyModelView):
 
     def edit_form(self, obj):
         form = super(UserView, self).edit_form(obj)
-        form.company.query_factory = self._available_companies
+        form.company.query = self._available_companies(True).all()
         form.location_group.query_factory = self._available_location_groups
         form.location.query_factory = self._available_locations
         delattr(form, "password_hash")
@@ -270,7 +284,7 @@ class UserView(RowActionListMixin, MyModelView):
 
     def create_form(self, obj=None):
         form = super(UserView, self).create_form(obj)
-        form.company.query_factory = self._available_companies
+        form.company.query = self._available_companies(True).all()
         form.location_group.query_factory = self._available_location_groups
         form.location.query_factory = self._available_locations
         return form
