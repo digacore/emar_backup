@@ -123,16 +123,20 @@
             <div class="bg-white py-2 collapse-inner rounded">
               <h6 class="collapse-header">Location tabs:</h6>
               <a class="collapse-item" href="/admin/location/">Location</a>
-              <a class="collapse-item" href="/admin/locationgroup/">Location Groups</a>
+              {% if current_user.permission.value in ["GLOBAL", "COMPANY", "LOCATION_GROUP"] %}
+                <a class="collapse-item" href="/admin/locationgroup/">Location Groups</a>
+              {% endif %}
             </div>
           </div>
         </li>
         <!-- Nav Item - Alert fa-bell fa-flash-->
-        <li class="nav-item active">
-          <a class="nav-link" href="/admin/alert/">
-            <i class="fas fa-fw fa-bell"></i>
-            <span style="color: lawngreen;">Alert</span></a>
-        </li>
+        {% if current_user.permission.value == "GLOBAL" %}
+          <li class="nav-item active">
+            <a class="nav-link" href="/admin/alert/">
+              <i class="fas fa-fw fa-bell"></i>
+              <span style="color: lawngreen;">Alert</span></a>
+          </li>
+        {% endif %}
 
         <!-- Nav Item - Pages Collapse Menu -->
       <li class="nav-item active">
@@ -145,8 +149,11 @@
             <h6 class="collapse-header">System tabs:</h6>
             <a class="collapse-item" href="/admin/user/">User</a>
             <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
-            <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
-            <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
+            {% if current_user.permission == "GLOBAL" %}
+              <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
+              <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
+            {% endif %}
+
             {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
               <a class="collapse-item" href="{{ url_for('info.system_log_info') }}">System logs</a>
               <a class="collapse-item" href="{{ url_for('pcc.creation_reports') }}">PointClickCare import</a>

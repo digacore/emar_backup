@@ -91,7 +91,8 @@ class LocationGroupView(RowActionListMixin, MyModelView):
         from app.models.user import UserPermissionLevel, UserRole
 
         if (
-            current_user.permission == UserPermissionLevel.GLOBAL
+            current_user.permission.value
+            in [UserPermissionLevel.GLOBAL.value, UserPermissionLevel.COMPANY.value]
             and current_user.role == UserRole.ADMIN
         ):
             return True
@@ -102,7 +103,8 @@ class LocationGroupView(RowActionListMixin, MyModelView):
         from app.models.user import UserPermissionLevel, UserRole
 
         if (
-            current_user.permission == UserPermissionLevel.GLOBAL
+            current_user.permission.value
+            in [UserPermissionLevel.GLOBAL.value, UserPermissionLevel.COMPANY.value]
             and current_user.role == UserRole.ADMIN
         ):
             return True
@@ -123,20 +125,20 @@ class LocationGroupView(RowActionListMixin, MyModelView):
     def create_form(self, obj=None):
         form = super().create_form(obj)
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: m.Company.query.filter(
-            m.Company.is_global.is_(False)
-        ).order_by(m.Company.name)
+        form.company.query_factory = self._available_companies
+
+        locations_query = self._available_locations()
+        # Filter locations which are already in group
+        final_query = locations_query.filter(~m.Location.group.any())
+        form.locations.query_factory = lambda: final_query
 
         return form
 
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: m.Company.query.filter(
-            m.Company.is_global.is_(False)
-        ).order_by(m.Company.name)
+        form.company.query_factory = self._available_companies
+        form.locations.query_factory = self._available_locations
 
         return form
 
@@ -145,7 +147,8 @@ class LocationGroupView(RowActionListMixin, MyModelView):
 
         # NOTE handle permissions - meaning which details current user could view
         if (
-            current_user.permission == UserPermissionLevel.GLOBAL
+            current_user.permission.value
+            in [UserPermissionLevel.GLOBAL.value, UserPermissionLevel.COMPANY.value]
             and current_user.role == UserRole.ADMIN
         ):
             if "delete" in self.action_disallowed_list:
