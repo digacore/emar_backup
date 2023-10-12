@@ -451,10 +451,9 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
         # Instead add select_from(self.model) to query to count correctly
-        if (
-            current_user.permission == UserPermissionLevel.GLOBAL
-            and not request.values.get("search")
-        ):
+        if current_user.permission == UserPermissionLevel.GLOBAL and request.values.get(
+            "search"
+        ) not in ["offlin", "backu"]:
             return actual_query.with_entities(func.count()).select_from(self.model)
 
         return actual_query.with_entities(func.count())
