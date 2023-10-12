@@ -1,4 +1,5 @@
 import enum
+from collections import OrderedDict
 from datetime import datetime
 
 from sqlalchemy import func, Enum, select
@@ -198,6 +199,21 @@ class UserView(RowActionListMixin, MyModelView):
 
     form_excluded_columns = ["asociated_with"]
 
+    # Custom order of the fields in create/edit form
+    form_fields_order = [
+        "username",
+        "email",
+        "password_hash",
+        "role",
+        "company",
+        "location_group",
+        "location",
+        "activated",
+        "created_at",
+        "last_time_online",
+        "alerts",
+    ]
+
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
 
@@ -207,6 +223,21 @@ class UserView(RowActionListMixin, MyModelView):
         return "Search by all text columns"
 
     action_disallowed_list = ["delete"]
+
+    def __reorder_fields(self, form):
+        # Custom order of the fields
+        old_order = form._fields
+        reordered_fields = OrderedDict()
+        for field in self.form_fields_order:
+            if field in old_order:
+                reordered_fields[field] = old_order.pop(field)
+
+        # If some fields are not in form_fields_order, add them to the end
+        for field in old_order:
+            reordered_fields[field] = old_order[field]
+
+        form._fields = reordered_fields
+        return form
 
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log
@@ -280,6 +311,10 @@ class UserView(RowActionListMixin, MyModelView):
         form.location_group.query_factory = self._available_location_groups
         form.location.query_factory = self._available_locations
         delattr(form, "password_hash")
+
+        # Form with reordered fields
+        form = self.__reorder_fields(form)
+
         return form
 
     def create_form(self, obj=None):
@@ -287,6 +322,10 @@ class UserView(RowActionListMixin, MyModelView):
         form.company.query = self._available_companies(True).all()
         form.location_group.query_factory = self._available_location_groups
         form.location.query_factory = self._available_locations
+
+        # Form with reordered fields
+        form = self.__reorder_fields(form)
+
         return form
 
     def get_query(self):
