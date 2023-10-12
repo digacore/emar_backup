@@ -311,7 +311,13 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         # Put only available for user companies and locations in the select field
         form.company.query_factory = self._available_companies
-        form.location.query_factory = self._available_locations
+
+        if current_user.permission == UserPermissionLevel.GLOBAL and form.company.data:
+            form.location.query = Location.query.filter_by(
+                company_id=form.company.data.id
+            ).all()
+        else:
+            form.location.query_factory = self._available_locations
 
         return form
 
