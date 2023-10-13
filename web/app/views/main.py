@@ -2,7 +2,14 @@ from flask import render_template, Blueprint
 from sqlalchemy import or_
 from flask_login import login_required, current_user
 
-from app.models import Company, Location, Computer, User, DesktopClient
+from app.models import (
+    Company,
+    Location,
+    Computer,
+    User,
+    DesktopClient,
+    UserPermissionLevel,
+)
 from app.utils import get_percentage, get_outdated_status_comps
 
 main_blueprint = Blueprint("main", __name__)
@@ -11,29 +18,38 @@ main_blueprint = Blueprint("main", __name__)
 @main_blueprint.route("/")
 @login_required
 def index():
-    global_users = {"global", "global-full", "global-view"}
+    viewer: User = User.query.get(current_user.id)
 
-    viewer: User = User.query.filter_by(username=current_user.username).first()
-
-    if str(viewer.asociated_with).lower() in global_users:
-        total_companies: list[Company] = Company.query.all()
-        total_locations: list[Location] = Location.query.all()
-        total_computers: list[Computer] = Computer.query.all()
-
-    else:
-        total_companies = Company.query.filter_by(name=viewer.asociated_with).all()
-        total_locations = (
-            Location.query.filter_by(company_name=viewer.asociated_with).all()
-            if len(total_companies) > 0
-            else Location.query.filter_by(name=viewer.asociated_with).all()
-        )
-
-        total_computers = Computer.query.filter(
-            or_(
-                Computer.company_name == viewer.asociated_with,
-                Computer.location_name == viewer.asociated_with,
-            )
-        ).all()
+    match viewer.permission:
+        case UserPermissionLevel.GLOBAL:
+            total_companies: list[Company] = Company.query.filter(
+                Company.is_global.is_(False)
+            ).all()
+            total_locations: list[Location] = Location.query.all()
+            total_computers: list[Computer] = Computer.query.all()
+        case UserPermissionLevel.COMPANY:
+            total_companies = [viewer.company]
+            total_locations = Location.query.filter_by(
+                company_id=viewer.company_id
+            ).all()
+            total_computers = Computer.query.filter(
+                or_(
+                    Computer.company_id == viewer.company_id,
+                    Computer.location_id.in_([loc.id for loc in total_locations]),
+                )
+            ).all()
+        case UserPermissionLevel.LOCATION_GROUP:
+            total_companies = [viewer.company]
+            total_locations = viewer.location_group[0].locations
+            total_computers = Computer.query.filter(
+                Computer.location_id.in_([loc.id for loc in total_locations]),
+            ).all()
+        case UserPermissionLevel.LOCATION:
+            total_companies = [viewer.company]
+            total_locations = viewer.location
+            total_computers = Computer.query.filter(
+                Computer.location_id == viewer.location[0].id
+            ).all()
 
     # count locations_offline
     locations_status = {loc.name: [] for loc in total_locations}

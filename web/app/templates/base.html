@@ -100,11 +100,13 @@
         </div>
 
         <!-- Nav Item - Company -->
-        <li class="nav-item active">
-          <a class="nav-link" href="/admin/company/">
-            <i class="fas fa-fw fa-hospital"></i>
-            <span style="color: lawngreen;" title='Create or view overview of a "Company"'>Company</span></a>
-        </li>
+        {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
+          <li class="nav-item active">
+            <a class="nav-link" href="/admin/company/">
+              <i class="fas fa-fw fa-hospital"></i>
+              <span style="color: lawngreen;" title='Create or view overview of a "Company"'>Company</span></a>
+          </li>
+        {% endif %}
         <!-- Nav Item - Computer -->
         <li class="nav-item active">
           <a class="nav-link" href="/admin/computer/">
@@ -113,52 +115,52 @@
         </li>
         <!-- Nav Item - Location -->
         <li class="nav-item active">
-          <a class="nav-link" href="/admin/location/">
+          <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLocation" aria-expanded="true" aria-controls="collapseLocation">
             <i class="fas fa-fw fa-map-marker"></i>
-            <span style="color: lawngreen;" title="View Sites/Locations, Add Sites/Locations associated with a company, View Site Overview (Offline Online devices etc..) ">Location</span></a>
+            <span style="color: lawngreen;" title="View Sites/Locations, Add Sites/Locations associated with a company, View Site Overview (Offline Online devices etc..) ">Location</span>
+          </a>
+          <div id="collapseLocation" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+              <h6 class="collapse-header">Location tabs:</h6>
+              <a class="collapse-item" href="/admin/location/">Location</a>
+              {% if current_user.permission.value in ["GLOBAL", "COMPANY", "LOCATION_GROUP"] %}
+                <a class="collapse-item" href="/admin/locationgroup/">Location Groups</a>
+              {% endif %}
+            </div>
+          </div>
         </li>
         <!-- Nav Item - Alert fa-bell fa-flash-->
-        <li class="nav-item active">
-          <a class="nav-link" href="/admin/alert/">
-            <i class="fas fa-fw fa-bell"></i>
-            <span style="color: lawngreen;">Alert</span></a>
-        </li>
+        {% if current_user.permission.value == "GLOBAL" %}
+          <li class="nav-item active">
+            <a class="nav-link" href="/admin/alert/">
+              <i class="fas fa-fw fa-bell"></i>
+              <span style="color: lawngreen;">Alert</span></a>
+          </li>
+        {% endif %}
 
         <!-- Nav Item - Pages Collapse Menu -->
-      <li class="nav-item active">
-        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-          <i class="fas fa-fw fa-cog"></i>
-          <span style="color: lawngreen;" title="Download lates desktop install">System Settings</span>
-        </a>
-        <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
-          <div class="bg-white py-2 collapse-inner rounded">
-            <h6 class="collapse-header">System tabs:</h6>
-            <a class="collapse-item" href="/admin/user/">User</a>
-            <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
-            <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
-            <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
-            {% if current_user.asociated_with.lower() == "global-full" %}
-              <a class="collapse-item" href="{{ url_for('info.system_log_info') }}">System logs</a>
-              <a class="collapse-item" href="{{ url_for('pcc.creation_reports') }}">PointClickCare import</a>
-            {% endif %}
+        <li class="nav-item active">
+          <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+            <i class="fas fa-fw fa-cog"></i>
+            <span style="color: lawngreen;" title="Download lates desktop install">System Settings</span>
+          </a>
+          <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
+            <div class="bg-white py-2 collapse-inner rounded">
+              <h6 class="collapse-header">System tabs:</h6>
+              <a class="collapse-item" href="/admin/user/">User</a>
+              <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
+              {% if current_user.permission.value == "GLOBAL" %}
+                <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
+                <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
+              {% endif %}
+
+              {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
+                <a class="collapse-item" href="{{ url_for('info.system_log_info') }}">System logs</a>
+                <a class="collapse-item" href="{{ url_for('pcc.creation_reports') }}">PointClickCare import</a>
+              {% endif %}
+            </div>
           </div>
-        </div>
-      </li>
-
-      <!-- Divider -->
-      <hr class="sidebar-divider">
-
-      <!-- Heading -->
-      <div class="sidebar-heading">
-        Addons
-      </div>
-
-      <!-- Nav Item - Email Alert -->
-      <li class="nav-item active">
-        <a class="nav-link" href="{{ url_for('email.email_alert') }}" style="color: lawngreen;">
-          <i class="fas fa-fw fa-pen"></i>
-          <span>Email Alert</span></a>
-      </li>
+        </li>
       {% endif %}
 
       <!-- Divider -->
@@ -230,18 +232,22 @@
             <!-- Login/Logout -->
             {% if current_user.is_authenticated %}
             <!-- prettier-ignore -->
-            <a class="nav-item d-flex align-items-center nav-link" href="/admin/company/" >
-              Company
-            </a>
-            <a class="nav-item d-flex align-items-center nav-link" href="/admin/computer/" >
-              Computer
-            </a>
-            <a class="nav-item d-flex align-items-center nav-link" href="/admin/location/" >
-              Location
-            </a>
-            <a class="nav-item d-flex align-items-center nav-link" href="/admin/alert/" >
-              Alert
-            </a>
+              {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
+                <a class="nav-item d-flex align-items-center nav-link" href="/admin/company/" >
+                  Company
+                </a>
+              {% endif %}
+              <a class="nav-item d-flex align-items-center nav-link" href="/admin/computer/" >
+                Computer
+              </a>
+              <a class="nav-item d-flex align-items-center nav-link" href="/admin/location/" >
+                Location
+              </a>
+              {% if current_user.permission.value == "GLOBAL" %}
+                <a class="nav-item d-flex align-items-center nav-link" href="/admin/alert/" >
+                  Alert
+                </a>
+              {% endif %}
             <!-- prettier-ignore -->
             {% endif %}
 
@@ -270,9 +276,10 @@
 
         <!-- Begin Page Content -->
         <div class="container-fluid">
-        {% block content %}
+          {% block content %}
 
-        {% endblock %}
+          {% endblock %}
+        </div>
         <!-- End of Main Content -->
 
       <!-- Footer -->

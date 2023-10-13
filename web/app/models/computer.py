@@ -16,6 +16,7 @@ from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView, get_outdated_status_comps
 
 from .desktop_client import DesktopClient
+from .user import UserPermissionLevel, UserRole
 from .company import Company
 from .location import Location
 from .system_log import SystemLogType
@@ -271,13 +272,13 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if current_user.role == UserRole.ADMIN:
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        if current_user.role == UserRole.ADMIN:
             return True
         else:
             return False
@@ -296,9 +297,9 @@ class ComputerView(RowActionListMixin, MyModelView):
     def create_form(self, obj=None):
         form = super().create_form(obj)
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
-        form.location.query_factory = lambda: Location.query.order_by(Location.name)
+        # Put only available for user companies and locations in the select field
+        form.company.query_factory = self._available_companies
+        form.location.query_factory = self._available_locations
 
         return form
 
@@ -308,9 +309,15 @@ class ComputerView(RowActionListMixin, MyModelView):
         # Remember the prev value of the field logs_enabled
         self.logs_enabled_prev_value = obj.logs_enabled
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
-        form.location.query_factory = lambda: Location.query.order_by(Location.name)
+        # Put only available for user companies and locations in the select field
+        form.company.query_factory = self._available_companies
+
+        if current_user.permission == UserPermissionLevel.GLOBAL and form.company.data:
+            form.location.query = Location.query.filter_by(
+                company_id=form.company.data.id
+            ).all()
+        else:
+            form.location.query_factory = self._available_locations
 
         return form
 
@@ -364,33 +371,41 @@ class ComputerView(RowActionListMixin, MyModelView):
         # NOTE handle permissions - meaning which details current user could view
         self.form_choices = CFG.CLIENT_VERSIONS
 
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
+        if current_user.role == UserRole.ADMIN:
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
+        else:
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
 
-            user_permission: str = current_user.asociated_with
-            if (
-                user_permission.lower() == "global-full"
-                or user_permission.lower() == "global-view"
-            ):
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
                 result_query = self.session.query(self.model)
-            else:
+            case UserPermissionLevel.COMPANY:
                 result_query = self.session.query(self.model).filter(
                     or_(
-                        self.model.location_name == user_permission,
-                        self.model.company_name == user_permission,
+                        self.model.company_id == current_user.company_id,
+                        self.model.location_id.in_(
+                            [loc.id for loc in current_user.company.locations]
+                        ),
                     )
                 )
-        else:
-            result_query = self.session.query(self.model).filter(
-                self.model.computer_name == "None"
-            )
+            case UserPermissionLevel.LOCATION_GROUP:
+                result_query = self.session.query(self.model).filter(
+                    self.model.location_id.in_(
+                        [loc.id for loc in current_user.location_group[0].locations]
+                    )
+                )
+            case UserPermissionLevel.LOCATION:
+                result_query = self.session.query(self.model).filter(
+                    self.model.location_id == current_user.location[0].id
+                )
+            case _:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == -1
+                )
 
         # NOTE this if closure is used for Dashboard cards searches (index.html)
         if "search" in request.values:
@@ -442,10 +457,9 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
         # Instead add select_from(self.model) to query to count correctly
-        if (
-            current_user.asociated_with.lower() == "global-full"
-            or current_user.asociated_with.lower() == "global-view"
-        ) and not request.values.get("search"):
+        if current_user.permission == UserPermissionLevel.GLOBAL and request.values.get(
+            "search"
+        ) not in ["offlin", "backu"]:
             return actual_query.with_entities(func.count()).select_from(self.model)
 
         return actual_query.with_entities(func.count())

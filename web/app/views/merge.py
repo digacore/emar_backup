@@ -19,12 +19,16 @@ merge_blueprint = Blueprint("merge", __name__, url_prefix="/merge")
 @merge_blueprint.route("/company/<int:company_id>/first-step", methods=["GET"])
 @login_required
 def merge_company_first_step(company_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for GLOBAL admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         logger.error(
-            "User {} tried to access company merge page. His permission level: {}",
+            "User {} tried to access company merge page. His permission level: {}. Role: {}",
             current_user.username,
-            current_user.asociated_with.lower(),
+            current_user.permission.value,
+            current_user.role.value,
         )
         abort(403, "You don't have permission to access this page.")
 
@@ -64,12 +68,16 @@ def merge_company_first_step(company_id: int):
 @merge_blueprint.route("/company/<int:company_id>/second-step", methods=["POST"])
 @login_required
 def merge_company_second_step(company_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for GLOBAL admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         logger.error(
-            "User {} tried to access company merge page (second step). His permission level: {}",
+            "User {} tried to access company merge page (second step). His permission level: {}. Role {}",
             current_user.username,
-            current_user.asociated_with.lower(),
+            current_user.permission.value,
+            current_user.role.value,
         )
         abort(403, "You don't have permission to access this page.")
 
@@ -149,9 +157,26 @@ def merge_company_second_step(company_id: int):
     # If remove cascade deleting behavior, remove this commit command and leave the only one in the end
     db.session.commit()
 
+    # Move users
+    for user in secondary_company.users:
+        match user.permission:
+            case m.UserPermissionLevel.COMPANY:
+                user.company_id = primary_company.id
+            # If user has location group permission, just make it primary company company level user
+            case m.UserPermissionLevel.LOCATION_GROUP:
+                user.location_group.clear()
+                user.company_id = primary_company.id
+                user.role = m.UserRole.USER
+            case m.UserPermissionLevel.LOCATION:
+                if user.location[0] in selected_locations:
+                    user.company_id = primary_company.id
+                else:
+                    db.session.delete(user)
+
     # Add new locations from secondary company to primary company
     for location in selected_locations:
         location.company_id = primary_company.id
+        location.group.clear()
 
     # Delete primary company locations that were not selected
     for location in primary_company.locations:
@@ -181,12 +206,16 @@ def merge_company_second_step(company_id: int):
 @merge_blueprint.route("/location/<int:location_id>/first-step", methods=["GET"])
 @login_required
 def merge_location_first_step(location_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for Global users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         logger.error(
-            "User {} tried to access location merge page. His permission level: {}",
+            "User {} tried to access location merge page. His permission level: {}. Role: {}",
             current_user.username,
-            current_user.asociated_with.lower(),
+            current_user.permission.value,
+            current_user.role.value,
         )
         abort(403, "You don't have permission to access this page.")
 
@@ -226,12 +255,16 @@ def merge_location_first_step(location_id: int):
 @merge_blueprint.route("/location/<int:location_id>/second-step", methods=["POST"])
 @login_required
 def merge_location_second_step(location_id: int):
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for Global admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         logger.error(
-            "User {} tried to access location merge page (second step). His permission level: {}",
+            "User {} tried to access location merge page (second step). His permission level: {}. Role {}",
             current_user.username,
-            current_user.asociated_with.lower(),
+            current_user.permission.value,
+            current_user.role.value,
         )
         abort(403, "You don't have permission to access this page.")
 
@@ -284,11 +317,21 @@ def merge_location_second_step(location_id: int):
     secondary_location_name: str = secondary_location.name
 
     # Change data of primary company
+
+    # If company changed - remove location from group
+    if primary_location.company_name != merge_select_form.company_name.data:
+        primary_location.group.clear()
+
     primary_location.name = merge_select_form.name.data
     primary_location.company_name = merge_select_form.company_name.data
     primary_location.default_sftp_path = merge_select_form.default_sftp_path.data
     primary_location.pcc_fac_id = merge_select_form.pcc_fac_id.data
     primary_location.use_pcc_backup = merge_select_form.use_pcc_backup.data
+
+    # Move users from secondary location
+    for user in secondary_location.users.copy():
+        user.company_id = primary_location.company.id
+        user.location = [primary_location]
 
     # Add new computers from secondary to primary location
     for computer in selected_computers:

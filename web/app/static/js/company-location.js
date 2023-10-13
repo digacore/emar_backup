@@ -33,7 +33,37 @@ $("#company").change((event) => {
     });
   }
 
+  function setLocationGroups(){
+    $.ajax({
+      url: `/company/${selectedId}/location-groups`,
+      success: (data) => {
+        let $el = $("#location_group");
+        $el.empty(); // remove old options
+        // remove chosen value
+        $("#s2id_location_group").find(".select2-search-choice").empty();
+
+        // append __None to have possibility to empty field
+        $el.append(
+          $("<option></option>")
+            .attr("selected", "selected")
+            .attr("value", "__None")
+            .text("")
+        );
+
+        // append locations respectfully to chosen company
+        $.each(data.location_groups, function (_, idLocationGroup) {
+          $el.append(
+            $("<option></option>").attr("value", idLocationGroup[0]).text(idLocationGroup[1])
+          );
+        });
+        },
+      error: (xhr) => {
+      }
+    });
+  }
+
   actionsWithCompany()
+  setLocationGroups()
 });
 
 // Insert founded company or location name and id to inputs

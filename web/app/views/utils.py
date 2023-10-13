@@ -47,3 +47,74 @@ def get_merged_computers_list(
             merged_computers.append(computer)
 
     return merged_computers
+
+
+def has_access_to_computer(user: m.User, computer: m.Computer) -> bool:
+    """Checks if user has access to computer information
+
+    Args:
+        user (m.User): user instance
+        computer (m.Computer): computer instance
+
+    Returns:
+        bool: True if user has access to computer information
+    """
+    match user.permission:
+        case m.UserPermissionLevel.GLOBAL:
+            return True
+        case m.UserPermissionLevel.COMPANY:
+            return computer.company_id == user.company_id
+        case m.UserPermissionLevel.LOCATION_GROUP:
+            return computer.location_id in [
+                loc.id for loc in user.location_group[0].locations
+            ]
+        case m.UserPermissionLevel.LOCATION:
+            return computer.location_id == user.location[0].id
+        case _:
+            return False
+
+
+def has_access_to_location(user: m.User, location: m.Location):
+    """Checks if user has access to location information
+
+    Args:
+        user (m.User): user instance
+        location (m.Location): location object
+
+    Returns:
+        bool: True if user has access to location information
+    """
+    match user.permission:
+        case m.UserPermissionLevel.GLOBAL:
+            return True
+        case m.UserPermissionLevel.COMPANY:
+            return location.company_id == user.company_id
+        case m.UserPermissionLevel.LOCATION_GROUP:
+            return location.id in [loc.id for loc in user.location_group[0].locations]
+        case m.UserPermissionLevel.LOCATION:
+            return location.id == user.location[0].id
+        case _:
+            return False
+
+
+def has_access_to_company(user: m.User, company: m.Company):
+    """Checks if user has access to company information
+
+    Args:
+        user (m.User): user instance
+        company (m.Company): company object
+
+    Returns:
+        bool: True if user has access to location information
+    """
+    match user.permission:
+        case m.UserPermissionLevel.GLOBAL:
+            return True
+        case m.UserPermissionLevel.COMPANY:
+            return company.id == user.company_id
+        case m.UserPermissionLevel.LOCATION_GROUP:
+            return company.id == user.location_group[0].company_id
+        case m.UserPermissionLevel.LOCATION:
+            return company.id == user.location[0].company_id
+        case _:
+            return False

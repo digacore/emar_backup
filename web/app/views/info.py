@@ -5,6 +5,8 @@ from flask_login import login_required, current_user
 from app import models as m, db
 from app.controllers import create_pagination, backup_log_on_request_to_view
 
+from .utils import has_access_to_computer
+
 from config import BaseConfig as CFG
 
 
@@ -26,11 +28,7 @@ def computer_info(computer_id):
     computer = m.Computer.query.filter_by(id=computer_id).first_or_404()
 
     # Check if user has access to computer information
-    if not (
-        current_user.asociated_with.lower() in ["global-full", "global-view"]
-        or current_user.asociated_with == computer.company_name
-        or current_user.asociated_with == computer.location_name
-    ):
+    if not has_access_to_computer(current_user, computer):
         abort(403, "You don't have access to this computer information.")
 
     # Update the last computer log information
@@ -141,8 +139,11 @@ def computer_info(computer_id):
 @info_blueprint.route("/system-log", methods=["GET"])
 @login_required
 def system_log_info():
-    # This page is available only for global-full users
-    if current_user.asociated_with.lower() != "global-full":
+    # This page is available only for Global admin users
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
         abort(403, "You don't have permission to access this page.")
 
     LOGS_TYPES = ["All", "Computer", "User", "Company", "Location", "Alert"]

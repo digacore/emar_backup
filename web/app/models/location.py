@@ -1,11 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import or_, func, sql, select
+from sqlalchemy import func, sql, select
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
+from flask_admin.form import Select2Widget
+from flask_admin.contrib.sqla.fields import QuerySelectField
+
+from wtforms import validators
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
@@ -112,7 +116,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc",)
+    form_excluded_columns = ("created_from_pcc", "users")
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
@@ -123,14 +127,24 @@ class LocationView(RowActionListMixin, MyModelView):
         return "Search by all text columns"
 
     def _can_edit(self, model):
+        from app.models.user import UserPermissionLevel, UserRole
+
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        from app.models.user import UserPermissionLevel, UserRole
+
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
@@ -146,11 +160,26 @@ class LocationView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
+    # All these manipulations with group field are needed because
+    # between Location and LocationGroup many-to-many relationship (Location can have only one group or no group)
+    # But Flask-Admin builds form for many-to-many relationship as SelectMultipleField (we need SelectField)
+    def get_create_form(self):
+        form = super().get_create_form()
+        form.group = QuerySelectField(
+            "Group",
+            validators=[validators.Optional()],
+            allow_blank=True,
+        )
+
+        return form
+
     def create_form(self, obj=None):
         form = super().create_form(obj)
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.company.query_factory = self._available_companies
+
+        form.group.widget = Select2Widget()
+        form.group.query_factory = self._available_location_groups
 
         return form
 
@@ -158,9 +187,20 @@ class LocationView(RowActionListMixin, MyModelView):
         form = super().edit_form(obj)
 
         # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.company.query_factory = self._available_companies
+        form.group.query_factory = self._available_location_groups
 
         return form
+
+    def create_model(self, form):
+        group_data = form.group.data
+        del form.group
+        model = super().create_model(form)
+        model.group = [group_data] if group_data else []
+        self.session.add(model)
+        self.session.commit()
+
+        return model
 
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log
@@ -178,47 +218,52 @@ class LocationView(RowActionListMixin, MyModelView):
         create_system_log(SystemLogType.LOCATION_DELETED, model, current_user)
 
     def get_query(self):
+        from app.models.user import UserPermissionLevel, UserRole
 
-        # TODO make universal (func or something) for every model
         # NOTE handle permissions - meaning which details current user could view
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
-
-            user_permission: str = current_user.asociated_with
-            if (
-                user_permission.lower() == "global-full"
-                or user_permission.lower() == "global-view"
-            ):
-                result_query = self.session.query(self.model)
-            else:
-                result_query = self.session.query(self.model).filter(
-                    or_(
-                        self.model.name == user_permission,
-                        self.model.company_name == user_permission,
-                    )
-                )
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
         else:
-            result_query = self.session.query(self.model).filter(
-                self.model.computer_name == "None"
-            )
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                result_query = self.session.query(self.model)
+            case UserPermissionLevel.COMPANY:
+                result_query = self.session.query(self.model).filter(
+                    self.model.company_id == current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION_GROUP:
+                locations = current_user.location_group[0].locations
+                result_query = self.session.query(self.model).filter(
+                    self.model.id.in_([location.id for location in locations])
+                )
+            case UserPermissionLevel.LOCATION:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == current_user.location[0].id
+                )
+            case _:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == -1
+                )
+
         return result_query
 
     def get_count_query(self):
+        from app.models.user import UserPermissionLevel
+
         actual_query = self.get_query()
 
         # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
         # Instead add select_from(self.model) to query to count correctly
-        if (
-            current_user.asociated_with.lower() == "global-full"
-            or current_user.asociated_with.lower() == "global-view"
-        ):
+        if current_user.permission == UserPermissionLevel.GLOBAL:
             return actual_query.with_entities(func.count()).select_from(self.model)
 
         return actual_query.with_entities(func.count())

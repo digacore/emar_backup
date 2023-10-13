@@ -26,7 +26,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
 )
 
-from app.models import User
+from app.models import User, UserPermissionLevel, UserRole
 from app.forms import LoginForm, ChangePasswordForm
 from app import google_client
 
@@ -77,7 +77,11 @@ def login():
 @auth_blueprint.route("/change-password", methods=["POST"])
 @login_required
 def change_password():
-    if current_user.asociated_with.lower() != "global-full":
+    if (
+        current_user.permission
+        not in [UserPermissionLevel.GLOBAL, UserPermissionLevel.COMPANY]
+        or current_user.role != UserRole.ADMIN
+    ):
         abort(403, "You don't have permission to access this route.")
 
     form = ChangePasswordForm(request.form)

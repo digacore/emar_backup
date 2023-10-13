@@ -43,7 +43,6 @@ def create_app(environment="development"):
     from app.views import (
         main_blueprint,
         auth_blueprint,
-        email_blueprint,
         info_blueprint,
         company_blueprint,
         location_blueprint,
@@ -69,6 +68,8 @@ def create_app(environment="development"):
         ComputerView,
         Location,
         LocationView,
+        LocationGroup,
+        LocationGroupView,
         Alert,
         AlertView,
         DesktopClient,
@@ -109,7 +110,6 @@ def create_app(environment="development"):
     # Register blueprints.
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(main_blueprint)
-    app.register_blueprint(email_blueprint)
     app.register_blueprint(download_msi_fblueprint)
     app.register_blueprint(info_blueprint)
     app.register_blueprint(pcc_blueprint)
@@ -162,6 +162,7 @@ def create_app(environment="development"):
     admin.add_view(DesktopClientView(DesktopClient, db.session))
     admin.add_view(ClientVersionView(ClientVersion, db.session))
     admin.add_view(AlertControlsView(AlertControls, db.session))
+    admin.add_view(LocationGroupView(LocationGroup, db.session))
 
     # Error handlers.
     @app.errorhandler(HTTPException)

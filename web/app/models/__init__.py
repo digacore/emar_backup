@@ -1,5 +1,5 @@
 # flake8: noqa F401
-from .user import User, AnonymousUser, UserView
+from .user import User, AnonymousUser, UserView, UserRole, UserPermissionLevel
 from .company import Company, CompanyView
 from .computer import Computer, ComputerView, DeviceType, DeviceRole
 from .location import Location, LocationView
@@ -15,3 +15,4 @@ from .system_log import SystemLog, SystemLogType
 from .pcc_creation_report import PCCCreationReport, CreationReportStatus
 from .pcc_activations_scan import PCCActivationsScan, ScanStatus
 from .pcc_daily_request import PCCDailyRequest
+from .location_group import LocationGroup, LocationGroupView

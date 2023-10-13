@@ -1,4 +1,4 @@
-from app.models import User
+from app.models import User, Company, UserRole
 
 
 def register(username, email="username@test.com", password="password"):
@@ -7,7 +7,8 @@ def register(username, email="username@test.com", password="password"):
         email=email,
         password=password,
         activated=True,
-        asociated_with="Global-view",
+        company_id=Company.query.filter(Company.is_global.is_(True)).first().id,
+        role=UserRole.ADMIN,
     )
     user.save()
     return user.id

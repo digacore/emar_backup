@@ -1,6 +1,7 @@
+import enum
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, Enum, select
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -15,6 +16,7 @@ from app.utils import MyModelView
 
 from .company import Company
 from .location import Location
+from .location_group import LocationGroup
 
 from .system_log import SystemLogType
 
@@ -25,12 +27,69 @@ users_alerts = db.Table(
     db.Column("alerts_id", db.Integer, db.ForeignKey("alerts.id")),
 )
 
+users_to_group = db.Table(
+    "users_to_group",
+    db.metadata,
+    db.Column("id", db.Integer, primary_key=True),
+    db.Column(
+        "user_id",
+        db.Integer,
+        db.ForeignKey("users.id"),
+        unique=True,
+        nullable=False,
+    ),
+    db.Column(
+        "location_group_id",
+        db.Integer,
+        db.ForeignKey("location_groups.id"),
+        nullable=False,
+    ),
+)
+
+users_to_location = db.Table(
+    "users_to_location",
+    db.metadata,
+    db.Column("id", db.Integer, primary_key=True),
+    db.Column(
+        "user_id",
+        db.Integer,
+        db.ForeignKey("users.id"),
+        unique=True,
+        nullable=False,
+    ),
+    db.Column(
+        "location_id",
+        db.Integer,
+        db.ForeignKey("locations.id"),
+        nullable=False,
+    ),
+)
+
+
+class UserPermissionLevel(enum.Enum):
+    GLOBAL = "GLOBAL"
+    COMPANY = "COMPANY"
+    LOCATION_GROUP = "LOCATION_GROUP"
+    LOCATION = "LOCATION"
+    ANONYMOUS = "ANONYMOUS"
+
+
+class UserRole(enum.Enum):
+    ADMIN = "ADMIN"
+    USER = "USER"
+
 
 class User(db.Model, UserMixin, ModelMixin):
 
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    company_id = db.Column(
+        db.Integer,
+        db.ForeignKey("companies.id"),
+        nullable=False,
+    )
 
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
@@ -40,6 +99,13 @@ class User(db.Model, UserMixin, ModelMixin):
     asociated_with = db.Column(db.String(64))
     last_time_online = db.Column(db.DateTime)
 
+    role = db.Column(
+        Enum(UserRole),
+        nullable=False,
+        default=UserRole.USER,
+        server_default=UserRole.ADMIN.value,
+    )
+
     alerts = relationship(
         "Alert",
         secondary=users_alerts,
@@ -47,6 +113,12 @@ class User(db.Model, UserMixin, ModelMixin):
         backref="users",
         lazy="select",
     )
+
+    company = relationship("Company", backref="users", lazy="select")
+    location_group = relationship(
+        "LocationGroup", secondary=users_to_group, backref="users"
+    )
+    location = relationship("Location", secondary=users_to_location, backref="users")
 
     @hybrid_property
     def password(self):
@@ -67,35 +139,38 @@ class User(db.Model, UserMixin, ModelMixin):
         if user is not None and check_password_hash(user.password, password):
             return user
 
+    @property
+    def permission(self):
+        """Return user permission level"""
+        # User has global permission
+        if self.company.is_global:
+            return UserPermissionLevel.GLOBAL
+        # User has company permission
+        elif not self.location_group and not self.location:
+            return UserPermissionLevel.COMPANY
+        # User has location group permission
+        elif self.location_group:
+            return UserPermissionLevel.LOCATION_GROUP
+        # User has location permission
+        elif self.location:
+            return UserPermissionLevel.LOCATION
+
+    @hybrid_property
+    def company_name(self):
+        return self.company.name if self.company else None
+
+    @company_name.expression
+    def company_name(cls):
+        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+
     def __repr__(self):
         return f"<User: {self.username}>"
 
 
-def asociated_with_query_factory():
-    USER_PERMISSIONS = [
-        ("Global-full", "Global-full"),
-        ("Global-view", "Global-view"),
-    ]
-
-    # NOTE this try block is used to avoid appending during app launch
-    try:
-        locations = db.session.query(Location).all()
-        companies = db.session.query(Company).all()
-
-        for location in locations:
-            USER_PERMISSIONS.append((location, f"Location-{location}"))
-
-        for company in companies:
-            USER_PERMISSIONS.append((company, f"Company-{company}"))
-    except RuntimeError:
-        # NOTE avoid situation when app starts and asociated_with_query_factory() is called in UserView
-        pass
-
-    return USER_PERMISSIONS
-
-
 class AnonymousUser(AnonymousUserMixin):
-    pass
+    @property
+    def permission(self):
+        return UserPermissionLevel.ANONYMOUS
 
 
 # NOTE option 1: set hashed password through model (flask-admin field only)
@@ -107,7 +182,8 @@ class UserView(RowActionListMixin, MyModelView):
         "id",
         "username",
         "email",
-        "asociated_with",
+        "role",
+        "company_name",
         "activated",
         "last_time_online",
         "created_at",
@@ -120,7 +196,29 @@ class UserView(RowActionListMixin, MyModelView):
     column_searchable_list = column_list
     column_filters = column_list
 
-    form_choices = {"asociated_with": asociated_with_query_factory()}
+    # Put span as description because it seems to be that
+    # Flask-Admin doesn't provide an opportunity for field description style customization
+    column_descriptions = dict(
+        location_group="<span style='color: red'>**Choose one location group to provide user access to it.\
+            Has higher priority than location, so if you select both (location and group)\
+            user will have permission for the group!</span>",
+        location="<span style='color: red'>**Choose one location to provide user access to it.</span>",
+    )
+
+    # To set order of the fields in form
+    form_columns = (
+        "username",
+        "email",
+        "password_hash",
+        "role",
+        "company",
+        "location_group",
+        "location",
+        "activated",
+        "created_at",
+        "last_time_online",
+        "alerts",
+    )
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
@@ -150,27 +248,24 @@ class UserView(RowActionListMixin, MyModelView):
     def on_model_change(self, form, model, is_created):
         if is_created:
             model.password_hash = generate_password_hash(model.password_hash)
-        # as another example
-        # if is_created:
-        #     model.created_at = datetime.now()
-
-    def _can_create(self, model):
-        # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
-            return True
-        else:
-            return False
 
     def _can_edit(self, model):
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            or current_user.permission == UserPermissionLevel.COMPANY
+        ) and current_user.role == UserRole.ADMIN:
             return True
         else:
             return False
 
     def _can_delete(self, model):
         if (
-            str(current_user.asociated_with).lower() == "global-full"
+            (
+                current_user.permission == UserPermissionLevel.GLOBAL
+                or current_user.permission == UserPermissionLevel.COMPANY
+            )
+            and current_user.role == UserRole.ADMIN
             and model.id != current_user.id
         ):
             return True
@@ -190,52 +285,77 @@ class UserView(RowActionListMixin, MyModelView):
 
     def edit_form(self, obj):
         form = super(UserView, self).edit_form(obj)
-        form.asociated_with.choices = asociated_with_query_factory()
         delattr(form, "password_hash")
+
+        form.company.query = self._available_companies(True).all()
+
+        # Prevent global users from selecting location/groups from other companies (not selected one)
+        if current_user.permission == UserPermissionLevel.GLOBAL and form.company.data:
+            form.location_group.query_factory = lambda: LocationGroup.query.filter(
+                LocationGroup.company_id == form.company.data.id
+            )
+            form.location.query_factory = lambda: Location.query.filter(
+                Location.company_id == form.company.data.id
+            )
+        else:
+            form.location_group.query_factory = self._available_location_groups
+            form.location.query_factory = self._available_locations
+
         return form
 
     def create_form(self, obj=None):
         form = super(UserView, self).create_form(obj)
-        form.asociated_with.choices = asociated_with_query_factory()
+        form.company.query = self._available_companies(True).all()
+        form.location_group.query_factory = self._available_location_groups
+        form.location.query_factory = self._available_locations
+
         return form
 
     def get_query(self):
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            or current_user.permission == UserPermissionLevel.COMPANY
+        ) and current_user.role == UserRole.ADMIN:
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
+        else:
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
 
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
                 result_query = self.session.query(self.model).filter(
                     self.model.username != "emarsuperuser"
                 )
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
+            case UserPermissionLevel.COMPANY:
                 result_query = self.session.query(self.model).filter(
-                    self.model.username == "None"
+                    self.model.company_id == current_user.company_id
                 )
-        else:
-            result_query = self.session.query(self.model).filter(
-                self.model.username == "None"
-            )
+            case UserPermissionLevel.LOCATION_GROUP:
+                result_query = self.session.query(self.model).filter(
+                    self.model.location_group.any(
+                        LocationGroup.id.in_(
+                            [group.id for group in current_user.location_group]
+                        )
+                    )
+                )
+            case UserPermissionLevel.LOCATION:
+                result_query = self.session.query(self.model).filter(
+                    self.model.location.any(
+                        Location.id.in_(
+                            [location.id for location in current_user.location]
+                        )
+                    )
+                )
+            case _:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == -1
+                )
 
-        # do not allow to edit superuser
         return result_query
 
     def get_count_query(self):
         actual_query = self.get_query()
         return actual_query.with_entities(func.count())
-
-
-# NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)
-# from sqlalchemy import event
-# from werkzeug.security import generate_password_hash
-
-
-# @event.listens_for(User.password, 'set', retval=True)
-# def hash_user_password(target, value, oldvalue, initiator):
-#     if value != oldvalue:
-#         return generate_password_hash(value)
-#     return value

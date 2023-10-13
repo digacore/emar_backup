@@ -122,6 +122,57 @@ def scan_pcc_activations(scan_record_id: int):
     scan_pcc_activations(scan_record_id)
 
 
+@app.cli.command()
+def fill_user_permission_items():
+    from app.logger import logger
+
+    logger.info("Start fill_user_permission_items")
+    users = models.User.query.all()
+    for user in users:
+        if not user.asociated_with:
+            user.role = models.UserRole.USER
+            user.company_id = (
+                models.Company.query.filter(models.Company.is_global.is_(True))
+                .first()
+                .id
+            )
+        elif user.asociated_with.lower() == "global-full":
+            user.role = models.UserRole.ADMIN
+            user.company_id = (
+                models.Company.query.filter(models.Company.is_global.is_(True))
+                .first()
+                .id
+            )
+        elif user.asociated_with.lower() == "global-view":
+            user.role = models.UserRole.USER
+            user.company_id = (
+                models.Company.query.filter(models.Company.is_global.is_(True))
+                .first()
+                .id
+            )
+        elif user.asociated_with in [
+            company.name for company in models.Company.query.all()
+        ]:
+            user.role = models.UserRole.ADMIN
+            user.company_id = (
+                models.Company.query.filter_by(name=user.asociated_with).first().id
+            )
+        elif user.asociated_with in [
+            location.name for location in models.Location.query.all()
+        ]:
+            user.role = models.UserRole.ADMIN
+            user.company_id = (
+                models.Location.query.filter_by(name=user.asociated_with)
+                .first()
+                .company_id
+            )
+            user.location.append(
+                models.Location.query.filter_by(name=user.asociated_with).first()
+            )
+    db.session.commit()
+    logger.info("Finish fill_user_permission_items")
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()

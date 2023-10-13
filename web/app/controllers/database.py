@@ -7,12 +7,14 @@ from config import BaseConfig as CFG
 
 
 def create_superuser():
+    global_company = m.Company.query.filter_by(is_global=True).first()
     if not m.User.query.filter(m.User.username == CFG.SUPER_USER_NAME).first():
         user = m.User(
             username=CFG.SUPER_USER_NAME,
             email=CFG.SUPER_USER_MAIL,
             password=CFG.SUPER_USER_PASS,
-            asociated_with="global-full",
+            company_id=global_company.id,
+            role=m.UserRole.ADMIN,
             activated=True,
         )
         user.save()
@@ -29,39 +31,54 @@ def init_db(test_me: bool = False):
     if test_me:
         logger.info("Generate test data")
 
+        companies = ["Global", "Atlas", "Dro", "WRC"]
+        locations = {"Maywood": "Atlas", "Ararat": "Atlas", "SpringField": "Dro"}
+
+        for company in companies:
+            if company == "Global":
+                m.Company(name=company, is_global=True).save()
+            else:
+                m.Company(name=company).save()
+
+        for location in locations:
+            m.Location(name=location, company_name=locations[location]).save()
+
         users = {
             "view_user": {
                 "username": "test_user_view",
                 "email": "test_user_view@mail.com",
                 "password": "test_user_view",
                 "activated": True,
-                "asociated_with": "global-view",
+                "company_id": m.Company.query.filter_by(is_global=True).first().id,
+                "role": m.UserRole.USER,
             },
             "company_user": {
                 "username": "test_user_company",
                 "email": "test_user_company@mail.com",
                 "password": "test_user_company",
                 "activated": True,
-                "asociated_with": "Atlas",
+                "company_id": m.Company.query.filter_by(name="Atlas").first().id,
+                "role": m.UserRole.ADMIN,
             },
             "location_user": {
                 "username": "test_user_location",
                 "email": "test_user_location@mail.com",
                 "password": "test_user_location",
                 "activated": True,
-                "asociated_with": "Maywood",
+                "company_id": m.Company.query.filter_by(name="Atlas").first().id,
+                "role": m.UserRole.ADMIN,
+                "location": m.Location.query.filter_by(name="Maywood").first(),
             },
             "location_dro_user": {
                 "username": "location_dro_user",
                 "email": "location_dro_user@mail.com",
                 "password": "test_user_location",
                 "activated": True,
-                "asociated_with": "SpringField",
+                "company_id": m.Company.query.filter_by(name="Dro").first().id,
+                "role": m.UserRole.ADMIN,
+                "location": m.Location.query.filter_by(name="SpringField").first(),
             },
         }
-
-        companies = ["Atlas", "Dro", "WRC"]
-        locations = {"Maywood": "Atlas", "Ararat": "Atlas", "SpringField": "Dro"}
 
         computers = {
             "comp1_intime": {
@@ -220,19 +237,19 @@ def init_db(test_me: bool = False):
         }
 
         for user in users:
-            m.User(
+            new_user = m.User(
                 username=users[user]["username"],
                 email=users[user]["email"],
                 password=users[user]["password"],
                 activated=users[user]["activated"],
-                asociated_with=users[user]["asociated_with"],
-            ).save()
+                company_id=users[user]["company_id"],
+                role=users[user]["role"],
+            )
 
-        for company in companies:
-            m.Company(name=company).save()
+            if "location" in users[user]:
+                new_user.location = [users[user]["location"]]
 
-        for location in locations:
-            m.Location(name=location, company_name=locations[location]).save()
+            new_user.save()
 
         for computer in computers:
             if "last_download_time" not in computers[computer]:

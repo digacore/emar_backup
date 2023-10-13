@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -11,6 +11,7 @@ from markupsafe import Markup
 from app import db
 
 from app.models.client_version import ClientVersion
+from app.models.user import UserPermissionLevel, UserRole
 from app.models.utils import ModelMixin, RowActionListMixin, BlobMixin, BlobUploadField
 from app.utils import MyModelView
 
@@ -109,13 +110,19 @@ class DesktopClientView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
@@ -135,22 +142,39 @@ class DesktopClientView(RowActionListMixin, MyModelView):
     def get_query(self):
 
         # check permissions
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
-                result_query = self.session.query(self.model)
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
-                result_query = self.session.query(self.model).filter(
-                    self.model.name == "None"
-                )
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
         else:
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
+
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            result_query = self.session.query(self.model)
+        elif current_user.role == UserRole.ADMIN:
             result_query = self.session.query(self.model).filter(
-                self.model.name == "None"
+                self.model.flag_id.is_not(None)
             )
+        else:
+            result_query = self.session.query(self.model).filter(self.model.id == -1)
 
         return result_query
+
+    def get_count_query(self):
+        actual_query = self.get_query()
+
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            return actual_query.with_entities(func.count()).select_from(self.model)
+
+        return actual_query.with_entities(func.count())
