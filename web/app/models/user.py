@@ -1,5 +1,4 @@
 import enum
-from collections import OrderedDict
 from datetime import datetime
 
 from sqlalchemy import func, Enum, select
@@ -197,10 +196,17 @@ class UserView(RowActionListMixin, MyModelView):
     column_searchable_list = column_list
     column_filters = column_list
 
-    form_excluded_columns = ["asociated_with"]
+    # Put span as description because it seems to be that
+    # Flask-Admin doesn't provide an opportunity for field description style customization
+    column_descriptions = dict(
+        location_group="<span style='color: red'>**Choose one location group to provide user access to it.\
+            Has higher priority than location, so if you select both (location and group)\
+            user will have permission for the group!</span>",
+        location="<span style='color: red'>**Choose one location to provide user access to it.</span>",
+    )
 
-    # Custom order of the fields in create/edit form
-    form_fields_order = [
+    # To set order of the fields in form
+    form_columns = (
         "username",
         "email",
         "password_hash",
@@ -212,7 +218,7 @@ class UserView(RowActionListMixin, MyModelView):
         "created_at",
         "last_time_online",
         "alerts",
-    ]
+    )
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
@@ -223,21 +229,6 @@ class UserView(RowActionListMixin, MyModelView):
         return "Search by all text columns"
 
     action_disallowed_list = ["delete"]
-
-    def __reorder_fields(self, form):
-        # Custom order of the fields
-        old_order = form._fields
-        reordered_fields = OrderedDict()
-        for field in self.form_fields_order:
-            if field in old_order:
-                reordered_fields[field] = old_order.pop(field)
-
-        # If some fields are not in form_fields_order, add them to the end
-        for field in old_order:
-            reordered_fields[field] = old_order[field]
-
-        form._fields = reordered_fields
-        return form
 
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log
@@ -257,19 +248,6 @@ class UserView(RowActionListMixin, MyModelView):
     def on_model_change(self, form, model, is_created):
         if is_created:
             model.password_hash = generate_password_hash(model.password_hash)
-        # as another example
-        # if is_created:
-        #     model.created_at = datetime.now()
-
-    def _can_create(self, model):
-        # return True to allow edit
-        if (
-            current_user.permission == UserPermissionLevel.GLOBAL
-            or current_user.permission == UserPermissionLevel.COMPANY
-        ) and current_user.role == UserRole.ADMIN:
-            return True
-        else:
-            return False
 
     def _can_edit(self, model):
         # return True to allow edit
@@ -307,13 +285,21 @@ class UserView(RowActionListMixin, MyModelView):
 
     def edit_form(self, obj):
         form = super(UserView, self).edit_form(obj)
-        form.company.query = self._available_companies(True).all()
-        form.location_group.query_factory = self._available_location_groups
-        form.location.query_factory = self._available_locations
         delattr(form, "password_hash")
 
-        # Form with reordered fields
-        form = self.__reorder_fields(form)
+        form.company.query = self._available_companies(True).all()
+
+        # Prevent global users from selecting location/groups from other companies (not selected one)
+        if current_user.permission == UserPermissionLevel.GLOBAL and form.company.data:
+            form.location_group.query_factory = lambda: LocationGroup.query.filter(
+                LocationGroup.company_id == form.company.data.id
+            )
+            form.location.query_factory = lambda: Location.query.filter(
+                Location.company_id == form.company.data.id
+            )
+        else:
+            form.location_group.query_factory = self._available_location_groups
+            form.location.query_factory = self._available_locations
 
         return form
 
@@ -322,9 +308,6 @@ class UserView(RowActionListMixin, MyModelView):
         form.company.query = self._available_companies(True).all()
         form.location_group.query_factory = self._available_location_groups
         form.location.query_factory = self._available_locations
-
-        # Form with reordered fields
-        form = self.__reorder_fields(form)
 
         return form
 
@@ -371,21 +354,8 @@ class UserView(RowActionListMixin, MyModelView):
                     self.model.id == -1
                 )
 
-        # do not allow to edit superuser
         return result_query
 
     def get_count_query(self):
         actual_query = self.get_query()
         return actual_query.with_entities(func.count())
-
-
-# NOTE option 2: set hashed password through sqlalchemy event (any password setter if affected)
-# from sqlalchemy import event
-# from werkzeug.security import generate_password_hash
-
-
-# @event.listens_for(User.password, 'set', retval=True)
-# def hash_user_password(target, value, oldvalue, initiator):
-#     if value != oldvalue:
-#         return generate_password_hash(value)
-#     return value
