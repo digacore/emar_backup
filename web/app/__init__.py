@@ -43,7 +43,6 @@ def create_app(environment="development"):
     from app.views import (
         main_blueprint,
         auth_blueprint,
-        email_blueprint,
         info_blueprint,
         company_blueprint,
         location_blueprint,
@@ -111,7 +110,6 @@ def create_app(environment="development"):
     # Register blueprints.
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(main_blueprint)
-    app.register_blueprint(email_blueprint)
     app.register_blueprint(download_msi_fblueprint)
     app.register_blueprint(info_blueprint)
     app.register_blueprint(pcc_blueprint)
