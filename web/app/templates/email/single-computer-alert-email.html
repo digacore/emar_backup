@@ -1,0 +1,33 @@
+{% extends "email/base-email.html" %}
+{% import "email/base-email-macros.html" as macros%}
+
+{% block content_tag %}
+<!-- {{ macros.tag("red", alert_status) }} -->
+  {{ macros.tag("red", "Computer Offline") }}
+{% endblock %}
+
+{% block content %}
+
+  <!-- <p style="font-size: 28px;">Hi user.email ,</p> -->
+  <p style="font-size: 28px;">Hi Danil</p>
+
+  <p
+    style="font-size: 20px; border-bottom: 1px solid #DCDEE4; padding-bottom: 10px; margin-bottom: 20px;"
+  >
+    <!-- The primary computer computer.computer_name is currently offline and did not download the latest eMAR backup file. -->
+    The primary computer <b>PRIMARY_COMPUTER</b> is currently offline and did not download the latest eMAR backup file.
+  </p>
+
+  <p
+    style="font-size: 20px; font-weight: bold; border-bottom: 1px solid #DCDEE4; padding-bottom: 10px; margin-bottom: 20px;"
+  >
+    <!-- Reason: {{ alert_status }} -->
+    Reason: Computer Offline
+  </p>
+
+
+  <p style="font-size: 20px;">To visit the eMARVault portal click below:</p>
+
+  {{ macros.button("Visit eMARVault", "http://127.0.0.1:5000") }}
+
+{% endblock %}

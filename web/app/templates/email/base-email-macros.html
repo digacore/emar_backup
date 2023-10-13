@@ -1,0 +1,47 @@
+{% macro header_logo_image() %}
+  <div style="margin-bottom: 10px; clear: both;">
+    <div style="text-align: center; margin-bottom: 10px;">
+      <img src="https://app.emarvault.com/static/favicon.ico" style="width: 150px; height: 150px;"/>
+    </div>
+  </div>
+{% endmacro %}
+
+{% macro button(text, url) %}
+  <div style="margin: 40px 0;">
+    <a href="{{ url }}" style="
+      font-size: 14px;
+      text-decoration: none;
+      background-color: #345fee;
+      padding: 16px 30px;
+      margin: 0 auto;
+      color: #fff;
+      border-radius: 5px;
+    ">
+      {{ text }}
+    </a>
+  </div>
+{% endmacro %}
+
+{% macro footer_header(text) %}
+  <div style="font-size: 18px; font-weight: bold;">
+    {{ text }}
+  </div>
+{% endmacro %}
+
+{% macro tag(color, text) %}
+  <p style="
+    float: right;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    min-width: 100px;
+    text-align: center;
+    border-radius: 16px;
+    margin-right: 16px;
+    margin-bottom: 16px;
+    color: {{ color }};
+    border: 1px solid {{ color }};
+  ">
+    {{ text }}
+  </p>
+{% endmacro %}

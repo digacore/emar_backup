@@ -173,6 +173,24 @@ def fill_user_permission_items():
     logger.info("Finish fill_user_permission_items")
 
 
+@app.cli.command()
+def send_email():
+    from app import mail
+    from app.logger import logger
+    from flask_mail import Message
+    from flask import render_template
+
+    msg = Message(
+        subject="Computer is offline",
+        sender="noreply@emarvault.com",
+        recipients=["dvorchyk.d.dev@gmail.com"],
+    )
+    msg.html = render_template("email/single-computer-alert-email.html")
+
+    mail.send(msg)
+    logger.info("Email sent")
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()
