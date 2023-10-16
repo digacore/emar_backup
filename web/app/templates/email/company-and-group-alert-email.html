@@ -1,0 +1,61 @@
+{% import "email/base-email-macros.html" as macros%}
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <div style="width: 100%; margin: 10px 0px; text-align: center;">
+      <h2>{{company.name}} primary computers offline</h2>
+
+      <div style="width: 100%; margin-bottom: 20px;">
+        <table style="width: 100%; border: 1px solid; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid; padding: 10px 0;">
+                Location
+              </th>
+              <th style="border: 1px solid; padding: 10px 0;">
+                Computer
+              </th>
+              <th style="border: 1px solid; padding: 10px 0;">
+                Error
+              </th>
+              <th style="border: 1px solid; padding: 10px 0;">
+                Last Backup Time
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for computer in computers %}
+              <tr style="background-color: red;">
+                <td style="border: 1px solid; padding: 10px 0;">
+                  {{ computer.location.name if computer.location else "-" }}
+                </td>
+                <td style="border: 1px solid; padding: 10px 0;">
+                  {{ computer.computer_name }}
+                </td>
+                <td style="border: 1px solid; padding: 10px 0;">
+                  {{ error }}
+                </td>
+                <td style="border: 1px solid; padding: 10px 0;">
+                  {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <hr style="margin: 20px 0; border: 1px solid #DCDEE4;">
+
+      {{ macros.button("eMAR Vault", url_for("main.index")) }}
+
+      <p style="font-size: 0.75rem; line-height: 1rem;">Login to the eMAR Vault to check the status of your computers.</p>
+
+      <hr style="margin: 20px 0; border: 1px solid #DCDEE4;">
+
+      <p>
+        <img src="https://emarvault.com/static/img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
+      </p>
+    </div>
+  </body>
+</html>
