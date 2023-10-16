@@ -1,13 +1,13 @@
-{% macro header_logo_image() %}
+{% macro logo_image() %}
   <div style="margin-bottom: 10px; clear: both;">
     <div style="text-align: center; margin-bottom: 10px;">
-      <img src="https://app.emarvault.com/static/favicon.ico" style="width: 150px; height: 150px;"/>
+      <img src="https://app.emarvault.com/static/img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px"/>
     </div>
   </div>
 {% endmacro %}
 
 {% macro button(text, url) %}
-  <div style="margin: 40px 0;">
+  <div style="margin: 20px 0;">
     <a href="{{ url }}" style="
       font-size: 14px;
       text-decoration: none;
@@ -28,20 +28,18 @@
   </div>
 {% endmacro %}
 
-{% macro tag(color, text) %}
-  <p style="
-    float: right;
-    padding: 0.25rem 0.5rem;
-    font-size: 0.875rem;
-    line-height: 1.5;
-    min-width: 100px;
+{% macro tag(text_color, background_color, text) %}
+  <div style="
+    width: 100%;
+    padding: 10px 0px;
+    font-size: 1.3rem;
+    font-weight: 600;
     text-align: center;
-    border-radius: 16px;
-    margin-right: 16px;
-    margin-bottom: 16px;
-    color: {{ color }};
-    border: 1px solid {{ color }};
+    border-radius: 8px;
+    color: {{ text_color }};
+    border: 2px solid black;
+    background-color: {{ background_color }};
   ">
     {{ text }}
-  </p>
+</div>
 {% endmacro %}

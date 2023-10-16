@@ -181,11 +181,20 @@ def send_email():
     from flask import render_template
 
     msg = Message(
-        subject="Computer is offline",
-        sender="noreply@emarvault.com",
+        subject="ALERT! eMAR Computer is Offline",
+        sender="alerts@emarvault.com",
         recipients=["dvorchyk.d.dev@gmail.com"],
     )
-    msg.html = render_template("email/single-computer-alert-email.html")
+
+    computer = models.Computer.query.get(507)
+
+    msg.html = render_template(
+        "email/single-computer-alert-email.html",
+        computer=computer,
+        location=computer.location,
+        error="Computer is offline",
+        last_download_time=computer.last_download_time,
+    )
 
     mail.send(msg)
     logger.info("Email sent")
