@@ -10,30 +10,30 @@
         <table style="width: 100%; border: 1px solid; border-collapse: collapse;">
           <thead>
             <tr>
-              <th style="border: 1px solid; padding: 10px 0;">
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
                 Location
               </th>
-              <th style="border: 1px solid; padding: 10px 0;">
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
                 Computer
               </th>
-              <th style="border: 1px solid; padding: 10px 0;">
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
                 Error
               </th>
-              <th style="border: 1px solid; padding: 10px 0;">
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
                 Last Backup Time
               </th>
             </tr>
           </thead>
           <tbody>
             {% for computer in computers %}
-              <tr style="background-color: red;">
+              <tr>
                 <td style="border: 1px solid; padding: 10px 0;">
                   {{ computer.location.name if computer.location else "-" }}
                 </td>
                 <td style="border: 1px solid; padding: 10px 0;">
                   {{ computer.computer_name }}
                 </td>
-                <td style="border: 1px solid; padding: 10px 0;">
+                <td style="border: 1px solid black; padding: 10px 0; background-color: red; color: white; font-weight: 600;">
                   {{ error }}
                 </td>
                 <td style="border: 1px solid; padding: 10px 0;">
