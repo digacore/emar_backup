@@ -1021,7 +1021,7 @@ def send_critical_alert():
 
     logger.info(
         "<---Start sending critical alerts. Time: {}--->",
-        current_utc_time.strptime("%Y-%m-%d %H:%M:%S"),
+        current_utc_time.strftime("%Y-%m-%d %H:%M:%S"),
     )
     locations: list[m.Location] = m.Location.query.all()
     for location in locations:
@@ -1034,10 +1034,13 @@ def send_critical_alert():
             .all()
         )
 
-        # Check that location has at least one computer that downloaded backup in last hour
-        if with_prev_backups_comps and current_utc_time - with_prev_backups_comps[
-            0
-        ].last_download_time < timedelta(hours=1):
+        # Check that there are no computers connected to the location
+        # Or it has at least one computer that downloaded backup in last hour
+        if not location_computers_query.all() or (
+            with_prev_backups_comps
+            and current_utc_time - with_prev_backups_comps[0].last_download_time
+            < timedelta(hours=1)
+        ):
             continue
 
         if location.company:
@@ -1066,9 +1069,9 @@ def send_critical_alert():
                 else:
                     continue
         else:
-            connected_users: list[m.User] = (
-                m.User.query.join(m.Location).filter(m.Location.id == location.id).all()
-            )
+            connected_users: list[m.User] = m.User.query.filter(
+                m.User.location.any(m.Location.id == location.id)
+            ).all()
 
         recipients = [user.email for user in connected_users]
         if recipients:
