@@ -174,34 +174,10 @@ def fill_user_permission_items():
 
 
 @app.cli.command()
-def send_email():
-    from app import mail
-    from app.logger import logger
-    from flask_mail import Message
-    from flask import render_template
+def critical_alert_email():
+    from app.controllers import send_critical_alert
 
-    msg = Message(
-        subject="ALERT! Location is Offline",
-        sender="alerts@emarvault.com",
-        recipients=["dvorchyk.d.dev@gmail.com"],
-    )
-
-    location = models.Location.query.filter_by(name="Location_AA").first()
-
-    computers = models.Computer.query.filter_by(company_id=89).all()
-    primary_computers = computers[:3]
-    alternate_computers = computers[3:]
-
-    msg.html = render_template(
-        "email/critical-alert-email.html",
-        primary_computers=primary_computers,
-        alternate_computers=alternate_computers,
-        location=location,
-        last_backup_time=datetime.utcnow(),
-    )
-
-    mail.send(msg)
-    logger.info("Email sent")
+    send_critical_alert()
 
 
 @app.cli.command()

@@ -3,8 +3,11 @@ from datetime import datetime, timedelta
 
 import requests
 from sqlalchemy import or_
+from sqlalchemy.orm import Query
+from flask import render_template
+from flask_mail import Message
 
-from app import models as m
+from app import models as m, mail
 from app.logger import logger
 
 from config import BaseConfig as CFG
@@ -995,3 +998,121 @@ def check_for_red(location_computers: list[m.Computer], message: str = ""):
         # logger.info(message)
         return True
     return False
+
+
+def send_email(subject: str, sender: str, recipients: list[str], html=str):
+    msg = Message(
+        subject=subject,
+        sender=sender,
+        recipients=recipients,
+        html=html,
+    )
+
+    mail.send(msg)
+    logger.info("Email with subject {} was successfully sent", subject)
+
+
+def send_critical_alert():
+    """
+    CLI command for celery worker.
+    Sends critical alerts to users when location is offline (all the computers in the location are offline).
+    """
+    current_utc_time: datetime = datetime.utcnow()
+
+    logger.info(
+        "<---Start sending critical alerts. Time: {}--->",
+        current_utc_time.strptime("%Y-%m-%d %H:%M:%S"),
+    )
+    locations: list[m.Location] = m.Location.query.all()
+    for location in locations:
+        location_computers_query: Query = m.Computer.query.filter_by(
+            location_id=location.id
+        )
+        with_prev_backups_comps = (
+            location_computers_query.filter(m.Computer.last_download_time.is_not(None))
+            .order_by(m.Computer.last_download_time.desc())
+            .all()
+        )
+
+        # Check that location has at least one computer that downloaded backup in last hour
+        if with_prev_backups_comps and current_utc_time - with_prev_backups_comps[
+            0
+        ].last_download_time < timedelta(hours=1):
+            continue
+
+        if location.company:
+            connected_users: list[m.User] = []
+            all_company_users: list[m.User] = m.User.query.filter_by(
+                company_id=location.company_id
+            ).all()
+
+            for user in all_company_users:
+                # If user has company level permission
+                if user.permission == m.UserPermissionLevel.COMPANY:
+                    connected_users.append(user)
+                # If user has location group level permission
+                elif (
+                    location.group
+                    and user.permission == m.UserPermissionLevel.LOCATION_GROUP
+                    and user.location_group[0].id == location.group[0].id
+                ):
+                    connected_users.append(user)
+                # If user has location level permission
+                elif (
+                    user.permission == m.UserPermissionLevel.LOCATION
+                    and user.location[0].id == location.id
+                ):
+                    connected_users.append(user)
+                else:
+                    continue
+        else:
+            connected_users: list[m.User] = (
+                m.User.query.join(m.Location).filter(m.Location.id == location.id).all()
+            )
+
+        recipients = [user.email for user in connected_users]
+        if recipients:
+            primary_computers = (
+                location_computers_query.filter(
+                    m.Computer.device_role == m.DeviceRole.PRIMARY
+                )
+                .order_by(m.Computer.computer_name)
+                .all()
+            )
+            alternate_computers = (
+                location_computers_query.filter(
+                    m.Computer.device_role == m.DeviceRole.ALTERNATE
+                )
+                .order_by(m.Computer.computer_name)
+                .all()
+            )
+            last_backup_time = (
+                with_prev_backups_comps[0].last_download_time
+                if with_prev_backups_comps
+                else None
+            )
+
+            alert_html = render_template(
+                "email/critical-alert-email.html",
+                location=location,
+                primary_computers=primary_computers,
+                alternate_computers=alternate_computers,
+                last_backup_time=last_backup_time,
+            )
+
+            try:
+                send_email(
+                    subject=f"ALERT! Location {location.name} is offline",
+                    sender=CFG.MAIL_DEFAULT_SENDER,
+                    recipients=recipients,
+                    html=alert_html,
+                )
+                logger.info("Critical alert email sent for location {}", location.name)
+            except Exception as err:
+                logger.error(
+                    "Critical alert email was not sent for location {}. Error: {}",
+                    location.name,
+                    err,
+                )
+
+    logger.info("<---Finish sending critical alerts--->")

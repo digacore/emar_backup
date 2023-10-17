@@ -1,5 +1,10 @@
 # flake8: noqa F401
-from .alert import check_and_alert, daily_summary, reset_alert_statuses
+from .alert import (
+    check_and_alert,
+    daily_summary,
+    reset_alert_statuses,
+    send_critical_alert,
+)
 from .database import (
     create_superuser,
     init_db,

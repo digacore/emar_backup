@@ -24,7 +24,7 @@
     PRIMARY
     <br>
     {% for computer in primary_computers %}
-      {{ computer.computer_name }} - "Computer Offline" - {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
+      {{ computer.computer_name }} | {{ "Unsuccessful backup" if computer.download_status == "error" else "Device if offline" }} | {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
       <br>
     {% endfor %}
   </p>
@@ -35,7 +35,7 @@
     Alternate
     <br>
     {% for computer in alternate_computers %}
-      {{ computer.computer_name }} - "Computer Offline" - {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
+      {{ computer.computer_name }} | {{ "Unsuccessful backup" if computer.download_status == "error" else "Device if offline" }} | {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
       <br>
     {% endfor %}
   </p>
