@@ -1,6 +1,6 @@
 #!/user/bin/env python
 import click
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from app import create_app, db, models, forms
 from app.controllers import register_base_alert_controls, get_pcc_2_legged_token
@@ -181,19 +181,23 @@ def send_email():
     from flask import render_template
 
     msg = Message(
-        subject="ALERT! eMAR Computer is Offline",
+        subject="ALERT! Location is Offline",
         sender="alerts@emarvault.com",
         recipients=["dvorchyk.d.dev@gmail.com"],
     )
 
-    computer = models.Computer.query.get(507)
+    location = models.Location.query.filter_by(name="Location_AA").first()
+
+    computers = models.Computer.query.filter_by(company_id=89).all()
+    primary_computers = computers[:3]
+    alternate_computers = computers[3:]
 
     msg.html = render_template(
-        "email/single-computer-alert-email.html",
-        computer=computer,
-        location=computer.location,
-        error="Computer is offline",
-        last_download_time=computer.last_download_time,
+        "email/critical-alert-email.html",
+        primary_computers=primary_computers,
+        alternate_computers=alternate_computers,
+        location=location,
+        last_backup_time=datetime.utcnow(),
     )
 
     mail.send(msg)
