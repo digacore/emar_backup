@@ -1017,11 +1017,11 @@ def send_critical_alert():
     CLI command for celery worker.
     Sends critical alerts to users when location is offline (all the computers in the location are offline).
     """
-    current_utc_time: datetime = datetime.utcnow()
+    current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
     logger.info(
         "<---Start sending critical alerts. Time: {}--->",
-        current_utc_time.strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
     locations: list[m.Location] = m.Location.query.all()
     for location in locations:
@@ -1038,7 +1038,7 @@ def send_critical_alert():
         # Or it has at least one computer that downloaded backup in last hour
         if not location_computers_query.all() or (
             with_prev_backups_comps
-            and current_utc_time - with_prev_backups_comps[0].last_download_time
+            and current_east_time - with_prev_backups_comps[0].last_download_time
             < timedelta(hours=1)
         ):
             continue
@@ -1129,19 +1129,19 @@ def send_primary_computer_alert():
     CLI command for celery worker.
     Sends alerts to users when primary computer goes down.
     """
-    current_utc_time: datetime = datetime.utcnow()
+    current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
     logger.info(
         "<---Start sending primary computer down alerts. Time: {}--->",
-        current_utc_time.strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Get all the primary computers which downloaded last backup more than 1 hour ago and not more than 2 hours ago
     all_primary_computers: list[m.Computer] = m.Computer.query.filter(
         m.Computer.device_role == m.DeviceRole.PRIMARY,
         m.Computer.last_download_time.between(
-            current_utc_time - timedelta(hours=2),
-            current_utc_time - timedelta(hours=1),
+            current_east_time - timedelta(hours=2),
+            current_east_time - timedelta(hours=1),
         ),
     ).all()
 

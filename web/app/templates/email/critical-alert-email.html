@@ -9,7 +9,7 @@
   <p style="font-size: 1rem; font-weight: 600; margin: 20px 0 0 0; text-align: left;">Location: {{ location.name }}</p>
 
   <p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left;">
-    Last Backup Time: {{ offset_to_east(last_backup_time, True).strftime("%Y-%m-%d %H:%M:%S") if last_backup_time else "-" }}
+    Last Backup Time: {{ last_backup_time.strftime("%Y-%m-%d %H:%M:%S") if last_backup_time else "-" }}
   </p>
 
   <p
@@ -24,7 +24,7 @@
     PRIMARY
     <br>
     {% for computer in primary_computers %}
-      {{ computer.computer_name }} | {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }} | {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
+      {{ computer.computer_name }} | {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }} | {{ computer.last_download_time.strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
       <br>
     {% endfor %}
   </p>
@@ -35,7 +35,7 @@
     Alternate
     <br>
     {% for computer in alternate_computers %}
-      {{ computer.computer_name }} | {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }} | {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
+      {{ computer.computer_name }} | {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }} | {{ computer.last_download_time.strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
       <br>
     {% endfor %}
   </p>
