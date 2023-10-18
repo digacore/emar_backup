@@ -90,5 +90,18 @@
       "jinja": true,
       "args": ["primary-computer-alert-email"]
     },
+    {
+      "name": "daily-summary-email",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "wsgi:app",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "jinja": true,
+      "args": ["daily-summary-email"]
+    },
   ]
 }

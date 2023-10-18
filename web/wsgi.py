@@ -188,30 +188,10 @@ def primary_computer_alert_email():
 
 
 @app.cli.command()
-def send_company_group_email():
-    from app import mail
-    from app.logger import logger
-    from flask_mail import Message
-    from flask import render_template
+def daily_summary_email():
+    from app.controllers import send_daily_summary
 
-    msg = Message(
-        subject="ALERT! Primary eMAR Computers are Offline",
-        sender="alerts@emarvault.com",
-        recipients=["dvorchyk.d.dev@gmail.com"],
-    )
-
-    company = models.Company.query.get(89)
-    computers = models.Computer.query.filter_by(company_id=89).all()
-
-    msg.html = render_template(
-        "email/company-and-group-alert-email.html",
-        computers=computers,
-        company=company,
-        error="Computer is offline",
-    )
-
-    mail.send(msg)
-    logger.info("Email sent")
+    send_daily_summary()
 
 
 if __name__ == "__main__":

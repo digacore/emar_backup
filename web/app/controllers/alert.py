@@ -1000,7 +1000,12 @@ def check_for_red(location_computers: list[m.Computer], message: str = ""):
     return False
 
 
-def send_email(subject: str, sender: str, recipients: list[str], html=str):
+def send_email(
+    subject: str,
+    recipients: list[str],
+    html: str,
+    sender: str = CFG.MAIL_DEFAULT_SENDER,
+):
     msg = Message(
         subject=subject,
         sender=sender,
@@ -1202,3 +1207,189 @@ def send_primary_computer_alert():
             )
 
     logger.info("<---Finish sending primary computer down alerts--->")
+
+
+def company_users_by_permission(
+    company: m.Company,
+) -> (list[m.User], dict[str, m.User], dict[str, m.User]):
+    """
+    Returns company users divided by their permission level
+
+    Args:
+        company (m.Company): company object
+
+    Returns:
+        (list[m.User], list[m.User], list[m.User]):
+            (company_level_users, location_group_level_users, location_level_users)
+    """
+    company_users: list[m.User] = company.users
+
+    # Divide receivers respecting their permission level
+    company_level_users: list[m.User] = []
+    location_group_level_users: dict[str, m.User] = {}
+    location_level_users: dict[str, m.User] = {}
+
+    for user in company_users:
+        match user.permission:
+            case m.UserPermissionLevel.COMPANY:
+                company_level_users.append(user)
+            case m.UserPermissionLevel.LOCATION_GROUP:
+                if location_group_level_users.get(user.location_group[0].name):
+                    location_group_level_users[user.location_group[0].name].append(user)
+                else:
+                    location_group_level_users[user.location_group[0].name] = [user]
+            case m.UserPermissionLevel.LOCATION:
+                if location_level_users.get(user.location[0].name):
+                    location_level_users[user.location[0].name].append(user)
+                else:
+                    location_level_users[user.location[0].name] = [user]
+
+    return (company_level_users, location_group_level_users, location_level_users)
+
+
+def send_daily_summary():
+    """
+    CLI command for celery worker.
+    Sends daily summary about offline computers to users.
+    """
+    current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+    logger.info(
+        "<---Start sending daily summary. Time: {}--->",
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+    # Select all the companies except global
+    companies: list[m.Company] = m.Company.query.filter(
+        m.Company.is_global.is_(False)
+    ).all()
+
+    for company in companies:
+        offline_company_computers_query: Query = m.Computer.query.filter(
+            m.Computer.company_id == company.id,
+            m.Computer.last_download_time < current_east_time - timedelta(hours=1),
+        ).order_by(m.Computer.location_name, m.Computer.device_role.desc())
+
+        # If there are no users connected to the company or offline computers - skip it
+        if not company.users or not offline_company_computers_query.all():
+            continue
+
+        (
+            company_level_users,
+            location_group_level_users,
+            location_level_users,
+        ) = company_users_by_permission(company)
+
+        # Create dictionary with locations as keys and list of computers as values
+        computers_by_location: dict[str, m.Computer] = {}
+        offline_company_computers: list[
+            m.Computer
+        ] = offline_company_computers_query.all()
+        for computer in offline_company_computers:
+            if computer.location_id and computers_by_location.get(
+                computer.location_name
+            ):
+                computers_by_location[computer.location_name].append(computer)
+            elif computer.location_id:
+                computers_by_location[computer.location_name] = [computer]
+            else:
+                continue
+
+        # Send company level summary
+        if company_level_users:
+            recipients: list[str] = [user.email for user in company_level_users]
+
+            try:
+                send_email(
+                    subject="eMAR Vault Daily Summary",
+                    sender=CFG.MAIL_DEFAULT_SENDER,
+                    recipients=recipients,
+                    html=render_template(
+                        "email/daily-summary-email.html",
+                        computers_by_location=computers_by_location,
+                    ),
+                )
+                logger.info(
+                    "Daily summary email sent for company users of {}", company.name
+                )
+            except Exception as err:
+                logger.error(
+                    "Daily summary email was not sent for company users of {}. Error: {}",
+                    company.name,
+                    err,
+                )
+
+        # Send location group level summary
+        if location_group_level_users:
+            for location_group, users in location_group_level_users.items():
+                recipients: list[str] = [user.email for user in users]
+
+                location_group: m.LocationGroup = m.LocationGroup.query.filter(
+                    m.LocationGroup.company_id == company.id,
+                    m.LocationGroup.name == location_group,
+                ).first()
+                location_names: list[str] = [
+                    location.name for location in location_group.locations
+                ]
+
+                # Filter computers by locations
+                group_computers: dict[str, m.Computer] = {}
+                for location in location_names:
+                    if computers_by_location.get(location):
+                        group_computers[location] = computers_by_location[location]
+
+                if not group_computers:
+                    continue
+
+                try:
+                    send_email(
+                        subject="eMAR Vault Daily Summary",
+                        sender=CFG.MAIL_DEFAULT_SENDER,
+                        recipients=recipients,
+                        html=render_template(
+                            "email/daily-summary-email.html",
+                            computers_by_location=group_computers,
+                        ),
+                    )
+                    logger.info(
+                        "Daily summary email sent for location group users of {}",
+                        location_group,
+                    )
+                except Exception as err:
+                    logger.error(
+                        "Daily summary email was not sent for location group users of {}. Error: {}",
+                        location_group,
+                        err,
+                    )
+
+        # Send location level summary
+        if location_level_users:
+            for location, users in location_level_users.items():
+                recipients: list[str] = [user.email for user in users]
+
+                if not computers_by_location.get(location):
+                    continue
+
+                try:
+                    send_email(
+                        subject="eMAR Vault Daily Summary",
+                        sender=CFG.MAIL_DEFAULT_SENDER,
+                        recipients=recipients,
+                        html=render_template(
+                            "email/daily-summary-email.html",
+                            computers_by_location={
+                                location: computers_by_location[location]
+                            },
+                        ),
+                    )
+                    logger.info(
+                        "Daily summary email sent for location users of {}", location
+                    )
+                except Exception as err:
+                    logger.error(
+                        "Daily summary email was not sent for location users of {}. Error: {}",
+                        location,
+                        err,
+                    )
+
+    logger.info("<---Finish sending daily summaries--->")

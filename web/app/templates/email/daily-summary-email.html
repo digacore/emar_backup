@@ -1,0 +1,90 @@
+{% import "email/base-email-macros.html" as macros%}
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <div style="width: 100%; margin: 10px 0px; text-align: center;">
+      <h2>Daily summary</h2>
+
+      <div style="width: 100%; margin-bottom: 20px;">
+        <table style="width: 100%; border: 1px solid; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Location
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Computer
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Device Role
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Error
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Last Backup Time
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Offline Period
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for location_name, computers in computers_by_location.items() %}
+              <tr>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                  {{ location_name }}
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                </td>
+              </tr>
+
+              {% for computer in computers %}
+                <tr>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    {{ computer.computer_name }}
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    {{ computer.device_role.value }}
+                  </td>
+                  <td style="border: 1px solid black; padding: 10px 0; background-color: red; color: white; font-weight: 600;">
+                    {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }}
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    -
+                  </td>
+                </tr>
+              {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <hr style="margin: 20px 0; border: 1px solid #DCDEE4;">
+
+      {{ macros.button("eMAR Vault", url_for("main.index")) }}
+
+      <p style="font-size: 0.75rem; line-height: 1rem;">Login to the eMAR Vault to check the status of your computers.</p>
+
+      <hr style="margin: 20px 0; border: 1px solid #DCDEE4;">
+
+      <p>
+        <img src="https://emarvault.com/static/img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
+      </p>
+    </div>
+  </body>
+</html>
