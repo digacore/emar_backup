@@ -77,5 +77,18 @@
       "jinja": true,
       "args": ["critical-alert-email"]
     },
+    {
+      "name": "primary-computer-alert-email",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "wsgi:app",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "jinja": true,
+      "args": ["primary-computer-alert-email"]
+    },
   ]
 }

@@ -10,10 +10,10 @@
 
   <p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left;">Computer: {{ computer.computer_name }}</p>
 
-  <p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left;">Error: {{ error }}</p>
+  <p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left;">Error: {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }}</p>
 
   <p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left;">
-    Last Backup Time: {{ offset_to_east(last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if last_download_time else "-"}}
+    Last Backup Time: {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-"}}
   </p>
 
   <p

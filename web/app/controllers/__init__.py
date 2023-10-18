@@ -4,6 +4,7 @@ from .alert import (
     daily_summary,
     reset_alert_statuses,
     send_critical_alert,
+    send_primary_computer_alert,
 )
 from .database import (
     create_superuser,

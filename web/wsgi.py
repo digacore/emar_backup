@@ -1,6 +1,6 @@
 #!/user/bin/env python
 import click
-from datetime import timedelta, datetime
+from datetime import timedelta
 
 from app import create_app, db, models, forms
 from app.controllers import register_base_alert_controls, get_pcc_2_legged_token
@@ -178,6 +178,13 @@ def critical_alert_email():
     from app.controllers import send_critical_alert
 
     send_critical_alert()
+
+
+@app.cli.command()
+def primary_computer_alert_email():
+    from app.controllers import send_primary_computer_alert
+
+    send_primary_computer_alert()
 
 
 @app.cli.command()

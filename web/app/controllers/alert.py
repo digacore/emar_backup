@@ -1073,49 +1073,132 @@ def send_critical_alert():
                 m.User.location.any(m.Location.id == location.id)
             ).all()
 
+        if not connected_users:
+            continue
+
         recipients = [user.email for user in connected_users]
-        if recipients:
-            primary_computers = (
-                location_computers_query.filter(
-                    m.Computer.device_role == m.DeviceRole.PRIMARY
-                )
-                .order_by(m.Computer.computer_name)
-                .all()
-            )
-            alternate_computers = (
-                location_computers_query.filter(
-                    m.Computer.device_role == m.DeviceRole.ALTERNATE
-                )
-                .order_by(m.Computer.computer_name)
-                .all()
-            )
-            last_backup_time = (
-                with_prev_backups_comps[0].last_download_time
-                if with_prev_backups_comps
-                else None
-            )
 
-            alert_html = render_template(
-                "email/critical-alert-email.html",
-                location=location,
-                primary_computers=primary_computers,
-                alternate_computers=alternate_computers,
-                last_backup_time=last_backup_time,
+        primary_computers = (
+            location_computers_query.filter(
+                m.Computer.device_role == m.DeviceRole.PRIMARY
             )
+            .order_by(m.Computer.computer_name)
+            .all()
+        )
+        alternate_computers = (
+            location_computers_query.filter(
+                m.Computer.device_role == m.DeviceRole.ALTERNATE
+            )
+            .order_by(m.Computer.computer_name)
+            .all()
+        )
+        last_backup_time = (
+            with_prev_backups_comps[0].last_download_time
+            if with_prev_backups_comps
+            else None
+        )
 
-            try:
-                send_email(
-                    subject=f"ALERT! Location {location.name} is offline",
-                    sender=CFG.MAIL_DEFAULT_SENDER,
-                    recipients=recipients,
-                    html=alert_html,
-                )
-                logger.info("Critical alert email sent for location {}", location.name)
-            except Exception as err:
-                logger.error(
-                    "Critical alert email was not sent for location {}. Error: {}",
-                    location.name,
-                    err,
-                )
+        alert_html = render_template(
+            "email/critical-alert-email.html",
+            location=location,
+            primary_computers=primary_computers,
+            alternate_computers=alternate_computers,
+            last_backup_time=last_backup_time,
+        )
+
+        try:
+            send_email(
+                subject=f"ALERT! Location {location.name} is offline",
+                sender=CFG.MAIL_DEFAULT_SENDER,
+                recipients=recipients,
+                html=alert_html,
+            )
+            logger.info("Critical alert email sent for location {}", location.name)
+        except Exception as err:
+            logger.error(
+                "Critical alert email was not sent for location {}. Error: {}",
+                location.name,
+                err,
+            )
 
     logger.info("<---Finish sending critical alerts--->")
+
+
+def send_primary_computer_alert():
+    """
+    CLI command for celery worker.
+    Sends alerts to users when primary computer goes down.
+    """
+    current_utc_time: datetime = datetime.utcnow()
+
+    logger.info(
+        "<---Start sending primary computer down alerts. Time: {}--->",
+        current_utc_time.strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+    # Get all the primary computers which downloaded last backup more than 1 hour ago and not more than 2 hours ago
+    all_primary_computers: list[m.Computer] = m.Computer.query.filter(
+        m.Computer.device_role == m.DeviceRole.PRIMARY,
+        m.Computer.last_download_time.between(
+            current_utc_time - timedelta(hours=2),
+            current_utc_time - timedelta(hours=1),
+        ),
+    ).all()
+
+    for computer in all_primary_computers:
+        if not computer.location or not computer.company:
+            continue
+
+        # Get all the users connected to the computer's
+        connected_users: list[m.User] = []
+        all_company_users: list[m.User] = m.User.query.filter(
+            m.User.company_id
+            == computer.company_id
+            # m.User.down_notification.is_(True)
+        ).all()
+
+        for user in all_company_users:
+            if user.permission == m.UserPermissionLevel.COMPANY:
+                connected_users.append(user)
+            elif (
+                computer.location.group
+                and user.permission == m.UserPermissionLevel.LOCATION_GROUP
+                and user.location_group[0].id == computer.location.group[0].id
+            ):
+                connected_users.append(user)
+            elif (
+                user.permission == m.UserPermissionLevel.LOCATION
+                and user.location[0].id == computer.location.id
+            ):
+                connected_users.append(user)
+            else:
+                continue
+
+        if not connected_users:
+            continue
+
+        recipients = [user.email for user in connected_users]
+
+        try:
+            send_email(
+                subject=f"ALERT! Primary computer {computer.computer_name} is down",
+                sender=CFG.MAIL_DEFAULT_SENDER,
+                recipients=recipients,
+                html=render_template(
+                    "email/primary-computer-alert-email.html",
+                    location=computer.location,
+                    computer=computer,
+                ),
+            )
+            logger.info(
+                "Primary computer down alert email sent for computer {}",
+                computer.computer_name,
+            )
+        except Exception as err:
+            logger.error(
+                "Primary computer down alert email was not sent for computer {}. Error: {}",
+                computer.computer_name,
+                err,
+            )
+
+    logger.info("<---Finish sending primary computer down alerts--->")
