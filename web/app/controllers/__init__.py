@@ -13,7 +13,6 @@ from .pcc_api import (
     get_org_facilities_list,
     create_new_creation_reports,
     scan_pcc_activations,
-    get_facility_info,
     update_daily_requests_count,
     check_daily_requests_count,
     execute_pcc_request,

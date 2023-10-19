@@ -11,7 +11,6 @@ from app.controllers import (
     get_activations,
     get_org_facilities_list,
     create_new_creation_reports,
-    get_facility_info,
     update_daily_requests_count,
     check_daily_requests_count,
 )
@@ -167,16 +166,6 @@ def test_get_org_facilities(client):
 
     for facility in org_facilities_list:
         assert isinstance(facility, s.Facility)
-
-
-@pytest.mark.skip
-def test_get_facility_info(client):
-    org_facilities_list = get_org_facilities_list(SANDBOX_ORG_UUID)
-    assert isinstance(org_facilities_list, list)
-    facility_id = org_facilities_list[0].facId
-
-    facility_info = get_facility_info(SANDBOX_ORG_UUID, facility_id)
-    assert isinstance(facility_info, s.Facility)
 
 
 # @pytest.mark.skip

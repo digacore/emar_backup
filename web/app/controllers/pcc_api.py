@@ -292,39 +292,6 @@ def get_org_facilities_list(pcc_org_uuid: str) -> list[s.Facility]:
     return facilities_list
 
 
-def get_facility_info(pcc_org_uuid: str, pcc_facility_id: str) -> s.Facility:
-    """Get facility information
-
-    Args:
-        pcc_org_uuid (str): PCC organization UUID
-        pcc_facility_id (str): PCC facility ID
-
-    Raises:
-        e (ValidationError): response parsing error while getting data from PCC API.
-
-    Returns:
-        s.Facility: facility information
-    """
-    # Get access token
-    token = get_pcc_2_legged_token()
-
-    server_path: str = os.path.join(
-        "api", "public", "preview1", "orgs", pcc_org_uuid, "facs", str(pcc_facility_id)
-    )
-    url: str = urljoin(CFG.PCC_BASE_URL, server_path)
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-
-    res = execute_pcc_request(url, None, headers)
-
-    try:
-        parsed_res = s.Facility.parse_obj(res.json())
-    except ValidationError as e:
-        logger.error("Error in validation of facility info response. Reason: {}", e)
-        raise e
-
-    return parsed_res
-
-
 def create_new_creation_reports() -> None:
     """
     Retrieve current list of activations from PCC API and generate new reports for approve
@@ -338,20 +305,22 @@ def create_new_creation_reports() -> None:
         # List of objects which should be created
         objects_to_approve: list[s.PCCReportObject] = []
 
-        facilities_list = (
-            organization.facilityInfo
-            if organization.scope != 1
-            else get_org_facilities_list(organization.orgUuid)
-        )
+        facilities_list = get_org_facilities_list(organization.orgUuid)
+
+        # If not all the company facilities are integrated to our app - filter them
+        if organization.scope != 1:
+            activated_facilities: list[s.Facility] = []
+            for facility in facilities_list:
+                for activated_facility in organization.facilityInfo:
+                    if facility.facId == activated_facility.facId:
+                        activated_facilities.append(facility)
+                        break
+
+            facilities_list = activated_facilities
 
         match type(facilities_list[0]):
             case s.Facility:
                 company_name = facilities_list[0].orgName
-
-            case s.FacilityActivationData:
-                facility_info = get_facility_info(
-                    organization.orgUuid, facilities_list[0].facId
-                )
 
             case _:
                 raise UnknownTypeError(
@@ -418,32 +387,17 @@ def create_new_creation_reports() -> None:
 
             # Add new location to approving list if not exists
             if not location_by_fac_id and not location_by_name:
-                if isinstance(facility, s.Facility):
-                    facility_info = facility
-                    objects_to_approve.append(
-                        s.PCCReportObject(
-                            type=s.PCCReportType.LOCATION.value,
-                            action=s.PCCReportAction.CREATE.value,
-                            pcc_fac_id=facility.facId,
-                            name=facility.facilityName,
-                            pcc_org_id=organization.orgUuid,
-                            use_pcc_backup=True,
-                        ).dict()
-                    )
-                else:
-                    facility_info = get_facility_info(
-                        organization.orgUuid, facility.facId
-                    )
-                    objects_to_approve.append(
-                        s.PCCReportObject(
-                            type=s.PCCReportType.LOCATION.value,
-                            action=s.PCCReportAction.CREATE.value,
-                            pcc_fac_id=facility_info.facId,
-                            name=facility_info.facilityName,
-                            pcc_org_id=organization.orgUuid,
-                            use_pcc_backup=True,
-                        ).dict()
-                    )
+                facility_info = facility
+                objects_to_approve.append(
+                    s.PCCReportObject(
+                        type=s.PCCReportType.LOCATION.value,
+                        action=s.PCCReportAction.CREATE.value,
+                        pcc_fac_id=facility.facId,
+                        name=facility.facilityName,
+                        pcc_org_id=organization.orgUuid,
+                        use_pcc_backup=True,
+                    ).dict()
+                )
 
                 logger.info(
                     "New location [{}] added to approving list. PCC facId: {}",
