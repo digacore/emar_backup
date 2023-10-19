@@ -1,6 +1,8 @@
 import os
 import json
 
+# from datetime import datetime, timedelta
+
 from flask import render_template, url_for
 from flask_openapi3 import OpenAPI
 from flask_sqlalchemy import SQLAlchemy
@@ -106,6 +108,8 @@ def create_app(environment="development"):
     app.jinja_env.globals.update(to_json=json.dumps)
     app.jinja_env.globals.update(update_report_data=update_report_data)
     app.jinja_env.globals.update(csrf_token=generate_csrf)
+    # app.jinja_env.globals.update(datetime=datetime)
+    # app.jinja_env.globals.update(timedelta=timedelta)
 
     # Register blueprints.
     app.register_blueprint(auth_blueprint)

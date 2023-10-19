@@ -1,0 +1,93 @@
+{% import "email/base-email-macros.html" as macros%}
+
+<!DOCTYPE html>
+<html>
+  <body>
+    <div style="width: 100%; margin: 10px 0px; text-align: center;">
+      <h2>Weekly Summary</h2>
+
+      <div style="width: 100%; margin-bottom: 20px;">
+        <table style="width: 100%; border: 1px solid; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Location
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Computer
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Device Role
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Current Status
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Occurrences Offline
+              </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
+                Total Time Offline
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for location_name, computers in computers_by_location.items() %}
+              <tr>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                  <b>{{ location_name }}</b>
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                  <b>Total endpoints:</b> {{ computers|length }}
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                  <b>Primary endpoints DOWN:</b> 2
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                  <b>Total endpoints DOWN:</b> 2
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                </td>
+                <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
+                </td>
+              </tr>
+
+              {% for computer in computers %}
+                <tr>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    {{ computer.computer_name }}
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    {{ computer.device_role.value }}
+                  </td>
+                  <td style="border: 1px solid black; padding: 10px 0; background-color: red; color: white; font-weight: 600;">
+                    DOWN
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    1
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    72 hours
+                  </td>
+                </tr>
+              {% endfor %}
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <hr style="margin: 20px 0; border: 1px solid #DCDEE4;">
+
+      {{ macros.button("eMAR Vault", url_for("main.index")) }}
+
+      <p style="font-size: 0.75rem; line-height: 1rem;">Login to the eMAR Vault to check the status of your computers.</p>
+
+      <hr style="margin: 20px 0; border: 1px solid #DCDEE4;">
+
+      <p>
+        <img src="https://app.emarvault.com/static/img/emar_icon_web.jpg" alt="eMARVault" width="128px" height="128px">
+      </p>
+    </div>
+  </body>
+</html>
