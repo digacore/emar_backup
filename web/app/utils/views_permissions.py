@@ -291,7 +291,7 @@ class MyModelView(ModelView):
                         word.capitalize()
                         for word in search_column_name.group(1).split("_")
                     ]
-                )
+                ).replace("Pcc", "PointClickCare")
                 search_query = re.search(r".*\>\>:(.*)", view_args.search).group(1)
                 search_input_value = f"{search_column_name}: {search_query}"
 
