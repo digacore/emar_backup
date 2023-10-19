@@ -95,12 +95,12 @@
                                         <span class="fa fa-chevron-down glyphicon glyphicon-chevron-down"></span>
                                     {% endif %}
                                 </a>
-                                
+
                             {% else %}
                             <a href="{{ sort_url(column, True) }}" title="{{ _gettext('Sort by %(name)s', name=name) }}">{{ name }}</a>
                             {% endif %}
-    
-                            <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"  
+
+                            <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"
                                 role="search">
                                 <div class="form-inline">
                                     <input class="single-search-cls" size="20" type="text" name="search" value=""
@@ -112,7 +112,7 @@
                                     ">
                                 </div>
                             </form>
-    
+
                         {% else %}
                             {{ name }}
                         {% endif %}
@@ -148,7 +148,7 @@
                     </td>
                     {%- endif -%}
                 {% endblock %}
-                
+
                 {% set loc_compn_name = namespace(loc='loc') %}
                 {% set comp_or_loc = namespace(col='0_21') %}
                 {% for c, name in list_columns %}
@@ -162,7 +162,7 @@
                                 {{ get_value(row, c) }}
                                 {% endif %}
                         {%elif c=="computers_per_location" or c=="total_computers"%}
-                            <a href="https://emarvault.com/admin/computer/?search={{loc_compn_name.loc}}">
+                            <a href="{{ url_for('computer.index_view', search=loc_compn_name.loc) }}">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {% if form.csrf_token %}
@@ -178,7 +178,7 @@
                             </a>
                         {%elif c=="locations_per_company"%}
                             {% set comp_or_loc.col = '0_14' %}
-                            <a href="https://emarvault.com/admin/location/?flt1_7={{loc_compn_name.loc}}">
+                            <a href="{{ url_for('location.index_view', flt1_7=loc_compn_name.loc) }}">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {% if form.csrf_token %}
@@ -193,7 +193,7 @@
                                 {% endif %}
                             </a>
                         {%elif c=="computers_online"%}
-                            <a href="https://emarvault.com/admin/computer/?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt2_7=green">
+                            <a href="{{ url_for('computer.index_view') }}?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt2_7=green">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {% if form.csrf_token %}
@@ -208,7 +208,7 @@
                                 {% endif %}
                             </a>
                         {%elif c=="computers_offline"%}
-                            <a href="https://emarvault.com/admin/computer/?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt0_8=green">
+                            <a href="{{ url_for('computer.index_view') }}?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt0_8=green">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {% if form.csrf_token %}
