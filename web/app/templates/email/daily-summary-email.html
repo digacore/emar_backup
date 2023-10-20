@@ -62,10 +62,11 @@
                     {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }}
                   </td>
                   <td style="border: 1px solid; padding: 10px 0;">
-                    {{ offset_to_east(computer.last_download_time, True).strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
+                    {{ computer.last_download_time.strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
                   </td>
                   <td style="border: 1px solid; padding: 10px 0;">
-                    -
+                    {% set offline_period = (current_east_time - computer.last_download_time).seconds // 3600 if computer.last_download_time else 24 %}
+                    Last {{ offline_period if offline_period <= 24 else 24 }} {{ "hour" if offline_period == 1 else "hours" }}
                   </td>
                 </tr>
               {% endfor %}

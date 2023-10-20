@@ -1049,8 +1049,6 @@ def send_critical_alert():
             continue
 
         # Alert only every 2 hours
-        # The hours difference should be odd number because 1 hour and 52 minutes means
-        # That the last backup was downloaded 2 hours ago
         if (
             with_prev_backups_comps
             and (
@@ -1058,7 +1056,7 @@ def send_critical_alert():
             ).seconds
             // 3600
             % 2
-            == 0
+            != 0
         ):
             continue
 
@@ -1298,6 +1296,7 @@ def send_company_daily_summary(
     company: m.Company,
     target_users: list[m.User],
     computers_by_location: dict[str, m.Computer],
+    current_east_time: datetime,
 ):
     """
     Sends daily summary to company users with company level permission.
@@ -1318,6 +1317,7 @@ def send_company_daily_summary(
             html=render_template(
                 "email/daily-summary-email.html",
                 computers_by_location=computers_by_location,
+                current_east_time=current_east_time,
             ),
         )
         logger.info("Daily summary email sent for company users of {}", company.name)
@@ -1333,6 +1333,7 @@ def send_location_group_daily_summary(
     company: m.Company,
     location_group_level_users: dict[str, list[m.User]],
     computers_by_location: dict[str, m.Computer],
+    current_east_time: datetime,
 ):
     """
     Sends daily summary to company users with location group level permission.
@@ -1372,6 +1373,7 @@ def send_location_group_daily_summary(
                 html=render_template(
                     "email/daily-summary-email.html",
                     computers_by_location=group_computers,
+                    current_east_time=current_east_time,
                 ),
             )
             logger.info(
@@ -1389,6 +1391,7 @@ def send_location_group_daily_summary(
 def send_location_daily_summary(
     location_level_users: dict[str, list[m.User]],
     computers_by_location: dict[str, m.Computer],
+    current_east_time: datetime,
 ):
     """
     Sends daily summary to company users with location level permission.
@@ -1413,6 +1416,7 @@ def send_location_daily_summary(
                 html=render_template(
                     "email/daily-summary-email.html",
                     computers_by_location={location: computers_by_location[location]},
+                    current_east_time=current_east_time,
                 ),
             )
             logger.info("Daily summary email sent for location users of {}", location)
@@ -1445,7 +1449,11 @@ def send_daily_summary():
         offline_company_computers_query: Query = m.Computer.query.filter(
             m.Computer.company_id == company.id,
             m.Computer.last_download_time < current_east_time - timedelta(hours=1),
-        ).order_by(m.Computer.location_name, m.Computer.device_role.desc())
+        ).order_by(
+            m.Computer.location_name,
+            m.Computer.device_role.desc(),
+            m.Computer.computer_name,
+        )
 
         # If there are no users connected to the company or offline computers - skip it
         if not company.users or not offline_company_computers_query.all():
@@ -1468,6 +1476,7 @@ def send_daily_summary():
                 company=company,
                 target_users=company_level_users,
                 computers_by_location=computers_by_location,
+                current_east_time=current_east_time,
             )
 
         # Send location group level summary
@@ -1476,6 +1485,7 @@ def send_daily_summary():
                 company=company,
                 location_group_level_users=location_group_level_users,
                 computers_by_location=computers_by_location,
+                current_east_time=current_east_time,
             )
 
         # Send location level summary
@@ -1483,6 +1493,7 @@ def send_daily_summary():
             send_location_daily_summary(
                 location_level_users=location_level_users,
                 computers_by_location=computers_by_location,
+                current_east_time=current_east_time,
             )
 
     logger.info("<---Finish sending daily summaries--->")
