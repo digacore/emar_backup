@@ -194,6 +194,13 @@ def daily_summary_email():
     send_daily_summary()
 
 
+@app.cli.command()
+def weekly_summary_email():
+    from app.controllers import send_weekly_summary
+
+    send_weekly_summary()
+
+
 if __name__ == "__main__":
     app.run()
     register_base_alert_controls()

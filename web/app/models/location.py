@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import func, sql, select
 from sqlalchemy.orm import relationship, backref
@@ -16,6 +16,8 @@ from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
 from .company import Company
 from .system_log import SystemLogType
+
+from config import BaseConfig as CFG
 
 
 class Location(db.Model, ModelMixin):
@@ -76,6 +78,35 @@ class Location(db.Model, ModelMixin):
     def company_name(self, value):
         new_company = Company.query.filter_by(name=value).first()
         self.company_id = new_company.id if new_company else None
+
+    @hybrid_property
+    def total_computers(self) -> int:
+        from app.models.computer import Computer
+
+        return Computer.query.filter_by(location_id=self.id).count()
+
+    @hybrid_property
+    def total_computers_offline(
+        self, time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+    ) -> int:
+        from app.models.computer import Computer
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.last_download_time < time - timedelta(hours=1),
+        ).count()
+
+    @hybrid_property
+    def primary_computers_offline(
+        self, time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+    ) -> int:
+        from app.models.computer import Computer, DeviceRole
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.last_download_time < time - timedelta(hours=1),
+            Computer.device_role == DeviceRole.PRIMARY,
+        ).count()
 
 
 class LocationView(RowActionListMixin, MyModelView):

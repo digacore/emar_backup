@@ -6,6 +6,34 @@
     <div style="width: 100%; margin: 10px 0px; text-align: center;">
       <h2>Weekly Summary</h2>
 
+      <div style="width: 100%; margin-bottom: 20px">
+        <table style="width: 100%; border-spacing: 20px;">
+          <tbody>
+            <tr>
+              <td style="width: 120px; border: 1px solid; border-radius: 8px;">
+                <p style="font-size: 0.75rem; line-height: 1rem;">Total Endpoints</p>
+                <p style="font-size: 2rem; line-height: 1rem;">{{ total_computers }}</p>
+              </td>
+
+              <td style="width: 120px; border: 1px solid; border-radius: 8px;">
+                <p style="font-size: 0.75rem; line-height: 1rem;">Primary Endpoints DOWN</p>
+                <p style="font-size: 2rem; line-height: 1rem;">{{ primary_computers_offline }}</p>
+              </td>
+
+              <td style="width: 120px; border: 1px solid; border-radius: 8px;">
+                <p style="font-size: 0.75rem; line-height: 1rem;">Total Endpoints DOWN</p>
+                <p style="font-size: 2rem; line-height: 1rem;">{{ total_offline_computers }}</p>
+              </td>
+
+              <td style="width: 120px; border: 1px solid; border-radius: 8px;">
+                <p style="font-size: 0.75rem; line-height: 1rem;">Locations DOWN</p>
+                <p style="font-size: 2rem; line-height: 1rem;">{{ total_offline_locations }}</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <div style="width: 100%; margin-bottom: 20px;">
         <table style="width: 100%; border: 1px solid; border-collapse: collapse;">
           <thead>
@@ -31,19 +59,19 @@
             </tr>
           </thead>
           <tbody>
-            {% for location_name, computers in computers_by_location.items() %}
+            {% for location_name, computers_by_location_obj in computers_by_location.items() %}
               <tr>
                 <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
                   <b>{{ location_name }}</b>
                 </td>
                 <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
-                  <b>Total endpoints:</b> {{ computers|length }}
+                  <b>Total endpoints:</b> {{ computers_by_location_obj.location.total_computers }}
                 </td>
                 <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
-                  <b>Primary endpoints DOWN:</b> 2
+                  <b>Primary endpoints DOWN:</b> {{ computers_by_location_obj.location.primary_computers_offline }}
                 </td>
                 <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
-                  <b>Total endpoints DOWN:</b> 2
+                  <b>Total endpoints DOWN:</b> {{ computers_by_location_obj.location.total_computers_offline }}
                 </td>
                 <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
                 </td>
@@ -51,7 +79,7 @@
                 </td>
               </tr>
 
-              {% for computer in computers %}
+              {% for computer in computers_by_location_obj.computers %}
                 <tr>
                   <td style="border: 1px solid; padding: 10px 0;">
                   </td>

@@ -1,27 +1,21 @@
+from datetime import datetime
 from pydantic import BaseModel
 
+from app.models import DeviceRole
 
-class ComputerFullInfo(BaseModel):  # TODO remove if unused
+
+class ComputerInfo(BaseModel):
     computer_name: str
-    location_name: str
+    location_name: str | None
+    company_name: str | None
 
-    type: str
-    alert_status: str
-    activated: bool
-    created_at: str
+    download_status: str | None
+    last_download_time: datetime | None
 
-    sftp_host: str
-    sftp_username: str
-    sftp_password: str
-    sftp_folder_path: str
-    folder_password: str
+    device_role: DeviceRole
 
-    download_status: str
-    last_download_time: str
-    last_time_online: str
-    identifier_key: str
-
-    company_name: str
+    class Config:
+        orm_mode = True
 
 
 class ComputerRegInfo(BaseModel):

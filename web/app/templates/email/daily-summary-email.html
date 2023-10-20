@@ -31,7 +31,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for location_name, computers in computers_by_location.items() %}
+            {% for location_name, computers_by_location_obj in computers_by_location.items() %}
               <tr>
                 <td style="border: 1px solid; padding: 10px 0; background-color: lightgray;">
                   <b>{{ location_name }}</b>
@@ -48,7 +48,7 @@
                 </td>
               </tr>
 
-              {% for computer in computers %}
+              {% for computer in computers_by_location_obj.computers %}
                 <tr>
                   <td style="border: 1px solid; padding: 10px 0;">
                   </td>
