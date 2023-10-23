@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timedelta
 
-from sqlalchemy import JSON, or_, and_, sql, func, select, Enum
+from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -46,6 +46,7 @@ class ComputerStatus(enum.Enum):
     GREEN = "GREEN"
     YELLOW = "YELLOW"
     RED = "RED"
+    NOT_ACTIVATED = "NOT_ACTIVATED"
 
 
 class Computer(db.Model, ModelMixin):
@@ -173,20 +174,60 @@ class Computer(db.Model, ModelMixin):
     def status(self) -> ComputerStatus:
         current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
+        # Not activated status
+        if not self.activated:
+            return ComputerStatus.NOT_ACTIVATED
         # If computer downloaded backup less than 1 hour ago - it is green
-        if (
-            self.last_download_time
-            and self.last_download_time >= current_east_time - timedelta(hours=1)
+        elif (
+            db.session.query(Computer)
+            .filter(
+                Computer.id == self.id,
+                Computer.last_download_time.is_not(None),
+                Computer.last_download_time >= current_east_time - timedelta(hours=1),
+            )
+            .first()
         ):
             return ComputerStatus.GREEN
         # If computer downloaded backup more than 1 hour ago but was online less than 10 minutes ago - it is yellow
         elif (
-            self.last_time_online
-            and self.last_time_online >= current_east_time - timedelta(minutes=10)
+            db.session.query(Computer)
+            .filter(
+                Computer.id == self.id,
+                Computer.last_time_online.is_not(None),
+                Computer.last_time_online >= current_east_time - timedelta(minutes=10),
+            )
+            .first()
         ):
             return ComputerStatus.YELLOW
         else:
             return ComputerStatus.RED
+
+    @status.expression
+    def status(cls):
+        return case(
+            [
+                (cls.activated.is_(False), "NOT_ACTIVATED"),
+                (
+                    and_(
+                        cls.last_download_time.is_not(None),
+                        cls.last_download_time
+                        >= CFG.offset_to_est(datetime.utcnow(), True)
+                        - timedelta(hours=1),
+                    ),
+                    "GREEN",
+                ),
+                (
+                    and_(
+                        cls.last_time_online.is_not(None),
+                        cls.last_time_online
+                        >= CFG.offset_to_est(datetime.utcnow(), True)
+                        - timedelta(minutes=10),
+                    ),
+                    "YELLOW",
+                ),
+            ],
+            else_="RED",
+        )
 
     @hybrid_property
     def offline_period(self) -> int:
@@ -308,7 +349,7 @@ class ComputerView(RowActionListMixin, MyModelView):
     column_hide_backrefs = False
     column_list = [
         "computer_name",
-        "alert_status",
+        "status",
         "company_name",
         "location_name",
         "last_download_time",
@@ -326,6 +367,26 @@ class ComputerView(RowActionListMixin, MyModelView):
         "logs_enabled",
         "computer_ip",
     ]
+
+    # searchable_sortable_list = [
+    #     "computer_name",
+    #     "company_name",
+    #     "location_name",
+    #     "last_download_time",
+    #     "last_time_online",
+    #     "msi_version",
+    #     "current_msi_version",
+    #     "sftp_host",
+    #     "sftp_username",
+    #     "sftp_folder_path",
+    #     "type",
+    #     "device_type",
+    #     "device_role",
+    #     "manager_host",
+    #     "activated",
+    #     "logs_enabled",
+    #     "computer_ip",
+    # ]
 
     form_excluded_columns = (
         "log_events",
@@ -356,7 +417,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_time_online": {"readonly": True},
         "identifier_key": {"readonly": True},
         "created_at": {"readonly": True},
-        "alert_status": {"readonly": True},
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
         "last_saved_path": {"readonly": True},
@@ -383,7 +443,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "manager_host": {"label": "Manager host"},
         "activated": {"label": "Activated"},
         "logs_enabled:": {"label": "Logs enabled"},
-        "alert_status": {"label": "Alert status"},
+        "status": {"label": "Alert status"},
         "download_status": {"label": "Download status"},
         "last_download_time": {"label": "Last download time"},
         "last_time_online": {"label": "Last time online"},

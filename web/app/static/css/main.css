@@ -8,6 +8,11 @@
   color: black;
 }
 
+.col-alert_status-gray {
+  background-color: gray;
+  color: black;
+}
+
 .col-alert_status-red {
   background-color: #e74a3b;
   color: white;
