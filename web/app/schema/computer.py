@@ -11,6 +11,7 @@ class ComputerInfo(BaseModel):
 
     download_status: str | None
     last_download_time: datetime | None
+    offline_period: int
 
     device_role: DeviceRole
 

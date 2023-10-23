@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, sql, select
+from sqlalchemy import func, sql, select, or_
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -83,29 +83,40 @@ class Location(db.Model, ModelMixin):
     def total_computers(self) -> int:
         from app.models.computer import Computer
 
-        return Computer.query.filter_by(location_id=self.id).count()
-
-    @hybrid_property
-    def total_computers_offline(
-        self, time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
-    ) -> int:
-        from app.models.computer import Computer
-
         return Computer.query.filter(
             Computer.location_id == self.id,
-            Computer.last_download_time < time - timedelta(hours=1),
+            Computer.activated.is_(True),
         ).count()
 
     @hybrid_property
-    def primary_computers_offline(
-        self, time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
-    ) -> int:
-        from app.models.computer import Computer, DeviceRole
+    def total_computers_offline(self) -> int:
+        from app.models.computer import Computer
+
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
         return Computer.query.filter(
             Computer.location_id == self.id,
-            Computer.last_download_time < time - timedelta(hours=1),
+            Computer.activated.is_(True),
+            or_(
+                Computer.last_download_time.is_(None),
+                Computer.last_download_time < time - timedelta(hours=1),
+            ),
+        ).count()
+
+    @hybrid_property
+    def primary_computers_offline(self) -> int:
+        from app.models.computer import Computer, DeviceRole
+
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
             Computer.device_role == DeviceRole.PRIMARY,
+            or_(
+                Computer.last_download_time.is_(None),
+                Computer.last_download_time < time - timedelta(hours=1),
+            ),
         ).count()
 
 

@@ -2,7 +2,7 @@
 from datetime import datetime, timedelta
 
 import requests
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from sqlalchemy.orm import Query
 from flask import render_template
 from flask_mail import Message
@@ -1030,8 +1030,9 @@ def send_critical_alert():
     )
     locations: list[m.Location] = m.Location.query.all()
     for location in locations:
-        location_computers_query: Query = m.Computer.query.filter_by(
-            location_id=location.id
+        location_computers_query: Query = m.Computer.query.filter(
+            m.Computer.location_id == location.id,
+            m.Computer.activated.is_(True),
         )
         with_prev_backups_comps = (
             location_computers_query.filter(m.Computer.last_download_time.is_not(None))
@@ -1306,7 +1307,6 @@ def send_company_daily_summary(
     company: m.Company,
     target_users: list[m.User],
     computers_by_location: dict[str, m.Computer],
-    current_east_time: datetime,
 ):
     """
     Sends daily summary to company users with company level permission.
@@ -1327,7 +1327,6 @@ def send_company_daily_summary(
             html=render_template(
                 "email/daily-summary-email.html",
                 computers_by_location=computers_by_location,
-                current_east_time=current_east_time,
             ),
         )
         logger.info("Daily summary email sent for company users of {}", company.name)
@@ -1343,7 +1342,6 @@ def send_location_group_daily_summary(
     company: m.Company,
     location_group_level_users: dict[str, list[m.User]],
     computers_by_location: dict[str, m.Computer],
-    current_east_time: datetime,
 ):
     """
     Sends daily summary to company users with location group level permission.
@@ -1372,7 +1370,7 @@ def send_location_group_daily_summary(
             if computers_by_location.get(location):
                 group_computers[location] = computers_by_location[location]
 
-        if not group_computers:
+        if not users or not group_computers:
             continue
 
         try:
@@ -1383,7 +1381,6 @@ def send_location_group_daily_summary(
                 html=render_template(
                     "email/daily-summary-email.html",
                     computers_by_location=group_computers,
-                    current_east_time=current_east_time,
                 ),
             )
             logger.info(
@@ -1401,7 +1398,6 @@ def send_location_group_daily_summary(
 def send_location_daily_summary(
     location_level_users: dict[str, list[m.User]],
     computers_by_location: dict[str, m.Computer],
-    current_east_time: datetime,
 ):
     """
     Sends daily summary to company users with location level permission.
@@ -1415,7 +1411,7 @@ def send_location_daily_summary(
     for location, users in location_level_users.items():
         recipients: list[str] = [user.email for user in users]
 
-        if not computers_by_location.get(location):
+        if not users or not computers_by_location.get(location):
             continue
 
         try:
@@ -1426,7 +1422,6 @@ def send_location_daily_summary(
                 html=render_template(
                     "email/daily-summary-email.html",
                     computers_by_location={location: computers_by_location[location]},
-                    current_east_time=current_east_time,
                 ),
             )
             logger.info("Daily summary email sent for location users of {}", location)
@@ -1458,8 +1453,15 @@ def send_daily_summary():
         current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
         offline_company_computers_query: Query = m.Computer.query.filter(
-            m.Computer.company_id == company.id,
-            m.Computer.last_download_time < current_east_time - timedelta(hours=1),
+            and_(
+                m.Computer.company_id == company.id,
+                m.Computer.activated.is_(True),
+                or_(
+                    m.Computer.last_download_time.is_(None),
+                    m.Computer.last_download_time
+                    < current_east_time - timedelta(hours=1),
+                ),
+            )
         ).order_by(
             m.Computer.location_name,
             m.Computer.device_role.desc(),
@@ -1476,6 +1478,7 @@ def send_daily_summary():
             location_level_users,
         ) = company_users_by_permission(company)
 
+        # TODO: divide with usage of locations (smaller loop)
         # Create dictionary with locations as keys and list of computers as values
         computers_by_location: dict[
             str, s.ComputersByLocation
@@ -1487,7 +1490,6 @@ def send_daily_summary():
                 company=company,
                 target_users=company_level_users,
                 computers_by_location=computers_by_location,
-                current_east_time=current_east_time,
             )
 
         # Send location group level summary
@@ -1496,7 +1498,6 @@ def send_daily_summary():
                 company=company,
                 location_group_level_users=location_group_level_users,
                 computers_by_location=computers_by_location,
-                current_east_time=current_east_time,
             )
 
         # Send location level summary
@@ -1504,7 +1505,6 @@ def send_daily_summary():
             send_location_daily_summary(
                 location_level_users=location_level_users,
                 computers_by_location=computers_by_location,
-                current_east_time=current_east_time,
             )
 
     logger.info("<---Finish sending daily summaries--->")
@@ -1517,7 +1517,7 @@ def send_weekly_summary():
     """
 
     logger.info(
-        "<---Start sending daily summary. Time: {}--->",
+        "<---Start sending weekly summaries. Time: {}--->",
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
@@ -1527,13 +1527,12 @@ def send_weekly_summary():
     ).all()
 
     for company in companies:
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
-
         company_computers_query: Query = m.Computer.query.filter(
             m.Computer.company_id == company.id,
+            m.Computer.activated.is_(True),
         ).order_by(
             m.Computer.location_name,
-            m.Computer.device_role.desc(),
+            m.Computer.device_role,
             m.Computer.computer_name,
         )
 
@@ -1547,33 +1546,14 @@ def send_weekly_summary():
             location_level_users,
         ) = company_users_by_permission(company)
 
+        # Create dictionary with locations as keys and list of computers as values
+        company_computers_by_location: dict[
+            str, s.ComputersByLocation
+        ] = divide_computers_by_location(company_computers_query.all())
+
         # Send company level summary
         if company_level_users:
             recipients: list[str] = [user.email for user in company_level_users]
-
-            # Create dictionary with locations as keys and list of computers as values
-            computers_by_location: dict[
-                str, s.ComputersByLocation
-            ] = divide_computers_by_location(company_computers_query.all())
-
-            total_computers = company_computers_query.count()
-            primary_computers_offline = company_computers_query.filter(
-                m.Computer.device_role == m.DeviceRole.PRIMARY,
-                m.Computer.last_download_time < current_east_time - timedelta(hours=1),
-            ).count()
-            total_offline_computers = company_computers_query.filter(
-                m.Computer.last_download_time < current_east_time - timedelta(hours=1),
-            ).count()
-
-            total_offline_locations = (
-                m.Location.query.join(m.Computer)
-                .filter(
-                    m.Location.company_id == company.id,
-                    m.Computer.last_download_time
-                    < current_east_time - timedelta(hours=1),
-                )
-                .count()
-            )
 
             try:
                 send_email(
@@ -1582,99 +1562,131 @@ def send_weekly_summary():
                     recipients=recipients,
                     html=render_template(
                         "email/weekly-summary-email.html",
-                        total_computers=total_computers,
-                        primary_computers_offline=primary_computers_offline,
-                        total_offline_computers=total_offline_computers,
-                        total_offline_locations=total_offline_locations,
-                        computers_by_location=computers_by_location,
-                        current_east_time=current_east_time,
+                        total_computers=company.total_computers_counter,
+                        primary_computers_offline=company.primary_computers_offline,
+                        total_offline_computers=company.total_offline_computers,
+                        total_offline_locations=company.total_offline_locations,
+                        computers_by_location=company_computers_by_location,
                     ),
                 )
                 logger.info(
-                    "Daily summary email sent for company users of {}", company.name
+                    "Weekly summary email sent for company users of {}", company.name
                 )
             except Exception as err:
                 logger.error(
-                    "Daily summary email was not sent for company users of {}. Error: {}",
+                    "Weekly summary email was not sent for company users of {}. Error: {}",
                     company.name,
                     err,
                 )
 
         # Send location group level summary
-        # if location_group_level_users:
-        #     for location_group_name, users in location_group_level_users.items():
-        #         recipients: list[str] = [user.email for user in users]
+        if location_group_level_users:
+            for location_group_name, users in location_group_level_users.items():
+                recipients: list[str] = [user.email for user in users]
 
-        #         location_group: m.LocationGroup = m.LocationGroup.query.filter(
-        #             m.LocationGroup.company_id == company.id,
-        #             m.LocationGroup.name == location_group_name,
-        #         ).first()
+                location_group: m.LocationGroup = m.LocationGroup.query.filter(
+                    m.LocationGroup.company_id == company.id,
+                    m.LocationGroup.name == location_group_name,
+                ).first()
 
-        #         location_ids: list[int] = [
-        #             location.id for location in location_group.locations
-        #         ]
+                location_ids: list[int] = [
+                    location.id for location in location_group.locations
+                ]
 
-        #         group_computers_query = m.Computer.query.filter(
-        #             m.Computer.location_id.in_(location_ids)
-        #         )
+                group_computers_query = m.Computer.query.filter(
+                    m.Computer.location_id.in_(location_ids),
+                    m.Computer.activated.is_(True),
+                ).order_by(
+                    m.Computer.location_name,
+                    m.Computer.device_role,
+                    m.Computer.computer_name,
+                )
 
-        #         if not group_computers_query.all():
-        #             continue
+                if not users or not group_computers_query.all():
+                    continue
 
-        #         total_computers = group_computers_query.count()
-        #         primary_computers_offline = group_computers_query.filter(
-        #             m.Computer.device_role == m.DeviceRole.PRIMARY,
-        #             m.Computer.last_download_time
-        #             < current_east_time - timedelta(hours=1),
-        #         ).count()
-        #         total_offline_computers = group_computers_query.filter(
-        #             m.Computer.last_download_time
-        #             < current_east_time - timedelta(hours=1),
-        #         ).count()
+                # Create dictionary with locations as keys and list of computers as values
+                group_computers_by_location: dict[
+                    str, s.ComputersByLocation
+                ] = divide_computers_by_location(group_computers_query.all())
 
-        #         total_offline_locations = (
-        #             m.Location.query.join(m.Computer)
-        #             .filter(
-        #                 m.Location.group.any(m.LocationGroup.id == location_group.id),
-        #                 m.Computer.last_download_time
-        #                 < current_east_time - timedelta(hours=1),
-        #             )
-        #             .count()
-        #         )
-
-        #         # Create dictionary with locations as keys and list of computers as values
-        #         computers_by_location: dict[str, s.ComputersByLocation] = divide_computers_by_location(
-        #             group_computers_query.all()
-        #         )
-
-        #         try:
-        #             send_email(
-        #                 subject="eMAR Vault Daily Summary",
-        #                 sender=CFG.MAIL_DEFAULT_SENDER,
-        #                 recipients=recipients,
-        #                 html=render_template(
-        #                     "email/daily-summary-email.html",
-        #                     computers_by_location=computers_by_location,
-        #                     current_east_time=current_east_time,
-        #                 ),
-        #             )
-        #             logger.info(
-        #                 "Daily summary email sent for location group users of {}",
-        #                 location_group,
-        #             )
-        #         except Exception as err:
-        #             logger.error(
-        #                 "Daily summary email was not sent for location group users of {}. Error: {}",
-        #                 location_group,
-        #                 err,
-        #             )
+                try:
+                    send_email(
+                        subject="eMAR Vault Weekly Summary",
+                        sender=CFG.MAIL_DEFAULT_SENDER,
+                        recipients=recipients,
+                        html=render_template(
+                            "email/weekly-summary-email.html",
+                            total_computers=location_group.total_computers,
+                            primary_computers_offline=location_group.primary_computers_offline,
+                            total_offline_computers=location_group.total_offline_computers,
+                            total_offline_locations=location_group.total_offline_locations,
+                            computers_by_location=group_computers_by_location,
+                        ),
+                    )
+                    logger.info(
+                        "Weekly summary email sent for location group users of {}",
+                        location_group,
+                    )
+                except Exception as err:
+                    logger.error(
+                        "Weekly summary email was not sent for location group users of {}. Error: {}",
+                        location_group,
+                        err,
+                    )
 
         # Send location level summary
         if location_level_users:
-            send_location_daily_summary(
-                location_level_users=location_level_users,
-                computers_by_location=computers_by_location,
-                current_east_time=current_east_time,
-            )
+            for location_name, users in location_level_users.items():
+                recipients: list[str] = [user.email for user in users]
 
-    logger.info("<---Finish sending daily summaries--->")
+                location: m.Location = m.Location.query.filter(
+                    m.Location.company_id == company.id,
+                    m.Location.name == location_name,
+                ).first()
+
+                activated_computers_query = m.Computer.query.filter(
+                    m.Computer.location_id == location.id,
+                    m.Computer.activated.is_(True),
+                )
+
+                online_computers = activated_computers_query.filter(
+                    m.Computer.last_download_time.is_not(None),
+                    m.Computer.last_download_time
+                    >= CFG.offset_to_est(datetime.utcnow(), True) - timedelta(hours=1),
+                ).count()
+
+                # Check that location has activated computers and users otherwise skip it
+                if not users or not activated_computers_query.all():
+                    continue
+
+                try:
+                    send_email(
+                        subject="eMAR Vault Weekly Summary",
+                        sender=CFG.MAIL_DEFAULT_SENDER,
+                        recipients=recipients,
+                        html=render_template(
+                            "email/weekly-summary-email.html",
+                            total_computers=location.total_computers,
+                            primary_computers_offline=location.primary_computers_offline,
+                            total_offline_computers=location.total_computers_offline,
+                            total_offline_locations=(0 if online_computers else 1),
+                            computers_by_location={
+                                location_name: company_computers_by_location[
+                                    location_name
+                                ]
+                            },
+                        ),
+                    )
+                    logger.info(
+                        "Weekly summary email sent for location users of {}",
+                        location_name,
+                    )
+                except Exception as err:
+                    logger.error(
+                        "Weekly summary email was not sent for location users of {}. Error: {}",
+                        location_name,
+                        err,
+                    )
+
+    logger.info("<---Finish sending weekly summaries--->")

@@ -163,6 +163,26 @@ class Computer(db.Model, ModelMixin):
         new_company = Company.query.filter_by(name=value).first()
         self.company_id = new_company.id if new_company else None
 
+    @hybrid_property
+    def offline_period(self):
+        """
+        Returns current offline period of computer in last day or 24 hours
+
+        Args:
+            time (datetime, optional): current east time
+        Returns:
+            int: offline period in hours
+        """
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        if not self.last_download_time:
+            return 24
+        else:
+            if (time - self.last_download_time).days:
+                return 24
+            else:
+                return (time - self.last_download_time).seconds // 3600
+
 
 class ComputerView(RowActionListMixin, MyModelView):
     def __repr__(self):
