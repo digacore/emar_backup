@@ -1,7 +1,7 @@
 # flake8: noqa F401
 from .user import User, AnonymousUser, UserView, UserRole, UserPermissionLevel
 from .company import Company, CompanyView
-from .computer import Computer, ComputerView, DeviceType, DeviceRole
+from .computer import Computer, ComputerView, DeviceType, DeviceRole, ComputerStatus
 from .location import Location, LocationView
 from .alert import Alert, AlertView
 from .desktop_client import DesktopClient, DesktopClientView

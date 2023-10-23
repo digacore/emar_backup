@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from sqlalchemy import JSON, or_, and_, sql, func, select, Enum
 from sqlalchemy.orm import relationship, backref
@@ -40,6 +40,12 @@ class DeviceType(enum.Enum):
 class DeviceRole(enum.Enum):
     PRIMARY = "PRIMARY"
     ALTERNATE = "ALTERNATE"
+
+
+class ComputerStatus(enum.Enum):
+    GREEN = "GREEN"
+    YELLOW = "YELLOW"
+    RED = "RED"
 
 
 class Computer(db.Model, ModelMixin):
@@ -164,7 +170,26 @@ class Computer(db.Model, ModelMixin):
         self.company_id = new_company.id if new_company else None
 
     @hybrid_property
-    def offline_period(self):
+    def status(self) -> ComputerStatus:
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        # If computer downloaded backup less than 1 hour ago - it is green
+        if (
+            self.last_download_time
+            and self.last_download_time >= current_east_time - timedelta(hours=1)
+        ):
+            return ComputerStatus.GREEN
+        # If computer downloaded backup more than 1 hour ago but was online less than 10 minutes ago - it is yellow
+        elif (
+            self.last_time_online
+            and self.last_time_online >= current_east_time - timedelta(minutes=10)
+        ):
+            return ComputerStatus.YELLOW
+        else:
+            return ComputerStatus.RED
+
+    @hybrid_property
+    def offline_period(self) -> int:
         """
         Returns current offline period of computer in last day or 24 hours
 
@@ -182,6 +207,96 @@ class Computer(db.Model, ModelMixin):
                 return 24
             else:
                 return (time - self.last_download_time).seconds // 3600
+
+    @hybrid_property
+    def last_week_offline_occurrences(self) -> int:
+        from app.models.backup_log import BackupLog, BackupLogType
+
+        """
+        Returns number of occurrences offline in last week
+
+        Returns:
+            int: number of occurrences
+        """
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        # If computer backup logs disables - return None
+        if not self.logs_enabled:
+            return None
+
+        last_log: BackupLog = (
+            BackupLog.query.filter(
+                BackupLog.computer_id == self.id,
+            )
+            .order_by(BackupLog.end_time.desc())
+            .first()
+        )
+
+        # If computer doesn't have any logs or the last one older than 7 days - return 1
+        if not last_log or last_log.end_time < current_east_time - timedelta(days=7):
+            return 1
+
+        last_week_offline_logs: int = BackupLog.query.filter(
+            BackupLog.computer_id == self.id,
+            BackupLog.backup_log_type == BackupLogType.NO_DOWNLOADS_PERIOD,
+            BackupLog.end_time >= current_east_time - timedelta(days=7),
+        ).count()
+
+        return last_week_offline_logs
+
+    @hybrid_property
+    def last_week_offline_time(self) -> timedelta:
+        from app.models.backup_log import BackupLog, BackupLogType
+
+        """
+        Returns summarized offline time during the last week (timedelta object)
+
+        Returns:
+            timedelta: summarized offline time
+        """
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        # If computer backup logs disables - return None
+        if not self.logs_enabled:
+            return None
+
+        last_log: BackupLog = (
+            BackupLog.query.filter(
+                BackupLog.computer_id == self.id,
+            )
+            .order_by(BackupLog.end_time.desc())
+            .first()
+        )
+
+        # If computer doesn't have any logs or the last one older than 7 days - 7 days timedelta
+        if not last_log or last_log.end_time < current_east_time - timedelta(days=7):
+            return timedelta(days=7)
+
+        last_week_offline_logs: list[BackupLog] = (
+            BackupLog.query.filter(
+                BackupLog.computer_id == self.id,
+                BackupLog.backup_log_type == BackupLogType.NO_DOWNLOADS_PERIOD,
+                BackupLog.end_time >= current_east_time - timedelta(days=7),
+            )
+            .order_by(BackupLog.end_time.desc())
+            .all()
+        )
+
+        summarized_offline_time: timedelta = timedelta(seconds=0)
+
+        for log in last_week_offline_logs:
+            # If log is still in progress - end time is current time
+            if log == last_log:
+                log.end_time = current_east_time
+
+            if log.start_time < current_east_time - timedelta(days=7):
+                summarized_offline_time += log.end_time - (
+                    current_east_time - timedelta(days=7)
+                )
+            else:
+                summarized_offline_time += log.duration
+
+        return summarized_offline_time
 
 
 class ComputerView(RowActionListMixin, MyModelView):

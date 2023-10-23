@@ -1,7 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from pydantic import BaseModel
 
-from app.models import DeviceRole
+from app.models import DeviceRole, ComputerStatus
 
 
 class ComputerInfo(BaseModel):
@@ -14,6 +14,11 @@ class ComputerInfo(BaseModel):
     offline_period: int
 
     device_role: DeviceRole
+
+    status: ComputerStatus
+
+    last_week_offline_occurrences: int | None
+    last_week_offline_time: timedelta | None
 
     class Config:
         orm_mode = True
