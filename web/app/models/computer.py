@@ -43,9 +43,9 @@ class DeviceRole(enum.Enum):
 
 
 class ComputerStatus(enum.Enum):
-    GREEN = "GREEN"
-    YELLOW = "YELLOW"
-    RED = "RED"
+    ONLINE = "ONLINE"
+    ONLINE_NO_BACKUP = "ONLINE_NO_BACKUP"
+    OFFLINE_NO_BACKUP = "OFFLINE_NO_BACKUP"
     NOT_ACTIVATED = "NOT_ACTIVATED"
 
 
@@ -177,7 +177,7 @@ class Computer(db.Model, ModelMixin):
         # Not activated status
         if not self.activated:
             return ComputerStatus.NOT_ACTIVATED
-        # If computer downloaded backup less than 1 hour ago - it is green
+        # If computer downloaded backup less than 1 hour ago - it is ONLINE
         elif (
             db.session.query(Computer)
             .filter(
@@ -187,8 +187,8 @@ class Computer(db.Model, ModelMixin):
             )
             .first()
         ):
-            return ComputerStatus.GREEN
-        # If computer downloaded backup more than 1 hour ago but was online less than 10 minutes ago - it is yellow
+            return ComputerStatus.ONLINE
+        # If computer downloaded backup more than 1 hour ago but was online less than 10 minutes ago - ONLINE_NO_BACKUP
         elif (
             db.session.query(Computer)
             .filter(
@@ -198,35 +198,38 @@ class Computer(db.Model, ModelMixin):
             )
             .first()
         ):
-            return ComputerStatus.YELLOW
+            return ComputerStatus.ONLINE_NO_BACKUP
         else:
-            return ComputerStatus.RED
+            return ComputerStatus.OFFLINE_NO_BACKUP
 
     @status.expression
     def status(cls):
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
         return case(
             [
-                (cls.activated.is_(False), "NOT_ACTIVATED"),
+                (
+                    cls.activated.is_(False),
+                    ComputerStatus.NOT_ACTIVATED.value.replace("_", " "),
+                ),
                 (
                     and_(
                         cls.last_download_time.is_not(None),
                         cls.last_download_time
-                        >= CFG.offset_to_est(datetime.utcnow(), True)
-                        - timedelta(hours=1),
+                        >= current_east_time - timedelta(hours=1),
                     ),
-                    "GREEN",
+                    ComputerStatus.ONLINE.value,
                 ),
                 (
                     and_(
                         cls.last_time_online.is_not(None),
                         cls.last_time_online
-                        >= CFG.offset_to_est(datetime.utcnow(), True)
-                        - timedelta(minutes=10),
+                        >= current_east_time - timedelta(minutes=10),
                     ),
-                    "YELLOW",
+                    ComputerStatus.ONLINE_NO_BACKUP.value.replace("_", " "),
                 ),
             ],
-            else_="RED",
+            else_=ComputerStatus.OFFLINE_NO_BACKUP.value.replace("_", " "),
         )
 
     @hybrid_property

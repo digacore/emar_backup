@@ -165,7 +165,7 @@
                                     Not activated
                                 {% endif %}
                             </td>
-                        {% elif get_value(row, c) == "GREEN" %}
+                        {% elif get_value(row, c) == "ONLINE" %}
                             <td class="col-alert_status-green" style="width: 100px;">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
@@ -174,7 +174,7 @@
                                     Online
                                 {% endif %}
                             </td>
-                        {% elif get_value(row, c) == "YELLOW" %}
+                        {% elif get_value(row, c) == "ONLINE_NO_BACKUP" %}
                             <td class="col-alert_status-yellow" style="width: 100px;">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
@@ -183,7 +183,7 @@
                                     Online <br> No Backup
                                 {% endif %}
                             </td>
-                        {% elif get_value(row, c) == "RED" %}
+                        {% elif get_value(row, c) == "OFFLINE_NO_BACKUP" %}
                             <td class="col-alert_status-red" style="width: 100px;">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}

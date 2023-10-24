@@ -151,6 +151,9 @@ class MyModelView(ModelView):
             # Extract search value from search query
             search_value = re.search(r".*\>\>:(.*)", search).group(1)
         else:
+            # Reinitialize search to update calculated field "status" of Computer model
+            if self.model.__tablename__ == "computers":
+                self.init_search()
             custom_search_field_obj = None
             search_value = search
 
@@ -198,6 +201,13 @@ class MyModelView(ModelView):
                 count_query = count_query.filter(or_(*count_filter_stmt))
 
         return query, count_query, joins, count_joins
+
+    def _apply_filters(self, query, count_query, joins, count_joins, filters):
+        # Refresh filters cache in case of Computers model (for status field)
+        if self.model.__tablename__ == "computers":
+            self._refresh_filters_cache()
+
+        return super()._apply_filters(query, count_query, joins, count_joins, filters)
 
     # NOTE (danil): redefine this method to show in search "column_name: query"
     @expose("/")
