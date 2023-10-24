@@ -1,6 +1,7 @@
+import enum
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, sql, select, or_
+from sqlalchemy import func, sql, select, or_, case, and_
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -18,6 +19,12 @@ from .company import Company
 from .system_log import SystemLogType
 
 from config import BaseConfig as CFG
+
+
+class LocationStatus(enum.Enum):
+    ONLINE = "ONLINE"
+    ONLINE_PRIMARY_OFFLINE = "ONLINE_PRIMARY_OFFLINE"
+    OFFLINE = "OFFLINE"
 
 
 class Location(db.Model, ModelMixin):
@@ -80,6 +87,67 @@ class Location(db.Model, ModelMixin):
         self.company_id = new_company.id if new_company else None
 
     @hybrid_property
+    def status(self) -> LocationStatus:
+        from app.models.computer import Computer, DeviceRole
+
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        online_primary_computers = Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
+            Computer.device_role == DeviceRole.PRIMARY,
+            Computer.last_download_time.is_not(None),
+            Computer.last_download_time >= current_east_time - timedelta(hours=1),
+        ).count()
+
+        all_online_computers = Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
+            Computer.last_download_time.is_not(None),
+            Computer.last_download_time >= current_east_time - timedelta(hours=1),
+        ).count()
+
+        if online_primary_computers:
+            return LocationStatus.ONLINE
+        elif all_online_computers:
+            return LocationStatus.ONLINE_PRIMARY_OFFLINE
+        else:
+            return LocationStatus.OFFLINE
+
+    @status.expression
+    def status(cls):
+        from app.models.computer import Computer, DeviceRole
+
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        return case(
+            [
+                (
+                    and_(
+                        Computer.location_id == cls.id,
+                        Computer.activated.is_(True),
+                        Computer.device_role == DeviceRole.PRIMARY,
+                        Computer.last_download_time.is_not(None),
+                        Computer.last_download_time
+                        >= current_east_time - timedelta(hours=1),
+                    ),
+                    LocationStatus.ONLINE.value,
+                ),
+                (
+                    and_(
+                        Computer.location_id == cls.id,
+                        Computer.activated.is_(True),
+                        Computer.last_download_time.is_not(None),
+                        Computer.last_download_time
+                        >= current_east_time - timedelta(hours=1),
+                    ),
+                    LocationStatus.ONLINE_PRIMARY_OFFLINE.value.replace("_", " "),
+                ),
+            ],
+            else_=LocationStatus.OFFLINE.value.replace("_", " "),
+        )
+
+    @hybrid_property
     def total_computers(self) -> int:
         from app.models.computer import Computer
 
@@ -130,6 +198,7 @@ class LocationView(RowActionListMixin, MyModelView):
     column_list = [
         "name",
         "company_name",
+        "status",
         "default_sftp_path",
         "computers_per_location",
         "computers_online",
@@ -158,7 +227,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "users")
+    form_excluded_columns = ("created_from_pcc", "users", "status")
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field

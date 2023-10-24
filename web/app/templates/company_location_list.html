@@ -206,24 +206,55 @@
                 {% set loc_compn_name = namespace(loc='loc') %}
                 {% set comp_or_loc = namespace(col='0_21') %}
                 {% for c, name in list_columns %}
-                    <td class="col-{{c}}">
-                        {%if c=="name" %}
-                            {% set loc_compn_name.loc = get_value(row, c) %}
+                    {%if c=="name" %}
+                        {% set loc_compn_name.loc = get_value(row, c) %}
+                        <td>
+                            {% if admin_view.is_editable(c) %}
+                                {% set form = list_forms[get_pk_value(row)] %}
+                                {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                            {% else %}
+                                {% set created_from_pcc = True if "created_from_pcc: true" in get_value(row, "created_from_pcc").unescape() else False %}
+                                {% if created_from_pcc %}
+                                    <div class="d-flex align-items-center">
+                                        {{ get_value(row, c) }}
+                                        <img src="{{ url_for('static', filename='/img/pcc_logo.png') }}" alt="PCC logo" style="height: 20px; width: 20px;" class="ml-2">
+                                    </div>
+                                {% else %}
+                                    {{ get_value(row, c) }}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    {% elif c == "status" %}
+                        {% if get_value(row, c) == "ONLINE" %}
+                            <td class="col-alert_status-green">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
                                 {% else %}
-                                    {% set created_from_pcc = True if "created_from_pcc: true" in get_value(row, "created_from_pcc").unescape() else False %}
-                                    {% if created_from_pcc %}
-                                        <div class="d-flex align-items-center">
-                                            {{ get_value(row, c) }}
-                                            <img src="{{ url_for('static', filename='/img/pcc_logo.png') }}" alt="PCC logo" style="height: 20px; width: 20px;" class="ml-2">
-                                        </div>
-                                    {% else %}
-                                        {{ get_value(row, c) }}
-                                    {% endif %}
+                                    Online
                                 {% endif %}
-                        {%elif c=="computers_per_location" or c=="total_computers"%}
+                            </td>
+                        {% elif get_value(row, c) == "ONLINE_PRIMARY_OFFLINE" %}
+                            <td class="col-alert_status-yellow">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                {% else %}
+                                    Online <br> Primary Offline
+                                {% endif %}
+                            </td>
+                        {% elif get_value(row, c) == "OFFLINE" %}
+                            <td class="col-alert_status-red">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                {% else %}
+                                    Offline
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                    {%elif c=="computers_per_location" or c=="total_computers"%}
+                        <td>
                             <a href="{{ url_for('computer.index_view', search=loc_compn_name.loc) }}">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
@@ -238,8 +269,10 @@
                                 {{ get_value(row, c) }}
                                 {% endif %}
                             </a>
-                        {%elif c=="locations_per_company"%}
-                            {% set comp_or_loc.col = '0_14' %}
+                        </td>
+                    {%elif c=="locations_per_company"%}
+                        {% set comp_or_loc.col = '0_14' %}
+                        <td>
                             <a href="{{ url_for('location.index_view', flt1_7=loc_compn_name.loc) }}">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
@@ -254,7 +287,9 @@
                                 {{ get_value(row, c) }}
                                 {% endif %}
                             </a>
-                        {%elif c=="computers_online"%}
+                        </td>
+                    {%elif c=="computers_online"%}
+                        <td>
                             <a href="{{ url_for('computer.index_view') }}?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt2_7=green">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
@@ -269,7 +304,9 @@
                                 {{ get_value(row, c) }}
                                 {% endif %}
                             </a>
-                        {%elif c=="computers_offline"%}
+                        </td>
+                    {%elif c=="computers_offline"%}
+                        <td>
                             <a href="{{ url_for('computer.index_view') }}?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt0_8=green">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
@@ -284,7 +321,9 @@
                                 {{ get_value(row, c) }}
                                 {% endif %}
                             </a>
-                        {% else %}
+                        </td>
+                    {% else %}
+                        <td>
                             {% if admin_view.is_editable(c) %}
                                 {% set form = list_forms[get_pk_value(row)] %}
                                 {% if form.csrf_token %}
@@ -297,8 +336,8 @@
                             {% else %}
                             {{ get_value(row, c) }}
                             {% endif %}
-                        {% endif %}
-                    </td>
+                        </td>
+                    {% endif %}
                 {% endfor %}
             {% endblock %}
         </tr>

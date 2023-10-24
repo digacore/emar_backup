@@ -157,7 +157,7 @@
                 {% for c, name in list_columns %}
                     {%if c=="status" %}
                         {% if get_value(row, c) == "NOT_ACTIVATED" %}
-                            <td class="col-alert_status-gray" style="width: 100px;">
+                            <td class="col-alert_status-gray">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
@@ -166,7 +166,7 @@
                                 {% endif %}
                             </td>
                         {% elif get_value(row, c) == "ONLINE" %}
-                            <td class="col-alert_status-green" style="width: 100px;">
+                            <td class="col-alert_status-green">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
@@ -175,7 +175,7 @@
                                 {% endif %}
                             </td>
                         {% elif get_value(row, c) == "ONLINE_NO_BACKUP" %}
-                            <td class="col-alert_status-yellow" style="width: 100px;">
+                            <td class="col-alert_status-yellow">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
@@ -184,7 +184,7 @@
                                 {% endif %}
                             </td>
                         {% elif get_value(row, c) == "OFFLINE_NO_BACKUP" %}
-                            <td class="col-alert_status-red" style="width: 100px;">
+                            <td class="col-alert_status-red">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
