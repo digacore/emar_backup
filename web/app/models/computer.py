@@ -233,6 +233,10 @@ class Computer(db.Model, ModelMixin):
         )
 
     @hybrid_property
+    def location_status(self):
+        return self.location.status if self.location else None
+
+    @hybrid_property
     def offline_period(self) -> int:
         """
         Returns current offline period of computer in last day or 24 hours
@@ -355,6 +359,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "status",
         "company_name",
         "location_name",
+        "location_status",
         "last_download_time",
         "last_time_online",
         "msi_version",
@@ -371,25 +376,26 @@ class ComputerView(RowActionListMixin, MyModelView):
         "computer_ip",
     ]
 
-    # searchable_sortable_list = [
-    #     "computer_name",
-    #     "company_name",
-    #     "location_name",
-    #     "last_download_time",
-    #     "last_time_online",
-    #     "msi_version",
-    #     "current_msi_version",
-    #     "sftp_host",
-    #     "sftp_username",
-    #     "sftp_folder_path",
-    #     "type",
-    #     "device_type",
-    #     "device_role",
-    #     "manager_host",
-    #     "activated",
-    #     "logs_enabled",
-    #     "computer_ip",
-    # ]
+    searchable_sortable_list = [
+        "computer_name",
+        "status",
+        "company_name",
+        "location_name",
+        "last_download_time",
+        "last_time_online",
+        "msi_version",
+        "current_msi_version",
+        "sftp_host",
+        "sftp_username",
+        "sftp_folder_path",
+        "type",
+        "device_type",
+        "device_role",
+        "manager_host",
+        "activated",
+        "logs_enabled",
+        "computer_ip",
+    ]
 
     form_excluded_columns = (
         "log_events",
@@ -398,9 +404,9 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_time_logs_disabled",
     )
 
-    column_searchable_list = column_list
-    column_sortable_list = column_list
-    column_filters = column_list
+    column_searchable_list = searchable_sortable_list
+    column_sortable_list = searchable_sortable_list
+    column_filters = searchable_sortable_list
 
     # NOTE allows edit in list view, but has troubles with permissions
     # column_editable_list = [

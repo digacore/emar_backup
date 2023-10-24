@@ -119,7 +119,7 @@
                             </form>
 
                         {% else %}
-                            {{ name }}
+                            <div style="width: 150px; color: #4e73df;">{{ name }}</div>
                         {% endif %}
                         {% if admin_view.column_descriptions.get(c) %}
                             <a class="fa fa-question-circle glyphicon glyphicon-question-sign"
@@ -190,6 +190,44 @@
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
                                 {% else %}
                                     Offline <br> No Backup
+                                {% endif %}
+                            </td>
+                        {% endif %}
+                    {% elif c=="location_status" %}
+                        {% if get_value(row, c) == "ONLINE" %}
+                            <td class="col-alert_status-green">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                {% else %}
+                                    Online
+                                {% endif %}
+                            </td>
+                        {% elif get_value(row, c) == "ONLINE_PRIMARY_OFFLINE" %}
+                            <td class="col-alert_status-yellow">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                {% else %}
+                                    Online <br> Primary Offline
+                                {% endif %}
+                            </td>
+                        {% elif get_value(row, c) == "OFFLINE" %}
+                            <td class="col-alert_status-red">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                {% else %}
+                                    Offline
+                                {% endif %}
+                            </td>
+                        {% else %}
+                            <td>
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                {% else %}
+                                    {{ get_value(row, c) }}
                                 {% endif %}
                             </td>
                         {% endif %}
