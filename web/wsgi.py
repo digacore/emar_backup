@@ -17,18 +17,6 @@ def get_context():
 
 
 @app.cli.command()
-def check_and_alert():
-    """
-    CLI command for celery worker.
-    Checks computers activity.
-    Send email and change status if something went wrong.
-    """
-    from app.controllers import check_and_alert
-
-    check_and_alert()
-
-
-@app.cli.command()
 def create_superuser():
     from app.controllers import create_superuser
 
@@ -47,20 +35,6 @@ def update_cl_stat():
     from app.controllers import update_companies_locations_statistic
 
     update_companies_locations_statistic()
-
-
-@app.cli.command()
-def daily_summary():
-    from app.controllers import daily_summary
-
-    daily_summary()
-
-
-@app.cli.command()
-def reset_alerts():
-    from app.controllers import reset_alert_statuses
-
-    reset_alert_statuses()
 
 
 @app.cli.command()

@@ -49,11 +49,6 @@ class AlertControlsView(RowActionListMixin, MyModelView):
             ("weekly", "weekly"),
             ("monthly", "monthly"),
         ],
-        "name": [
-            ("daily_summary", "daily_summary"),
-            ("update_cl_stat", "update_cl_stat"),
-            ("check_and_alert", "check_and_alert"),
-        ],
     }
 
     action_disallowed_list = ["delete"]

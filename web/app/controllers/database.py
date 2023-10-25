@@ -352,23 +352,11 @@ def empty_to_stable():
 
 def register_base_alert_controls():
     base_alert_controls = {
-        "daily_summary": {
-            "name": "daily_summary",
-            "alert_interval": "repeat every alert period",
-            "alert_period": 60 * 24,
-            "key": "redbeatdaily_summary",
-        },
         "update_cl_stat": {
             "name": "update_cl_stat",
             "alert_interval": "repeat every alert period",
             "alert_period": 3,
             "key": "redbeatupdate_cl_stat",
-        },
-        "check_and_alert": {
-            "name": "check_and_alert",
-            "alert_interval": "repeat every alert period",
-            "alert_period": 10,
-            "key": "redbeatcheck_and_alert",
         },
     }
 

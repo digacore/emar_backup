@@ -42,21 +42,15 @@ def setup_periodic_tasks(sender, **kwargs):
     logger.debug("UPDATE_CL_PERIOD: {}", UPDATE_CL_PERIOD)
     logger.debug("LOGS_DELETION_PERIOD: {}", LOGS_DELETION_PERIOD)
 
-    interval = crontab(hour=9, minute=0)  # hours
-    entry = RedBeatSchedulerEntry(
-        "daily_summary", "worker.daily_summary", interval, app=app
-    )
-    entry.save()
+    # interval = crontab(hour=9, minute=0)  # hours
+    # entry = RedBeatSchedulerEntry(
+    #     "daily_summary", "worker.daily_summary", interval, app=app
+    # )
+    # entry.save()
 
     interval = schedule(run_every=UPDATE_CL_PERIOD)  # seconds
     entry = RedBeatSchedulerEntry(
         "update_cl_stat", "worker.update_cl_stat", interval, app=app
-    )
-    entry.save()
-
-    interval = schedule(run_every=ALERT_PERIOD)  # seconds
-    entry = RedBeatSchedulerEntry(
-        "check_and_alert", "worker.check_and_alert", interval, app=app
     )
     entry.save()
 
@@ -70,21 +64,15 @@ def setup_periodic_tasks(sender, **kwargs):
 
 
 @app.task
-def check_and_alert():
-    flask_proc = subprocess.Popen(["flask", "check-and-alert"])
-    flask_proc.communicate()
-
-
-@app.task
 def update_cl_stat():
     flask_proc = subprocess.Popen(["flask", "update-cl-stat"])
     flask_proc.communicate()
 
 
-@app.task
-def daily_summary():
-    flask_proc = subprocess.Popen(["flask", "daily-summary"])
-    flask_proc.communicate()
+# @app.task
+# def daily_summary():
+#     flask_proc = subprocess.Popen(["flask", "daily-summary"])
+#     flask_proc.communicate()
 
 
 @app.task
@@ -99,24 +87,3 @@ def scan_pcc_activations(scan_record_id: int):
         ["flask", "scan-pcc-activations", str(scan_record_id)]
     )
     flask_proc.communicate()
-
-
-# @app.task
-# def do_backup():
-#     all_backups = [f for f in os.listdir(BACKUP_DIR) if (Path(BACKUP_DIR) / f).is_file()]
-#     all_timestamps = []
-
-#     for backup in all_backups:
-#         backup_timestamp = backup.split(BACKUP_FILENAME_POSTFIX)[0]
-#         try:
-#             backup_timestamp = float(backup_timestamp)
-#             all_timestamps.append(backup_timestamp)
-#         except ValueError:
-#             continue
-
-#     make_backup(time.time())
-#     all_timestamps.sort()
-#     timestamps_to_delete_count = len(all_timestamps) - BACKUP_MAX_COUNT + 1
-#     timestamps_to_delete_count = 0 if timestamps_to_delete_count < 0 else timestamps_to_delete_count
-#     for i in range(timestamps_to_delete_count):
-#         os.remove(f"{BACKUP_DIR}/{all_timestamps[i]}{BACKUP_FILENAME_POSTFIX}")
