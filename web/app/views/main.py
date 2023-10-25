@@ -36,7 +36,7 @@ def index():
             )
             total_locations_query: Query = Location.query.filter_by(
                 company_id=viewer.company_id
-            ).all()
+            )
             total_computers_query = Computer.query.filter(
                 or_(
                     Computer.company_id == viewer.company_id,
@@ -44,7 +44,7 @@ def index():
                         [loc.id for loc in total_locations_query.all()]
                     ),
                 )
-            ).all()
+            )
         case UserPermissionLevel.LOCATION_GROUP:
             total_companies_query: Query = Company.query.filter(
                 Company.id == viewer.company_id
@@ -55,7 +55,7 @@ def index():
                 Location.id.in_(location_ids)
             )
             total_computers_query: Query = Computer.query.filter(
-                Computer.location_id.in_([loc.id for loc in location_ids]),
+                Computer.location_id.in_(location_ids),
             )
         case UserPermissionLevel.LOCATION:
             total_companies_query: Query = Company.query.filter(
