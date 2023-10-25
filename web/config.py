@@ -52,11 +52,6 @@ class BaseConfig(object):
     MAIL_USE_SSL = True
     MAIL_DEFAULT_SENDER = os.environ.get("SUPPORT_EMAIL")
 
-    USER_PERMISSIONS = [
-        ("Global-full", "Global-full"),
-        ("Global-view", "Global-view"),
-    ]
-
     CLIENT_VERSIONS = [("stable", "stable"), ("latest", "latest")]
 
     DEFAULT_SFTP_HOST = os.environ.get("DEFAULT_SFTP_HOST", "ftpus.pointclickcare.com")

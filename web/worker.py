@@ -3,11 +3,10 @@ import subprocess
 from datetime import timedelta
 
 from celery import Celery
-from celery.schedules import crontab, schedule
+from celery.schedules import schedule  # crontab,
 from dotenv import load_dotenv
 from redbeat import RedBeatSchedulerEntry
 
-# from app.models import AlertControls
 from app.logger import logger
 from config import BaseConfig as CFG
 
