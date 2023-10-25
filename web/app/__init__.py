@@ -71,14 +71,10 @@ def create_app(environment="development"):
         LocationView,
         LocationGroup,
         LocationGroupView,
-        Alert,
-        AlertView,
         DesktopClient,
         DesktopClientView,
         ClientVersion,
         ClientVersionView,
-        AlertControls,
-        AlertControlsView,
     )
 
     # Instantiate app.
@@ -160,10 +156,8 @@ def create_app(environment="development"):
     admin.add_view(CompanyView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
     admin.add_view(LocationView(Location, db.session))
-    admin.add_view(AlertView(Alert, db.session))
     admin.add_view(DesktopClientView(DesktopClient, db.session))
     admin.add_view(ClientVersionView(ClientVersion, db.session))
-    admin.add_view(AlertControlsView(AlertControls, db.session))
     admin.add_view(LocationGroupView(LocationGroup, db.session))
 
     # Error handlers.

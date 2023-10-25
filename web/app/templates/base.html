@@ -129,14 +129,6 @@
             </div>
           </div>
         </li>
-        <!-- Nav Item - Alert fa-bell fa-flash-->
-        {% if current_user.permission.value == "GLOBAL" %}
-          <li class="nav-item active">
-            <a class="nav-link" href="/admin/alert/">
-              <i class="fas fa-fw fa-bell"></i>
-              <span style="color: lawngreen;">Alert</span></a>
-          </li>
-        {% endif %}
 
         <!-- Nav Item - Pages Collapse Menu -->
         <li class="nav-item active">
@@ -151,7 +143,6 @@
               <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
               {% if current_user.permission.value == "GLOBAL" %}
                 <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
-                <a class="collapse-item" href="/admin/alertcontrols/">Alert Controls</a>
               {% endif %}
 
               {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
@@ -243,11 +234,6 @@
               <a class="nav-item d-flex align-items-center nav-link" href="/admin/location/" >
                 Location
               </a>
-              {% if current_user.permission.value == "GLOBAL" %}
-                <a class="nav-item d-flex align-items-center nav-link" href="/admin/alert/" >
-                  Alert
-                </a>
-              {% endif %}
             <!-- prettier-ignore -->
             {% endif %}
 

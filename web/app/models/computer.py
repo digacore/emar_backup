@@ -78,7 +78,6 @@ class Computer(db.Model, ModelMixin):
     msi_version = db.Column(db.String(64), default="stable")
     current_msi_version = db.Column(db.String(64))
 
-    alert_status = db.Column(db.String(128))
     download_status = db.Column(db.String(64))
     last_download_time = db.Column(db.DateTime)
     last_time_online = db.Column(db.DateTime)
@@ -395,7 +394,6 @@ class ComputerView(RowActionListMixin, MyModelView):
     ]
 
     form_excluded_columns = (
-        "alert_status",
         "log_events",
         "backup_logs",
         "last_time_logs_enabled",
@@ -450,7 +448,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         "manager_host": {"label": "Manager host"},
         "activated": {"label": "Activated"},
         "logs_enabled:": {"label": "Logs enabled"},
-        "status": {"label": "Alert status"},
         "download_status": {"label": "Download status"},
         "last_download_time": {"label": "Last download time"},
         "last_time_online": {"label": "Last time online"},
