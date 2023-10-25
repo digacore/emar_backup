@@ -1,10 +1,8 @@
-import pytest
-
 from app.controllers import (
     create_superuser,
     empty_to_stable,
 )
-from app.models import User, Computer, Alert, UserRole, UserPermissionLevel
+from app.models import User, Computer, UserRole, UserPermissionLevel
 
 from config import BaseConfig as CFG
 
