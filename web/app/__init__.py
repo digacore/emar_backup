@@ -54,7 +54,6 @@ def create_app(environment="development"):
     )
     from app.api import (
         downloads_info_blueprint,
-        api_email_blueprint,
         computer_blueprint,
         download_msi_blueprint,
         download_msi_fblueprint,
@@ -124,7 +123,6 @@ def create_app(environment="development"):
 
     # Register api.
     app.register_api(downloads_info_blueprint)
-    app.register_api(api_email_blueprint)
     app.register_api(computer_blueprint)
     app.register_api(download_msi_blueprint)
     app.register_api(pcc_api_blueprint)

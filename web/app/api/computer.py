@@ -104,8 +104,8 @@ def special_status(body: ComputerSpecialStatus):
         identifier_key=body.identifier_key, computer_name=body.computer_name
     ).first()
 
-    computer.alert_status = (
-        body.special_status if body.special_status in CFG.SPECIAL_STATUSES else "green"
+    computer.download_status = (
+        body.special_status if body.special_status in CFG.SPECIAL_STATUSES else "error"
     )
     computer.save()
 
