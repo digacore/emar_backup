@@ -147,6 +147,12 @@ class Location(db.Model, ModelMixin):
             else_=LocationStatus.OFFLINE.value.replace("_", " "),
         )
 
+    # NOTE: unfortunately, next callable properties can't be used with Flask Admin (as table columns)
+    # Because initialization of LocationView class is done before initialization of Compute model
+    # So, we use next properties for the email templates but we still need to have columns
+    # "computers_per_location", "computers_online", "computers_offline" and task "update_cl_stat"
+    # to update these columns
+
     @hybrid_property
     def total_computers(self) -> int:
         from app.models.computer import Computer
@@ -199,10 +205,10 @@ class LocationView(RowActionListMixin, MyModelView):
         "name",
         "company_name",
         "status",
-        "default_sftp_path",
         "computers_per_location",
         "computers_online",
         "computers_offline",
+        "default_sftp_path",
         "pcc_fac_id",
         "use_pcc_backup",
         "created_from_pcc",

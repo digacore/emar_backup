@@ -50,6 +50,12 @@ class Company(db.Model, ModelMixin):
             "pcc_org_id",
         ]
 
+    # NOTE: unfortunately, next callable properties can't be used with Flask Admin (as table columns)
+    # Because initialization of CompanyView class is done before initialization of Computer/Location models
+    # So, we use next properties for the email templates but we still need to have columns
+    # "locations_per_company", "total_computers", "computers_online", "computers_offline" and task "update_cl_stat"
+    # to update these columns
+
     @hybrid_property
     def total_computers_counter(self):
         from app.models.computer import Computer

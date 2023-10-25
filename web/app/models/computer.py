@@ -122,7 +122,6 @@ class Computer(db.Model, ModelMixin):
     def _cols(self):
         return [
             "computer_name",
-            "alert_status",
             "company_id",
             "location_id",
             "download_status",
@@ -398,6 +397,7 @@ class ComputerView(RowActionListMixin, MyModelView):
     ]
 
     form_excluded_columns = (
+        "alert_status",
         "log_events",
         "backup_logs",
         "last_time_logs_enabled",
