@@ -146,7 +146,7 @@ def system_log_info():
     ):
         abort(403, "You don't have permission to access this page.")
 
-    LOGS_TYPES = ["All", "Computer", "User", "Company", "Location", "Alert"]
+    LOGS_TYPES = ["All", "Computer", "User", "Company", "Location"]
 
     logs_type = request.args.get("type", "All", type=str)
     days = request.args.get("days", 30, type=int)
@@ -186,12 +186,6 @@ def system_log_info():
             (m.SystemLog.log_type == m.SystemLogType.LOCATION_CREATED)
             | (m.SystemLog.log_type == m.SystemLogType.LOCATION_UPDATED)
             | (m.SystemLog.log_type == m.SystemLogType.LOCATION_DELETED)
-        )
-    elif logs_type == "Alert":
-        system_logs_query = system_logs_query.filter(
-            (m.SystemLog.log_type == m.SystemLogType.ALERT_CREATED)
-            | (m.SystemLog.log_type == m.SystemLogType.ALERT_UPDATED)
-            | (m.SystemLog.log_type == m.SystemLogType.ALERT_DELETED)
         )
 
     # Filter query by search query
