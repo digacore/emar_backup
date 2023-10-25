@@ -1,9 +1,22 @@
-from app.models import Company, Location, Computer, ComputerStatus
+from datetime import datetime, timedelta
+
+from app.models import (
+    Company,
+    Location,
+    Computer,
+    ComputerStatus,
+    DeviceRole,
+    LocationStatus,
+)
 from app.logger import logger
+
+from config import BaseConfig as CFG
 
 
 def update_companies_locations_statistic():
     logger.info("<-----Start Updating Companies and Locations statistics----->")
+
+    current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
 
     # NOTE Update number of Locations and Computers in Companies
     companies = Company.query.all()
@@ -23,7 +36,7 @@ def update_companies_locations_statistic():
 
         company.update()
 
-    # NOTE Update number of Computers in Locations
+    # NOTE Update number of Computers in Locations and status of Locations
     locations = Location.query.all()
 
     for location in locations:
@@ -31,12 +44,29 @@ def update_companies_locations_statistic():
 
         online_location_computers = Computer.query.filter(
             Computer.location_id == location.id,
-            Computer.status == ComputerStatus.ONLINE.value,
+            Computer.activated.is_(True),
+            Computer.last_download_time.is_(None),
+            Computer.last_download_time >= current_east_time - timedelta(hours=1),
         ).count()
+        online_primary_computers = Computer.query.filter(
+            Computer.location_id == location.id,
+            Computer.activated.is_(True),
+            Computer.device_role == DeviceRole.PRIMARY.value,
+            Computer.last_download_time.is_(None),
+            Computer.last_download_time >= current_east_time - timedelta(hours=1),
+        ).count()
+
         offline_location_computers = location.total_computers_offline
 
         location.computers_online = online_location_computers
         location.computers_offline = offline_location_computers
+
+        if online_primary_computers:
+            location.status = LocationStatus.ONLINE
+        elif online_location_computers:
+            location.status = LocationStatus.ONLINE_PRIMARY_OFFLINE
+        else:
+            location.status = LocationStatus.OFFLINE
 
         location.update()
 

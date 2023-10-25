@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, sql, select, or_, case, and_
+from sqlalchemy import func, sql, select, or_, Enum
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -38,6 +38,7 @@ class Location(db.Model, ModelMixin):
     )
 
     name = db.Column(db.String(64), nullable=False)
+    status = db.Column(Enum(LocationStatus), nullable=True)
     default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
@@ -85,67 +86,6 @@ class Location(db.Model, ModelMixin):
     def company_name(self, value):
         new_company = Company.query.filter_by(name=value).first()
         self.company_id = new_company.id if new_company else None
-
-    @hybrid_property
-    def status(self) -> LocationStatus:
-        from app.models.computer import Computer, DeviceRole
-
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
-
-        online_primary_computers = Computer.query.filter(
-            Computer.location_id == self.id,
-            Computer.activated.is_(True),
-            Computer.device_role == DeviceRole.PRIMARY,
-            Computer.last_download_time.is_not(None),
-            Computer.last_download_time >= current_east_time - timedelta(hours=1),
-        ).count()
-
-        all_online_computers = Computer.query.filter(
-            Computer.location_id == self.id,
-            Computer.activated.is_(True),
-            Computer.last_download_time.is_not(None),
-            Computer.last_download_time >= current_east_time - timedelta(hours=1),
-        ).count()
-
-        if online_primary_computers:
-            return LocationStatus.ONLINE
-        elif all_online_computers:
-            return LocationStatus.ONLINE_PRIMARY_OFFLINE
-        else:
-            return LocationStatus.OFFLINE
-
-    @status.expression
-    def status(cls):
-        from app.models.computer import Computer, DeviceRole
-
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
-
-        return case(
-            [
-                (
-                    and_(
-                        Computer.location_id == cls.id,
-                        Computer.activated.is_(True),
-                        Computer.device_role == DeviceRole.PRIMARY,
-                        Computer.last_download_time.is_not(None),
-                        Computer.last_download_time
-                        >= current_east_time - timedelta(hours=1),
-                    ),
-                    LocationStatus.ONLINE.value,
-                ),
-                (
-                    and_(
-                        Computer.location_id == cls.id,
-                        Computer.activated.is_(True),
-                        Computer.last_download_time.is_not(None),
-                        Computer.last_download_time
-                        >= current_east_time - timedelta(hours=1),
-                    ),
-                    LocationStatus.ONLINE_PRIMARY_OFFLINE.value.replace("_", " "),
-                ),
-            ],
-            else_=LocationStatus.OFFLINE.value.replace("_", " "),
-        )
 
     # NOTE: unfortunately, next callable properties can't be used with Flask Admin (as table columns)
     # Because initialization of LocationView class is done before initialization of Compute model

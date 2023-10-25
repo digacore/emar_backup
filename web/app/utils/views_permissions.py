@@ -151,8 +151,8 @@ class MyModelView(ModelView):
             # Extract search value from search query
             search_value = re.search(r".*\>\>:(.*)", search).group(1)
         else:
-            # Reinitialize search to update calculated field "status" of Computer, Location model
-            if self.model.__tablename__ in ["computers", "locations"]:
+            # Reinitialize search to update calculated field "status" of Computer
+            if self.model.__tablename__ in ["computers"]:
                 self.init_search()
             custom_search_field_obj = None
             search_value = search
@@ -203,8 +203,8 @@ class MyModelView(ModelView):
         return query, count_query, joins, count_joins
 
     def _apply_filters(self, query, count_query, joins, count_joins, filters):
-        # Refresh filters cache in case of Computer, Location model (for status field)
-        if self.model.__tablename__ in ["computers", "locations"]:
+        # Refresh filters cache in case of Computer (for status field)
+        if self.model.__tablename__ in ["computers"]:
             self._refresh_filters_cache()
 
         return super()._apply_filters(query, count_query, joins, count_joins, filters)
