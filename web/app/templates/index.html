@@ -10,10 +10,10 @@
   <!-- <a class="dash-cards" href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i class="fas fa-download fa-sm text-white-50"></i> Generate Report</a> -->
 </div>
 
-<!-- Content Row 1 -->
-<div class="row">
+<!-- Row 1: total companies; locations offline -->
+<div class="row justify-content-center">
 
-  <!-- Earnings (Monthly) Card Example -->
+  <!-- Total Companies Card -->
   <div class="col-xl-3 col-md-6 mb-4">
     <div class="card border-left-success shadow h-100 py-2">
       <div class="card-body">
@@ -22,7 +22,7 @@
             {% if current_user.is_authenticated %}
             <div class="text-xxs font-weight-bold text-success text-uppercase mb-1">
               {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
-                <a class="dash-cards" href="/admin/company/">Total Companies</a>
+                <a class="dash-cards" href="{{ url_for('company.index_view') }}">Total Companies</a>
               {% else %}
                 <span class="dash-cards">Total Companies</span>
               {% endif %}
@@ -30,11 +30,6 @@
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
                 <div class="h3 mb-0 mr-5 font-weight-bold text-gray-800">{{total_companies}}</div>
-              </div>
-              <div class="col">
-                <!-- <div class="progress progress-sm mr-2">
-                  <div class="progress-bar bg-primary" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                </div> -->
               </div>
             </div>
             {% endif %}
@@ -47,23 +42,57 @@
     </div>
   </div>
 
-  <!-- Earnings (Monthly) Card Example -->
+  <!-- Locations Offline Card -->
+  {% if current_user.is_authenticated and locations_offline %}
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-danger shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('location.index_view', flt1_14='OFFLINE') }}">Locations Offline</a></div>
+              <div class="row no-gutters align-items-center">
+                <div class="col-auto">
+                  <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{locations_offline}}</div>
+                </div>
+                <div class="col">
+                  <div class="col">
+                    <div class="progress progress-sm mr-2">
+                      <div class="progress-bar bg-danger" role="progressbar" style="width: {{ locations_offline_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-auto align-items-center">
+              <div class="row no-gutters h5">
+                <i class="fas fa-map-marker-alt fa-1x text-danger center-hor"></i>
+              </div>
+              <div class="row no-gutters h5">
+                <i class="fas fa-power-off fa-1x text-danger center-hor"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+<div>
+
+<!-- Row 2: total locations; locations online; locations alternate only -->
+<div class="row justify-content-center">
+
+  <!-- Total locations card -->
   <div class="col-xl-3 col-md-6 mb-4">
     <div class="card border-left-success shadow h-100 py-2">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="/admin/location/">Total Sites</a></div>
+            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('location.index_view') }}">Total locations</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
-                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{total_locations}}</div>
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{locations_offline}}</div>
               </div>
-              <!-- <div class="col">
-                <div class="progress progress-sm mr-2">
-                  <div class="progress-bar bg-success" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-              </div> -->
             </div>
             {% endif %}
           </div>
@@ -75,23 +104,92 @@
     </div>
   </div>
 
-  <!-- Earnings (Monthly) Card Example -->
+  <!-- Locations online -->
   <div class="col-xl-3 col-md-6 mb-4">
     <div class="card border-left-success shadow h-100 py-2">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="/admin/computer/">Total Computers</a></div>
+              <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('location.index_view', flt1_14='ONLINE') }}">Locations Online</a></div>
+              <div class="row no-gutters align-items-center">
+                <div class="col-auto">
+                  <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ locations_online }}</div>
+                </div>
+                <div class="col">
+                  <div class="col">
+                    <div class="progress progress-sm mr-2">
+                      <div class="progress-bar bg-success" role="progressbar" style="width: {{ locations_online_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-map-marker-alt fa-1x text-success center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-power-off fa-1x text-success center-hor"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Locations alternate only -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-warning shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+              <div class="text-xxs font-weight-bold text-warning text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('location.index_view', flt1_14='ONLINE_PRIMARY_OFFLINE') }}">Locations Alternate Only</a></div>
+              <div class="row no-gutters align-items-center">
+                <div class="col-auto">
+                  <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ locations_primary_offline }}</div>
+                </div>
+                <div class="col">
+                  <div class="col">
+                    <div class="progress progress-sm mr-2">
+                      <div class="progress-bar bg-warning" role="progressbar" style="width: {{ locations_primary_offline_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-map-marker-alt fa-1x text-warning center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-power-off fa-1x text-warning center-hor"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 3: total computers; computers online; computers offline -->
+<div class="row justify-content-center">
+
+  <!-- Total computers card -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-success shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}">Total Computers</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
                 <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{total_computers}}</div>
               </div>
-              <!-- <div class="col">
-                <div class="progress progress-sm mr-2">
-                  <div class="progress-bar bg-info" role="progressbar" style="width: 100%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-              </div> -->
             </div>
             {% endif %}
           </div>
@@ -103,52 +201,21 @@
     </div>
   </div>
 
-  <!-- Pending Requests Card Example -->
+  <!-- Computers online -->
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-info shadow h-100 py-2">
+    <div class="card border-left-success shadow h-100 py-2">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-info text-uppercase mb-1"><a class="dash-cards" href="admin/desktopclient/?search=stable">Latest Stable MSI</a></div>
-
-            <!-- <div class="text-xxs font-weight-bold text-info text-uppercase mb-1"><a class="dash-cards" href="/admin/desktopclient/?flt2_19=latest%2Cstable">Latest Stable MSI</a></div> -->
+            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view', flt0_9='ONLINE') }}">Computers Online</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
-                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{stable_msi}}</div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-          <div class="col-auto">
-            <i class="fas fa-server fa-2x text-info"></i>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Content Row 2 -->
-<div class="row">
-
-  <!-- Earnings (Monthly) Card Example -->
-  <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-danger shadow h-100 py-2">
-      <div class="card-body">
-        <div class="row no-gutters align-items-center">
-          <div class="col mr-2">
-            {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="/admin/location/{{al_loc_off_filter_link.replace('percen', '%')}}">Locations Offline</a></div>
-            <div class="row no-gutters align-items-center">
-              <div class="col-auto">
-                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{locations_offline}}</div>
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ computers_online }}</div>
               </div>
               <div class="col">
-                <div class="col">
-                  <div class="progress progress-sm mr-2">
-                    <div class="progress-bar bg-danger" role="progressbar" style="width: {{ locations_offline_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                  </div>
+                <div class="progress progress-sm mr-2">
+                  <div class="progress-bar bg-success" role="progressbar" style="width: {{ computers_online_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div>
             </div>
@@ -156,7 +223,40 @@
           </div>
           <div class="col-auto align-items-center">
             <div class="row no-gutters h5">
-              <i class="fas fa-map-marker-alt fa-1x text-danger center-hor"></i>
+              <i class="fas fa-desktop fa-1x text-success center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-power-off fa-1x text-success center-hor"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Computers offline -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-danger shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view', flt2_7='no backup') }}">Computers Offline</a></div>
+            <div class="row no-gutters align-items-center">
+              <div class="col-auto">
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ computers_offline }}</div>
+              </div>
+              <div class="col">
+                <div class="progress progress-sm mr-2">
+                  <div class="progress-bar bg-danger" role="progressbar" style="width: {{ computers_offline_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-desktop fa-1x text-danger center-hor"></i>
             </div>
             <div class="row no-gutters h5">
               <i class="fas fa-power-off fa-1x text-danger center-hor"></i>
@@ -166,22 +266,59 @@
       </div>
     </div>
   </div>
+</div>
 
-  <!-- Earnings (Monthly) Card Example -->
+<!-- Row 4: primary computers online; primary computers offline -->
+<div class="row justify-content-center">
+
+  <!-- Primary computers online -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-success shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_9=ONLINE&flt2_89=PRIMARY">Primary Computers Online</a></div>
+            <div class="row no-gutters align-items-center">
+              <div class="col-auto">
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ primary_online }}</div>
+              </div>
+              <div class="col">
+                <div class="progress progress-sm mr-2">
+                  <div class="progress-bar bg-success" role="progressbar" style="width: {{ primary_online_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-desktop fa-1x text-success center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-power-off fa-1x text-success center-hor"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Primary computers offline -->
   <div class="col-xl-3 col-md-6 mb-4">
     <div class="card border-left-danger shadow h-100 py-2">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="/admin/location/{{al_loc_no_back_filter_link.replace('percen', '%')}}">Locations no Backups</a></div>
+            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_7=no+backup&flt2_89=PRIMARY">Primary Computers Offline</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
-                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{locations_no_download}}</div>
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ primary_offline }}</div>
               </div>
               <div class="col">
                 <div class="progress progress-sm mr-2">
-                  <div class="progress-bar bg-danger" role="progressbar" style="width: {{ locations_no_download_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar bg-danger" role="progressbar" style="width: {{ primary_offline_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div>
             </div>
@@ -189,10 +326,47 @@
           </div>
           <div class="col-auto align-items-center">
             <div class="row no-gutters h5">
-              <i class="fas fa-map-marker-alt fa-1x text-danger center-hor"></i>
+              <i class="fas fa-desktop fa-1x text-danger center-hor"></i>
             </div>
             <div class="row no-gutters h5">
-              <i class="fas fa-download fa-1x text-danger center-hor"></i>
+              <i class="fas fa-power-off fa-1x text-danger center-hor"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Row 5: alternate computers online; alternate computers offline -->
+<div class="row justify-content-center">
+
+  <!-- Alternate computers online -->
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-success shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            {% if current_user.is_authenticated %}
+            <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_9=ONLINE&flt2_89=ALTERNATE">Alternate Computers Online</a></div>
+            <div class="row no-gutters align-items-center">
+              <div class="col-auto">
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ alternate_online }}</div>
+              </div>
+              <div class="col">
+                <div class="progress progress-sm mr-2">
+                  <div class="progress-bar bg-success" role="progressbar" style="width: {{ alternate_online_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+          </div>
+          <div class="col-auto align-items-center">
+            <div class="row no-gutters h5">
+              <i class="fas fa-desktop fa-1x text-success center-hor"></i>
+            </div>
+            <div class="row no-gutters h5">
+              <i class="fas fa-power-off fa-1x text-success center-hor"></i>
             </div>
           </div>
         </div>
@@ -200,21 +374,21 @@
     </div>
   </div>
 
-  <!-- Earnings (Monthly) Card Example -->
+  <!-- Alternate computers offline -->
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-warning shadow h-100 py-2">
+    <div class="card border-left-danger shadow h-100 py-2">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-warning text-uppercase mb-1"><a class="dash-cards" href="/admin/computer/?search=offlin">Computers Offline > 48</a></div>
+            <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_7=no+backup&flt2_89=ALTERNATE">Alternate Computers Offline</a></div>
             <div class="row no-gutters align-items-center">
               <div class="col-auto">
-                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{offline_48h}}</div>
+                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ alternate_offline }}</div>
               </div>
               <div class="col">
                 <div class="progress progress-sm mr-2">
-                  <div class="progress-bar bg-warning" role="progressbar" style="width: {{ offline_48h_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar bg-danger" role="progressbar" style="width: {{ primary_offline_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div>
             </div>
@@ -222,43 +396,10 @@
           </div>
           <div class="col-auto align-items-center">
             <div class="row no-gutters h5">
-              <i class="fas fa-desktop fa-1x text-warning center-hor"></i>
+              <i class="fas fa-desktop fa-1x text-danger center-hor"></i>
             </div>
             <div class="row no-gutters h5">
-              <i class="fas fa-power-off fa-1x text-warning center-hor"></i>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Pending Requests Card Example -->
-  <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-warning shadow h-100 py-2">
-      <div class="card-body">
-        <div class="row no-gutters align-items-center">
-          <div class="col mr-2">
-            {% if current_user.is_authenticated %}
-            <div class="text-xxs font-weight-bold text-warning text-uppercase mb-1"><a class="dash-cards" href="/admin/computer/?search=backu">No Backups > 4 h</a></div>
-            <div class="row no-gutters align-items-center">
-              <div class="col-auto">
-                <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{no_backup_4h}}</div>
-              </div>
-              <div class="col">
-                <div class="progress progress-sm mr-2">
-                  <div class="progress-bar bg-warning" role="progressbar" style="width: {{ no_backup_4h_perc }}%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-          <div class="col-auto align-items-center">
-            <div class="row no-gutters h5">
-              <i class="fas fa-desktop fa-1x text-warning center-hor"></i>
-            </div>
-            <div class="row no-gutters h5">
-              <i class="fas fa-download fa-1x text-warning center-hor"></i>
+              <i class="fas fa-power-off fa-1x text-danger center-hor"></i>
             </div>
           </div>
         </div>
