@@ -4,7 +4,6 @@ from sqlalchemy.orm import Query
 from flask_login import login_required, current_user
 
 from app.models import (
-    Company,
     Location,
     LocationStatus,
     Computer,
@@ -25,15 +24,9 @@ def index():
 
     match viewer.permission:
         case UserPermissionLevel.GLOBAL:
-            total_companies_query: Query = Company.query.filter(
-                Company.is_global.is_(False)
-            )
             total_locations_query: Query = Location.query
             total_computers_query: Query = Computer.query
         case UserPermissionLevel.COMPANY:
-            total_companies_query: Query = Company.query.filter(
-                Company.id == viewer.company_id
-            )
             total_locations_query: Query = Location.query.filter_by(
                 company_id=viewer.company_id
             )
@@ -46,9 +39,6 @@ def index():
                 )
             )
         case UserPermissionLevel.LOCATION_GROUP:
-            total_companies_query: Query = Company.query.filter(
-                Company.id == viewer.company_id
-            )
 
             location_ids = [loc.id for loc in viewer.location_group[0].locations]
             total_locations_query: Query = Location.query.filter(
@@ -58,9 +48,6 @@ def index():
                 Computer.location_id.in_(location_ids),
             )
         case UserPermissionLevel.LOCATION:
-            total_companies_query: Query = Company.query.filter(
-                Company.id == viewer.company_id
-            )
             total_locations_query: Query = Location.query.filter(
                 Location.id == viewer.location[0].id
             )
@@ -150,7 +137,6 @@ def index():
 
     return render_template(
         "index.html",
-        total_companies=total_companies_query.count(),
         total_locations=total_locations_query.count(),
         total_computers=total_computers_query.count(),
         locations_offline=locations_offline_query.count(),
