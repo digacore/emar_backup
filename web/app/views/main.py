@@ -72,21 +72,21 @@ def index():
     locations_offline_query: Query = total_locations_query.filter(
         Location.status == LocationStatus.OFFLINE
     )
-    locations_offline_perc: int = get_percentage(
+    locations_offline_perc: float = get_percentage(
         total_locations_query.all(), locations_offline_query.all()
     )
 
     locations_online_query: Query = total_locations_query.filter(
         Location.status == LocationStatus.ONLINE
     )
-    locations_online_perc: int = get_percentage(
+    locations_online_perc: float = get_percentage(
         total_locations_query.all(), locations_online_query.all()
     )
 
     locations_primary_offline_query: Query = total_locations_query.filter(
         Location.status == LocationStatus.ONLINE_PRIMARY_OFFLINE
     )
-    locations_primary_offline_perc: int = get_percentage(
+    locations_primary_offline_perc: float = get_percentage(
         total_locations_query.all(), locations_primary_offline_query.all()
     )
 
@@ -94,7 +94,7 @@ def index():
     computers_online_query: Query = total_computers_query.filter(
         Computer.status == ComputerStatus.ONLINE.value
     )
-    computers_online_perc: int = get_percentage(
+    computers_online_perc: float = get_percentage(
         total_computers_query.all(), computers_online_query.all()
     )
 
@@ -102,17 +102,20 @@ def index():
         Computer.status != ComputerStatus.ONLINE.value,
         Computer.status != ComputerStatus.NOT_ACTIVATED.value.replace("_", " "),
     )
-    computers_offline_perc: int = get_percentage(
+    computers_offline_perc: float = get_percentage(
         total_computers_query.all(), computers_offline_query.all()
     )
 
     # Primary computers information
+    activated_primary_computers: list[Computer] = total_computers_query.filter(
+        Computer.activated.is_(True), Computer.device_role == DeviceRole.PRIMARY
+    ).all()
     primary_online_query: Query = total_computers_query.filter(
         Computer.device_role == DeviceRole.PRIMARY,
         Computer.status == ComputerStatus.ONLINE.value,
     )
-    primary_online_perc: int = get_percentage(
-        total_computers_query.all(), primary_online_query.all()
+    primary_online_perc: float = get_percentage(
+        activated_primary_computers, primary_online_query.all()
     )
 
     primary_offline_query: Query = total_computers_query.filter(
@@ -120,17 +123,20 @@ def index():
         Computer.status != ComputerStatus.ONLINE.value,
         Computer.status != ComputerStatus.NOT_ACTIVATED.value.replace("_", " "),
     )
-    primary_offline_perc: int = get_percentage(
-        total_computers_query.all(), primary_offline_query.all()
+    primary_offline_perc: float = get_percentage(
+        activated_primary_computers, primary_offline_query.all()
     )
 
     # Alternate computers information
+    activated_alternate_computers: list[Computer] = total_computers_query.filter(
+        Computer.activated.is_(True), Computer.device_role == DeviceRole.ALTERNATE
+    ).all()
     alternate_online_query: Query = total_computers_query.filter(
         Computer.device_role == DeviceRole.ALTERNATE,
         Computer.status == ComputerStatus.ONLINE.value,
     )
-    alternate_online_perc: int = get_percentage(
-        total_computers_query.all(), alternate_online_query.all()
+    alternate_online_perc: float = get_percentage(
+        activated_alternate_computers, alternate_online_query.all()
     )
 
     alternate_offline_query: Query = total_computers_query.filter(
@@ -138,8 +144,8 @@ def index():
         Computer.status != ComputerStatus.ONLINE.value,
         Computer.status != ComputerStatus.NOT_ACTIVATED.value.replace("_", " "),
     )
-    alternate_offline_perc: int = get_percentage(
-        total_computers_query.all(), alternate_offline_query.all()
+    alternate_offline_perc: float = get_percentage(
+        activated_alternate_computers, alternate_offline_query.all()
     )
 
     return render_template(

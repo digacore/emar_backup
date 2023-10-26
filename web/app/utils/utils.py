@@ -1,7 +1,7 @@
 import base64
 
 
-def get_percentage(all_obj: list, perc_obj: list) -> int:
+def get_percentage(all_obj: list, perc_obj: list) -> float:
     """Percentsge for index.html jinja variables calculated in app/views/main.py
 
     Args:
@@ -9,9 +9,11 @@ def get_percentage(all_obj: list, perc_obj: list) -> int:
         perc_obj (list): list of some sqla computer object based on some condition
 
     Returns:
-        int: Percentsge for jinja variables
+        int: Percentage for jinja variables
     """
-    percentage = 0 if len(all_obj) == 0 else int((len(perc_obj) / len(all_obj)) * 100)
+    percentage: float = (
+        0 if len(all_obj) == 0 else round((len(perc_obj) / len(all_obj)) * 100, 1)
+    )
     return percentage
 
 
