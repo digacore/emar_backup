@@ -31,11 +31,6 @@ class BaseConfig(object):
     SUPER_USER_NAME = os.environ.get("SUPER_USER_NAME", "emarsuperuser")
     SUPER_USER_MAIL = os.environ.get("SUPERPASS", "emarsup@email.com")
 
-    ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
-    UPDATE_CL_PERIOD = int(os.environ.get("UPDATE_CL_PERIOD", 120))
-    DAILY_SUMMARY_PERIOD = int(os.environ.get("DAILY_SUMMARY_PERIOD", 86400))
-    LOGS_DELETION_PERIOD = int(os.environ.get("COMPUTER_LOGS_DELETION_PERIOD", 86400))
-
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
     TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
