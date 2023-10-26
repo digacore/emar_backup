@@ -1,11 +1,9 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from sqlalchemy import JSON, or_, and_, sql, func, select, Enum
+from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
-
-from flask import request
 
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
@@ -13,7 +11,7 @@ from flask_login import current_user
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
-from app.utils import MyModelView, get_outdated_status_comps
+from app.utils import MyModelView
 
 from .desktop_client import DesktopClient
 from .user import UserPermissionLevel, UserRole
@@ -40,6 +38,13 @@ class DeviceType(enum.Enum):
 class DeviceRole(enum.Enum):
     PRIMARY = "PRIMARY"
     ALTERNATE = "ALTERNATE"
+
+
+class ComputerStatus(enum.Enum):
+    ONLINE = "ONLINE"
+    ONLINE_NO_BACKUP = "ONLINE_NO_BACKUP"
+    OFFLINE_NO_BACKUP = "OFFLINE_NO_BACKUP"
+    NOT_ACTIVATED = "NOT_ACTIVATED"
 
 
 class Computer(db.Model, ModelMixin):
@@ -73,7 +78,6 @@ class Computer(db.Model, ModelMixin):
     msi_version = db.Column(db.String(64), default="stable")
     current_msi_version = db.Column(db.String(64))
 
-    alert_status = db.Column(db.String(128))
     download_status = db.Column(db.String(64))
     last_download_time = db.Column(db.DateTime)
     last_time_online = db.Column(db.DateTime)
@@ -115,7 +119,6 @@ class Computer(db.Model, ModelMixin):
     def _cols(self):
         return [
             "computer_name",
-            "alert_status",
             "company_id",
             "location_id",
             "download_status",
@@ -163,6 +166,182 @@ class Computer(db.Model, ModelMixin):
         new_company = Company.query.filter_by(name=value).first()
         self.company_id = new_company.id if new_company else None
 
+    @hybrid_property
+    def status(self) -> ComputerStatus:
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        # Not activated status
+        if not self.activated:
+            return ComputerStatus.NOT_ACTIVATED
+        # If computer downloaded backup less than 1 hour ago - it is ONLINE
+        elif (
+            db.session.query(Computer)
+            .filter(
+                Computer.id == self.id,
+                Computer.last_download_time.is_not(None),
+                Computer.last_download_time >= current_east_time - timedelta(hours=1),
+            )
+            .first()
+        ):
+            return ComputerStatus.ONLINE
+        # If computer downloaded backup more than 1 hour ago but was online less than 10 minutes ago - ONLINE_NO_BACKUP
+        elif (
+            db.session.query(Computer)
+            .filter(
+                Computer.id == self.id,
+                Computer.last_time_online.is_not(None),
+                Computer.last_time_online >= current_east_time - timedelta(minutes=10),
+            )
+            .first()
+        ):
+            return ComputerStatus.ONLINE_NO_BACKUP
+        else:
+            return ComputerStatus.OFFLINE_NO_BACKUP
+
+    @status.expression
+    def status(cls):
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        return case(
+            [
+                (
+                    cls.activated.is_(False),
+                    ComputerStatus.NOT_ACTIVATED.value.replace("_", " "),
+                ),
+                (
+                    and_(
+                        cls.last_download_time.is_not(None),
+                        cls.last_download_time
+                        >= current_east_time - timedelta(hours=1),
+                    ),
+                    ComputerStatus.ONLINE.value,
+                ),
+                (
+                    and_(
+                        cls.last_time_online.is_not(None),
+                        cls.last_time_online
+                        >= current_east_time - timedelta(minutes=10),
+                    ),
+                    ComputerStatus.ONLINE_NO_BACKUP.value.replace("_", " "),
+                ),
+            ],
+            else_=ComputerStatus.OFFLINE_NO_BACKUP.value.replace("_", " "),
+        )
+
+    @hybrid_property
+    def location_status(self):
+        return self.location.status if self.location else None
+
+    @hybrid_property
+    def offline_period(self) -> int:
+        """
+        Returns current offline period of computer in last day or 24 hours
+
+        Args:
+            time (datetime, optional): current east time
+        Returns:
+            int: offline period in hours
+        """
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        if not self.last_download_time:
+            return 24
+        else:
+            if (time - self.last_download_time).days:
+                return 24
+            else:
+                return (time - self.last_download_time).seconds // 3600
+
+    @hybrid_property
+    def last_week_offline_occurrences(self) -> int:
+        from app.models.backup_log import BackupLog, BackupLogType
+
+        """
+        Returns number of occurrences offline in last week
+
+        Returns:
+            int: number of occurrences
+        """
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        # If computer backup logs disables - return None
+        if not self.logs_enabled:
+            return None
+
+        last_log: BackupLog = (
+            BackupLog.query.filter(
+                BackupLog.computer_id == self.id,
+            )
+            .order_by(BackupLog.end_time.desc())
+            .first()
+        )
+
+        # If computer doesn't have any logs or the last one older than 7 days - return 1
+        if not last_log or last_log.end_time < current_east_time - timedelta(days=7):
+            return 1
+
+        last_week_offline_logs: int = BackupLog.query.filter(
+            BackupLog.computer_id == self.id,
+            BackupLog.backup_log_type == BackupLogType.NO_DOWNLOADS_PERIOD,
+            BackupLog.end_time >= current_east_time - timedelta(days=7),
+        ).count()
+
+        return last_week_offline_logs
+
+    @hybrid_property
+    def last_week_offline_time(self) -> timedelta:
+        from app.models.backup_log import BackupLog, BackupLogType
+
+        """
+        Returns summarized offline time during the last week (timedelta object)
+
+        Returns:
+            timedelta: summarized offline time
+        """
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        # If computer backup logs disables - return None
+        if not self.logs_enabled:
+            return None
+
+        last_log: BackupLog = (
+            BackupLog.query.filter(
+                BackupLog.computer_id == self.id,
+            )
+            .order_by(BackupLog.end_time.desc())
+            .first()
+        )
+
+        # If computer doesn't have any logs or the last one older than 7 days - 7 days timedelta
+        if not last_log or last_log.end_time < current_east_time - timedelta(days=7):
+            return timedelta(days=7)
+
+        last_week_offline_logs: list[BackupLog] = (
+            BackupLog.query.filter(
+                BackupLog.computer_id == self.id,
+                BackupLog.backup_log_type == BackupLogType.NO_DOWNLOADS_PERIOD,
+                BackupLog.end_time >= current_east_time - timedelta(days=7),
+            )
+            .order_by(BackupLog.end_time.desc())
+            .all()
+        )
+
+        summarized_offline_time: timedelta = timedelta(seconds=0)
+
+        for log in last_week_offline_logs:
+            # If log is still in progress - end time is current time
+            if log == last_log:
+                log.end_time = current_east_time
+
+            if log.start_time < current_east_time - timedelta(days=7):
+                summarized_offline_time += log.end_time - (
+                    current_east_time - timedelta(days=7)
+                )
+            else:
+                summarized_offline_time += log.duration
+
+        return summarized_offline_time
+
 
 class ComputerView(RowActionListMixin, MyModelView):
     def __repr__(self):
@@ -173,7 +352,29 @@ class ComputerView(RowActionListMixin, MyModelView):
     column_hide_backrefs = False
     column_list = [
         "computer_name",
-        "alert_status",
+        "status",
+        "company_name",
+        "location_name",
+        "location_status",
+        "last_download_time",
+        "last_time_online",
+        "msi_version",
+        "current_msi_version",
+        "sftp_host",
+        "sftp_username",
+        "sftp_folder_path",
+        "type",
+        "device_type",
+        "device_role",
+        "manager_host",
+        "activated",
+        "logs_enabled",
+        "computer_ip",
+    ]
+
+    searchable_sortable_list = [
+        "computer_name",
+        "status",
         "company_name",
         "location_name",
         "last_download_time",
@@ -199,9 +400,9 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_time_logs_disabled",
     )
 
-    column_searchable_list = column_list
-    column_sortable_list = column_list
-    column_filters = column_list
+    column_searchable_list = searchable_sortable_list
+    column_sortable_list = searchable_sortable_list
+    column_filters = searchable_sortable_list
 
     # NOTE allows edit in list view, but has troubles with permissions
     # column_editable_list = [
@@ -221,7 +422,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_time_online": {"readonly": True},
         "identifier_key": {"readonly": True},
         "created_at": {"readonly": True},
-        "alert_status": {"readonly": True},
         "download_status": {"readonly": True},
         "last_downloaded": {"readonly": True},
         "last_saved_path": {"readonly": True},
@@ -248,7 +448,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         "manager_host": {"label": "Manager host"},
         "activated": {"label": "Activated"},
         "logs_enabled:": {"label": "Logs enabled"},
-        "alert_status": {"label": "Alert status"},
         "download_status": {"label": "Download status"},
         "last_download_time": {"label": "Last download time"},
         "last_time_online": {"label": "Last time online"},
@@ -407,49 +606,6 @@ class ComputerView(RowActionListMixin, MyModelView):
                     self.model.id == -1
                 )
 
-        # NOTE this if closure is used for Dashboard cards searches (index.html)
-        if "search" in request.values:
-            # NOTE last letter is missed to not intervene in common user search
-            alert_types = {"offlin": 48, "backu": 4}
-
-            if request.values["search"] in alert_types:
-                alerted_computers: list[Computer] = (
-                    Computer.query.filter(
-                        and_(
-                            Computer.alert_status != "green",
-                            Computer.alert_status.isnot(None),
-                        )
-                    )
-                    .with_entities(
-                        Computer.id, Computer.computer_name, Computer.alert_status
-                    )
-                    .all()
-                )
-                for alert in alert_types:
-                    if request.values["search"] == alert:
-
-                        offline_48h = get_outdated_status_comps(
-                            alerted_computers, alert_types[alert], str(alert)[:-1]
-                        )
-                        result_query = result_query.filter(
-                            self.model.id.in_([comp.id for comp in offline_48h])
-                        )
-                        # NOTE Change headers to use unique search value. Doesnt work at this point.
-                        # from werkzeug.datastructures import ImmutableMultiDict, CombinedMultiDict
-                        # change_search = request.args.to_dict()
-                        # change_search["search"] = "offline"
-                        # request.args = ImmutableMultiDict(change_search)
-                        # request.values = CombinedMultiDict(
-                        #     [ImmutableMultiDict([("search", "offline")])]
-                        # )
-                        # request.url = "http://localhost:5000/admin/computer/?search=offline"
-                        # request.environ["QUERY_STRING"] = "search=offline"
-                        # request.environ[
-                        #     "HTTP_REFERER"
-                        # ] = "http://localhost:5000/admin/computer/?search=offline"
-                        # request.environ["RAW_URI"] = "/admin/computer/?search=offline"
-                        # request.environ["REQUEST_URI"] = "/admin/computer/?search=offline"
-
         return result_query
 
     def get_count_query(self):
@@ -457,9 +613,7 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
         # Instead add select_from(self.model) to query to count correctly
-        if current_user.permission == UserPermissionLevel.GLOBAL and request.values.get(
-            "search"
-        ) not in ["offlin", "backu"]:
+        if current_user.permission == UserPermissionLevel.GLOBAL:
             return actual_query.with_entities(func.count()).select_from(self.model)
 
         return actual_query.with_entities(func.count())

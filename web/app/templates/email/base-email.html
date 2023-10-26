@@ -1,0 +1,48 @@
+{% import "email/base-email-macros.html" as macros %}
+
+<!DOCTYPE html>
+<html>
+  <body
+    style="
+        padding: 20px;
+        background-color: #fff;
+        font-family: Source Sans Pro, Helvetica, Arial, sans-serif;
+        font-size: 16px;
+        color: #43516B;
+        line-height: 40px;
+    "
+  >
+    <div
+      style="
+        text-align: center;
+        width: 600px;
+        border: 1px solid black;
+        border-radius: 100px;
+        padding: 50px 0px;
+    "
+    >
+      <div style="
+        text-align: center;
+      ">
+        {% block pre_content %}{% endblock %}
+      </div>
+
+      <div style="
+        box-sizing: border-box;
+        margin: 0px 40px;
+        "
+      >
+        {% block content_tag %}{% endblock %}
+        <div style="padding: 0px 30px; text-align: center;">
+            {% block content %}{% endblock %}
+        </div>
+      </div>
+
+      {% block footer %}{% endblock %}
+    </div>
+
+    <div style="width: 600px; text-align: center; margin-top: 20px;">
+      {{ macros.logo_image() }}
+    </div>
+  </body>
+</html>

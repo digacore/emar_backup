@@ -7,22 +7,21 @@ from app.models import (
     Computer,
     Company,
     Location,
-    Alert,
 )
 from app.logger import logger
 
 
 def create_system_log(
     log_type: SystemLogType,
-    event_object: User | Computer | Company | Location | Alert,
+    event_object: User | Computer | Company | Location,
     created_by: User | None,
 ):
     """Create new system log.
-    To system logs we include: create, update, delete operations with users, computers, companies, locations and alerts
+    To system logs we include: create, update, delete operations with users, computers, companies, locations
 
     Args:
         log_type (m.SystemLogType): the type of system log
-        event_object (m.User | m.Computer | m.Company | m.Location | m.Alert):
+        event_object (m.User | m.Computer | m.Company | m.Location):
         the object that was created/updated/deleted
         created_by (m.User): user who did this action
     """

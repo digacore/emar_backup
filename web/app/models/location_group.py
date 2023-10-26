@@ -1,12 +1,18 @@
+from datetime import datetime, timedelta
+
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
-from sqlalchemy import select, func
+from sqlalchemy import select, func, and_, or_
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
-from app import db, models as m
-from app.models.utils import ModelMixin, RowActionListMixin
+from app import db
+from .company import Company
+from .location import Location
+from .utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
+
+from config import BaseConfig as CFG
 
 
 # The location column is unique to prevent situation when location is connected to several groups
@@ -57,9 +63,92 @@ class LocationGroup(db.Model, ModelMixin):
 
     @company_name.expression
     def company_name(cls):
-        return (
-            select([m.Company.name]).where(cls.company_id == m.Company.id).as_scalar()
-        )
+        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+
+    @hybrid_property
+    def total_computers(self):
+        from app.models.computer import Computer
+
+        location_ids: list[int] = [location.id for location in self.locations]
+
+        computers_number: int = Computer.query.filter(
+            Computer.location_id.in_(location_ids),
+            Computer.activated.is_(True),
+        ).count()
+        return computers_number
+
+    @hybrid_property
+    def primary_computers_offline(self):
+        from app.models.computer import Computer, DeviceRole
+
+        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
+
+        location_ids: list[int] = [location.id for location in self.locations]
+
+        computers_number = Computer.query.filter(
+            and_(
+                Computer.location_id.in_(location_ids),
+                Computer.activated.is_(True),
+                Computer.device_role == DeviceRole.PRIMARY,
+                or_(
+                    Computer.last_download_time.is_(None),
+                    Computer.last_download_time
+                    < current_east_time - timedelta(hours=1),
+                ),
+            )
+        ).count()
+
+        return computers_number
+
+    @hybrid_property
+    def total_offline_computers(self):
+        from app.models.computer import Computer
+
+        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
+
+        location_ids: list[int] = [location.id for location in self.locations]
+
+        computers_number = Computer.query.filter(
+            and_(
+                Computer.location_id.in_(location_ids),
+                Computer.activated.is_(True),
+                or_(
+                    Computer.last_download_time.is_(None),
+                    Computer.last_download_time
+                    < current_east_time - timedelta(hours=1),
+                ),
+            )
+        ).count()
+
+        return computers_number
+
+    @hybrid_property
+    def total_offline_locations(self):
+        from app.models.computer import Computer
+
+        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
+        offline_locations_counter = 0
+
+        locations = self.locations
+
+        for location in locations:
+            activated_computers_query = Computer.query.filter(
+                Computer.location_id == location.id,
+                Computer.activated.is_(True),
+            )
+
+            if not activated_computers_query.count():
+                continue
+
+            online_computers = activated_computers_query.filter(
+                Computer.last_download_time.is_not(None),
+                Computer.last_download_time >= current_east_time - timedelta(hours=1),
+            ).all()
+
+            if not online_computers:
+                offline_locations_counter += 1
+
+        return offline_locations_counter
 
 
 class LocationGroupView(RowActionListMixin, MyModelView):
@@ -129,7 +218,7 @@ class LocationGroupView(RowActionListMixin, MyModelView):
 
         locations_query = self._available_locations()
         # Filter locations which are already in group
-        final_query = locations_query.filter(~m.Location.group.any())
+        final_query = locations_query.filter(~Location.group.any())
         form.locations.query_factory = lambda: final_query
 
         return form

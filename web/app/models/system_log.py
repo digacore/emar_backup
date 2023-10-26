@@ -25,10 +25,6 @@ class SystemLogType(enum.Enum):
     LOCATION_UPDATED = "LOCATION_UPDATED"
     LOCATION_DELETED = "LOCATION_DELETED"
 
-    ALERT_CREATED = "ALERT_CREATED"
-    ALERT_UPDATED = "ALERT_UPDATED"
-    ALERT_DELETED = "ALERT_DELETED"
-
 
 class SystemLog(db.Model, ModelMixin):
 

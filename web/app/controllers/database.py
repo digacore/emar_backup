@@ -96,7 +96,6 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp1_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
-                # "alert_status": "green",
             },
             "comp2_late": {
                 "computer_name": "comp2_late",
@@ -115,7 +114,6 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp2_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
-                # "alert_status": "red",
             },
             "comp3_test": {
                 "computer_name": "comp3_test",
@@ -132,7 +130,6 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp3_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "1.0.9.110769",
-                # "alert_status": "yellow",
             },
             "comp4_test": {
                 "computer_name": "comp4_test",
@@ -149,7 +146,6 @@ def init_db(test_me: bool = False):
                 "manager_host": "comp4_manager_host",
                 "files_checksum": dict(),
                 "msi_version": "stable",
-                # "alert_status": "green",
             },
             "comp5_test": {
                 "computer_name": "comp5_test",
@@ -165,7 +161,6 @@ def init_db(test_me: bool = False):
                 "folder_password": "pass",
                 "manager_host": "comp5_manager_host",
                 "files_checksum": dict(),
-                # "alert_status": "green",
             },
             "comp7_no_download_time": {
                 "computer_name": "comp7_no_download_time",
@@ -197,42 +192,6 @@ def init_db(test_me: bool = False):
                 "folder_password": "pass",
                 "manager_host": "comp6_manager_host",
                 "files_checksum": dict(),
-                # "alert_status": "green",
-            },
-        }
-
-        alerts = {
-            "no_download_4h": {
-                "name": "no_download_4h",
-                "from_email": "",
-                "to_addresses": "",
-                "subject": "computer 4 hours alert!",
-                "body": "computer had not download files for more then 4 hours.",
-                "alert_status": "red",
-            },
-            "offline_12h": {
-                "name": "offline_12h",
-                "from_email": "",
-                "to_addresses": "",
-                "subject": "computer 12 hours offline alert!",
-                "body": "computer had been offline for more then 12 hours.",
-                "alert_status": "red",
-            },
-            "all_offline": {
-                "name": "all_offline",
-                "from_email": "",
-                "to_addresses": "",
-                "subject": "All computers offline 30 min alert!",
-                "body": "All computers are offline more then 30 minutes.",
-                "alert_status": "red",
-            },
-            "no_files_3h": {
-                "name": "no_files_3h",
-                "from_email": "",
-                "to_addresses": "",
-                "subject": "No new files over 3 h alert!",
-                "body": "No new files were downloaded by all computers for over 3 hours.",
-                "alert_status": "red",
             },
         }
 
@@ -283,7 +242,6 @@ def init_db(test_me: bool = False):
                     manager_host=computers[computer]["manager_host"],
                     files_checksum=computers[computer]["files_checksum"],
                     msi_version=computers[computer]["msi_version"],
-                    # alert_status=computers[computer]["alert_status"],
                 ).save()
 
             else:
@@ -301,18 +259,7 @@ def init_db(test_me: bool = False):
                     folder_password=computers[computer]["folder_password"],
                     manager_host=computers[computer]["manager_host"],
                     files_checksum=computers[computer]["files_checksum"],
-                    # alert_status=computers[computer]["alert_status"],
                 ).save()
-
-        for alert in alerts:
-            m.Alert(
-                name=alerts[alert]["name"],
-                from_email=alerts[alert]["from_email"],
-                to_addresses=alerts[alert]["to_addresses"],
-                subject=alerts[alert]["subject"],
-                body=alerts[alert]["body"],
-                alert_status=alerts[alert]["alert_status"],
-            ).save()
 
         m.ClientVersion(name="stable").save()
 
@@ -348,38 +295,3 @@ def empty_to_stable():
     for computer in computers:
         computer.msi_version = "stable"
         computer.update()
-
-
-def register_base_alert_controls():
-    base_alert_controls = {
-        "daily_summary": {
-            "name": "daily_summary",
-            "alert_interval": "repeat every alert period",
-            "alert_period": 60 * 24,
-            "key": "redbeatdaily_summary",
-        },
-        "update_cl_stat": {
-            "name": "update_cl_stat",
-            "alert_interval": "repeat every alert period",
-            "alert_period": 3,
-            "key": "redbeatupdate_cl_stat",
-        },
-        "check_and_alert": {
-            "name": "check_and_alert",
-            "alert_interval": "repeat every alert period",
-            "alert_period": 10,
-            "key": "redbeatcheck_and_alert",
-        },
-    }
-
-    db_blc: list[m.AlertControls] = m.AlertControls.query.all()
-    db_blc_names = [blc.name for blc in db_blc]
-
-    for blc in base_alert_controls:
-        if blc not in db_blc_names:
-            m.AlertControls(
-                name=base_alert_controls[blc]["name"],
-                alert_interval=base_alert_controls[blc]["alert_interval"],
-                alert_period=base_alert_controls[blc]["alert_period"],
-                key=base_alert_controls[blc]["key"],
-            ).save()

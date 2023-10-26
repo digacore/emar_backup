@@ -1,6 +1,8 @@
 import os
 import json
 
+# from datetime import datetime, timedelta
+
 from flask import render_template, url_for
 from flask_openapi3 import OpenAPI
 from flask_sqlalchemy import SQLAlchemy
@@ -52,7 +54,6 @@ def create_app(environment="development"):
     )
     from app.api import (
         downloads_info_blueprint,
-        api_email_blueprint,
         computer_blueprint,
         download_msi_blueprint,
         download_msi_fblueprint,
@@ -70,14 +71,10 @@ def create_app(environment="development"):
         LocationView,
         LocationGroup,
         LocationGroupView,
-        Alert,
-        AlertView,
         DesktopClient,
         DesktopClientView,
         ClientVersion,
         ClientVersionView,
-        AlertControls,
-        AlertControlsView,
     )
 
     # Instantiate app.
@@ -106,6 +103,8 @@ def create_app(environment="development"):
     app.jinja_env.globals.update(to_json=json.dumps)
     app.jinja_env.globals.update(update_report_data=update_report_data)
     app.jinja_env.globals.update(csrf_token=generate_csrf)
+    # app.jinja_env.globals.update(datetime=datetime)
+    # app.jinja_env.globals.update(timedelta=timedelta)
 
     # Register blueprints.
     app.register_blueprint(auth_blueprint)
@@ -120,7 +119,6 @@ def create_app(environment="development"):
 
     # Register api.
     app.register_api(downloads_info_blueprint)
-    app.register_api(api_email_blueprint)
     app.register_api(computer_blueprint)
     app.register_api(download_msi_blueprint)
     app.register_api(pcc_api_blueprint)
@@ -158,10 +156,8 @@ def create_app(environment="development"):
     admin.add_view(CompanyView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
     admin.add_view(LocationView(Location, db.session))
-    admin.add_view(AlertView(Alert, db.session))
     admin.add_view(DesktopClientView(DesktopClient, db.session))
     admin.add_view(ClientVersionView(ClientVersion, db.session))
-    admin.add_view(AlertControlsView(AlertControls, db.session))
     admin.add_view(LocationGroupView(LocationGroup, db.session))
 
     # Error handlers.

@@ -3,7 +3,7 @@ import click
 from datetime import timedelta
 
 from app import create_app, db, models, forms
-from app.controllers import register_base_alert_controls, get_pcc_2_legged_token
+from app.controllers import get_pcc_2_legged_token
 
 
 app = create_app()
@@ -14,18 +14,6 @@ app = create_app()
 def get_context():
     """Objects exposed here will be automatically available from the shell."""
     return dict(app=app, db=db, m=models, f=forms)
-
-
-@app.cli.command()
-def check_and_alert():
-    """
-    CLI command for celery worker.
-    Checks computers activity.
-    Send email and change status if something went wrong.
-    """
-    from app.controllers import check_and_alert
-
-    check_and_alert()
 
 
 @app.cli.command()
@@ -47,20 +35,6 @@ def update_cl_stat():
     from app.controllers import update_companies_locations_statistic
 
     update_companies_locations_statistic()
-
-
-@app.cli.command()
-def daily_summary():
-    from app.controllers import daily_summary
-
-    daily_summary()
-
-
-@app.cli.command()
-def reset_alerts():
-    from app.controllers import reset_alert_statuses
-
-    reset_alert_statuses()
 
 
 @app.cli.command()
@@ -123,56 +97,32 @@ def scan_pcc_activations(scan_record_id: int):
 
 
 @app.cli.command()
-def fill_user_permission_items():
-    from app.logger import logger
+def critical_alert_email():
+    from app.controllers import send_critical_alert
 
-    logger.info("Start fill_user_permission_items")
-    users = models.User.query.all()
-    for user in users:
-        if not user.asociated_with:
-            user.role = models.UserRole.USER
-            user.company_id = (
-                models.Company.query.filter(models.Company.is_global.is_(True))
-                .first()
-                .id
-            )
-        elif user.asociated_with.lower() == "global-full":
-            user.role = models.UserRole.ADMIN
-            user.company_id = (
-                models.Company.query.filter(models.Company.is_global.is_(True))
-                .first()
-                .id
-            )
-        elif user.asociated_with.lower() == "global-view":
-            user.role = models.UserRole.USER
-            user.company_id = (
-                models.Company.query.filter(models.Company.is_global.is_(True))
-                .first()
-                .id
-            )
-        elif user.asociated_with in [
-            company.name for company in models.Company.query.all()
-        ]:
-            user.role = models.UserRole.ADMIN
-            user.company_id = (
-                models.Company.query.filter_by(name=user.asociated_with).first().id
-            )
-        elif user.asociated_with in [
-            location.name for location in models.Location.query.all()
-        ]:
-            user.role = models.UserRole.ADMIN
-            user.company_id = (
-                models.Location.query.filter_by(name=user.asociated_with)
-                .first()
-                .company_id
-            )
-            user.location.append(
-                models.Location.query.filter_by(name=user.asociated_with).first()
-            )
-    db.session.commit()
-    logger.info("Finish fill_user_permission_items")
+    send_critical_alert()
+
+
+@app.cli.command()
+def primary_computer_alert_email():
+    from app.controllers import send_primary_computer_alert
+
+    send_primary_computer_alert()
+
+
+@app.cli.command()
+def daily_summary_email():
+    from app.controllers import send_daily_summary
+
+    send_daily_summary()
+
+
+@app.cli.command()
+def weekly_summary_email():
+    from app.controllers import send_weekly_summary
+
+    send_weekly_summary()
 
 
 if __name__ == "__main__":
     app.run()
-    register_base_alert_controls()

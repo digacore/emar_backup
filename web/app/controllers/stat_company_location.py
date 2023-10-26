@@ -1,40 +1,73 @@
-from app.models import Company, Location, Computer
+from datetime import datetime, timedelta
+
+from app.models import (
+    Company,
+    Location,
+    Computer,
+    ComputerStatus,
+    DeviceRole,
+    LocationStatus,
+)
+from app.logger import logger
+
+from config import BaseConfig as CFG
 
 
 def update_companies_locations_statistic():
-    # NOTE Update number of Computers in Locations
-    computers = Computer.query.all()
-    locations = Location.query.all()
+    logger.info("<-----Start Updating Companies and Locations statistics----->")
 
-    if locations:
-        computer_location = [loc.location_name for loc in computers]
-        for location in locations:
-            location.computers_per_location = computer_location.count(location.name)
-            computers_online_per_location = [
-                comp.alert_status for comp in computers if comp.location == location
-            ]
-            computers_online = computers_online_per_location.count("green")
-            location.computers_online = computers_online
-            location.computers_offline = (
-                len(computers_online_per_location) - computers_online
-            )
-            location.update()
+    current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
 
     # NOTE Update number of Locations and Computers in Companies
     companies = Company.query.all()
 
-    if companies:
-        computer_company = [co.company_name for co in computers]
-        location_company = [loc.company_name for loc in locations]
-        for company in companies:
-            company.total_computers = computer_company.count(company.name)
-            computers_online_per_company = [
-                comp.alert_status for comp in computers if comp.company == company
-            ]
-            computers_online = computers_online_per_company.count("green")
-            company.computers_online = computers_online
-            company.computers_offline = (
-                len(computers_online_per_company) - computers_online
-            )
-            company.locations_per_company = location_company.count(company.name)
-            company.update()
+    for company in companies:
+        company.locations_per_company = len(company.locations)
+        company.total_computers = len(company.computers)
+
+        offline_company_computers = company.total_offline_computers
+        online_company_computers = Computer.query.filter(
+            Computer.company_id == company.id,
+            Computer.status == ComputerStatus.ONLINE.value,
+        ).count()
+
+        company.computers_online = online_company_computers
+        company.computers_offline = offline_company_computers
+
+        company.update()
+
+    # NOTE Update number of Computers in Locations and status of Locations
+    locations = Location.query.all()
+
+    for location in locations:
+        location.computers_per_location = len(location.computers)
+
+        online_location_computers = Computer.query.filter(
+            Computer.location_id == location.id,
+            Computer.activated.is_(True),
+            Computer.last_download_time.is_not(None),
+            Computer.last_download_time >= current_east_time - timedelta(hours=1),
+        ).count()
+        online_primary_computers = Computer.query.filter(
+            Computer.location_id == location.id,
+            Computer.activated.is_(True),
+            Computer.device_role == DeviceRole.PRIMARY.value,
+            Computer.last_download_time.is_not(None),
+            Computer.last_download_time >= current_east_time - timedelta(hours=1),
+        ).count()
+
+        offline_location_computers = location.total_computers_offline
+
+        location.computers_online = online_location_computers
+        location.computers_offline = offline_location_computers
+
+        if online_primary_computers:
+            location.status = LocationStatus.ONLINE
+        elif online_location_computers:
+            location.status = LocationStatus.ONLINE_PRIMARY_OFFLINE
+        else:
+            location.status = LocationStatus.OFFLINE
+
+        location.update()
+
+    logger.info("<-----Finish Updating Companies and Locations statistics----->")

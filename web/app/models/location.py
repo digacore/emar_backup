@@ -1,6 +1,7 @@
-from datetime import datetime
+import enum
+from datetime import datetime, timedelta
 
-from sqlalchemy import func, sql, select
+from sqlalchemy import func, sql, select, or_, Enum
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -17,6 +18,14 @@ from app.utils import MyModelView
 from .company import Company
 from .system_log import SystemLogType
 
+from config import BaseConfig as CFG
+
+
+class LocationStatus(enum.Enum):
+    ONLINE = "ONLINE"
+    ONLINE_PRIMARY_OFFLINE = "ONLINE_PRIMARY_OFFLINE"
+    OFFLINE = "OFFLINE"
+
 
 class Location(db.Model, ModelMixin):
 
@@ -29,6 +38,7 @@ class Location(db.Model, ModelMixin):
     )
 
     name = db.Column(db.String(64), nullable=False)
+    status = db.Column(Enum(LocationStatus), nullable=True)
     default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
@@ -77,6 +87,52 @@ class Location(db.Model, ModelMixin):
         new_company = Company.query.filter_by(name=value).first()
         self.company_id = new_company.id if new_company else None
 
+    # NOTE: unfortunately, next callable properties can't be used with Flask Admin (as table columns)
+    # Because initialization of LocationView class is done before initialization of Compute model
+    # So, we use next properties for the email templates but we still need to have columns
+    # "computers_per_location", "computers_online", "computers_offline" and task "update_cl_stat"
+    # to update these columns
+
+    @hybrid_property
+    def total_computers(self) -> int:
+        from app.models.computer import Computer
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
+        ).count()
+
+    @hybrid_property
+    def total_computers_offline(self) -> int:
+        from app.models.computer import Computer
+
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
+            or_(
+                Computer.last_download_time.is_(None),
+                Computer.last_download_time < time - timedelta(hours=1),
+            ),
+        ).count()
+
+    @hybrid_property
+    def primary_computers_offline(self) -> int:
+        from app.models.computer import Computer, DeviceRole
+
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
+            Computer.device_role == DeviceRole.PRIMARY,
+            or_(
+                Computer.last_download_time.is_(None),
+                Computer.last_download_time < time - timedelta(hours=1),
+            ),
+        ).count()
+
 
 class LocationView(RowActionListMixin, MyModelView):
     def __repr__(self):
@@ -88,10 +144,11 @@ class LocationView(RowActionListMixin, MyModelView):
     column_list = [
         "name",
         "company_name",
-        "default_sftp_path",
+        "status",
         "computers_per_location",
         "computers_online",
         "computers_offline",
+        "default_sftp_path",
         "pcc_fac_id",
         "use_pcc_backup",
         "created_from_pcc",
@@ -116,7 +173,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "users")
+    form_excluded_columns = ("created_from_pcc", "users", "status")
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field

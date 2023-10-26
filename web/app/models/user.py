@@ -21,12 +21,6 @@ from .location_group import LocationGroup
 from .system_log import SystemLogType
 
 
-users_alerts = db.Table(
-    "users_alerts",
-    db.Column("users_id", db.Integer, db.ForeignKey("users.id")),
-    db.Column("alerts_id", db.Integer, db.ForeignKey("alerts.id")),
-)
-
 users_to_group = db.Table(
     "users_to_group",
     db.metadata,
@@ -96,7 +90,6 @@ class User(db.Model, UserMixin, ModelMixin):
     password_hash = db.Column(db.String(256), nullable=False)
     activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
-    asociated_with = db.Column(db.String(64))
     last_time_online = db.Column(db.DateTime)
 
     role = db.Column(
@@ -104,14 +97,6 @@ class User(db.Model, UserMixin, ModelMixin):
         nullable=False,
         default=UserRole.USER,
         server_default=UserRole.ADMIN.value,
-    )
-
-    alerts = relationship(
-        "Alert",
-        secondary=users_alerts,
-        passive_deletes=True,
-        backref="users",
-        lazy="select",
     )
 
     company = relationship("Company", backref="users", lazy="select")
@@ -217,7 +202,6 @@ class UserView(RowActionListMixin, MyModelView):
         "activated",
         "created_at",
         "last_time_online",
-        "alerts",
     )
 
     def search_placeholder(self):
