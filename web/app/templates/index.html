@@ -15,33 +15,35 @@
   <div class="row">
 
     <!-- Total Companies Card -->
-    <div class="col mb-4">
-      <div class="card border-left-success shadow h-100 py-2">
-        <div class="card-body">
-          <div class="row no-gutters align-items-center">
-            <div class="col mr-2">
-              {% if current_user.is_authenticated %}
-              <div class="text-xxs font-weight-bold text-success text-uppercase mb-1">
-                {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
-                  <a class="dash-cards" href="{{ url_for('company.index_view') }}">Total Companies</a>
-                {% else %}
-                  <span class="dash-cards">Total Companies</span>
+    {% if current_user.permission.value == "GLOBAL" %}
+      <div class="col mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                {% if current_user.is_authenticated %}
+                <div class="text-xxs font-weight-bold text-success text-uppercase mb-1">
+                  {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
+                    <a class="dash-cards" href="{{ url_for('company.index_view') }}">Total Companies</a>
+                  {% else %}
+                    <span class="dash-cards">Total Companies</span>
+                  {% endif %}
+                </div>
+                <div class="row no-gutters align-items-center">
+                  <div class="col-auto">
+                    <div class="h3 mb-0 mr-5 font-weight-bold text-gray-800">{{total_companies}}</div>
+                  </div>
+                </div>
                 {% endif %}
               </div>
-              <div class="row no-gutters align-items-center">
-                <div class="col-auto">
-                  <div class="h3 mb-0 mr-5 font-weight-bold text-gray-800">{{total_companies}}</div>
-                </div>
+              <div class="col-auto">
+                <i class="fas fa-hospital fa-2x text-success"></i>
               </div>
-              {% endif %}
-            </div>
-            <div class="col-auto">
-              <i class="fas fa-hospital fa-2x text-success"></i>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    {% endif %}
 
     <!-- Locations Offline Card -->
     {% if current_user.is_authenticated and locations_offline %}
