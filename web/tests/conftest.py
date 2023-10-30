@@ -106,3 +106,17 @@ def add_test_logs(test_db):
     test_db.session.add(valid_log_event)
 
     test_db.session.commit()
+
+
+@pytest.fixture
+def pcc_test_computer(test_db):
+    test_company = test_db.session.query(m.Company).filter_by(name="Atlas").first()
+    test_location = test_db.session.query(m.Location).filter_by(name="Maywood").first()
+    test_company.pcc_org_id = "11848592-809a-42f4-82e3-5ce14964a007"
+    test_location.pcc_fac_id = 12
+    test_db.session.commit()
+
+    test_computer = (
+        test_db.session.query(m.Computer).filter_by(computer_name="comp3_test").first()
+    )
+    return test_computer

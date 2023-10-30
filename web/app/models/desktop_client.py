@@ -1,6 +1,8 @@
 from datetime import datetime
 
+from sqlalchemy import select, func
 from sqlalchemy.orm import relationship
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
@@ -8,6 +10,8 @@ from markupsafe import Markup
 
 from app import db
 
+from app.models.client_version import ClientVersion
+from app.models.user import UserPermissionLevel, UserRole
 from app.models.utils import ModelMixin, RowActionListMixin, BlobMixin, BlobUploadField
 from app.utils import MyModelView
 
@@ -17,15 +21,19 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
     __tablename__ = "desktop_clients"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    flag_id = db.Column(
+        db.Integer,
+        db.ForeignKey("client_versions.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+
     name = db.Column(db.String(64), unique=True, nullable=False)
     version = db.Column(db.String(64))
     description = db.Column(db.String(512))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     flag = relationship("ClientVersion", passive_deletes=True)
-    flag_name = db.Column(
-        db.String, db.ForeignKey("client_versions.name", ondelete="CASCADE")
-    )
 
     def __repr__(self):
         return self.name
@@ -34,6 +42,23 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
         return "name : {name}; filename : {filename})".format(
             name=self.name, filename=self.filename
         )
+
+    @hybrid_property
+    def flag_name(self):
+        return self.flag.name if self.flag else None
+
+    @flag_name.expression
+    def flag_name(cls):
+        return (
+            select([ClientVersion.name])
+            .where(cls.flag_id == ClientVersion.id)
+            .as_scalar()
+        )
+
+    @flag_name.setter
+    def flag_name(self, value):
+        new_flag = ClientVersion.query.filter_by(name=value).first()
+        self.flag_id = new_flag.id if new_flag else None
 
 
 class DesktopClientView(RowActionListMixin, MyModelView):
@@ -85,13 +110,19 @@ class DesktopClientView(RowActionListMixin, MyModelView):
 
     def _can_edit(self, model):
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
@@ -111,29 +142,39 @@ class DesktopClientView(RowActionListMixin, MyModelView):
     def get_query(self):
 
         # check permissions
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
-                result_query = self.session.query(self.model)
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
-                result_query = self.session.query(self.model).filter(
-                    self.model.name == "None"
-                )
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
         else:
-            result_query = self.session.query(self.model).filter(
-                self.model.name == "None"
-            )
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
 
-        return result_query.with_entities(
-            DesktopClient.name,
-            DesktopClient.id,
-            DesktopClient.version,
-            DesktopClient.description,
-            DesktopClient.filename,
-            DesktopClient.flag_name,
-        )
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            result_query = self.session.query(self.model)
+        elif current_user.role == UserRole.ADMIN:
+            result_query = self.session.query(self.model).filter(
+                self.model.flag_id.is_not(None)
+            )
+        else:
+            result_query = self.session.query(self.model).filter(self.model.id == -1)
+
+        return result_query
+
+    def get_count_query(self):
+        actual_query = self.get_query()
+
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            return actual_query.with_entities(func.count()).select_from(self.model)
+
+        return actual_query.with_entities(func.count())

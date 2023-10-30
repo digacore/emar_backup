@@ -3,7 +3,7 @@ import click
 from datetime import timedelta
 
 from app import create_app, db, models, forms
-from app.controllers import register_base_alert_controls, get_pcc_2_legged_token
+from app.controllers import get_pcc_2_legged_token
 
 
 app = create_app()
@@ -14,18 +14,6 @@ app = create_app()
 def get_context():
     """Objects exposed here will be automatically available from the shell."""
     return dict(app=app, db=db, m=models, f=forms)
-
-
-@app.cli.command()
-def check_and_alert():
-    """
-    CLI command for celery worker.
-    Checks computers activity.
-    Send email and change status if something went wrong.
-    """
-    from app.controllers import check_and_alert
-
-    check_and_alert()
 
 
 @app.cli.command()
@@ -47,20 +35,6 @@ def update_cl_stat():
     from app.controllers import update_companies_locations_statistic
 
     update_companies_locations_statistic()
-
-
-@app.cli.command()
-def daily_summary():
-    from app.controllers import daily_summary
-
-    daily_summary()
-
-
-@app.cli.command()
-def reset_alerts():
-    from app.controllers import reset_alert_statuses
-
-    reset_alert_statuses()
 
 
 @app.cli.command()
@@ -114,6 +88,41 @@ def gen_backup_periods_logs(computer_name: str | None = None, days: int | None =
             gen_fake_backup_periods_logs(computer, time_period)
 
 
+@app.cli.command()
+@click.argument("scan_record_id", type=int)
+def scan_pcc_activations(scan_record_id: int):
+    from app.controllers import scan_pcc_activations
+
+    scan_pcc_activations(scan_record_id)
+
+
+@app.cli.command()
+def critical_alert_email():
+    from app.controllers import send_critical_alert
+
+    send_critical_alert()
+
+
+@app.cli.command()
+def primary_computer_alert_email():
+    from app.controllers import send_primary_computer_alert
+
+    send_primary_computer_alert()
+
+
+@app.cli.command()
+def daily_summary_email():
+    from app.controllers import send_daily_summary
+
+    send_daily_summary()
+
+
+@app.cli.command()
+def weekly_summary_email():
+    from app.controllers import send_weekly_summary
+
+    send_weekly_summary()
+
+
 if __name__ == "__main__":
     app.run()
-    register_base_alert_controls()

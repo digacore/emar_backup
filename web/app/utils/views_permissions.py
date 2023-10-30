@@ -8,6 +8,7 @@ from flask_login import current_user
 
 from sqlalchemy.sql.expression import cast
 from sqlalchemy import Unicode, or_
+from sqlalchemy.orm.query import Query
 
 
 class MyModelView(ModelView):
@@ -22,6 +23,99 @@ class MyModelView(ModelView):
 
     def __repr__(self):
         return "MyModelView"
+
+    def _available_companies(self, show_global: bool = False):
+        """
+        Returns query object with companies available for current user.
+        This constructor should be used in the create and edit forms.
+
+        Returns:
+            query (Query): query object with companies available for current user
+        """
+        from app.models import Company, UserPermissionLevel
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                if show_global:
+                    available_companies: Query = Company.query.order_by(Company.name)
+                else:
+                    available_companies: Query = Company.query.filter(
+                        Company.is_global.is_(False)
+                    ).order_by(Company.name)
+            case UserPermissionLevel.COMPANY:
+                available_companies: Query = Company.query.filter_by(
+                    id=current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION_GROUP:
+                available_companies: Query = Company.query.filter_by(
+                    id=current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION:
+                available_companies: Query = Company.query.filter_by(
+                    id=current_user.company_id
+                )
+            case _:
+                available_companies: Query = Company.query.filter_by(id=-1)
+
+        return available_companies
+
+    def _available_locations(self):
+        """
+        Returns query object with locations available for current user.
+        This constructor should be used in the create and edit forms.
+
+        Returns:
+            query (Query): query object with locations available for current user
+        """
+        from app.models import Location, UserPermissionLevel
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                available_locations: Query = Location.query
+            case UserPermissionLevel.COMPANY:
+                available_locations: Query = Location.query.filter_by(
+                    company_id=current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION_GROUP:
+                available_locations: Query = Location.query.filter(
+                    Location.id.in_(
+                        [loc.id for loc in current_user.location_group[0].locations]
+                    )
+                )
+            case UserPermissionLevel.LOCATION:
+                available_locations: Query = Location.query.filter_by(
+                    id=current_user.location[0].id
+                )
+            case _:
+                available_locations: Query = Location.query.filter_by(id=-1)
+
+        return available_locations.order_by(Location.name)
+
+    def _available_location_groups(self):
+        """
+        Returns query object with location groups available for current user.
+        This constructor should be used in the create and edit forms.
+
+        Returns:
+            query (Query): query object with location groups available for current user
+        """
+        from app.models import LocationGroup, UserPermissionLevel
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                available_groups: Query = LocationGroup.query
+            case UserPermissionLevel.COMPANY:
+                available_groups: Query = LocationGroup.query.filter_by(
+                    company_id=current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION_GROUP:
+                available_groups: Query = LocationGroup.query.filter_by(
+                    id=current_user.location_group[0].id
+                )
+            case _:
+                available_groups: Query = LocationGroup.query.filter_by(id=-1)
+
+        return available_groups.order_by(LocationGroup.name)
 
     def create_custom_search_field_obj(self, column_name):
         """Create custom search field object"""
@@ -57,6 +151,9 @@ class MyModelView(ModelView):
             # Extract search value from search query
             search_value = re.search(r".*\>\>:(.*)", search).group(1)
         else:
+            # Reinitialize search to update calculated field "status" of Computer
+            if self.model.__tablename__ in ["computers"]:
+                self.init_search()
             custom_search_field_obj = None
             search_value = search
 
@@ -104,6 +201,13 @@ class MyModelView(ModelView):
                 count_query = count_query.filter(or_(*count_filter_stmt))
 
         return query, count_query, joins, count_joins
+
+    def _apply_filters(self, query, count_query, joins, count_joins, filters):
+        # Refresh filters cache in case of Computer (for status field)
+        if self.model.__tablename__ in ["computers"]:
+            self._refresh_filters_cache()
+
+        return super()._apply_filters(query, count_query, joins, count_joins, filters)
 
     # NOTE (danil): redefine this method to show in search "column_name: query"
     @expose("/")
@@ -197,7 +301,7 @@ class MyModelView(ModelView):
                         word.capitalize()
                         for word in search_column_name.group(1).split("_")
                     ]
-                )
+                ).replace("Pcc", "PointClickCare")
                 search_query = re.search(r".*\>\>:(.*)", view_args.search).group(1)
                 search_input_value = f"{search_column_name}: {search_query}"
 

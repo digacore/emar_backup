@@ -1,0 +1,10 @@
+{% import '/admin/model/create.html' as admin_create with context %}
+{% extends 'base.html' %}
+
+{% block content %}
+    {{admin_create}}
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/location-groups.js') }}" defer></script>
+{% endblock %}

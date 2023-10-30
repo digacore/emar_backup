@@ -1,15 +1,12 @@
-import os
 import datetime
+
 # import uuid
 import json
-import zipfile
-import tempfile
-from flask import jsonify, request, send_file, make_response
+from flask import jsonify, request
 
-from app.models import Computer, DesktopClient, LogEvent, LogType
+from app.models import Computer, DesktopClient, LogType
 from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
 from app.views.blueprint import BlueprintApi
-from app.controllers import get_pcc_2_legged_token
 from app.controllers import (
     create_log_event,
     backup_log_on_download_success,
@@ -225,6 +222,9 @@ def get_credentials(body: GetCredentials):
                 manager_host=computer.manager_host,
                 files_checksum=json.loads(str(remote_files_checksum)),
                 msi_version=msi.version if msi else "undefined",
+                use_pcc_backup=computer.location.use_pcc_backup
+                if computer.location
+                else False,
             ),
             200,
         )
@@ -322,108 +322,3 @@ def files_checksum(body: FilesChecksum):
     message = "Wrong request data. Computer not found."
     logger.info(f"Files checksum update failed. Reason: {message}")
     return jsonify(status="fail", message=message), 400
-
-
-@downloads_info_blueprint.post("/get_pcc_access_token")
-def get_pcc_access_token(body: GetCredentials):
-    """Return PCC access token, certificate and private key
-
-    Args:
-        body (GetCredentials): computer information for identification
-
-    Returns:
-        Response
-    """
-    SANDBOX_ORG_ID = "11848592-809a-42f4-82e3-5ce14964a007"
-    SANDBOX_FAC_ID = 12
-
-    computer: Computer = (
-        Computer.query.filter_by(
-            identifier_key=body.identifier_key, computer_name=body.computer_name
-        ).first()
-        if body.identifier_key
-        else None
-    )
-
-    # TODO: enable when tables for orgs, facs and computers will be adopted for PCC
-    # if computer and not (computer.company.pcc_org_id and computer.location.pcc_fac_id):
-    #     message = "PCC downloading is unsupported. Organization or facility id is not set."
-    #     logger.info(
-    #         "PCC downloading is unsupported. Computer: {}, \
-    #         Id {}.",
-    #         body.computer_name,
-    #         body.identifier_key,
-    #     )
-    #     return jsonify(status="fail", message=message), 400
-
-    if not computer:
-        message = "Wrong request data. Computer not found."
-        logger.info(
-            "Computer was not found. Computer: {}, id {}.",
-            body.computer_name,
-            body.identifier_key,
-        )
-        return jsonify(status="fail", message=message), 404
-
-    pcc_access_token = get_pcc_2_legged_token()
-
-    logger.info("Sending PCC access token to computer: {}.", computer.computer_name)
-    return (
-        jsonify(
-            status="success",
-            access_token=pcc_access_token,
-            # org_id=computer.company.pcc_org_id,
-            org_id=SANDBOX_ORG_ID,
-            # fac_id=computer.location.pcc_fac_id,
-            fac_id=SANDBOX_FAC_ID,
-            message="Supplying PCC access token",
-        ),
-        200,
-    )
-
-
-@downloads_info_blueprint.post("/get_ssl_cert")
-def get_ssl_cert(body: GetCredentials):
-    """Return ZIP archive with ssl cert and key
-
-    Args:
-        body (GetCredentials): _description_
-
-    Returns:
-        Response
-    """
-    computer: Computer = (
-        Computer.query.filter_by(
-            identifier_key=body.identifier_key, computer_name=body.computer_name
-        ).first()
-        if body.identifier_key
-        else None
-    )
-
-    if not computer:
-        message = "Wrong request data. Computer not found."
-        logger.info(
-            "Computer was not found. Computer: {}, id {}.",
-            body.computer_name,
-            body.identifier_key,
-        )
-        return jsonify(status="fail", message=message), 404
-
-    # Zip file Initialization
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        zipfile_path = os.path.join(tmpdirname, "keys.zip")
-        with zipfile.ZipFile(zipfile_path, 'w', compression=zipfile.ZIP_STORED) as myzip:
-            myzip.write(CFG.CERTIFICATE_PATH, arcname="cert.pem")
-            myzip.write(CFG.PRIVATEKEY_PATH, arcname="key.pem")
-
-        response = make_response(
-            send_file(
-                zipfile_path,
-                mimetype='zip',
-                attachment_filename=zipfile_path.split("/")[-1],
-                as_attachment=True
-            )
-        )
-
-    logger.info("Sending SSL cert to computer: {}.", computer.computer_name)
-    return response

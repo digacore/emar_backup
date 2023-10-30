@@ -6,6 +6,8 @@ import time
 import datetime
 import json
 import random
+import shutil
+from urllib.parse import urljoin
 
 # import getpass
 from pathlib import Path
@@ -80,6 +82,10 @@ if not ssh_exists:
 
 
 class AppError(Exception):
+    pass
+
+
+class NoSpecialStatusError(Exception):
     pass
 
 
@@ -300,6 +306,133 @@ def get_credentials():
         )
 
 
+def add_file_to_zip(credentials: dict, tempdir: str) -> str:
+    """
+    Add new downloaded backup to the emar_backups.zip
+    """
+    zip_name = os.path.join(STORAGE_PATH, "emar_backups.zip")
+    print("zip_name", zip_name)
+    subprs = Popen(
+        [
+            Path(".") / "7z.exe",
+            "a",
+            zip_name,
+            tempdir,
+            f'-p{credentials["folder_password"]}',
+        ],
+        stdout=PIPE,
+        stderr=PIPE,
+    )
+    stdout_res, stderr_res = subprs.communicate()
+
+    # Check if archive can be changed by 7z and it is not corrupted
+    stdout_str = str(stdout_res)
+    if re.search("is not supported archive", stdout_str):
+        logger.info(
+            "{} is not supported archive. Create new zip and delete the old one.",
+            zip_name,
+        )
+
+        # Create new zip archive and save pulled backup to it
+        new_zip = os.path.join(STORAGE_PATH, "emar_backups_new.zip")
+        new_subprs = Popen(
+            [
+                Path(".") / "7z.exe",
+                "a",
+                new_zip,
+                tempdir,
+                f'-p{credentials["folder_password"]}',
+            ],
+            stdout=PIPE,
+            stderr=PIPE,
+        )
+
+        new_subprs.communicate()
+
+        # Remove the original zip archive with backups and rename the new one
+        os.remove(zip_name)
+        os.rename(new_zip, zip_name)
+
+    # Log the situation something happened with 7z operation and throw error
+    elif not re.search("Everything is Ok", stdout_str):
+        logger.error(
+            "7z can't add archive to emar_backups and delete tmp. Stdout: {}. Stderr: {}.",
+            stdout_res,
+            stderr_res,
+        )
+        raise AppError("7z can't add archive to emar_backups")
+
+    logger.info("Files zipped.")
+
+    proc = Popen(
+        [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
+        stdout=PIPE,
+    )
+    raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
+    # NOTE f.split("Path = ")[1] is folder name
+    # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
+    files = {
+        f.split("Path = ")[1]: datetime.datetime.strptime(
+            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
+            "%Y-%m-%d %H:%M:%S",
+        )
+        for f in raw_list_stdout
+        if f.startswith("Path = ")
+    }
+    dirs = [i for i in files if "\\" not in i]
+    dirs.sort(key=lambda x: files[x])
+    pprint.pprint(f"dirs:\n{dirs}")
+
+    # TODO should we make this configurable?
+    if len(dirs) > 12:
+        diff = len(dirs) - 12
+        for dir_index in range(diff):
+            subprs = Popen(
+                [
+                    Path(".") / "7z.exe",
+                    "d",
+                    zip_name,
+                    dirs[dir_index],
+                    "-r",
+                    f'-p{credentials["folder_password"]}',
+                ]
+            )
+            subprs.communicate()
+
+    proc = Popen(
+        [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
+        stdout=PIPE,
+    )
+    raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
+    # NOTE f.split("Path = ")[1] is folder name
+    # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
+    files = {
+        f.split("Path = ")[1]: datetime.datetime.strptime(
+            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
+            "%Y-%m-%d %H:%M:%S",
+        )
+        for f in raw_list_stdout
+        if f.startswith("Path = ")
+    }
+    ddirs = [i for i in files if "\\" not in i]
+    ddirs.sort(key=lambda x: files[x])
+    pprint.pprint(f"after delete dirs:\n{ddirs}")
+
+    # Check if new downloaded backup is present in the emar_backups.zip
+    new_backup_name = re.search(r"(emarbackup_.*)$", tempdir).group(0)
+
+    if not new_backup_name in dirs:
+        logger.error(
+            "The new downloaded backup {} was not founded in the emar_backups.zip",
+            new_backup_name,
+        )
+        raise FileNotFoundError(
+            "The new downloaded backup was not found in the emar_backups.zip"
+        )
+
+    return os.path.join(zip_name, new_backup_name)
+
+
 def sftp_check_files_for_update_and_load(credentials):
     # key = path, value = checksum
     files_cheksum = {}
@@ -413,6 +546,7 @@ def sftp_check_files_for_update_and_load(credentials):
                 # this split is required to remove temp string from dir name
                 tempdir = raw_tempdir.split("_splitpoint")[0]
                 trigger_download = False
+                last_saved_path = ""
 
                 for filepath in files_cheksum:
                     if filepath not in credentials["files_checksum"]:
@@ -476,129 +610,15 @@ def sftp_check_files_for_update_and_load(credentials):
                 sftp.close()
 
                 if trigger_download:
-                    zip_name = os.path.join(STORAGE_PATH, "emar_backups.zip")
-                    print("zip_name", zip_name)
-                    subprs = Popen(
-                        [
-                            Path(".") / "7z.exe",
-                            "a",
-                            zip_name,
-                            tempdir,
-                            f'-p{credentials["folder_password"]}',
-                        ],
-                        stdout=PIPE,
-                        stderr=PIPE
-                    )
-                    stdout_res, stderr_res = subprs.communicate()
-
-                    # Check if archive can be changed by 7z and it is not corrupted
-                    stdout_str = str(stdout_res)
-                    if re.search("is not supported archive", stdout_str):
-                        logger.info("{} is not supported archive. Create new zip and delete the old one.", zip_name)
-
-                        # Create new zip archive and save pulled backup to it
-                        new_zip = os.path.join(STORAGE_PATH, "emar_backups_new.zip")
-                        new_subprs = Popen(
-                            [
-                                Path(".") / "7z.exe",
-                                "a",
-                                new_zip,
-                                tempdir,
-                                f'-p{credentials["folder_password"]}',
-                            ],
-                            stdout=PIPE,
-                            stderr=PIPE,
-                        )
-
-                        new_subprs.communicate()
-                        
-                        # Remove the original zip archive with backups and rename the new one
-                        os.remove(zip_name)
-                        os.rename(new_zip, zip_name)
-                    
-                    # Log the situation something happened with 7z operation and throw error
-                    elif not re.search("Everything is Ok", stdout_str):
-                        logger.error("7z can't add archive to emar_backups and delete tmp. Stdout: {}. Stderr: {}.", stdout_res, stderr_res)
-                        raise AppError("7z can't add archive to emar_backups")
-
-                    logger.info("Files zipped.")
-
-                    proc = Popen(
-                        [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
-                        stdout=PIPE,
-                    )
-                    raw_list_stdout = [
-                        f for f in proc.stdout.read().decode().splitlines()
-                    ]
-                    # NOTE f.split("Path = ")[1] is folder name
-                    # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
-                    files = {
-                        f.split("Path = ")[1]: datetime.datetime.strptime(
-                            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip(
-                                "Modified = "
-                            ),
-                            "%Y-%m-%d %H:%M:%S",
-                        )
-                        for f in raw_list_stdout
-                        if f.startswith("Path = ")
-                    }
-                    dirs = [i for i in files if "\\" not in i]
-                    dirs.sort(key=lambda x: files[x])
-                    pprint.pprint(f"dirs:\n{dirs}")
-
-                    # TODO should we make this configurable?
-                    if len(dirs) > 12:
-                        diff = len(dirs) - 12
-                        for dir_index in range(diff):
-                            subprs = Popen(
-                                [
-                                    Path(".") / "7z.exe",
-                                    "d",
-                                    zip_name,
-                                    dirs[dir_index],
-                                    "-r",
-                                    f'-p{credentials["folder_password"]}',
-                                ]
-                            )
-                            subprs.communicate()
-
-                    proc = Popen(
-                        [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
-                        stdout=PIPE,
-                    )
-                    raw_list_stdout = [
-                        f for f in proc.stdout.read().decode().splitlines()
-                    ]
-                    # NOTE f.split("Path = ")[1] is folder name
-                    # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
-                    files = {
-                        f.split("Path = ")[1]: datetime.datetime.strptime(
-                            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip(
-                                "Modified = "
-                            ),
-                            "%Y-%m-%d %H:%M:%S",
-                        )
-                        for f in raw_list_stdout
-                        if f.startswith("Path = ")
-                    }
-                    ddirs = [i for i in files if "\\" not in i]
-                    ddirs.sort(key=lambda x: files[x])
-                    pprint.pprint(f"after delete dirs:\n{ddirs}")
-
-                    # Check if new downloaded backup is present in the emar_backups.zip
-                    new_backup_name = re.search(r"(emarbackup_.*)$", tempdir).group(0)
-                    
-                    if not new_backup_name in dirs:
-                        logger.error("The new downloaded backup {} was not founded in the emar_backups.zip", new_backup_name)
-                        raise FileNotFoundError("The new downloaded backup was not found in the emar_backups.zip")
-
+                    last_saved_path = add_file_to_zip(credentials, tempdir)
                 else:
                     logger.info("Nothing to zip.")
 
-                last_saved_path = os.path.join(zip_name, new_backup_name)
-
                 update_download_status(
-                    "downloaded", credentials, last_downloaded=str(tempdir), last_saved_path=last_saved_path
+                    "downloaded",
+                    credentials,
+                    last_downloaded=str(tempdir),
+                    last_saved_path=last_saved_path,
                 )
 
         response = requests.post(
@@ -624,6 +644,78 @@ def sftp_check_files_for_update_and_load(credentials):
         )
 
     return offset_to_est(datetime.datetime.utcnow())
+
+
+def download_file_from_pcc(credentials):
+    """
+    Download backup file from PCC API
+    """
+
+    # Set status as downloading
+    logger.info("<-------Start downloading backup file from PCC API------->")
+    update_download_status("downloading", credentials)
+    est_datetime = datetime.datetime.fromisoformat(
+        offset_to_est(datetime.datetime.utcnow())
+    )
+    download_dir = f"emarbackup_{est_datetime.strftime('%H-%M_%b-%d-%Y')}"
+
+    # Create temp directory to save downloaded backup and zip it
+    with tempfile.TemporaryDirectory() as raw_tempdir:
+        # this split is required to remove temp string from dir name
+        download_dir_path = os.path.join(raw_tempdir, download_dir)
+        os.mkdir(download_dir_path)
+        last_saved_path = ""
+
+        # Download backup file
+        server_route = "pcc_api/download_backup"
+        url = urljoin(credentials["manager_host"], server_route)
+        try:
+            with requests.post(
+                url,
+                json={
+                    "computer_name": credentials["computer_name"],
+                    "identifier_key": credentials["identifier_key"],
+                },
+                stream=True,
+            ) as res:
+                res.raise_for_status()
+
+                filename = re.findall(
+                    "filename=(.+)", res.headers["Content-Disposition"]
+                )[0]
+                filepath = os.path.join(download_dir_path, filename)
+                with open(filepath, "wb") as f:
+                    shutil.copyfileobj(res.raw, f)
+
+        except Exception as e:
+            logger.error("Exception occurred while downloading: {}", e)
+            raise AppError("Can't download backup file from PCC API")
+
+        # Zip downloaded backup file
+        last_saved_path = add_file_to_zip(credentials, download_dir_path)
+
+    update_download_status(
+        "downloaded",
+        credentials,
+        last_downloaded=str(download_dir_path),
+        last_saved_path=last_saved_path,
+    )
+
+    try:
+        res = requests.post(
+            urljoin(credentials["manager_host"], "special_status"),
+            json={
+                "computer_name": credentials["computer_name"],
+                "identifier_key": credentials["identifier_key"],
+                "special_status": "ok",
+            },
+        )
+        res.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        logger.error("Exception occurred while sending special status: {}", e)
+        raise NoSpecialStatusError("Can't send special status to server")
+
+    logger.info("<-------Finish downloading backup file from PCC API------->")
 
 
 def send_activity(last_download_time, creds):
@@ -708,6 +800,7 @@ def create_desktop_icon():
         shortcut.Targetpath = target
         shortcut.save()
 
+
 # def download_file_from_pcc(credentials):
 #     """Retrive access token and certs from Web and download files from PCC API"""
 #     # Get access token
@@ -718,7 +811,7 @@ def create_desktop_icon():
 #             "identifier_key": credentials["identifier_key"],
 #         },
 #     )
-    
+
 #     # Get certs
 #     certs_response = requests.post(
 #         f'{credentials["manager_host"]}/get_ssl_cert',
@@ -733,6 +826,7 @@ def create_desktop_icon():
 #         "https://connect2.pointclickcare.com/api/public/preview1/orgs/11848592-809a-42f4-82e3-5ce14964a007/facs/22/backup-files"
 #     )
 
+
 @logger.catch
 def main_func():
     logger.info("Downloading proccess started.")
@@ -743,12 +837,18 @@ def main_func():
     if credentials["status"] == "success":
         # Handle errors in files downloading and zip
         try:
-            last_download_time = sftp_check_files_for_update_and_load(credentials)
+            if not credentials.get("use_pcc_backup"):
+                last_download_time = sftp_check_files_for_update_and_load(credentials)
+            else:
+                download_file_from_pcc(credentials)
+                last_download_time = offset_to_est(datetime.datetime.utcnow())
             send_activity(last_download_time, credentials)
             logger.info("Downloading proccess finished.")
         except (AppError, FileNotFoundError):
             update_download_status("error", credentials)
             logger.info("Downloading process interrupted")
+        except NoSpecialStatusError:
+            logger.info("Downloading process succed but special status not sent")
 
         # user = getpass.getuser()
 
@@ -774,17 +874,14 @@ try:
     # NOTE wait randomly from 0 to 1800 sec
     # to spread load on the server
     # NOTE: Check if this is the first script run
-    is_first_run = (
-        not os.path.exists(STORAGE_PATH)
-        or (
-            len(os.listdir(STORAGE_PATH)) == 1
-            and os.listdir(STORAGE_PATH)[0] == "emar_log.txt"
-        )
+    is_first_run = not os.path.exists(STORAGE_PATH) or (
+        len(os.listdir(STORAGE_PATH)) == 1
+        and os.listdir(STORAGE_PATH)[0] == "emar_log.txt"
     )
 
     if not is_first_run:
         time.sleep(random.uniform(0, 1800))
-    
+
     main_func()
     logger.info("Task finished")
     time.sleep(20)

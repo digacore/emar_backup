@@ -1,10 +1,16 @@
-from datetime import datetime
+import enum
+from datetime import datetime, timedelta
 
-from sqlalchemy import or_, func
-from sqlalchemy.orm import relationship
+from sqlalchemy import func, sql, select, or_, Enum
+from sqlalchemy.orm import relationship, backref
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
+from flask_admin.form import Select2Widget
+from flask_admin.contrib.sqla.fields import QuerySelectField
+
+from wtforms import validators
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
@@ -12,23 +18,46 @@ from app.utils import MyModelView
 from .company import Company
 from .system_log import SystemLogType
 
+from config import BaseConfig as CFG
+
+
+class LocationStatus(enum.Enum):
+    ONLINE = "ONLINE"
+    ONLINE_PRIMARY_OFFLINE = "ONLINE_PRIMARY_OFFLINE"
+    OFFLINE = "OFFLINE"
+
 
 class Location(db.Model, ModelMixin):
 
     __tablename__ = "locations"
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False)
-    company = relationship("Company", passive_deletes=True, lazy="select")
-    # TODO swap company name to company id. Same for all models
-    company_name = db.Column(
-        db.String, db.ForeignKey("companies.name", ondelete="CASCADE")
+
+    company_id = db.Column(
+        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=True
     )
+
+    name = db.Column(db.String(64), nullable=False)
+    status = db.Column(Enum(LocationStatus), nullable=True)
     default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
     created_at = db.Column(db.DateTime, default=datetime.now)
+    pcc_fac_id = db.Column(db.Integer, nullable=True)
+    use_pcc_backup = db.Column(
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
+    created_from_pcc = db.Column(
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
+
+    company = relationship(
+        "Company",
+        passive_deletes=True,
+        backref=backref("locations", cascade="delete"),
+        lazy="select",
+    )
 
     def __repr__(self):
         return self.name
@@ -36,12 +65,73 @@ class Location(db.Model, ModelMixin):
     def _cols(self):
         return [
             "name",
-            "company_name",
+            "company_id",
             "default_sftp_path",
             "computers_per_location",
             "computers_online",
             "computers_offline",
+            "pcc_fac_id",
+            "use_pcc_backup",
         ]
+
+    @hybrid_property
+    def company_name(self):
+        return self.company.name if self.company else None
+
+    @company_name.expression
+    def company_name(cls):
+        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+
+    @company_name.setter
+    def company_name(self, value):
+        new_company = Company.query.filter_by(name=value).first()
+        self.company_id = new_company.id if new_company else None
+
+    # NOTE: unfortunately, next callable properties can't be used with Flask Admin (as table columns)
+    # Because initialization of LocationView class is done before initialization of Compute model
+    # So, we use next properties for the email templates but we still need to have columns
+    # "computers_per_location", "computers_online", "computers_offline" and task "update_cl_stat"
+    # to update these columns
+
+    @hybrid_property
+    def total_computers(self) -> int:
+        from app.models.computer import Computer
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
+        ).count()
+
+    @hybrid_property
+    def total_computers_offline(self) -> int:
+        from app.models.computer import Computer
+
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
+            or_(
+                Computer.last_download_time.is_(None),
+                Computer.last_download_time < time - timedelta(hours=1),
+            ),
+        ).count()
+
+    @hybrid_property
+    def primary_computers_offline(self) -> int:
+        from app.models.computer import Computer, DeviceRole
+
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+        return Computer.query.filter(
+            Computer.location_id == self.id,
+            Computer.activated.is_(True),
+            Computer.device_role == DeviceRole.PRIMARY,
+            or_(
+                Computer.last_download_time.is_(None),
+                Computer.last_download_time < time - timedelta(hours=1),
+            ),
+        ).count()
 
 
 class LocationView(RowActionListMixin, MyModelView):
@@ -54,11 +144,22 @@ class LocationView(RowActionListMixin, MyModelView):
     column_list = [
         "name",
         "company_name",
-        "default_sftp_path",
+        "status",
         "computers_per_location",
         "computers_online",
         "computers_offline",
+        "default_sftp_path",
+        "pcc_fac_id",
+        "use_pcc_backup",
+        "created_from_pcc",
     ]
+
+    column_labels = dict(
+        pcc_fac_id="PointClickCare Facility ID",
+        use_pcc_backup="Use PointClickCare Backup",
+        created_from_pcc="Created from PointClickCare",
+    )
+
     column_searchable_list = column_list
     column_filters = column_list
     column_sortable_list = column_list
@@ -72,6 +173,8 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
+    form_excluded_columns = ("created_from_pcc", "users", "status")
+
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
 
@@ -81,14 +184,24 @@ class LocationView(RowActionListMixin, MyModelView):
         return "Search by all text columns"
 
     def _can_edit(self, model):
+        from app.models.user import UserPermissionLevel, UserRole
+
         # return True to allow edit
-        if str(current_user.asociated_with).lower() == "global-full":
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
 
     def _can_delete(self, model):
-        if str(current_user.asociated_with).lower() == "global-full":
+        from app.models.user import UserPermissionLevel, UserRole
+
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
             return True
         else:
             return False
@@ -104,11 +217,26 @@ class LocationView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
+    # All these manipulations with group field are needed because
+    # between Location and LocationGroup many-to-many relationship (Location can have only one group or no group)
+    # But Flask-Admin builds form for many-to-many relationship as SelectMultipleField (we need SelectField)
+    def get_create_form(self):
+        form = super().get_create_form()
+        form.group = QuerySelectField(
+            "Group",
+            validators=[validators.Optional()],
+            allow_blank=True,
+        )
+
+        return form
+
     def create_form(self, obj=None):
         form = super().create_form(obj)
 
-        # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.company.query_factory = self._available_companies
+
+        form.group.widget = Select2Widget()
+        form.group.query_factory = self._available_location_groups
 
         return form
 
@@ -116,9 +244,20 @@ class LocationView(RowActionListMixin, MyModelView):
         form = super().edit_form(obj)
 
         # apply a sort to the relation
-        form.company.query_factory = lambda: Company.query.order_by(Company.name)
+        form.company.query_factory = self._available_companies
+        form.group.query_factory = self._available_location_groups
 
         return form
+
+    def create_model(self, form):
+        group_data = form.group.data
+        del form.group
+        model = super().create_model(form)
+        model.group = [group_data] if group_data else []
+        self.session.add(model)
+        self.session.commit()
+
+        return model
 
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log
@@ -136,47 +275,52 @@ class LocationView(RowActionListMixin, MyModelView):
         create_system_log(SystemLogType.LOCATION_DELETED, model, current_user)
 
     def get_query(self):
+        from app.models.user import UserPermissionLevel, UserRole
 
-        # TODO make universal (func or something) for every model
         # NOTE handle permissions - meaning which details current user could view
-        if current_user:
-            if str(current_user.asociated_with).lower() == "global-full":
-                if "delete" in self.action_disallowed_list:
-                    self.action_disallowed_list.remove("delete")
-                self.can_create = True
-            else:
-                if "delete" not in self.action_disallowed_list:
-                    self.action_disallowed_list.append("delete")
-                self.can_create = False
-
-            user_permission: str = current_user.asociated_with
-            if (
-                user_permission.lower() == "global-full"
-                or user_permission.lower() == "global-view"
-            ):
-                result_query = self.session.query(self.model)
-            else:
-                result_query = self.session.query(self.model).filter(
-                    or_(
-                        self.model.name == user_permission,
-                        self.model.company_name == user_permission,
-                    )
-                )
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and current_user.role == UserRole.ADMIN
+        ):
+            if "delete" in self.action_disallowed_list:
+                self.action_disallowed_list.remove("delete")
+            self.can_create = True
         else:
-            result_query = self.session.query(self.model).filter(
-                self.model.computer_name == "None"
-            )
+            if "delete" not in self.action_disallowed_list:
+                self.action_disallowed_list.append("delete")
+            self.can_create = False
+
+        match current_user.permission:
+            case UserPermissionLevel.GLOBAL:
+                result_query = self.session.query(self.model)
+            case UserPermissionLevel.COMPANY:
+                result_query = self.session.query(self.model).filter(
+                    self.model.company_id == current_user.company_id
+                )
+            case UserPermissionLevel.LOCATION_GROUP:
+                locations = current_user.location_group[0].locations
+                result_query = self.session.query(self.model).filter(
+                    self.model.id.in_([location.id for location in locations])
+                )
+            case UserPermissionLevel.LOCATION:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == current_user.location[0].id
+                )
+            case _:
+                result_query = self.session.query(self.model).filter(
+                    self.model.id == -1
+                )
+
         return result_query
 
     def get_count_query(self):
+        from app.models.user import UserPermissionLevel
+
         actual_query = self.get_query()
 
         # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
         # Instead add select_from(self.model) to query to count correctly
-        if (
-            current_user.asociated_with.lower() == "global-full"
-            or current_user.asociated_with.lower() == "global-view"
-        ):
+        if current_user.permission == UserPermissionLevel.GLOBAL:
             return actual_query.with_entities(func.count()).select_from(self.model)
 
         return actual_query.with_entities(func.count())

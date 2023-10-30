@@ -9,6 +9,7 @@
 {% block head %}
     {{ super() }}
     {{ lib.form_css() }}
+    <link href="{{ url_for('static', filename='/css/company-location.css') }}" rel="stylesheet">
 {% endblock %}
 
 {% block body %}
@@ -114,7 +115,7 @@
                             </form>
 
                         {% else %}
-                            {{ name }}
+                            <div style="width: 150px; color: #4e73df;">{{ name }}</div>
                         {% endif %}
                         {% if admin_view.column_descriptions.get(c) %}
                             <a class="fa fa-question-circle glyphicon glyphicon-question-sign"
@@ -145,70 +146,121 @@
                                 {% endif %}
                             {% endfor %}
                         {% endblock %}
+
+                        {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
+                            {% set merge_object = "company" if "/admin/company/" in return_url else "location" %}
+                            <!-- Button trigger modal -->
+                            <a href="#mergeModal{{ get_pk_value(row) }}" data-toggle="modal">
+                                <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge {{ merge_object }}" style="height: 18px; width: 18px;">
+                            </a>
+
+                            <!-- Modal -->
+                            <div class="modal fade" id="mergeModal{{ get_pk_value(row) }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form
+                                            class="merging-form"
+                                            action="/merge/{{ merge_object }}/{{ get_pk_value(row) }}/first-step"
+                                            method="GET"
+                                        >
+                                            <div class="modal-header">
+                                                <h5 class="modal-title text-wrap text-primary" id="exampleModalLabel">Merge {{ merge_object }} {{ get_value(row, "name") }} with:</h5>
+                                                <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true" class="text-secondary">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="search-object-input-div">
+                                                    <input
+                                                        id="search-object-id-input-{{ get_pk_value(row) }}"
+                                                        type="hidden"
+                                                        name="secondary_{{ merge_object }}"
+                                                        class="search-object-id-input"
+                                                    >
+                                                    <input
+                                                        id="search-object-input-{{ get_pk_value(row) }}"
+                                                        class="search-object-input w-100 p-2 border rounded"
+                                                        placeholder="Search {{ merge_object }}"
+                                                        autocomplete="off"
+                                                    >
+                                                    <div class="search-object-hints-div mt-2" hidden>
+                                                        <p class="search-object-hint"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-light" data-dismiss="modal">
+                                                    <span class="text-secondary">Cancel</span>
+                                                </button>
+                                                <button type="submit" disabled class="btn btn-primary confirm-modal-button">Confirm</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
                     </td>
-                    {%- endif -%}
+                    {% endif %}
                 {% endblock %}
 
+                <!-- The name of company or location object -->
                 {% set loc_compn_name = namespace(loc='loc') %}
-                {% set comp_or_loc = namespace(col='0_21') %}
+
+                <!-- Filter number on computers page. flt2_23 - to filter by location name (default), flt2_16 - by company name -->
+                {% set comp_or_loc = namespace(col='2_23') %}
                 {% for c, name in list_columns %}
-                    <td class="col-{{c}}">
-                        {%if c=="name" %}
-                            {% set loc_compn_name.loc = get_value(row, c) %}
+                    {%if c=="name" %}
+                        {% set loc_compn_name.loc = get_value(row, c) %}
+                        <td>
+                            {% if admin_view.is_editable(c) %}
+                                {% set form = list_forms[get_pk_value(row)] %}
+                                {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                            {% else %}
+                                {% set created_from_pcc = True if "created_from_pcc: true" in get_value(row, "created_from_pcc").unescape() else False %}
+                                {% if created_from_pcc %}
+                                    <div class="d-flex align-items-center">
+                                        {{ get_value(row, c) }}
+                                        <img src="{{ url_for('static', filename='/img/pcc_logo.png') }}" alt="PCC logo" style="height: 20px; width: 20px;" class="ml-2">
+                                    </div>
+                                {% else %}
+                                    {{ get_value(row, c) }}
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    {% elif c == "status" %}
+                        {% if get_value(row, c) == "ONLINE" %}
+                            <td class="col-alert_status-green">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
                                 {% else %}
-                                {{ get_value(row, c) }}
+                                    Online
                                 {% endif %}
-                        {%elif c=="computers_per_location" or c=="total_computers"%}
-                            <a href="{{ url_for('computer.index_view', search=loc_compn_name.loc) }}">
+                            </td>
+                        {% elif get_value(row, c) == "ONLINE_PRIMARY_OFFLINE" %}
+                            <td class="col-alert_status-yellow">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
-                                    {% if form.csrf_token %}
-                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
-                                    {% elif csrf_token %}
-                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
-                                    {% else %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
-                                    {% endif %}
                                 {% else %}
-                                {{ get_value(row, c) }}
+                                    Online <br> Primary Offline
                                 {% endif %}
-                            </a>
-                        {%elif c=="locations_per_company"%}
-                            {% set comp_or_loc.col = '0_14' %}
-                            <a href="{{ url_for('location.index_view', flt1_7=loc_compn_name.loc) }}">
+                            </td>
+                        {% elif get_value(row, c) == "OFFLINE" %}
+                            <td class="col-alert_status-red">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
-                                    {% if form.csrf_token %}
-                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
-                                    {% elif csrf_token %}
-                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
-                                    {% else %}
                                     {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
-                                    {% endif %}
                                 {% else %}
-                                {{ get_value(row, c) }}
+                                    Offline
                                 {% endif %}
-                            </a>
-                        {%elif c=="computers_online"%}
-                            <a href="{{ url_for('computer.index_view') }}?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt2_7=green">
-                                {% if admin_view.is_editable(c) %}
-                                    {% set form = list_forms[get_pk_value(row)] %}
-                                    {% if form.csrf_token %}
-                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
-                                    {% elif csrf_token %}
-                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
-                                    {% else %}
-                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
-                                    {% endif %}
-                                {% else %}
-                                {{ get_value(row, c) }}
-                                {% endif %}
-                            </a>
-                        {%elif c=="computers_offline"%}
-                            <a href="{{ url_for('computer.index_view') }}?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt0_8=green">
+                            </td>
+                        {% endif %}
+                    {% elif c=="total_computers" %}
+                        <!-- total_computers field present in the Company table so change filter to flt2_16 -->
+                        {% set comp_or_loc.col = '2_16' %}
+                        <td>
+                            <a href="{{ url_for('computer.index_view', flt2_16=loc_compn_name.loc) }}">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {% if form.csrf_token %}
@@ -222,7 +274,77 @@
                                 {{ get_value(row, c) }}
                                 {% endif %}
                             </a>
-                        {% else %}
+                        </td>
+                    {% elif c=="computers_per_location" %}
+                        <td>
+                            <a href="{{ url_for('computer.index_view') }}?flt{{ comp_or_loc.col }}={{ loc_compn_name.loc }}">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {% if form.csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                    {% elif csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                    {% else %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                    {% endif %}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                            </a>
+                        </td>
+                    {%elif c=="locations_per_company"%}
+                        <td>
+                            <a href="{{ url_for('location.index_view', flt2_9=loc_compn_name.loc) }}">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {% if form.csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                    {% elif csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                    {% else %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                    {% endif %}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                            </a>
+                        </td>
+                    {% elif c=="computers_online" %}
+                        <td>
+                            <a href="{{ url_for('computer.index_view') }}?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt1_7=online">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {% if form.csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                    {% elif csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                    {% else %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                    {% endif %}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                            </a>
+                        </td>
+                    {% elif c=="computers_offline" %}
+                        <td>
+                            <a href="{{ url_for('computer.index_view') }}?flt{{comp_or_loc.col}}={{loc_compn_name.loc}}&flt1_7=no+backup">
+                                {% if admin_view.is_editable(c) %}
+                                    {% set form = list_forms[get_pk_value(row)] %}
+                                    {% if form.csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=form.csrf_token._value()) }}
+                                    {% elif csrf_token %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c), csrf=csrf_token()) }}
+                                    {% else %}
+                                    {{ form[c](pk=get_pk_value(row), display_value=get_value(row, c)) }}
+                                    {% endif %}
+                                {% else %}
+                                {{ get_value(row, c) }}
+                                {% endif %}
+                            </a>
+                        </td>
+                    {% else %}
+                        <td>
                             {% if admin_view.is_editable(c) %}
                                 {% set form = list_forms[get_pk_value(row)] %}
                                 {% if form.csrf_token %}
@@ -235,8 +357,8 @@
                             {% else %}
                             {{ get_value(row, c) }}
                             {% endif %}
-                        {% endif %}
-                    </td>
+                        </td>
+                    {% endif %}
                 {% endfor %}
             {% endblock %}
         </tr>

@@ -18,20 +18,6 @@
       "args": ["run"],
       "jinja": true
     },
-
-    {
-      "name": "check-and-alert",
-      "type": "python",
-      "request": "launch",
-      "module": "flask",
-      "env": {
-        "FLASK_APP": "wsgi:app",
-        "FLASK_ENV": "development",
-        "FLASK_DEBUG": "1"
-      },
-      "args": ["check-and-alert"],
-      "jinja": true
-    },
     {
       "name": "worker",
       "type": "python",
@@ -63,6 +49,71 @@
       "module": "flask",
       "justMyCode": false,
       "args": ["get-pcc-access-key"]
+    },
+    {
+      "name": "critical-alert-email",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "wsgi:app",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "jinja": true,
+      "args": ["critical-alert-email"]
+    },
+    {
+      "name": "primary-computer-alert-email",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "wsgi:app",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "jinja": true,
+      "args": ["primary-computer-alert-email"]
+    },
+    {
+      "name": "daily-summary-email",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "wsgi:app",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "jinja": true,
+      "args": ["daily-summary-email"]
+    },
+    {
+      "name": "weekly-summary-email",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "wsgi:app",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "jinja": true,
+      "args": ["weekly-summary-email"]
+    },
+    {
+      "name": "update-cl-stat",
+      "type": "python",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "wsgi:app",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "jinja": true,
+      "args": ["update-cl-stat"]
     },
   ]
 }

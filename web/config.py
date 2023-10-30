@@ -31,11 +31,6 @@ class BaseConfig(object):
     SUPER_USER_NAME = os.environ.get("SUPER_USER_NAME", "emarsuperuser")
     SUPER_USER_MAIL = os.environ.get("SUPERPASS", "emarsup@email.com")
 
-    ALERT_PERIOD = int(os.environ.get("ALERT_PERIOD", 300))
-    UPDATE_CL_PERIOD = int(os.environ.get("UPDATE_CL_PERIOD", 120))
-    DAILY_SUMMARY_PERIOD = int(os.environ.get("DAILY_SUMMARY_PERIOD", 86400))
-    LOGS_DELETION_PERIOD = int(os.environ.get("COMPUTER_LOGS_DELETION_PERIOD", 86400))
-
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
     TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
@@ -51,11 +46,6 @@ class BaseConfig(object):
     MAIL_USE_TLS = False
     MAIL_USE_SSL = True
     MAIL_DEFAULT_SENDER = os.environ.get("SUPPORT_EMAIL")
-
-    USER_PERMISSIONS = [
-        ("Global-full", "Global-full"),
-        ("Global-view", "Global-view"),
-    ]
 
     CLIENT_VERSIONS = [("stable", "stable"), ("latest", "latest")]
 
@@ -121,6 +111,8 @@ class BaseConfig(object):
     PCC_BASE_URL = os.environ.get("PCC_BASE_URL", None)
     PCC_CLIENT_ID = os.environ.get("PCC_CLIENT_ID", None)
     PCC_CLIENT_SECRET = os.environ.get("PCC_CLIENT_SECRET", None)
+    PCC_APP_NAME = os.environ.get("PCC_APP_NAME", None)
+    PCC_DAILY_QUOTA_LIMIT = int(os.environ.get("PCC_DAILY_QUOTA_LIMIT", 10000))
     CERTIFICATE_PATH = os.environ.get("CERTIFICATE_PATH", None)
     PRIVATEKEY_PATH = os.environ.get("PRIVATEKEY_PATH", None)
 
@@ -182,6 +174,7 @@ class ProductionConfig(BaseConfig):
         "DATABASE_URL", "sqlite:///" + os.path.join(base_dir, "database.sqlite3")
     )
     WTF_CSRF_ENABLED = True
+    PCC_DAILY_QUOTA_LIMIT = int(os.environ.get("PCC_DAILY_QUOTA_LIMIT", 50000))
 
 
 config = dict(

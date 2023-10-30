@@ -19,12 +19,15 @@ class BackupLog(db.Model, ModelMixin):
     __tablename__ = "backup_logs"
 
     id = db.Column(db.Integer, primary_key=True)
+
+    computer_id = db.Column(db.Integer, db.ForeignKey("computers.id"))
+
     backup_log_type = db.Column(Enum(BackupLogType), nullable=False)
     start_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     error = db.Column(db.String(128), server_default="", default="")
     notes = db.Column(db.String(128), server_default="", default="")
-    computer_id = db.Column(db.Integer, db.ForeignKey("computers.id"))
+
     computer = relationship(
         "Computer", passive_deletes=True, backref="backup_logs", lazy="select"
     )

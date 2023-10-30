@@ -1,4 +1,7 @@
 import os
+import json
+
+# from datetime import datetime, timedelta
 
 from flask import render_template, url_for
 from flask_openapi3 import OpenAPI
@@ -14,6 +17,8 @@ from flask_mail import Mail
 from flask_jwt_extended import JWTManager
 from oauthlib.oauth2 import WebApplicationClient
 from flask_session import Session
+
+from app.utils import update_report_data
 
 from config import BaseConfig as CFG
 
@@ -40,17 +45,19 @@ def create_app(environment="development"):
     from app.views import (
         main_blueprint,
         auth_blueprint,
-        email_blueprint,
         info_blueprint,
         company_blueprint,
         location_blueprint,
+        pcc_blueprint,
+        search_blueprint,
+        merge_blueprint,
     )
     from app.api import (
         downloads_info_blueprint,
-        api_email_blueprint,
         computer_blueprint,
         download_msi_blueprint,
         download_msi_fblueprint,
+        pcc_api_blueprint,
     )
     from app.models import (
         User,
@@ -62,14 +69,12 @@ def create_app(environment="development"):
         ComputerView,
         Location,
         LocationView,
-        Alert,
-        AlertView,
+        LocationGroup,
+        LocationGroupView,
         DesktopClient,
         DesktopClientView,
         ClientVersion,
         ClientVersionView,
-        AlertControls,
-        AlertControlsView,
     )
 
     # Instantiate app.
@@ -95,22 +100,28 @@ def create_app(environment="development"):
 
     # Pass functions to jinja2 templates
     app.jinja_env.globals.update(offset_to_east=CFG.offset_to_est)
+    app.jinja_env.globals.update(to_json=json.dumps)
+    app.jinja_env.globals.update(update_report_data=update_report_data)
     app.jinja_env.globals.update(csrf_token=generate_csrf)
+    # app.jinja_env.globals.update(datetime=datetime)
+    # app.jinja_env.globals.update(timedelta=timedelta)
 
     # Register blueprints.
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(main_blueprint)
-    app.register_blueprint(email_blueprint)
     app.register_blueprint(download_msi_fblueprint)
     app.register_blueprint(info_blueprint)
+    app.register_blueprint(pcc_blueprint)
+    app.register_blueprint(search_blueprint)
+    app.register_blueprint(merge_blueprint)
     app.register_blueprint(company_blueprint)
     app.register_blueprint(location_blueprint)
 
     # Register api.
     app.register_api(downloads_info_blueprint)
-    app.register_api(api_email_blueprint)
     app.register_api(computer_blueprint)
     app.register_api(download_msi_blueprint)
+    app.register_api(pcc_api_blueprint)
 
     # Set up flask login.
     @login_manager.user_loader
@@ -145,10 +156,9 @@ def create_app(environment="development"):
     admin.add_view(CompanyView(Company, db.session))
     admin.add_view(ComputerView(Computer, db.session))
     admin.add_view(LocationView(Location, db.session))
-    admin.add_view(AlertView(Alert, db.session))
     admin.add_view(DesktopClientView(DesktopClient, db.session))
     admin.add_view(ClientVersionView(ClientVersion, db.session))
-    admin.add_view(AlertControlsView(AlertControls, db.session))
+    admin.add_view(LocationGroupView(LocationGroup, db.session))
 
     # Error handlers.
     @app.errorhandler(HTTPException)

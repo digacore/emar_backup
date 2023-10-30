@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block flash_messages %}
+{% endblock %}
+
+{% block links %}
+  <link href="{{ url_for('static', filename='/css/merge.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <div class="d-flex w-100 h-100 justify-content-center flex-column">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h4 class="text-gray font-weight-bold">Review data for merging:</h4>
+    </div>
+    <!-- End header -->
+
+    <!-- Content -->
+    <form
+      action="/merge/location/{{ primary_location.id }}/second-step?primary_company={{ primary_company_id }}&secondary_company={{ secondary_company_id }}&secondary_location={{ secondary_location.id }}&confirmed=True"
+      method="POST"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      <div class="d-flex flex-column w-100">
+        <div class="text-gray-900 font-weight-bold mb-2">Location Name:</div>
+        <div class="d-flex align-items-center mb-4 w-100">
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.name }}" readonly>
+          <i class="fas fa-arrow-right mr-4"></i>
+          <input id="name-input" type="text" name="name" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.name.data }}" readonly>
+        </div>
+
+        <div class="text-gray-900 font-weight-bold mb-2">Company:</div>
+        <div class="d-flex align-items-center mb-4 w-100">
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.company.name or '' }}" readonly>
+          <i class="fas fa-arrow-right mr-4"></i>
+          <input id="company-input" type="text" name="company_name" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.company_name.data or '' }}" readonly>
+        </div>
+
+        <div class="text-gray-900 font-weight-bold mb-2">Default SFTP Path:</div>
+        <div class="d-flex align-items-center mb-4 w-100">
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.default_sftp_path or '' }}" readonly>
+          <i class="fas fa-arrow-right mr-4"></i>
+          <input id="sftp-path-input" type="text" name="default_sftp_path" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.default_sftp_path.data or '' }}" readonly>
+        </div>
+
+        <div class="text-gray-900 font-weight-bold mb-2">PointClickCare Facility ID:</div>
+        <div class="d-flex align-items-center mb-4 w-100">
+          <input class="d-block w-25 border rounded mr-4 p-2" value="{{ primary_location.pcc_fac_id or '' }}" readonly>
+          <i class="fas fa-arrow-right mr-4"></i>
+          <input id="pcc-fac-d-input" type="text" name="pcc_fac_id" class="d-block border rounded p-2 w-25" value="{{ merge_select_form.pcc_fac_id.data or '' }}" readonly>
+        </div>
+
+        <div class="d-flex align-items-center mb-4">
+          <span class="text-gray-900 font-weight-bold mr-4">Use PointClickCare Backup:</span>
+          <!-- Use 2 inputs here: first (disabled) just to show information for use; second (hidden) send value -->
+          <input
+            disabled
+            type="checkbox"
+            {{ "checked" if merge_select_form.use_pcc_backup.data else None }}
+          >
+
+          <input
+            hidden
+            type="checkbox"
+            id="use-pcc-backup-input"
+            name="use_pcc_backup"
+            {{ "checked" if merge_select_form.use_pcc_backup.data else None }}
+          >
+        </div>
+
+        <!-- List with selected computers -->
+        <div class="text-gray-900 font-weight-bold mb-2">Computers list:</div>
+        <div class="d-flex align-items-center mb-4 w-100">
+          <div class="d-flex flex-column w-25 p-2 mr-4 border rounded checkboxes-container-overflow text-gray-900 bg-white">
+            <ul class="ul-with-no-decoration">
+              {% for computer in primary_location.computers %}
+                <li class="li-with-hover">
+                  {{ computer.computer_name }}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+
+          <i class="fas fa-arrow-right mr-4"></i>
+
+          <div class="d-flex flex-column w-25 p-2 border rounded checkboxes-container-overflow text-gray-900 bg-white">
+            <ul class="ul-with-no-decoration">
+              {% for computer in selected_computers %}
+                <li class="li-with-hover">
+                  {{ computer.computer_name }}
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+
+        <!-- Hidden select tags for form -->
+        <select name="merged_computers_list" multiple hidden>
+          {% for computer_id in merge_select_form.merged_computers_list.data %}
+            <option selected value="{{ computer_id }}"></option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Buttons -->
+      <div class="d-flex justify-content-between">
+        <button type="button" class="btn btn-primary" onclick="handleBackClick()">Back</button>
+        <button type="button" data-toggle="modal" data-target="#confirm-modal" class="btn btn-primary">Confirm</a>
+      </div>
+
+      <!-- Confirmation modal window -->
+      <div class="modal fade" id="confirm-modal" tabindex="-1" aria-labelledby="confirm-modal-label" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-body">
+              <span class="text-gray">Are you sure you wish to merge {{ primary_location.name }} and {{ secondary_location.name }}?</span>
+              <span class="text-danger">This action cannot be undone!</span>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-dismiss="modal">
+                    <span class="text-secondary">Cancel</span>
+                </button>
+                <button type="submit" class="btn btn-primary">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+{% endblock %}
+
+{% block sidebar_toggle %}
+  <script>
+    document.addEventListener("DOMContentLoaded",
+      function(){
+        $("#sidebarToggle").click();
+      });
+  </script>
+{% endblock sidebar_toggle %}
+
+{% block bootstrap_core %}
+  <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
+  <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+{% endblock bootstrap_core %}
+
+{% block scripts %}
+  <script src="{{ url_for('static', filename='/js/merge.js') }}"></script>
+{% endblock %}
