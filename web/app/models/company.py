@@ -34,6 +34,9 @@ class Company(db.Model, ModelMixin):
     is_global = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
+    last_billing_report = db.Column(
+        db.DateTime, default=datetime.now, server_default=sql.func.now(), nullable=False
+    )
 
     def __repr__(self):
         return self.name
@@ -135,6 +138,24 @@ class Company(db.Model, ModelMixin):
 
         return offline_locations_counter
 
+    @hybrid_property
+    def total_pcc_api_calls(self) -> int:
+        from app.models.computer import Computer
+
+        total_api_calls = (
+            Computer.query.with_entities(
+                func.sum(Computer.pcc_api_calls).label("pcc_api_calls_sum")
+            )
+            .filter(Computer.company_id == self.id)
+            .first()
+        )
+
+        return (
+            0
+            if not total_api_calls.pcc_api_calls_sum
+            else total_api_calls.pcc_api_calls_sum
+        )
+
 
 class CompanyView(RowActionListMixin, MyModelView):
     def __repr__(self):
@@ -172,7 +193,13 @@ class CompanyView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "locations", "is_global", "users")
+    form_excluded_columns = (
+        "created_from_pcc",
+        "locations",
+        "is_global",
+        "users",
+        "last_billing_report",
+    )
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field

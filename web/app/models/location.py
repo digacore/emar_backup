@@ -51,6 +51,9 @@ class Location(db.Model, ModelMixin):
     created_from_pcc = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
+    critical_alerts = db.Column(
+        db.Integer, default=0, nullable=False, server_default="0"
+    )
 
     company = relationship(
         "Company",
@@ -173,7 +176,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "users", "status")
+    form_excluded_columns = ("created_from_pcc", "users", "status", "critical_alerts")
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field

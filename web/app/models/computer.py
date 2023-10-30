@@ -89,6 +89,7 @@ class Computer(db.Model, ModelMixin):
     # Place where backup file was saved last time (directory inside emar_backups.zip)
     last_saved_path = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
+    pcc_api_calls = db.Column(db.Integer, default=0, nullable=False, server_default="0")
     # TODO do we need this one? Could computer be deactivated?
     activated = db.Column(db.Boolean, default=False)
 
@@ -398,6 +399,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "backup_logs",
         "last_time_logs_enabled",
         "last_time_logs_disabled",
+        "pcc_api_calls",
     )
 
     column_searchable_list = searchable_sortable_list
