@@ -151,6 +151,9 @@ def send_critical_alert():
                 recipients=recipients,
                 html=alert_html,
             )
+
+            location.critical_alerts += 1
+            location.update()
             logger.info("Critical alert email sent for location {}", location.name)
         except Exception as err:
             logger.error(
