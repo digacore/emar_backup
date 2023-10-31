@@ -56,7 +56,7 @@ def setup_periodic_tasks(sender, **kwargs):
     # Send weekly summary - run every Monday at 9:00 AM (EST)
     interval = crontab(hour=9, minute=0, day_of_week="mon")
     entry = RedBeatSchedulerEntry(
-        "daily_summary_email", "worker.daily_summary_email", interval, app=app
+        "weekly_summary_email", "worker.weekly_summary_email", interval, app=app
     )
     entry.save()
 
