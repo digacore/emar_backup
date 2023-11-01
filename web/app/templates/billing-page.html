@@ -20,6 +20,35 @@
     </a>
   </div>
 
+  <div class="d-flex mb-4">
+    <div class="d-flex align-items-center">
+      <span class="mr-2">From</span>
+      <input
+        class="mr-2 beautiful-datepicker"
+        id="from-date-input"
+        type="date"
+        value="{{ from_date.strftime('%Y-%m-%d') }}"
+        max="{{ max_date.strftime('%Y-%m-%d') }}"
+      >
+      <span class="mr-2">to</span>
+      <input
+        class="mr-4 beautiful-datepicker"
+        id="to-date-input"
+        type="date"
+        value="{{ to_date.strftime('%Y-%m-%d') }}"
+        max="{{ max_date.strftime('%Y-%m-%d') }}"
+      >
+
+      <button
+        class="btn btn-sm btn-primary"
+        id="apply-date-range"
+        type="button"
+        onclick="applyDateRange()"
+      >Apply</button>
+
+    </div>
+  </div>
+
   <div class="d-flex flex-column justify-content-center w-100 h-100">
     <!-- Table with logs -->
     {% if not companies %}
@@ -69,10 +98,10 @@
                   {{ company.users.__len__() }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.total_pcc_api_calls(start_time, end_time) }}
+                  {{ company.total_pcc_api_calls(from_date, to_date, True) }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.total_alert_events(start_time, end_time) }}
+                  {{ company.total_alert_events(from_date, to_date, True) }}
                 </td>
                 <td>
                   <a
@@ -99,7 +128,7 @@
               <li>
                 <!-- prettier-ignore -->
                 <a
-                  href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page=1&per_page={{ page.per_page }}"
+                  href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page=1&per_page={{ page.per_page }}&from_date={{ from_date.strftime('%Y-%m-%d') }}&to_date={{ to_date.strftime('%Y-%m-%d') }}"
                   class="btn text-gray-500 btn-xs border btn-left-rounded-border p-0"
                   role="button"
                 >
@@ -112,7 +141,7 @@
               <li>
                 <!-- prettier-ignore -->
                 <a
-                  href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{page.page-1 if page.page > 1 else 1}}&per_page={{ page.per_page }}"
+                  href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{page.page-1 if page.page > 1 else 1}}&per_page={{ page.per_page }}&from_date={{ from_date.strftime('%Y-%m-%d') }}&to_date={{ to_date.strftime('%Y-%m-%d') }}"
                   class="btn text-gray-500 btn-xs border rounded-0 border-left-0 p-0"
                   role="button"
                 >
@@ -130,7 +159,7 @@
                 {% if p == page.page %}
                   <!-- prettier-ignore -->
                   <a
-                    href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{p}}&per_page={{ page.per_page }}"
+                    href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{p}}&per_page={{ page.per_page }}&from_date={{ from_date.strftime('%Y-%m-%d') }}&to_date={{ to_date.strftime('%Y-%m-%d') }}"
                     class="btn text-gray-700 btn-xs border rounded-0 border-left-0"
                     role="button"
                   >
@@ -139,7 +168,7 @@
                 {% else %}
                   <!-- prettier-ignore -->
                   <a
-                    href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{p}}&per_page={{ page.per_page }}"
+                    href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{p}}&per_page={{ page.per_page }}&from_date={{ from_date.strftime('%Y-%m-%d') }}&to_date={{ to_date.strftime('%Y-%m-%d') }}"
                     class="btn text-gray-500 btn-xs border rounded-0 border-left-0"
                     role="button"
                   >
@@ -152,7 +181,7 @@
               <li>
                 <!-- prettier-ignore -->
                 <a
-                  href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{page.page+1 if page.page < page.pages else page.pages}}&per_page={{ page.per_page }}"
+                  href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{page.page+1 if page.page < page.pages else page.pages}}&per_page={{ page.per_page }}&from_date={{ from_date.strftime('%Y-%m-%d') }}&to_date={{ to_date.strftime('%Y-%m-%d') }}"
                   class="btn text-gray-500 btn-xs border rounded-0 border-right-0 border-left-0 p-0"
                   role="button"
                 >
@@ -166,7 +195,7 @@
               <li>
                 <!-- prettier-ignore -->
                 <a
-                  href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{page.pages}}&per_page={{ page.per_page }}"
+                  href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page={{page.pages}}&per_page={{ page.per_page }}&from_date={{ from_date.strftime('%Y-%m-%d') }}&to_date={{ to_date.strftime('%Y-%m-%d') }}"
                   class="btn text-gray-500 btn-xs border btn-right-rounded-border p-0"
                   role="button"
                 >
@@ -189,7 +218,7 @@
           </button>
           <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
             {% for items_number in [25, 50, 100] %}
-              <a class="dropdown-item" href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page=1&per_page={{ items_number }}">{{ items_number }}</a>
+              <a class="dropdown-item" href="{{ url_for('billing.get_billing_page') }}?q={{ page.query }}&page=1&per_page={{ items_number }}&from_date={{ from_date.strftime('%Y-%m-%d') }}&to_date={{ to_date.strftime('%Y-%m-%d') }}">{{ items_number }}</a>
             {% endfor %}
           </div>
         </div>

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import sql, func, and_, or_
 from sqlalchemy.orm import Query
@@ -140,10 +140,16 @@ class Company(db.Model, ModelMixin):
     @hybrid_method
     def total_pcc_api_calls(
         self,
-        start_time: datetime = datetime.utcnow() - timedelta(days=30),
-        end_time: datetime = datetime.utcnow(),
+        start_time: datetime,
+        end_time: datetime,
+        east_time: bool = False,
     ) -> int:
         from app.models.download_backup_call import DownloadBackupCall
+
+        # If east_time is True, then convert start_time and end_time to UTC time
+        if east_time:
+            start_time = start_time.astimezone(timezone.utc)
+            end_time = end_time.astimezone(timezone.utc)
 
         computers_ids: list[int] = [comp.id for comp in self.computers]
         total_pcc_api_calls: int = DownloadBackupCall.query.filter(
@@ -159,8 +165,14 @@ class Company(db.Model, ModelMixin):
         self,
         start_time: datetime = datetime.utcnow() - timedelta(days=30),
         end_time: datetime = datetime.utcnow(),
+        east_time: bool = False,
     ) -> int:
         from app.models.alert_event import AlertEvent
+
+        # If east_time is True, then convert start_time and end_time to UTC time
+        if east_time:
+            start_time = start_time.astimezone(timezone.utc)
+            end_time = end_time.astimezone(timezone.utc)
 
         location_ids: list[int] = [location.id for location in self.locations]
         total_alert_events: int = AlertEvent.query.filter(
