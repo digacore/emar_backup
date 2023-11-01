@@ -113,6 +113,14 @@ class Computer(db.Model, ModelMixin):
         lazy="select",
     )
 
+    download_backup_calls = relationship(
+        "DownloadBackupCall",
+        back_populates="computer",
+        cascade="all, delete",
+        passive_deletes=True,
+        lazy="select",
+    )
+
     def __repr__(self):
         return self.computer_name
 
