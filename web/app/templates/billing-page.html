@@ -35,6 +35,7 @@
               <th scope="col">Computers</th>
               <th scope="col">Users</th>
               <th scope="col">API Calls</th>
+              <th scope="col">Alerts</th>
               <th scope="col">Actions</th>
             </tr>
           </thead>
@@ -68,7 +69,10 @@
                   {{ company.users.__len__() }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.total_pcc_api_calls }}
+                  {{ company.total_pcc_api_calls() }}
+                </td>
+                <td class="p-2 text-gray align-middle">
+                  {{ company.total_alert_events() }}
                 </td>
                 <td>
                   <a

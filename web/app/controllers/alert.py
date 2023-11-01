@@ -152,6 +152,12 @@ def send_critical_alert():
                 html=alert_html,
             )
 
+            # Create record about new alert event
+            new_alert_event = m.AlertEvent(
+                location_id=location.id, alert_type=m.AlertEventType.CRITICAL_ALERT
+            )
+            new_alert_event.save()
+
             logger.info("Critical alert email sent for location {}", location.name)
         except Exception as err:
             logger.error(
@@ -229,6 +235,14 @@ def send_primary_computer_alert():
                     computer=computer,
                 ),
             )
+
+            # Create record about new alert event
+            new_alert_event = m.AlertEvent(
+                location_id=computer.location.id,
+                alert_type=m.AlertEventType.PRIMARY_COMPUTER_DOWN,
+            )
+            new_alert_event.save()
+
             logger.info(
                 "Primary computer down alert email sent for computer {}",
                 computer.computer_name,

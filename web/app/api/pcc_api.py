@@ -60,6 +60,10 @@ def download_backup_from_pcc(body: s.GetCredentials) -> Response:
 
     res = execute_pcc_request(url, headers=headers, stream=True)
 
+    # Create a record about new backup call
+    new_backup_call = m.DownloadBackupCall(computer_id=computer.id)
+    new_backup_call.save()
+
     return Response(
         res.iter_content(chunk_size=10 * 1024),
         content_type=res.headers["Content-Type"],

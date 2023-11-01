@@ -59,8 +59,8 @@ class Location(db.Model, ModelMixin):
         lazy="select",
     )
 
-    alert_emails = relationship(
-        "AlertEmail",
+    alert_events = relationship(
+        "AlertEvent",
         back_populates="location",
         cascade="all, delete",
         passive_deletes=True,
