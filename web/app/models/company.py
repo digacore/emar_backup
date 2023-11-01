@@ -163,13 +163,13 @@ class Company(db.Model, ModelMixin):
         from app.models.alert_event import AlertEvent
 
         location_ids: list[int] = [location.id for location in self.locations]
-        total_alert_emails: int = AlertEvent.query.filter(
+        total_alert_events: int = AlertEvent.query.filter(
             AlertEvent.location_id.in_(location_ids),
             AlertEvent.created_at >= start_time,
             AlertEvent.created_at <= end_time,
         ).count()
 
-        return total_alert_emails
+        return total_alert_events
 
 
 class CompanyView(RowActionListMixin, MyModelView):

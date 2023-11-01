@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from flask import render_template, Blueprint, abort, request
 from flask_login import login_required, current_user
 
@@ -38,8 +40,13 @@ def get_billing_page():
         .all()
     )
 
+    start_time: datetime = (datetime.utcnow() - timedelta(days=30),)
+    end_time: datetime = datetime.utcnow()
+
     return render_template(
         "billing-page.html",
         page=pagination,
         companies=companies,
+        start_time=start_time,
+        end_time=end_time,
     )

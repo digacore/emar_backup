@@ -406,6 +406,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "backup_logs",
         "last_time_logs_enabled",
         "last_time_logs_disabled",
+        "download_backup_calls",
     )
 
     column_searchable_list = searchable_sortable_list

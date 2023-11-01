@@ -69,10 +69,10 @@
                   {{ company.users.__len__() }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.total_pcc_api_calls() }}
+                  {{ company.total_pcc_api_calls(start_time, end_time) }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.total_alert_events() }}
+                  {{ company.total_alert_events(start_time, end_time) }}
                 </td>
                 <td>
                   <a

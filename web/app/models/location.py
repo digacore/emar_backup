@@ -181,7 +181,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "users", "status")
+    form_excluded_columns = ("created_from_pcc", "users", "status", "alert_events")
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
