@@ -39,6 +39,14 @@
         max="{{ max_date.strftime('%Y-%m-%d') }}"
       >
 
+      <select id="time-range-selector" class="beautiful-datepicker mr-4">
+        <option selected disabled>Select range</option>
+        <option value="LAST_7">Last 7 days</option>
+        <option value="LAST_30">Last 30 days</option>
+        <option value="THIS_MONTH">This month</option>
+        <option value="THIS_YEAR">This year</option>
+      </select>
+
       <button
         class="btn btn-sm btn-primary"
         id="apply-date-range"

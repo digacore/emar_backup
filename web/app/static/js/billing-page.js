@@ -41,3 +41,37 @@ const applyDateRange = (e) => {
   url.searchParams.set("to_date", toDateInput.value);
   window.location.href = "".concat(url.href);
 }
+
+const timeRangeSelector = document.querySelector("#time-range-selector");
+timeRangeSelector.addEventListener("change", (e) => {
+  const fromDateInput = document.querySelector("#from-date-input");
+  const toDateInput = document.querySelector("#to-date-input");
+
+  const today = new Date();
+
+  let startDay = null;
+  switch (e.target.value) {
+    case "LAST_7": {
+      startDay = new Date(new Date().setDate(new Date().getDate() - 7));
+      break;
+    }
+    case "LAST_30": {
+      startDay = new Date(new Date().setDate(new Date().getDate() - 30));
+      break;
+    }
+    case "THIS_MONTH": {
+      startDay = new Date(new Date().setDate(1));
+      break;
+    }
+    case "THIS_YEAR": {
+      startDay = new Date(new Date().setMonth(0, 1));
+      break;
+    }
+    default: {
+      startDay = new Date(new Date().setDate(new Date().getDate() - 30));
+    }
+  }
+
+  fromDateInput.value = startDay.toJSON().split("T")[0];
+  toDateInput.value = today.toJSON().split("T")[0];
+});

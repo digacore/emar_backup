@@ -8,7 +8,7 @@ from app.logger import logger
 
 def create_company_billing_report(company: m.Company, from_date: datetime, to_date: datetime) -> io.BytesIO:
     """
-    Generate a billing report for a company in .xlsx format and return it as bytes
+    Generate a billing report for a company in .xlsx format and return it as BytesIO object
 
     Args:
         company (m.Company): company to generate the report for
