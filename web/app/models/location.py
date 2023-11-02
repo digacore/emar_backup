@@ -1,9 +1,9 @@
 import enum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, sql, select, or_, Enum
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
@@ -140,6 +140,51 @@ class Location(db.Model, ModelMixin):
                 Computer.last_download_time < time - timedelta(hours=1),
             ),
         ).count()
+
+    @hybrid_method
+    def total_pcc_api_calls(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        east_time: bool = False,
+    ) -> int:
+        from app.models.download_backup_call import DownloadBackupCall
+
+        # If east_time is True, then convert start_time and end_time to UTC time
+        if east_time:
+            start_time = start_time.astimezone(timezone.utc)
+            end_time = end_time.astimezone(timezone.utc)
+
+        computers_ids: list[int] = [comp.id for comp in self.computers]
+        total_pcc_api_calls: int = DownloadBackupCall.query.filter(
+            DownloadBackupCall.computer_id.in_(computers_ids),
+            DownloadBackupCall.created_at >= start_time,
+            DownloadBackupCall.created_at <= end_time,
+        ).count()
+
+        return total_pcc_api_calls
+
+    @hybrid_method
+    def total_alert_events(
+        self,
+        start_time: datetime = datetime.utcnow() - timedelta(days=30),
+        end_time: datetime = datetime.utcnow(),
+        east_time: bool = False,
+    ) -> int:
+        from app.models.alert_event import AlertEvent
+
+        # If east_time is True, then convert start_time and end_time to UTC time
+        if east_time:
+            start_time = start_time.astimezone(timezone.utc)
+            end_time = end_time.astimezone(timezone.utc)
+
+        total_alert_events: int = AlertEvent.query.filter(
+            AlertEvent.location_id == self.id,
+            AlertEvent.created_at >= start_time,
+            AlertEvent.created_at <= end_time,
+        ).count()
+
+        return total_alert_events
 
 
 class LocationView(RowActionListMixin, MyModelView):

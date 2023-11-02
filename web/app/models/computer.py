@@ -1,9 +1,9 @@
 import enum
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
@@ -349,6 +349,28 @@ class Computer(db.Model, ModelMixin):
                 summarized_offline_time += log.duration
 
         return summarized_offline_time
+
+    @hybrid_method
+    def total_pcc_api_calls(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+        east_time: bool = False,
+    ) -> int:
+        from app.models.download_backup_call import DownloadBackupCall
+
+        # If east_time is True, then convert start_time and end_time to UTC time
+        if east_time:
+            start_time = start_time.astimezone(timezone.utc)
+            end_time = end_time.astimezone(timezone.utc)
+
+        total_pcc_api_calls: int = DownloadBackupCall.query.filter(
+            DownloadBackupCall.computer_id == self.id,
+            DownloadBackupCall.created_at >= start_time,
+            DownloadBackupCall.created_at <= end_time,
+        ).count()
+
+        return total_pcc_api_calls
 
 
 class ComputerView(RowActionListMixin, MyModelView):

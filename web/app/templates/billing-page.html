@@ -89,13 +89,13 @@
                   {% endif %}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.locations.__len__() }}
+                  {{ company.locations|length }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.total_computers_counter }}
+                  {{ company.computers|length }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.users.__len__() }}
+                  {{ company.users|length }}
                 </td>
                 <td class="p-2 text-gray align-middle">
                   {{ company.total_pcc_api_calls(from_date, to_date, True) }}
@@ -120,7 +120,7 @@
 
       <!-- Pagination -->
       <div class="w-100 d-flex align-items-center mb-2">
-        <span class="text-xs mr-4">{{ page.skip + 1 }}-{{ page.skip + companies.__len__() }} of {{ page.total }} records</span>
+        <span class="text-xs mr-4">{{ page.skip + 1 }}-{{ page.skip + companies|length }} of {{ page.total }} records</span>
 
         {% if page.pages > 1 %}
           <nav aria-label="Page navigation" class="mr-4 d-flex align-items-center">
