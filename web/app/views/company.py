@@ -1,8 +1,11 @@
-from flask import jsonify, Blueprint, abort, request
+import io
+from datetime import datetime
+
+from flask import jsonify, Blueprint, abort, request, send_file
 from flask_login import login_required, current_user
 
 from app import models as m
-
+from app.controllers import create_company_billing_report
 from app.logger import logger
 
 from .utils import has_access_to_company
@@ -145,3 +148,47 @@ def company_location_groups(company_id: int):
     res = [(group.id, group.name) for group in location_groups]
 
     return jsonify(location_groups=res), 200
+
+
+@company_blueprint.route("/<int:company_id>/billing-report", methods=["GET"])
+@login_required
+def company_billing_report(company_id: int):
+    """Generates billing report for company and returns it as .xlsx file
+
+    Args:
+        company_id (int): company id
+
+    Returns:
+        Response: billing report as .xlsx file
+    """
+    # Only global users can access this information
+    if current_user.permission != m.UserPermissionLevel.GLOBAL:
+        logger.error(f"User {current_user.username} tried to generate billing report for company {company_id}")
+        abort(403, "You don't have access to this information.")
+
+    from_date: datetime | None = request.args.get(
+        "from_date",
+        default=None,
+        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d"),
+    )
+    to_date: datetime | None = request.args.get(
+        "to_date",
+        default=None,
+        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d"),
+    )
+
+    if not from_date or not to_date:
+        logger.error(f"Incorrect date format to generate billing report {company_id}")
+        abort(400, "Invalid date format.")
+
+    company: m.Company = m.Company.query.get_or_404(company_id)
+
+    # Generate billing report for company
+    report: io.BytesIO = create_company_billing_report(company, from_date, to_date)
+
+    return send_file(
+        report,
+        mimetype="application/ms-excel",
+        as_attachment=True,
+        download_name=f"Report_{company.name}.xlsx"
+    )

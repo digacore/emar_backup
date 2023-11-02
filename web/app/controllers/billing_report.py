@@ -1,3 +1,4 @@
+import io
 import xlsxwriter
 from datetime import datetime
 
@@ -5,7 +6,7 @@ from app import models as m
 from app.logger import logger
 
 
-def create_company_billing_report(company: m.Company, from_date: datetime, to_date: datetime):
+def create_company_billing_report(company: m.Company, from_date: datetime, to_date: datetime) -> io.BytesIO:
     """
     Generate a billing report for a company in .xlsx format and return it as bytes
 
@@ -14,7 +15,9 @@ def create_company_billing_report(company: m.Company, from_date: datetime, to_da
         from_date (datetime): the start date of the report (EST)
         to_date (datetime): the end date of the report (EST)
     """
-    workbook = xlsxwriter.Workbook(f'Report_{company.name}.xlsx')
+    output = io.BytesIO()
+
+    workbook = xlsxwriter.Workbook(output, {'in_memory': True})
     worksheet = workbook.add_worksheet(f'Report_{company.name}')
 
     # Cells styles
@@ -62,4 +65,8 @@ def create_company_billing_report(company: m.Company, from_date: datetime, to_da
 
     workbook.close()
 
+    output.seek(0)
+
     logger.info(f'Created billing report for {company.name}')
+
+    return output

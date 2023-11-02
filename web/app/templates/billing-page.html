@@ -106,7 +106,7 @@
                 <td>
                   <a
                       class="text-decoration-none"
-                      href="#"
+                      href="{{ url_for('company_blueprint.company_billing_report', company_id=company.id) }}?from_date={{ from_date.strftime('%Y-%m-%d') }}&to_date={{ to_date.strftime('%Y-%m-%d') }}"
                     >
                       Export report
                     </a>
