@@ -215,6 +215,8 @@ class MyModelView(ModelView):
         """
         List view
         """
+        from app.models import UserPermissionLevel
+
         if self.can_delete:
             delete_form = self.delete_form()
         else:
@@ -291,6 +293,15 @@ class MyModelView(ModelView):
             )
         )
 
+        # If user doesn't have global permission, hide company_name field (Computer, Location)
+        list_of_columns = self._list_columns
+        if current_user.permission != UserPermissionLevel.GLOBAL:
+            list_of_columns = [
+                column_obj
+                for column_obj in list_of_columns
+                if column_obj[0] != "company_name"
+            ]
+
         # Search input value that would be displayed (if search arg present)
         search_input_value = None
         if view_args.search:
@@ -323,7 +334,7 @@ class MyModelView(ModelView):
             delete_form=delete_form,
             action_form=action_form,
             # List
-            list_columns=self._list_columns,
+            list_columns=list_of_columns,
             sortable_columns=self._sortable_columns,
             editable_columns=self.column_editable_list,
             list_row_actions=self.get_list_row_actions(),

@@ -49,7 +49,6 @@ class ComputerStatus(enum.Enum):
 
 
 class Computer(db.Model, ModelMixin):
-
     __tablename__ = "computers"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -516,7 +515,6 @@ class ComputerView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
@@ -576,7 +574,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         create_system_log(SystemLogType.COMPUTER_DELETED, model, current_user)
 
     def get_query(self):
-
         OBLIGATORY_VERSIONS = [
             ("stable", "stable"),
             ("latest", "latest"),
