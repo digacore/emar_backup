@@ -1,3 +1,5 @@
+import enum
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Query
@@ -13,6 +15,16 @@ from config import BaseConfig as CFG
 billing_blueprint = Blueprint("billing", __name__, url_prefix="/billing")
 
 
+class FixedTimeRangeType(enum.Enum):
+    """Fixed time ranges for billing report"""
+
+    LAST_7_DAYS = "LAST_7_DAYS"
+    LAST_30_DAYS = "LAST_30_DAYS"
+    THIS_MONTH = "THIS_MONTH"
+    THIS_YEAR = "THIS_YEAR"
+    CUSTOM = "CUSTOM"
+
+
 @billing_blueprint.route("/", methods=["GET"])
 @login_required
 def get_billing_page():
@@ -23,14 +35,16 @@ def get_billing_page():
     q: str | None = request.args.get("q", type=str, default=None)
     per_page: int = request.args.get("per_page", 25, type=int)
 
-    # Default start time is 30 days ago (from today - EST timezone)
+    # Default start time is start of current month at 00:00 (EST timezone).
     default_start_time: datetime = CFG.offset_to_est(datetime.utcnow(), True).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    ) - timedelta(days=30)
+        day=1, hour=0, minute=0, second=0, microsecond=0
+    )
     from_date: datetime = request.args.get(
         "from_date",
         default=default_start_time,
-        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d"),
+        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d").replace(
+            tzinfo=ZoneInfo("America/New_York")
+        ),
     )
 
     # Default end time is today at 00:00 (EST timezone).
@@ -42,7 +56,9 @@ def get_billing_page():
     to_date: datetime = request.args.get(
         "to_date",
         default=default_end_time,
-        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d"),
+        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d").replace(
+            tzinfo=ZoneInfo("America/New_York")
+        ),
     )
 
     # Companies query
@@ -65,6 +81,19 @@ def get_billing_page():
         .all()
     )
 
+    # Determine fixed time range type
+    current_duration: timedelta = to_date - from_date
+    if current_duration == timedelta(days=7):
+        fixed_time_range_type = FixedTimeRangeType.LAST_7_DAYS.value
+    elif current_duration == timedelta(days=30):
+        fixed_time_range_type = FixedTimeRangeType.LAST_30_DAYS.value
+    elif from_date == default_start_time and to_date == default_end_time:
+        fixed_time_range_type = FixedTimeRangeType.THIS_MONTH.value
+    elif from_date == datetime(year=from_date.year, month=1, day=1, tzinfo=ZoneInfo("America/New_York")) and to_date == default_end_time:
+        fixed_time_range_type = FixedTimeRangeType.THIS_YEAR.value
+    else:
+        fixed_time_range_type = FixedTimeRangeType.CUSTOM.value
+
     return render_template(
         "billing-page.html",
         page=pagination,
@@ -72,4 +101,5 @@ def get_billing_page():
         from_date=from_date,
         to_date=to_date,
         max_date=default_end_time,
+        fixed_time_range_type=fixed_time_range_type,
     )

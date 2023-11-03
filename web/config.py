@@ -139,7 +139,7 @@ class BaseConfig(object):
         east_timezone = zoneinfo.ZoneInfo("America/New_York")
 
         # Set UTC timezone to dt_now
-        dt_now = dt_now.replace(tzinfo=datetime.timezone.utc)
+        dt_now = dt_now.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
         est_norm_datetime = dt_now.astimezone(east_timezone)
         if datetime_obj:
             return est_norm_datetime.replace(microsecond=0)

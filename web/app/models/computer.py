@@ -1,5 +1,6 @@
 import enum
-from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
+from datetime import datetime, timedelta
 
 from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
 from sqlalchemy.orm import relationship, backref
@@ -355,14 +356,15 @@ class Computer(db.Model, ModelMixin):
         self,
         start_time: datetime,
         end_time: datetime,
-        east_time: bool = False,
     ) -> int:
         from app.models.download_backup_call import DownloadBackupCall
 
-        # If east_time is True, then convert start_time and end_time to UTC time
-        if east_time:
-            start_time = start_time.astimezone(timezone.utc)
-            end_time = end_time.astimezone(timezone.utc)
+        # If the start_time and end_time has not UTC timezone, then convert it
+        if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):
+            start_time = start_time.astimezone(ZoneInfo("UTC"))
+
+        if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
+            end_time = end_time.astimezone(ZoneInfo("UTC"))
 
         total_pcc_api_calls: int = DownloadBackupCall.query.filter(
             DownloadBackupCall.computer_id == self.id,

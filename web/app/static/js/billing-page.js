@@ -51,11 +51,11 @@ timeRangeSelector.addEventListener("change", (e) => {
 
   let startDay = null;
   switch (e.target.value) {
-    case "LAST_7": {
+    case "LAST_7_DAYS": {
       startDay = new Date(new Date().setDate(new Date().getDate() - 7));
       break;
     }
-    case "LAST_30": {
+    case "LAST_30_DAYS": {
       startDay = new Date(new Date().setDate(new Date().getDate() - 30));
       break;
     }
@@ -68,7 +68,7 @@ timeRangeSelector.addEventListener("change", (e) => {
       break;
     }
     default: {
-      startDay = new Date(new Date().setDate(new Date().getDate() - 30));
+      startDay = new Date(new Date().setDate(1));
     }
   }
 

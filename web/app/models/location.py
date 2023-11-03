@@ -1,4 +1,5 @@
 import enum
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, sql, select, or_, Enum
@@ -146,14 +147,15 @@ class Location(db.Model, ModelMixin):
         self,
         start_time: datetime,
         end_time: datetime,
-        east_time: bool = False,
     ) -> int:
         from app.models.download_backup_call import DownloadBackupCall
 
-        # If east_time is True, then convert start_time and end_time to UTC time
-        if east_time:
-            start_time = start_time.astimezone(timezone.utc)
-            end_time = end_time.astimezone(timezone.utc)
+        # If the start_time and end_time has not UTC timezone, then convert it
+        if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):
+            start_time = start_time.astimezone(ZoneInfo("UTC"))
+
+        if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
+            end_time = end_time.astimezone(ZoneInfo("UTC"))
 
         computers_ids: list[int] = [comp.id for comp in self.computers]
         total_pcc_api_calls: int = DownloadBackupCall.query.filter(
@@ -169,14 +171,15 @@ class Location(db.Model, ModelMixin):
         self,
         start_time: datetime = datetime.utcnow() - timedelta(days=30),
         end_time: datetime = datetime.utcnow(),
-        east_time: bool = False,
     ) -> int:
         from app.models.alert_event import AlertEvent
 
-        # If east_time is True, then convert start_time and end_time to UTC time
-        if east_time:
-            start_time = start_time.astimezone(timezone.utc)
-            end_time = end_time.astimezone(timezone.utc)
+        # If the start_time and end_time has not UTC timezone, then convert it
+        if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):
+            start_time = start_time.astimezone(ZoneInfo("UTC"))
+
+        if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
+            end_time = end_time.astimezone(ZoneInfo("UTC"))
 
         total_alert_events: int = AlertEvent.query.filter(
             AlertEvent.location_id == self.id,

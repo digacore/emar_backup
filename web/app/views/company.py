@@ -1,4 +1,5 @@
 import io
+from zoneinfo import ZoneInfo
 from datetime import datetime
 
 from flask import jsonify, Blueprint, abort, request, send_file
@@ -166,15 +167,20 @@ def company_billing_report(company_id: int):
         logger.error(f"User {current_user.username} tried to generate billing report for company {company_id}")
         abort(403, "You don't have access to this information.")
 
+    # We recognize these dates as EST timezone
     from_date: datetime | None = request.args.get(
         "from_date",
         default=None,
-        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d"),
+        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d").replace(
+            tzinfo=ZoneInfo("America/New_York")
+        ),
     )
     to_date: datetime | None = request.args.get(
         "to_date",
         default=None,
-        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d"),
+        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d").replace(
+            tzinfo=ZoneInfo("America/New_York")
+        ),
     )
 
     if not from_date or not to_date:

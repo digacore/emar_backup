@@ -34,7 +34,7 @@ def create_company_billing_report(company: m.Company, from_date: datetime, to_da
     worksheet.write(1, 0, f'Total locations: {len(company.locations)}', centered_format)
     worksheet.write(1, 1, f'Total computers: {len(company.computers)}', centered_format)
     worksheet.write(1, 2, f'Total users: {len(company.users)}', centered_format)
-    worksheet.write(1, 3, f'Total alerts: {company.total_alert_events(from_date, to_date, True)}', centered_format)
+    worksheet.write(1, 3, f'Total alerts: {company.total_alert_events(from_date, to_date)}', centered_format)
 
     # Write main table headers
     worksheet.write(3, 0, 'Location', bold_centered_format)
@@ -48,8 +48,8 @@ def create_company_billing_report(company: m.Company, from_date: datetime, to_da
     for location in ordered_locations:
         worksheet.write(start_row, 0, location.name, centered_format)
         worksheet.write(start_row, 1, f'Total_computers: {location.total_computers}', centered_format)
-        worksheet.write(start_row, 2, location.total_pcc_api_calls(from_date, to_date, True), centered_format)
-        worksheet.write(start_row, 3, location.total_alert_events(from_date, to_date, True), centered_format)
+        worksheet.write(start_row, 2, location.total_pcc_api_calls(from_date, to_date), centered_format)
+        worksheet.write(start_row, 3, location.total_alert_events(from_date, to_date), centered_format)
 
         start_row += 1
 
@@ -58,7 +58,7 @@ def create_company_billing_report(company: m.Company, from_date: datetime, to_da
         for computer in ordered_computers:
             worksheet.write(start_row, 0, '', centered_format)
             worksheet.write(start_row, 1, computer.computer_name, centered_format)
-            worksheet.write(start_row, 2, computer.total_pcc_api_calls(from_date, to_date, True), centered_format)
+            worksheet.write(start_row, 2, computer.total_pcc_api_calls(from_date, to_date), centered_format)
             worksheet.write(start_row, 3, '', centered_format)
 
             start_row += 1

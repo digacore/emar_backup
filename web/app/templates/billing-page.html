@@ -40,11 +40,11 @@
       >
 
       <select id="time-range-selector" class="beautiful-datepicker mr-4">
-        <option selected disabled>Select range</option>
-        <option value="LAST_7">Last 7 days</option>
-        <option value="LAST_30">Last 30 days</option>
-        <option value="THIS_MONTH">This month</option>
-        <option value="THIS_YEAR">This year</option>
+        <option {{ 'selected' if fixed_time_range_type == 'CUSTOM' else None }} disabled>Select range</option>
+        <option {{ 'selected' if fixed_time_range_type == 'LAST_7_DAYS' else None }} value="LAST_7_DAYS">Last 7 days</option>
+        <option {{ 'selected' if fixed_time_range_type == 'LAST_30_DAYS' else None }} value="LAST_30_DAYS">Last 30 days</option>
+        <option {{ 'selected' if fixed_time_range_type == 'THIS_MONTH' else None }} value="THIS_MONTH">This month</option>
+        <option {{ 'selected' if fixed_time_range_type == 'THIS_YEAR' else None }} value="THIS_YEAR">This year</option>
       </select>
 
       <button
@@ -106,10 +106,10 @@
                   {{ company.users|length }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.total_pcc_api_calls(from_date, to_date, True) }}
+                  {{ company.total_pcc_api_calls(from_date, to_date) }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.total_alert_events(from_date, to_date, True) }}
+                  {{ company.total_alert_events(from_date, to_date) }}
                 </td>
                 <td>
                   <a
