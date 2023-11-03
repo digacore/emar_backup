@@ -178,7 +178,7 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
     worksheet.write(1, 4, f"Total alerts: {alert_events_number}", centered_format)
 
     # Write main table headers
-    worksheet.write(3, 1, "Company", bold_centered_format)
+    worksheet.write(3, 0, "Company", bold_centered_format)
     worksheet.write(3, 1, "Location", bold_centered_format)
     worksheet.write(3, 2, "Computer", bold_centered_format)
     worksheet.write(3, 3, "API Calls", bold_centered_format)
