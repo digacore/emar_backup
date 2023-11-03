@@ -154,12 +154,12 @@
         </li>
       {% endif %}
 
-      <!-- Nav Item - Billing -->
+      <!-- Nav Item - Reporting -->
       {% if current_user.permission.value == "GLOBAL" %}
         <li class="nav-item active">
           <a class="nav-link" href="{{ url_for('billing.get_billing_page') }}">
             <i class="fas fa-fw fa-calculator"></i>
-            <span style="color: lawngreen;" title="Billing page">Billing</span></a>
+            <span style="color: lawngreen;" title="Reporting page">Reporting</span></a>
         </li>
       {% endif %}
 
