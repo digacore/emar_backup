@@ -1,6 +1,6 @@
 import enum
 from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from sqlalchemy import func, sql, select, or_, Enum
 from sqlalchemy.orm import relationship, backref
@@ -29,7 +29,6 @@ class LocationStatus(enum.Enum):
 
 
 class Location(db.Model, ModelMixin):
-
     __tablename__ = "locations"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -263,7 +262,6 @@ class LocationView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 

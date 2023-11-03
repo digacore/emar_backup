@@ -1,13 +1,15 @@
+import io
 import enum
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Query
-from flask import render_template, Blueprint, abort, request
+from flask import render_template, Blueprint, abort, request, send_file
 from flask_login import login_required, current_user
 
 from app import models as m, db
-from app.controllers import create_pagination
+from app.controllers import create_pagination, create_general_billing_report
+from app.logger import logger
 
 from config import BaseConfig as CFG
 
@@ -89,7 +91,13 @@ def get_billing_page():
         fixed_time_range_type = FixedTimeRangeType.LAST_30_DAYS.value
     elif from_date == default_start_time and to_date == default_end_time:
         fixed_time_range_type = FixedTimeRangeType.THIS_MONTH.value
-    elif from_date == datetime(year=from_date.year, month=1, day=1, tzinfo=ZoneInfo("America/New_York")) and to_date == default_end_time:
+    elif (
+        from_date
+        == datetime(
+            year=from_date.year, month=1, day=1, tzinfo=ZoneInfo("America/New_York")
+        )
+        and to_date == default_end_time
+    ):
         fixed_time_range_type = FixedTimeRangeType.THIS_YEAR.value
     else:
         fixed_time_range_type = FixedTimeRangeType.CUSTOM.value
@@ -102,4 +110,50 @@ def get_billing_page():
         to_date=to_date,
         max_date=default_end_time,
         fixed_time_range_type=fixed_time_range_type,
+    )
+
+
+@billing_blueprint.route("/report", methods=["GET"])
+@login_required
+def general_billing_report():
+    """Generates general billing report for all the companies and returns it as .xlsx file
+
+    Returns:
+        Response: billing report as .xlsx file
+    """
+    # Only global users can access this information
+    if current_user.permission != m.UserPermissionLevel.GLOBAL:
+        logger.error(
+            f"User {current_user.username} tried to generate general billing report"
+        )
+        abort(403, "You don't have access to this information.")
+
+    # We recognize these dates as EST timezone
+    from_date: datetime | None = request.args.get(
+        "from_date",
+        default=None,
+        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d").replace(
+            tzinfo=ZoneInfo("America/New_York")
+        ),
+    )
+    to_date: datetime | None = request.args.get(
+        "to_date",
+        default=None,
+        type=lambda date_string: datetime.strptime(date_string, "%Y-%m-%d").replace(
+            tzinfo=ZoneInfo("America/New_York")
+        ),
+    )
+
+    if not from_date or not to_date:
+        logger.error("Incorrect date format to generate general billing report")
+        abort(400, "Invalid date format.")
+
+    # Generate general billing report for company
+    report: io.BytesIO = create_general_billing_report(from_date, to_date)
+
+    return send_file(
+        report,
+        mimetype="application/ms-excel",
+        as_attachment=True,
+        download_name="General_Report.xlsx",
     )
