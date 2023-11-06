@@ -125,7 +125,9 @@ def last_time(body: LastTime):
             utc_download_time = computer.last_download_time.replace(
                 tzinfo=zoneinfo.ZoneInfo("America/New_York")
             ).astimezone(zoneinfo.ZoneInfo("UTC"))
-            backup_log_on_download_success(computer, utc_download_time)
+            backup_log_on_download_success(
+                computer, utc_download_time.replace(tzinfo=None)
+            )
 
         msi: DesktopClient = (
             DesktopClient.query.filter_by(flag_name=computer.msi_version).first()

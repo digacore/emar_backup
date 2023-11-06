@@ -134,7 +134,7 @@ class BaseConfig(object):
             datetime_obj (bool): define what we need to return: str or datetime
 
         Returns:
-            datetime.datetime: EST datetime
+            datetime.datetime: EST datetime (without specified tzinfo)
         """
         east_timezone = zoneinfo.ZoneInfo("America/New_York")
 
@@ -142,7 +142,7 @@ class BaseConfig(object):
         dt_now = dt_now.replace(tzinfo=zoneinfo.ZoneInfo("UTC"))
         est_norm_datetime = dt_now.astimezone(east_timezone)
         if datetime_obj:
-            return est_norm_datetime.replace(microsecond=0)
+            return est_norm_datetime.replace(microsecond=0, tzinfo=None)
         return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
     @staticmethod
