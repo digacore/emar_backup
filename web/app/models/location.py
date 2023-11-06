@@ -34,7 +34,7 @@ class Location(db.Model, ModelMixin):
     id = db.Column(db.Integer, primary_key=True)
 
     company_id = db.Column(
-        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=True
+        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
 
     name = db.Column(db.String(64), nullable=False)
@@ -84,7 +84,7 @@ class Location(db.Model, ModelMixin):
 
     @hybrid_property
     def company_name(self):
-        return self.company.name if self.company else None
+        return self.company.name
 
     @company_name.expression
     def company_name(cls):
@@ -93,7 +93,11 @@ class Location(db.Model, ModelMixin):
     @company_name.setter
     def company_name(self, value):
         new_company = Company.query.filter_by(name=value).first()
-        self.company_id = new_company.id if new_company else None
+
+        if not new_company:
+            raise ValueError(f"Company with name {value} doesn't exist")
+
+        self.company_id = new_company.id
 
     # NOTE: unfortunately, next callable properties can't be used with Flask Admin (as table columns)
     # Because initialization of LocationView class is done before initialization of Compute model

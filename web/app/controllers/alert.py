@@ -72,44 +72,39 @@ def send_critical_alert():
         ):
             continue
 
-        if location.company:
-            connected_users: list[m.User] = []
-            all_company_users: list[m.User] = m.User.query.filter_by(
-                company_id=location.company_id
-            ).all()
+        connected_users: list[m.User] = []
+        all_company_users: list[m.User] = m.User.query.filter_by(
+            company_id=location.company_id
+        ).all()
 
-            for user in all_company_users:
-                # If user has company level permission
-                if user.permission == m.UserPermissionLevel.COMPANY:
-                    # Send to company level user only if location is offline more than 4 hours
-                    if (
-                        with_prev_backups_comps
-                        and current_east_time
-                        - with_prev_backups_comps[0].last_download_time
-                        < timedelta(hours=4)
-                    ):
-                        continue
-                    else:
-                        connected_users.append(user)
-                # If user has location group level permission
-                elif (
-                    location.group
-                    and user.permission == m.UserPermissionLevel.LOCATION_GROUP
-                    and user.location_group[0].id == location.group[0].id
+        for user in all_company_users:
+            # If user has company level permission
+            if user.permission == m.UserPermissionLevel.COMPANY:
+                # Send to company level user only if location is offline more than 4 hours
+                if (
+                    with_prev_backups_comps
+                    and current_east_time
+                    - with_prev_backups_comps[0].last_download_time
+                    < timedelta(hours=4)
                 ):
-                    connected_users.append(user)
-                # If user has location level permission
-                elif (
-                    user.permission == m.UserPermissionLevel.LOCATION
-                    and user.location[0].id == location.id
-                ):
-                    connected_users.append(user)
-                else:
                     continue
-        else:
-            connected_users: list[m.User] = m.User.query.filter(
-                m.User.location.any(m.Location.id == location.id)
-            ).all()
+                else:
+                    connected_users.append(user)
+            # If user has location group level permission
+            elif (
+                location.group
+                and user.permission == m.UserPermissionLevel.LOCATION_GROUP
+                and user.location_group[0].id == location.group[0].id
+            ):
+                connected_users.append(user)
+            # If user has location level permission
+            elif (
+                user.permission == m.UserPermissionLevel.LOCATION
+                and user.location[0].id == location.id
+            ):
+                connected_users.append(user)
+            else:
+                continue
 
         if not connected_users:
             continue
