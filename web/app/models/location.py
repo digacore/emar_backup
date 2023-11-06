@@ -28,7 +28,6 @@ class LocationStatus(enum.Enum):
 
 
 class Location(db.Model, ModelMixin):
-
     __tablename__ = "locations"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -113,7 +112,7 @@ class Location(db.Model, ModelMixin):
             Computer.activated.is_(True),
             or_(
                 Computer.last_download_time.is_(None),
-                Computer.last_download_time < time - timedelta(hours=1),
+                Computer.last_download_time < time - timedelta(hours=1, minutes=30),
             ),
         ).count()
 
@@ -129,7 +128,7 @@ class Location(db.Model, ModelMixin):
             Computer.device_role == DeviceRole.PRIMARY,
             or_(
                 Computer.last_download_time.is_(None),
-                Computer.last_download_time < time - timedelta(hours=1),
+                Computer.last_download_time < time - timedelta(hours=1, minutes=30),
             ),
         ).count()
 
@@ -207,7 +206,6 @@ class LocationView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 

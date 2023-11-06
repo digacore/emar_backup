@@ -14,7 +14,6 @@ from config import BaseConfig as CFG
 
 
 class Company(db.Model, ModelMixin):
-
     __tablename__ = "companies"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -80,7 +79,7 @@ class Company(db.Model, ModelMixin):
                 or_(
                     Computer.last_download_time.is_(None),
                     Computer.last_download_time
-                    < current_east_time - timedelta(hours=1),
+                    < current_east_time - timedelta(hours=1, minutes=30),
                 ),
             )
         ).count()
@@ -100,7 +99,7 @@ class Company(db.Model, ModelMixin):
                 or_(
                     Computer.last_download_time.is_(None),
                     Computer.last_download_time
-                    < current_east_time - timedelta(hours=1),
+                    < current_east_time - timedelta(hours=1, minutes=30),
                 ),
             )
         ).count()
@@ -127,7 +126,8 @@ class Company(db.Model, ModelMixin):
 
             online_computers = activated_computers_query.filter(
                 Computer.last_download_time.is_not(None),
-                Computer.last_download_time >= current_east_time - timedelta(hours=1),
+                Computer.last_download_time
+                >= current_east_time - timedelta(hours=1, minutes=30),
             ).all()
 
             if not online_computers:
@@ -216,7 +216,6 @@ class CompanyView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 

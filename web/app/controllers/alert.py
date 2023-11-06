@@ -470,7 +470,7 @@ def send_daily_summary():
                 or_(
                     m.Computer.last_download_time.is_(None),
                     m.Computer.last_download_time
-                    < current_east_time - timedelta(hours=1),
+                    < current_east_time - timedelta(hours=1, minutes=30),
                 ),
             )
         ).order_by(
@@ -664,7 +664,8 @@ def send_weekly_summary():
                 online_computers = activated_computers_query.filter(
                     m.Computer.last_download_time.is_not(None),
                     m.Computer.last_download_time
-                    >= CFG.offset_to_est(datetime.utcnow(), True) - timedelta(hours=1),
+                    >= CFG.offset_to_est(datetime.utcnow(), True)
+                    - timedelta(hours=1, minutes=30),
                 ).count()
 
                 # Check that location has activated computers and users otherwise skip it

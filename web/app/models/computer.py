@@ -48,7 +48,6 @@ class ComputerStatus(enum.Enum):
 
 
 class Computer(db.Model, ModelMixin):
-
     __tablename__ = "computers"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -179,7 +178,8 @@ class Computer(db.Model, ModelMixin):
             .filter(
                 Computer.id == self.id,
                 Computer.last_download_time.is_not(None),
-                Computer.last_download_time >= current_east_time - timedelta(hours=1),
+                Computer.last_download_time
+                >= current_east_time - timedelta(hours=1, minutes=30),
             )
             .first()
         ):
@@ -212,7 +212,7 @@ class Computer(db.Model, ModelMixin):
                     and_(
                         cls.last_download_time.is_not(None),
                         cls.last_download_time
-                        >= current_east_time - timedelta(hours=1),
+                        >= current_east_time - timedelta(hours=1, minutes=30),
                     ),
                     ComputerStatus.ONLINE.value,
                 ),
@@ -483,7 +483,6 @@ class ComputerView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
@@ -543,7 +542,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         create_system_log(SystemLogType.COMPUTER_DELETED, model, current_user)
 
     def get_query(self):
-
         OBLIGATORY_VERSIONS = [
             ("stable", "stable"),
             ("latest", "latest"),
