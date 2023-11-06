@@ -1,7 +1,7 @@
+import json
+import zoneinfo
 import datetime
 
-# import uuid
-import json
 from flask import jsonify, request
 
 from app.models import Computer, DesktopClient, LogType
@@ -86,7 +86,6 @@ def last_time(body: LastTime):
     ).first()
 
     if computer:
-
         computer.computer_ip = request.headers.get(
             "X-Forwarded-For", request.remote_addr
         )
@@ -123,9 +122,9 @@ def last_time(body: LastTime):
                 created_at=computer.last_download_time,
             )
 
-            utc_download_time = computer.last_download_time + datetime.timedelta(
-                hours=4
-            )
+            utc_download_time = computer.last_download_time.replace(
+                tzinfo=zoneinfo.ZoneInfo("America/New_York")
+            ).astimezone(zoneinfo.ZoneInfo("UTC"))
             backup_log_on_download_success(computer, utc_download_time)
 
         msi: DesktopClient = (
@@ -254,7 +253,6 @@ def get_credentials(body: GetCredentials):
 @downloads_info_blueprint.post("/download_status")
 @logger.catch
 def download_status(body: DownloadStatus):
-
     computer: Computer = (
         Computer.query.filter_by(identifier_key=body.identifier_key).first()
         if body.identifier_key
@@ -262,7 +260,6 @@ def download_status(body: DownloadStatus):
     )
 
     if computer:
-
         computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
         computer.download_status = body.download_status
         if body.last_downloaded:
@@ -298,7 +295,6 @@ def download_status(body: DownloadStatus):
 @downloads_info_blueprint.post("/files_checksum")
 @logger.catch
 def files_checksum(body: FilesChecksum):
-
     computer: Computer = (
         Computer.query.filter_by(identifier_key=body.identifier_key).first()
         if body.identifier_key
