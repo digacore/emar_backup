@@ -39,7 +39,12 @@ def get_billing_page():
 
     # Default start time is start of current month at 00:00 (EST timezone).
     default_start_time: datetime = CFG.offset_to_est(datetime.utcnow(), True).replace(
-        day=1, hour=0, minute=0, second=0, microsecond=0
+        day=1,
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+        tzinfo=ZoneInfo("America/New_York"),
     )
     from_date: datetime = request.args.get(
         "from_date",
@@ -53,7 +58,7 @@ def get_billing_page():
     # This is because we don't want to include today's data in the report.
     # Default end time is also max date parameter for datepicker.
     default_end_time: datetime = CFG.offset_to_est(datetime.utcnow(), True).replace(
-        hour=0, minute=0, second=0, microsecond=0
+        hour=0, minute=0, second=0, microsecond=0, tzinfo=ZoneInfo("America/New_York")
     )
     to_date: datetime = request.args.get(
         "to_date",
