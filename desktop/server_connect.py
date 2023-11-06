@@ -29,7 +29,7 @@ def offset_to_est(dt_now: datetime.datetime):
     Returns:
         datetime.datetime: EST datetime
     """
-    est_norm_datetime = dt_now - datetime.timedelta(hours=4)
+    est_norm_datetime = dt_now - datetime.timedelta(hours=5)
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -799,32 +799,6 @@ def create_desktop_icon():
         shortcut.WorkingDirectory = wDir
         shortcut.Targetpath = target
         shortcut.save()
-
-
-# def download_file_from_pcc(credentials):
-#     """Retrive access token and certs from Web and download files from PCC API"""
-#     # Get access token
-#     access_token_response = requests.post(
-#         f'{credentials["manager_host"]}/get_pcc_access_token',
-#         json={
-#             "computer_name": credentials["computer_name"],
-#             "identifier_key": credentials["identifier_key"],
-#         },
-#     )
-
-#     # Get certs
-#     certs_response = requests.post(
-#         f'{credentials["manager_host"]}/get_ssl_cert',
-#         json={
-#             "computer_name": credentials["computer_name"],
-#             "identifier_key": credentials["identifier_key"],
-#         },
-#     )
-
-#     # Get backup files
-#     backup_files_response = requests.post(
-#         "https://connect2.pointclickcare.com/api/public/preview1/orgs/11848592-809a-42f4-82e3-5ce14964a007/facs/22/backup-files"
-#     )
 
 
 @logger.catch
