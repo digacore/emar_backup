@@ -175,6 +175,12 @@ def execute_pcc_request(
             if res.headers.get("X-Quota-Time-To-Reset") and res.headers.get(
                 "X-Quota-Remaining"
             ):
+                logger.debug(
+                    "Daily Quota limit: {}. Requests remains: {}",
+                    int(res.headers["X-Quota-Limit"]),
+                    int(res.headers["X-Quota-Remaining"]),
+                )
+
                 update_daily_requests_count(
                     int(res.headers["X-Quota-Time-To-Reset"]),
                     int(res.headers["X-Quota-Remaining"]),
