@@ -167,7 +167,7 @@
           <div class="row no-gutters align-items-center">
             <div class="col mr-2">
               {% if current_user.is_authenticated %}
-              <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_7=no+backup&flt2_89=PRIMARY">Primary Computers Offline</a></div>
+              <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_7=no+backup&flt2_33=PRIMARY">Primary Computers Offline</a></div>
               <div class="row no-gutters align-items-center">
                 <div class="col-auto">
                   <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ primary_offline }}</div>
@@ -239,7 +239,7 @@
             <div class="row no-gutters align-items-center">
               <div class="col mr-2">
                 {% if current_user.is_authenticated %}
-                <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_9=ONLINE&flt2_89=PRIMARY">Primary Computers Online</a></div>
+                <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_9=ONLINE&flt2_33=PRIMARY">Primary Computers Online</a></div>
                 <div class="row no-gutters align-items-center">
                   <div class="col-auto">
                     <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ primary_online }}</div>
@@ -272,7 +272,7 @@
             <div class="row no-gutters align-items-center">
               <div class="col mr-2">
                 {% if current_user.is_authenticated %}
-                <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_9=ONLINE&flt2_89=ALTERNATE">Alternate Computers Online</a></div>
+                <div class="text-xxs font-weight-bold text-success text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_9=ONLINE&flt2_33=ALTERNATE">Alternate Computers Online</a></div>
                 <div class="row no-gutters align-items-center">
                   <div class="col-auto">
                     <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ alternate_online }}</div>
@@ -305,7 +305,7 @@
             <div class="row no-gutters align-items-center">
               <div class="col mr-2">
                 {% if current_user.is_authenticated %}
-                <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_7=no+backup&flt2_89=ALTERNATE">Alternate Computers Offline</a></div>
+                <div class="text-xxs font-weight-bold text-danger text-uppercase mb-1"><a class="dash-cards" href="{{ url_for('computer.index_view') }}?flt0_7=no+backup&flt2_33=ALTERNATE">Alternate Computers Offline</a></div>
                 <div class="row no-gutters align-items-center">
                   <div class="col-auto">
                     <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">{{ alternate_offline }}</div>

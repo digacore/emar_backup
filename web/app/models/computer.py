@@ -3,22 +3,26 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
+from flask_admin.babel import gettext
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
+from flask import flash
 from flask_login import current_user
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
+from app.logger import logger
 
 from .desktop_client import DesktopClient
 from .user import UserPermissionLevel, UserRole
 from .company import Company
 from .location import Location
 from .system_log import SystemLogType
+from .utils import SoftDeleteMixin, QueryWithSoftDelete
 
 from config import BaseConfig as CFG
 
@@ -48,8 +52,11 @@ class ComputerStatus(enum.Enum):
     NOT_ACTIVATED = "NOT_ACTIVATED"
 
 
-class Computer(db.Model, ModelMixin):
+class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     __tablename__ = "computers"
+
+    # NOTE this is needed to use soft delete
+    query_class = QueryWithSoftDelete
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -101,23 +108,19 @@ class Computer(db.Model, ModelMixin):
 
     company = relationship(
         "Company",
-        passive_deletes=True,
-        backref=backref("computers", cascade="delete"),
+        back_populates="computers",
         lazy="select",
     )
 
     location = relationship(
         "Location",
-        passive_deletes=True,
-        backref=backref("computers", cascade="delete"),
+        back_populates="computers",
         lazy="select",
     )
 
     download_backup_calls = relationship(
         "DownloadBackupCall",
         back_populates="computer",
-        cascade="all, delete",
-        passive_deletes=True,
         lazy="select",
     )
 
@@ -412,6 +415,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_time_logs_enabled",
         "last_time_logs_disabled",
         "download_backup_calls",
+        "is_deleted",
     )
 
     column_searchable_list = searchable_sortable_list
@@ -540,6 +544,34 @@ class ComputerView(RowActionListMixin, MyModelView):
             else:
                 model.last_time_logs_disabled = datetime.utcnow()
 
+    def delete_model(self, model):
+        """
+        Delete model.
+
+        :param model:
+            Model to delete
+        """
+        try:
+            self.on_model_delete(model)
+            self.session.flush()
+            model.is_deleted = True
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to delete record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to delete record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_delete(model)
+
+        return True
+
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log
 
@@ -593,9 +625,9 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
-                result_query = self.session.query(self.model)
+                result_query = self.model.query
             case UserPermissionLevel.COMPANY:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     or_(
                         self.model.company_id == current_user.company_id,
                         self.model.location_id.in_(
@@ -604,28 +636,21 @@ class ComputerView(RowActionListMixin, MyModelView):
                     )
                 )
             case UserPermissionLevel.LOCATION_GROUP:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.location_id.in_(
                         [loc.id for loc in current_user.location_group[0].locations]
                     )
                 )
             case UserPermissionLevel.LOCATION:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.location_id == current_user.location[0].id
                 )
             case _:
-                result_query = self.session.query(self.model).filter(
-                    self.model.id == -1
-                )
+                result_query = self.model.query.filter(self.model.id == -1)
 
         return result_query
 
     def get_count_query(self):
         actual_query = self.get_query()
-
-        # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
-        # Instead add select_from(self.model) to query to count correctly
-        if current_user.permission == UserPermissionLevel.GLOBAL:
-            return actual_query.with_entities(func.count()).select_from(self.model)
 
         return actual_query.with_entities(func.count())

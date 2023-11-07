@@ -4,6 +4,7 @@ from werkzeug.datastructures import FileStorage
 from wtforms.validators import InputRequired
 from wtforms.widgets import FileInput
 from wtforms import ValidationError, fields
+from flask_sqlalchemy import BaseQuery
 import sqlalchemy as sa
 
 from app import db
@@ -22,8 +23,31 @@ class ModelMixin(object):
         return self
 
 
-class RowActionListMixin:
+class SoftDeleteMixin(object):
+    is_deleted = db.Column(db.Boolean, default=False, server_default=sa.sql.false())
 
+
+class QueryWithSoftDelete(BaseQuery):
+    def __new__(cls, *args, **kwargs):
+        obj = super(QueryWithSoftDelete, cls).__new__(cls)
+        with_deleted = kwargs.pop("_with_deleted", False)
+        if len(args) > 0:
+            super(QueryWithSoftDelete, obj).__init__(*args, **kwargs)
+            return obj.filter_by(is_deleted=False) if not with_deleted else obj
+        return obj
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def with_deleted(self):
+        return self.__class__(
+            db.class_mapper(self._entity_from_pre_ent_zero().class_),
+            session=db.session(),
+            _with_deleted=True,
+        )
+
+
+class RowActionListMixin:
     list_template = "import-admin-list-to-dashboard.html"
     edit_template = "import-admin-edit-to-dashboard.html"
     create_template = "import-admin-create-to-dashboard.html"
@@ -33,7 +57,6 @@ class RowActionListMixin:
 
 
 class BlobUploadField(fields.StringField):
-
     widget = FileInput()
 
     def __init__(
@@ -45,7 +68,6 @@ class BlobUploadField(fields.StringField):
         mimetype_field=None,
         **kwargs
     ):
-
         self.allowed_extensions = allowed_extensions
         self.size_field = size_field
         self.filename_field = filename_field
@@ -84,9 +106,7 @@ class BlobUploadField(fields.StringField):
             self.data = data
 
     def populate_obj(self, obj, name):
-
         if self._is_uploaded_file(self.data):
-
             _blob = self.data.read()
 
             setattr(obj, name, _blob)

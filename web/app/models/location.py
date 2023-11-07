@@ -67,6 +67,15 @@ class Location(db.Model, ModelMixin):
         lazy="select",
     )
 
+    computers = relationship(
+        "Computer",
+        back_populates="location",
+        cascade="all, delete",
+        passive_deletes=True,
+        lazy="select",
+        primaryjoin="and_(Location.id == Computer.location_id, Computer.is_deleted.is_(False))",
+    )
+
     def __repr__(self):
         return self.name
 
@@ -151,6 +160,7 @@ class Location(db.Model, ModelMixin):
         start_time: datetime,
         end_time: datetime,
     ) -> int:
+        from app.models.computer import Computer
         from app.models.download_backup_call import DownloadBackupCall
 
         # If the start_time and end_time has not UTC timezone, then convert it
@@ -160,7 +170,11 @@ class Location(db.Model, ModelMixin):
         if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
             end_time = end_time.astimezone(ZoneInfo("UTC"))
 
-        computers_ids: list[int] = [comp.id for comp in self.computers]
+        # Retrieve all the computers (even deleted ones) for this location
+        computers: list[Computer] = (
+            Computer.query.with_deleted().filter(Computer.location_id == self.id).all()
+        )
+        computers_ids: list[int] = [comp.id for comp in computers]
         total_pcc_api_calls: int = DownloadBackupCall.query.filter(
             DownloadBackupCall.computer_id.in_(computers_ids),
             DownloadBackupCall.created_at >= start_time,

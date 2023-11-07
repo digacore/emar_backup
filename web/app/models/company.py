@@ -2,7 +2,7 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy import sql, func, and_, or_
-from sqlalchemy.orm import Query
+from sqlalchemy.orm import Query, relationship
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
@@ -16,7 +16,6 @@ from config import BaseConfig as CFG
 
 
 class Company(db.Model, ModelMixin):
-
     __tablename__ = "companies"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -35,6 +34,15 @@ class Company(db.Model, ModelMixin):
     )
     is_global = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
+
+    computers = relationship(
+        "Computer",
+        back_populates="company",
+        cascade="all, delete",
+        passive_deletes=True,
+        lazy="select",
+        primaryjoin="and_(Company.id == Computer.company_id, Computer.is_deleted.is_(False))",
     )
 
     def __repr__(self):
@@ -144,6 +152,7 @@ class Company(db.Model, ModelMixin):
         start_time: datetime,
         end_time: datetime,
     ) -> int:
+        from app.models.computer import Computer
         from app.models.download_backup_call import DownloadBackupCall
 
         # If the start_time and end_time has not UTC timezone, then convert it
@@ -153,7 +162,11 @@ class Company(db.Model, ModelMixin):
         if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
             end_time = end_time.astimezone(ZoneInfo("UTC"))
 
-        computers_ids: list[int] = [comp.id for comp in self.computers]
+        # Retrieve all the computers (even deleted ones) for this company
+        computers = (
+            Computer.query.with_deleted().filter(Computer.company_id == self.id).all()
+        )
+        computers_ids: list[int] = [comp.id for comp in computers]
         total_pcc_api_calls: int = DownloadBackupCall.query.filter(
             DownloadBackupCall.computer_id.in_(computers_ids),
             DownloadBackupCall.created_at >= start_time,
@@ -272,7 +285,6 @@ class CompanyView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
