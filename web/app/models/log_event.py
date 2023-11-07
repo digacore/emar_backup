@@ -2,7 +2,6 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import Enum
-from sqlalchemy.orm import relationship
 
 from app import db
 from app.models.utils import ModelMixin
@@ -20,7 +19,6 @@ class LogType(enum.Enum):
 
 
 class LogEvent(db.Model, ModelMixin):
-
     __tablename__ = "log_events"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -30,10 +28,6 @@ class LogEvent(db.Model, ModelMixin):
     log_type = db.Column(Enum(LogType), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.now)
     data = db.Column(db.String(128), server_default="", default="")
-
-    computer = relationship(
-        "Computer", passive_deletes=True, backref="log_events", lazy="select"
-    )
 
     def __repr__(self):
         return f"<{self.id}:{self.log_type} at {self.created_at}>"

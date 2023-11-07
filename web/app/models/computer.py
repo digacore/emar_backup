@@ -118,11 +118,14 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         lazy="select",
     )
 
+    backup_logs = relationship("BackupLog", lazy="select")
+
     download_backup_calls = relationship(
         "DownloadBackupCall",
-        back_populates="computer",
         lazy="select",
     )
+
+    log_events = relationship("LogEvent", lazy="select")
 
     def __repr__(self):
         return self.computer_name
