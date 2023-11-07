@@ -1,9 +1,10 @@
 import enum
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy import func, sql, select, or_, Enum
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
@@ -28,13 +29,12 @@ class LocationStatus(enum.Enum):
 
 
 class Location(db.Model, ModelMixin):
-
     __tablename__ = "locations"
 
     id = db.Column(db.Integer, primary_key=True)
 
     company_id = db.Column(
-        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=True
+        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
     )
 
     name = db.Column(db.String(64), nullable=False)
@@ -59,6 +59,14 @@ class Location(db.Model, ModelMixin):
         lazy="select",
     )
 
+    alert_events = relationship(
+        "AlertEvent",
+        back_populates="location",
+        cascade="all, delete",
+        passive_deletes=True,
+        lazy="select",
+    )
+
     def __repr__(self):
         return self.name
 
@@ -76,7 +84,7 @@ class Location(db.Model, ModelMixin):
 
     @hybrid_property
     def company_name(self):
-        return self.company.name if self.company else None
+        return self.company.name
 
     @company_name.expression
     def company_name(cls):
@@ -85,7 +93,11 @@ class Location(db.Model, ModelMixin):
     @company_name.setter
     def company_name(self, value):
         new_company = Company.query.filter_by(name=value).first()
-        self.company_id = new_company.id if new_company else None
+
+        if not new_company:
+            raise ValueError(f"Company with name {value} doesn't exist")
+
+        self.company_id = new_company.id
 
     # NOTE: unfortunately, next callable properties can't be used with Flask Admin (as table columns)
     # Because initialization of LocationView class is done before initialization of Compute model
@@ -133,6 +145,53 @@ class Location(db.Model, ModelMixin):
             ),
         ).count()
 
+    @hybrid_method
+    def total_pcc_api_calls(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> int:
+        from app.models.download_backup_call import DownloadBackupCall
+
+        # If the start_time and end_time has not UTC timezone, then convert it
+        if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):
+            start_time = start_time.astimezone(ZoneInfo("UTC"))
+
+        if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
+            end_time = end_time.astimezone(ZoneInfo("UTC"))
+
+        computers_ids: list[int] = [comp.id for comp in self.computers]
+        total_pcc_api_calls: int = DownloadBackupCall.query.filter(
+            DownloadBackupCall.computer_id.in_(computers_ids),
+            DownloadBackupCall.created_at >= start_time,
+            DownloadBackupCall.created_at <= end_time,
+        ).count()
+
+        return total_pcc_api_calls
+
+    @hybrid_method
+    def total_alert_events(
+        self,
+        start_time: datetime = datetime.utcnow() - timedelta(days=30),
+        end_time: datetime = datetime.utcnow(),
+    ) -> int:
+        from app.models.alert_event import AlertEvent
+
+        # If the start_time and end_time has not UTC timezone, then convert it
+        if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):
+            start_time = start_time.astimezone(ZoneInfo("UTC"))
+
+        if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
+            end_time = end_time.astimezone(ZoneInfo("UTC"))
+
+        total_alert_events: int = AlertEvent.query.filter(
+            AlertEvent.location_id == self.id,
+            AlertEvent.created_at >= start_time,
+            AlertEvent.created_at <= end_time,
+        ).count()
+
+        return total_alert_events
+
 
 class LocationView(RowActionListMixin, MyModelView):
     def __repr__(self):
@@ -173,7 +232,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "users", "status")
+    form_excluded_columns = ("created_from_pcc", "users", "status", "alert_events")
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
@@ -207,7 +266,6 @@ class LocationView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 

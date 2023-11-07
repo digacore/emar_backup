@@ -1,9 +1,10 @@
 import enum
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
@@ -48,7 +49,6 @@ class ComputerStatus(enum.Enum):
 
 
 class Computer(db.Model, ModelMixin):
-
     __tablename__ = "computers"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -110,6 +110,14 @@ class Computer(db.Model, ModelMixin):
         "Location",
         passive_deletes=True,
         backref=backref("computers", cascade="delete"),
+        lazy="select",
+    )
+
+    download_backup_calls = relationship(
+        "DownloadBackupCall",
+        back_populates="computer",
+        cascade="all, delete",
+        passive_deletes=True,
         lazy="select",
     )
 
@@ -342,6 +350,29 @@ class Computer(db.Model, ModelMixin):
 
         return summarized_offline_time
 
+    @hybrid_method
+    def total_pcc_api_calls(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> int:
+        from app.models.download_backup_call import DownloadBackupCall
+
+        # If the start_time and end_time has not UTC timezone, then convert it
+        if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):
+            start_time = start_time.astimezone(ZoneInfo("UTC"))
+
+        if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
+            end_time = end_time.astimezone(ZoneInfo("UTC"))
+
+        total_pcc_api_calls: int = DownloadBackupCall.query.filter(
+            DownloadBackupCall.computer_id == self.id,
+            DownloadBackupCall.created_at >= start_time,
+            DownloadBackupCall.created_at <= end_time,
+        ).count()
+
+        return total_pcc_api_calls
+
 
 class ComputerView(RowActionListMixin, MyModelView):
     def __repr__(self):
@@ -356,19 +387,10 @@ class ComputerView(RowActionListMixin, MyModelView):
         "company_name",
         "location_name",
         "location_status",
+        "device_role",
+        "device_type",
         "last_download_time",
         "last_time_online",
-        "msi_version",
-        "current_msi_version",
-        "sftp_host",
-        "sftp_username",
-        "sftp_folder_path",
-        "type",
-        "device_type",
-        "device_role",
-        "manager_host",
-        "activated",
-        "logs_enabled",
         "computer_ip",
     ]
 
@@ -377,19 +399,10 @@ class ComputerView(RowActionListMixin, MyModelView):
         "status",
         "company_name",
         "location_name",
-        "last_download_time",
-        "last_time_online",
-        "msi_version",
-        "current_msi_version",
-        "sftp_host",
-        "sftp_username",
-        "sftp_folder_path",
-        "type",
         "device_type",
         "device_role",
-        "manager_host",
-        "activated",
-        "logs_enabled",
+        "last_download_time",
+        "last_time_online",
         "computer_ip",
     ]
 
@@ -398,6 +411,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "backup_logs",
         "last_time_logs_enabled",
         "last_time_logs_disabled",
+        "download_backup_calls",
     )
 
     column_searchable_list = searchable_sortable_list
@@ -483,7 +497,6 @@ class ComputerView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
@@ -543,7 +556,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         create_system_log(SystemLogType.COMPUTER_DELETED, model, current_user)
 
     def get_query(self):
-
         OBLIGATORY_VERSIONS = [
             ("stable", "stable"),
             ("latest", "latest"),

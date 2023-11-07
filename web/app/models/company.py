@@ -1,7 +1,9 @@
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy import sql, func, and_, or_
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import Query
+from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 
@@ -70,9 +72,9 @@ class Company(db.Model, ModelMixin):
     def primary_computers_offline(self):
         from app.models.computer import Computer, DeviceRole
 
-        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
-        computers_number = Computer.query.filter(
+        computers_number: int = Computer.query.filter(
             and_(
                 Computer.company_id == self.id,
                 Computer.activated.is_(True),
@@ -91,9 +93,9 @@ class Company(db.Model, ModelMixin):
     def total_offline_computers(self):
         from app.models.computer import Computer
 
-        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
-        computers_number = Computer.query.filter(
+        computers_number: int = Computer.query.filter(
             and_(
                 Computer.company_id == self.id,
                 Computer.activated.is_(True),
@@ -110,14 +112,15 @@ class Company(db.Model, ModelMixin):
     @hybrid_property
     def total_offline_locations(self):
         from app.models.computer import Computer
+        from app.models.location import Location
 
-        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
-        offline_locations_counter = 0
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        offline_locations_counter: int = 0
 
-        locations = self.locations
+        locations: list[Location] = self.locations
 
         for location in locations:
-            activated_computers_query = Computer.query.filter(
+            activated_computers_query: Query = Computer.query.filter(
                 Computer.location_id == location.id,
                 Computer.activated.is_(True),
             )
@@ -125,7 +128,7 @@ class Company(db.Model, ModelMixin):
             if not activated_computers_query.count():
                 continue
 
-            online_computers = activated_computers_query.filter(
+            online_computers: list[Computer] = activated_computers_query.filter(
                 Computer.last_download_time.is_not(None),
                 Computer.last_download_time >= current_east_time - timedelta(hours=1),
             ).all()
@@ -134,6 +137,54 @@ class Company(db.Model, ModelMixin):
                 offline_locations_counter += 1
 
         return offline_locations_counter
+
+    @hybrid_method
+    def total_pcc_api_calls(
+        self,
+        start_time: datetime,
+        end_time: datetime,
+    ) -> int:
+        from app.models.download_backup_call import DownloadBackupCall
+
+        # If the start_time and end_time has not UTC timezone, then convert it
+        if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):
+            start_time = start_time.astimezone(ZoneInfo("UTC"))
+
+        if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
+            end_time = end_time.astimezone(ZoneInfo("UTC"))
+
+        computers_ids: list[int] = [comp.id for comp in self.computers]
+        total_pcc_api_calls: int = DownloadBackupCall.query.filter(
+            DownloadBackupCall.computer_id.in_(computers_ids),
+            DownloadBackupCall.created_at >= start_time,
+            DownloadBackupCall.created_at <= end_time,
+        ).count()
+
+        return total_pcc_api_calls
+
+    @hybrid_method
+    def total_alert_events(
+        self,
+        start_time: datetime = datetime.utcnow() - timedelta(days=30),
+        end_time: datetime = datetime.utcnow(),
+    ) -> int:
+        from app.models.alert_event import AlertEvent
+
+        # If the start_time and end_time has not UTC timezone, then convert it
+        if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):
+            start_time = start_time.astimezone(ZoneInfo("UTC"))
+
+        if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
+            end_time = end_time.astimezone(ZoneInfo("UTC"))
+
+        location_ids: list[int] = [location.id for location in self.locations]
+        total_alert_events: int = AlertEvent.query.filter(
+            AlertEvent.location_id.in_(location_ids),
+            AlertEvent.created_at >= start_time,
+            AlertEvent.created_at <= end_time,
+        ).count()
+
+        return total_alert_events
 
 
 class CompanyView(RowActionListMixin, MyModelView):
@@ -172,7 +223,12 @@ class CompanyView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "locations", "is_global", "users")
+    form_excluded_columns = (
+        "created_from_pcc",
+        "locations",
+        "is_global",
+        "users",
+    )
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field

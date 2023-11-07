@@ -154,6 +154,15 @@
         </li>
       {% endif %}
 
+      <!-- Nav Item - Reporting -->
+      {% if current_user.permission.value == "GLOBAL" %}
+        <li class="nav-item active">
+          <a class="nav-link" href="{{ url_for('billing.get_billing_page') }}">
+            <i class="fas fa-fw fa-calculator"></i>
+            <span style="color: lawngreen;" title="Reporting page">Reporting</span></a>
+        </li>
+      {% endif %}
+
       <!-- Divider -->
       <hr class="sidebar-divider d-none d-md-block">
 
@@ -267,6 +276,7 @@
           {% endblock %}
         </div>
         <!-- End of Main Content -->
+      </div>
 
       <!-- Footer -->
       <footer class="sticky-footer bg-white">
