@@ -66,7 +66,8 @@ def create_company_billing_report(
     # Write main table data
     start_row = 4
     ordered_locations = (
-        m.Location.query.filter_by(company_id=company.id)
+        m.Location.query.with_deleted()
+        .filter_by(company_id=company.id)
         .order_by(m.Location.name)
         .all()
     )
@@ -94,7 +95,8 @@ def create_company_billing_report(
         start_row += 1
 
         ordered_computers = (
-            m.Computer.query.filter_by(location_id=location.id)
+            m.Computer.query.with_deleted()
+            .filter_by(location_id=location.id)
             .order_by(m.Computer.computer_name)
             .all()
         )
@@ -210,7 +212,8 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
         start_row += 1
 
         ordered_locations = (
-            m.Location.query.filter_by(company_id=company.id)
+            m.Location.query.with_deleted()
+            .filter_by(company_id=company.id)
             .order_by(m.Location.name)
             .all()
         )
@@ -240,7 +243,8 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
             start_row += 1
 
             ordered_computers = (
-                m.Computer.query.filter_by(location_id=location.id)
+                m.Computer.query.with_deleted()
+                .filter_by(location_id=location.id)
                 .order_by(m.Computer.computer_name)
                 .all()
             )

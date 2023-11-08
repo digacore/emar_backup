@@ -36,6 +36,15 @@ class Company(db.Model, ModelMixin):
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
 
+    locations = relationship(
+        "Location",
+        back_populates="company",
+        cascade="all, delete",
+        passive_deletes=True,
+        lazy="select",
+        primaryjoin="and_(Company.id == Location.company_id, Location.is_deleted.is_(False))",
+    )
+
     computers = relationship(
         "Computer",
         back_populates="company",
@@ -181,6 +190,7 @@ class Company(db.Model, ModelMixin):
         start_time: datetime = datetime.utcnow() - timedelta(days=30),
         end_time: datetime = datetime.utcnow(),
     ) -> int:
+        from app.models.location import Location
         from app.models.alert_event import AlertEvent
 
         # If the start_time and end_time has not UTC timezone, then convert it
@@ -190,7 +200,11 @@ class Company(db.Model, ModelMixin):
         if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
             end_time = end_time.astimezone(ZoneInfo("UTC"))
 
-        location_ids: list[int] = [location.id for location in self.locations]
+        # Retrieve all the company locations (even deleted ones)
+        locations: list[Location] = (
+            Location.query.with_deleted().filter(Location.company_id == self.id).all()
+        )
+        location_ids: list[int] = [location.id for location in locations]
         total_alert_events: int = AlertEvent.query.filter(
             AlertEvent.location_id.in_(location_ids),
             AlertEvent.created_at >= start_time,

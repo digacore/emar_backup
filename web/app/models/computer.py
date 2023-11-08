@@ -55,14 +55,12 @@ class ComputerStatus(enum.Enum):
 class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     __tablename__ = "computers"
 
-    # NOTE this is needed to use soft delete
+    # NOTE this is needed to filter soft deleted records
     query_class = QueryWithSoftDelete
 
     id = db.Column(db.Integer, primary_key=True)
 
-    location_id = db.Column(
-        db.Integer, db.ForeignKey("locations.id", ondelete="CASCADE"), nullable=True
-    )
+    location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=True)
     company_id = db.Column(
         db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=True
     )
@@ -118,7 +116,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         lazy="select",
     )
 
-    backup_logs = relationship("BackupLog", lazy="select")
+    backup_logs = relationship("BackupLog", back_populates="computer", lazy="select")
 
     download_backup_calls = relationship(
         "DownloadBackupCall",
@@ -153,6 +151,21 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
             "identifier_key",
             "computer_ip",
         ]
+
+    def restore(self):
+        """Restore computer from soft delete"""
+        self.is_deleted = False
+        self.deleted_at = None
+        self.current_msi_version = None
+        self.download_status = None
+        self.last_downloaded = None
+        self.last_saved_path = None
+        self.files_checksum = "{}"
+        self.activated = False
+        self.logs_enabled = True
+        self.computer_ip = None
+        db.session.commit()
+        return self
 
     @hybrid_property
     def location_name(self):

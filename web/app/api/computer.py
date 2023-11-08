@@ -48,17 +48,8 @@ def register_computer(body: ComputerRegInfo):
 
         # Restore deleted computer if it exists
         if deleted_computer:
+            deleted_computer = deleted_computer.restore()
             deleted_computer.identifier_key = new_identifier_key
-            deleted_computer.is_deleted = False
-            deleted_computer.deleted_at = None
-            deleted_computer.current_msi_version = None
-            deleted_computer.download_status = None
-            deleted_computer.last_downloaded = None
-            deleted_computer.last_saved_path = None
-            deleted_computer.files_checksum = "{}"
-            deleted_computer.activated = False
-            deleted_computer.logs_enabled = True
-            deleted_computer.computer_ip = None
             deleted_computer.update()
 
             new_computer = deleted_computer

@@ -52,7 +52,15 @@ class LocationGroup(db.Model, ModelMixin):
         passive_deletes=True,
     )
 
-    locations = relationship("Location", secondary=locations_to_group, backref="group")
+    locations = relationship(
+        "Location",
+        secondary=locations_to_group,
+        secondaryjoin=and_(
+            locations_to_group.c.location_id == Location.id,
+            Location.is_deleted.is_(False),
+        ),
+        backref="group",
+    )
 
     def __repr__(self):
         return self.name
@@ -201,7 +209,6 @@ class LocationGroupView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
