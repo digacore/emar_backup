@@ -2,6 +2,7 @@ import enum
 from datetime import datetime
 
 from sqlalchemy import Enum
+from sqlalchemy.orm import relationship
 
 from app import db
 from app.models.utils import ModelMixin
@@ -25,6 +26,12 @@ class BackupLog(db.Model, ModelMixin):
     end_time = db.Column(db.DateTime, nullable=False)
     error = db.Column(db.String(128), server_default="", default="")
     notes = db.Column(db.String(128), server_default="", default="")
+
+    computer = relationship(
+        "Computer",
+        back_populates="backup_logs",
+        lazy="select",
+    )
 
     def __repr__(self):
         return f"<{self.id}:{self.backup_log_type} from {self.start_time} to {self.end_time}>"

@@ -247,7 +247,6 @@ class CompanyView(RowActionListMixin, MyModelView):
         "computers_offline",
         "created_at",
         "pcc_org_id",
-        "computers",
     )
 
     form_excluded_columns = (
@@ -255,6 +254,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "locations",
         "is_global",
         "users",
+        "computers",
     )
 
     def search_placeholder(self):

@@ -521,6 +521,18 @@ class ComputerView(RowActionListMixin, MyModelView):
         form.company.query_factory = self._available_companies
         form.location.query_factory = self._available_locations
 
+        # Remove unique validator from computer_name field if deleted computer with such name exists
+        deleted_computer = (
+            Computer.query.with_deleted()
+            .filter_by(
+                computer_name=form.computer_name.data,
+                is_deleted=True,
+            )
+            .first()
+        )
+        if deleted_computer:
+            form.computer_name.validators = form.computer_name.validators[1:]
+
         return form
 
     def edit_form(self, obj=None):
@@ -548,6 +560,59 @@ class ComputerView(RowActionListMixin, MyModelView):
             else:
                 model.last_time_logs_disabled = datetime.utcnow()
 
+    def create_model(self, form):
+        """
+        Create model from form.
+
+        :param form:
+            Form instance
+        """
+        try:
+            # Check if there is deleted computer with such name
+            deleted_computer = (
+                Computer.query.with_deleted()
+                .filter_by(
+                    computer_name=form.computer_name.data,
+                    is_deleted=True,
+                )
+                .first()
+            )
+
+            if deleted_computer:
+                # Restore computer
+                model = deleted_computer
+                original_created_at = model.created_at
+                form.populate_obj(model)
+                model.is_deleted = False
+                model.deleted_at = None
+                model.created_at = original_created_at
+                self._on_model_change(form, model, True)
+                self.session.commit()
+
+                logger.info(f"Computer {model.computer_name} was restored.")
+            else:
+                model = self.build_new_instance()
+
+                form.populate_obj(model)
+                self.session.add(model)
+                self._on_model_change(form, model, True)
+                self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to create record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to create record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, True)
+
+        return model
+
     def delete_model(self, model):
         """
         Soft deletion of model
@@ -558,8 +623,13 @@ class ComputerView(RowActionListMixin, MyModelView):
         try:
             self.on_model_delete(model)
             self.session.flush()
+
+            # Deactivate computer and logs. Then delete it
+            model.activated = False
+            model.logs_enabled = False
             model.is_deleted = True
             model.deleted_at = datetime.utcnow()
+
             self.session.commit()
         except Exception as ex:
             if not self.handle_view_exception(ex):
