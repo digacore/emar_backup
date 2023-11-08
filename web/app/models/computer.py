@@ -549,7 +549,7 @@ class ComputerView(RowActionListMixin, MyModelView):
 
     def delete_model(self, model):
         """
-        Delete model.
+        Soft deletion of model
 
         :param model:
             Model to delete
@@ -558,6 +558,7 @@ class ComputerView(RowActionListMixin, MyModelView):
             self.on_model_delete(model)
             self.session.flush()
             model.is_deleted = True
+            model.deleted_at = datetime.utcnow()
             self.session.commit()
         except Exception as ex:
             if not self.handle_view_exception(ex):

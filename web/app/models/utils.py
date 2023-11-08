@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from gettext import gettext
 
 from werkzeug.datastructures import FileStorage
@@ -25,6 +27,14 @@ class ModelMixin(object):
 
 class SoftDeleteMixin(object):
     is_deleted = db.Column(db.Boolean, default=False, server_default=sa.sql.false())
+    deleted_at = db.Column(db.DateTime, nullable=True)
+
+    def delete(self):
+        # Soft delete this model from the database.
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+        db.session.commit()
+        return self
 
 
 class QueryWithSoftDelete(BaseQuery):
