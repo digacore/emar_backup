@@ -170,6 +170,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         self.files_checksum = "{}"
         self.activated = False
         self.logs_enabled = True
+        self.last_time_logs_enabled = datetime.utcnow()
         self.computer_ip = None
         db.session.commit()
         return self

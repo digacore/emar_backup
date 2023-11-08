@@ -422,10 +422,11 @@ class LocationView(RowActionListMixin, MyModelView):
 
             # Mark all the location computers and location itself as deleted
             for computer in model.computers:
+                computer.logs_enabled = False
+                computer.last_time_logs_disabled = datetime.utcnow()
+                computer.activated = False
                 computer.is_deleted = True
                 computer.deleted_at = datetime.utcnow()
-                computer.logs_enabled = False
-                computer.activated = False
 
             model.is_deleted = True
             model.deleted_at = datetime.utcnow()
