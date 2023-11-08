@@ -419,6 +419,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_time_logs_disabled",
         "download_backup_calls",
         "is_deleted",
+        "deleted_at",
     )
 
     column_searchable_list = searchable_sortable_list

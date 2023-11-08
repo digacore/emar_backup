@@ -246,6 +246,21 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
+    # To set order of the fields in form
+    form_columns = (
+        "company",
+        "name",
+        "default_sftp_path",
+        "computers_per_location",
+        "computers_online",
+        "computers_offline",
+        "created_at",
+        "pcc_fac_id",
+        "use_pcc_backup",
+        "computers",
+        "group",
+    )
+
     form_excluded_columns = ("created_from_pcc", "users", "status", "alert_events")
 
     def search_placeholder(self):

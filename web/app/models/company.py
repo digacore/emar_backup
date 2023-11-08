@@ -236,6 +236,20 @@ class CompanyView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
+    # To set order of the fields in form
+    form_columns = (
+        "name",
+        "default_sftp_username",
+        "default_sftp_password",
+        "locations_per_company",
+        "total_computers",
+        "computers_online",
+        "computers_offline",
+        "created_at",
+        "pcc_org_id",
+        "computers",
+    )
+
     form_excluded_columns = (
         "created_from_pcc",
         "locations",
