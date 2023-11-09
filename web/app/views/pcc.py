@@ -277,8 +277,13 @@ def get_creation_report(report_id: int):
             # Create the new location
             if obj.action == s.PCCReportAction.CREATE.value:
                 # Try to find location in deleted locations
-                deleted_location = m.Location.query.with_deleted().filter(
-                    m.Location.name == obj.name, m.Location.company_name == company.name
+                deleted_location = (
+                    m.Location.query.with_deleted()
+                    .filter(
+                        m.Location.name == obj.name,
+                        m.Location.company_name == company.name,
+                    )
+                    .first()
                 )
                 if not deleted_location:
                     location = m.Location(
