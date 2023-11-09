@@ -57,7 +57,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     pcc_fac_id = db.Column(db.Integer, nullable=True)
     use_pcc_backup = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False

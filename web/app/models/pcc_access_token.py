@@ -12,7 +12,7 @@ class PCCAccessToken(db.Model, ModelMixin):
     token = db.Column(db.String(64), unique=True, nullable=False)
     expires_in = db.Column(db.Integer, nullable=False)
     created_at = db.Column(
-        db.DateTime, default=datetime.now, server_default=db.func.now()
+        db.DateTime, default=datetime.utcnow, server_default=db.func.now()
     )
 
     def __repr__(self):

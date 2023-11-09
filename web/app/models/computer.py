@@ -99,10 +99,10 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     activated = db.Column(db.Boolean, default=False)
 
     logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     computer_ip = db.Column(db.String(128))
 
-    last_time_logs_enabled = db.Column(db.DateTime, default=datetime.now)
+    last_time_logs_enabled = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_logs_disabled = db.Column(db.DateTime)
 
     company = relationship(

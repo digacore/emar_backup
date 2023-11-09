@@ -1,16 +1,20 @@
 from datetime import datetime, timedelta
 
+from flask import flash
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
-from sqlalchemy import select, func, and_, or_
+from flask_admin.contrib.sqla import tools
+from flask_admin.babel import gettext
+from sqlalchemy import select, func, and_, or_, sql
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from app import db
 from .company import Company
 from .location import Location
-from .utils import ModelMixin, RowActionListMixin
+from .utils import ModelMixin, RowActionListMixin, SoftDeleteMixin, QueryWithSoftDelete
 from app.utils import MyModelView
+from app.logger import logger
 
 from config import BaseConfig as CFG
 
@@ -36,8 +40,12 @@ locations_to_group = db.Table(
 )
 
 
-class LocationGroup(db.Model, ModelMixin):
+class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
     __tablename__ = "location_groups"
+
+    __table_args__ = (db.UniqueConstraint("company_id", "name"),)
+
+    query_class = QueryWithSoftDelete
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -46,15 +54,22 @@ class LocationGroup(db.Model, ModelMixin):
     )
 
     name = db.Column(db.String(64), nullable=False)
+    created_at = db.Column(
+        db.DateTime, default=datetime.utcnow, server_default=db.func.now()
+    )
+    # Redefine is_deleted column from SoftDeleteMixin to be able to use it in relation
+    is_deleted = db.Column(db.Boolean, default=False, server_default=sql.false())
 
     company = relationship(
         "Company",
-        passive_deletes=True,
     )
 
     locations = relationship(
         "Location",
         secondary=locations_to_group,
+        primaryjoin=and_(
+            id == locations_to_group.c.location_group_id, is_deleted.is_(False)
+        ),
         secondaryjoin=and_(
             locations_to_group.c.location_id == Location.id,
             Location.is_deleted.is_(False),
@@ -174,7 +189,7 @@ class LocationGroupView(RowActionListMixin, MyModelView):
     column_sortable_list = column_list
     action_disallowed_list = ["delete"]
 
-    form_excluded_columns = ["users"]
+    form_excluded_columns = ["users", "created_at", "deleted_at", "is_deleted"]
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
@@ -238,6 +253,95 @@ class LocationGroupView(RowActionListMixin, MyModelView):
 
         return form
 
+    def create_model(self, form):
+        """
+        Create model from form.
+
+        :param form:
+            Form instance
+        """
+
+        # Check if there is deleted location group with such name and for such company
+        deleted_group = (
+            LocationGroup.query.with_deleted()
+            .filter_by(
+                name=form.name.data,
+                company_id=form.company.data.id,
+                is_deleted=True,
+            )
+            .first()
+        )
+
+        try:
+            if deleted_group:
+                # Restore group
+                model = deleted_group
+                original_created_at = model.created_at
+                form.populate_obj(model)
+                model.is_deleted = False
+                model.deleted_at = None
+                model.created_at = original_created_at
+                self._on_model_change(form, model, True)
+                self.session.commit()
+
+                logger.info(f"Location group {model.name} was restored.")
+            else:
+                model = self.build_new_instance()
+
+                form.populate_obj(model)
+                self.session.add(model)
+                self._on_model_change(form, model, True)
+                self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to create record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to create record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, True)
+
+        return model
+
+    def delete_model(self, model):
+        """
+        Soft deletion of model
+
+        :param model:
+            Model to delete
+        """
+        try:
+            self.on_model_delete(model)
+            self.session.flush()
+
+            # Delete all locations from group
+            model.locations = []
+
+            model.is_deleted = True
+            model.deleted_at = datetime.utcnow()
+
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to delete record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to delete record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_delete(model)
+
+        return True
+
     def get_query(self):
         from app.models.user import UserPermissionLevel, UserRole
 
@@ -257,30 +361,24 @@ class LocationGroupView(RowActionListMixin, MyModelView):
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
-                result_query = self.session.query(self.model)
+                result_query = self.model.query
             case UserPermissionLevel.COMPANY:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.company_id == current_user.company_id
                 )
             case UserPermissionLevel.LOCATION_GROUP:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.id == current_user.location_group[0].id
                 )
             case _:
-                result_query = self.session.query(self.model).filter(
-                    self.model.id == -1
-                )
+                result_query = self.model.query.filter(self.model.id == -1)
 
         return result_query
 
     def get_count_query(self):
-        from app.models.user import UserPermissionLevel
-
         actual_query = self.get_query()
 
-        # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
-        # Instead add select_from(self.model) to query to count correctly
-        if current_user.permission == UserPermissionLevel.GLOBAL:
-            return actual_query.with_entities(func.count()).select_from(self.model)
-
         return actual_query.with_entities(func.count())
+
+    def get_one(self, id):
+        return self.model.query.filter_by(id=tools.iterdecode(id)).first()

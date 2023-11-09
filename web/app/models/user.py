@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import func, Enum, select
+from sqlalchemy import func, Enum, select, and_
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -74,7 +74,6 @@ class UserRole(enum.Enum):
 
 
 class User(db.Model, UserMixin, ModelMixin):
-
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -101,9 +100,23 @@ class User(db.Model, UserMixin, ModelMixin):
 
     company = relationship("Company", backref="users", lazy="select")
     location_group = relationship(
-        "LocationGroup", secondary=users_to_group, backref="users"
+        "LocationGroup",
+        secondary=users_to_group,
+        backref="users",
+        secondaryjoin=and_(
+            users_to_group.c.location_group_id == LocationGroup.id,
+            LocationGroup.is_deleted.is_(False),
+        ),
     )
-    location = relationship("Location", secondary=users_to_location, backref="users")
+    location = relationship(
+        "Location",
+        secondary=users_to_location,
+        backref="users",
+        secondaryjoin=and_(
+            users_to_location.c.location_id == Location.id,
+            Location.is_deleted.is_(False),
+        ),
+    )
 
     @hybrid_property
     def password(self):
@@ -257,7 +270,6 @@ class UserView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
