@@ -122,6 +122,18 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
             db.session.commit()
         return self
 
+    def restore(self, commit: bool = True):
+        self.status = None
+        self.computers_per_location = 0
+        self.computers_online = 0
+        self.computers_offline = 0
+        self.is_deleted = False
+        self.deleted_at = None
+
+        if commit:
+            db.session.commit()
+        return self
+
     @hybrid_property
     def company_name(self):
         return self.company.name
