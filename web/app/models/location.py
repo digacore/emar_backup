@@ -47,9 +47,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    company_id = db.Column(
-        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
-    )
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False)
 
     name = db.Column(db.String(64), nullable=False)
     status = db.Column(Enum(LocationStatus), nullable=True)
@@ -99,6 +97,30 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
             "pcc_fac_id",
             "use_pcc_backup",
         ]
+
+    def delete(self, commit: bool = True):
+        # Mark all the location computers and location itself as deleted
+        for computer in self.computers:
+            computer.delete(commit=False)
+
+        # Remove location from location group
+        self.group = []
+
+        # Delete users which have access only to this location
+        for user in self.users:
+            # If user connected to some location group - just remove connection to this location
+            if user.location_group:
+                user.location = []
+            # Else delete user
+            else:
+                user.delete(commit=False)
+
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+
+        if commit:
+            db.session.commit()
+        return self
 
     @hybrid_property
     def company_name(self):
@@ -381,6 +403,7 @@ class LocationView(RowActionListMixin, MyModelView):
                 model.is_deleted = False
                 model.deleted_at = None
                 model.created_at = original_created_at
+                model.created_from_pcc = False
                 model.group = [group_data] if group_data else []
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -421,31 +444,7 @@ class LocationView(RowActionListMixin, MyModelView):
             self.on_model_delete(model)
             self.session.flush()
 
-            # Mark all the location computers and location itself as deleted
-            for computer in model.computers:
-                computer.logs_enabled = False
-                computer.last_time_logs_disabled = datetime.utcnow()
-                computer.activated = False
-                computer.is_deleted = True
-                computer.deleted_at = datetime.utcnow()
-
-            # Remove location from location group
-            model.group = []
-
-            # Delete users which have access only to this location
-            for user in model.users:
-                # If user connected to some location group - just remove connection to this location
-                if user.location_group:
-                    user.location = []
-                # Else delete user
-                else:
-                    user.location = []
-                    user.location_group = []
-                    user.is_deleted = True
-                    user.deleted_at = datetime.utcnow()
-
-            model.is_deleted = True
-            model.deleted_at = datetime.utcnow()
+            model.delete(commit=False)
 
             self.session.commit()
         except Exception as ex:

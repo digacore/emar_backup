@@ -131,6 +131,18 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin):
         ),
     )
 
+    def delete(self, commit: bool = True):
+        # Delete many-to-many connections with location groups and locations
+        self.location = []
+        self.location_group = []
+
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+
+        if commit:
+            db.session.commit()
+        return self
+
     @hybrid_property
     def password(self):
         return self.password_hash
@@ -402,12 +414,7 @@ class UserView(RowActionListMixin, MyModelView):
             self.on_model_delete(model)
             self.session.flush()
 
-            # Delete many-to-many connections with location groups and locations
-            model.location = []
-            model.location_group = []
-
-            model.is_deleted = True
-            model.deleted_at = datetime.utcnow()
+            model.delete(commit=False)
 
             self.session.commit()
         except Exception as ex:

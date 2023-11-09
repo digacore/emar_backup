@@ -4,19 +4,30 @@ from datetime import datetime, timedelta
 from sqlalchemy import sql, func, and_, or_
 from sqlalchemy.orm import Query, relationship
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from flask import flash
 from flask_login import current_user
 from flask_admin.model.template import EditRowAction, DeleteRowAction
+from flask_admin.contrib.sqla import tools
+from flask_admin.babel import gettext
 
 from app import db
-from app.models.utils import ModelMixin, RowActionListMixin
+from app.models.utils import (
+    ModelMixin,
+    RowActionListMixin,
+    SoftDeleteMixin,
+    QueryWithSoftDelete,
+)
 from app.utils import MyModelView
+from app.logger import logger
 from .system_log import SystemLogType
 
 from config import BaseConfig as CFG
 
 
-class Company(db.Model, ModelMixin):
+class Company(db.Model, ModelMixin, SoftDeleteMixin):
     __tablename__ = "companies"
+
+    query_class = QueryWithSoftDelete
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -27,7 +38,7 @@ class Company(db.Model, ModelMixin):
     total_computers = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     pcc_org_id = db.Column(db.String(128), nullable=True)
     created_from_pcc = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
@@ -39,8 +50,6 @@ class Company(db.Model, ModelMixin):
     users = relationship(
         "User",
         back_populates="company",
-        cascade="all, delete",
-        passive_deletes=True,
         lazy="select",
         primaryjoin="and_(Company.id == User.company_id, User.is_deleted.is_(False))",
     )
@@ -48,17 +57,20 @@ class Company(db.Model, ModelMixin):
     locations = relationship(
         "Location",
         back_populates="company",
-        cascade="all, delete",
-        passive_deletes=True,
         lazy="select",
         primaryjoin="and_(Company.id == Location.company_id, Location.is_deleted.is_(False))",
+    )
+
+    location_groups = relationship(
+        "LocationGroup",
+        back_populates="company",
+        lazy="select",
+        primaryjoin="and_(Company.id == LocationGroup.company_id, LocationGroup.is_deleted.is_(False))",
     )
 
     computers = relationship(
         "Computer",
         back_populates="company",
-        cascade="all, delete",
-        passive_deletes=True,
         lazy="select",
         primaryjoin="and_(Company.id == Computer.company_id, Computer.is_deleted.is_(False))",
     )
@@ -83,6 +95,30 @@ class Company(db.Model, ModelMixin):
     # So, we use next properties for the email templates but we still need to have columns
     # "locations_per_company", "total_computers", "computers_online", "computers_offline" and task "update_cl_stat"
     # to update these columns
+
+    def delete(self, commit: bool = True):
+        # Delete all the users associated with this company
+        for user in self.users:
+            user.delete(commit)
+
+        # Delete all the location groups associated with this company
+        for location in self.location_groups:
+            location.delete(commit)
+
+        # Delete all the locations associated with this company
+        for location in self.locations:
+            location.delete(commit)
+
+        # Delete all the computers associated with this company
+        for computer in self.computers:
+            computer.delete(commit)
+
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+
+        if commit:
+            db.session.commit()
+        return self
 
     @hybrid_property
     def total_computers_counter(self):
@@ -278,6 +314,9 @@ class CompanyView(RowActionListMixin, MyModelView):
         "is_global",
         "users",
         "computers",
+        "is_deleted",
+        "deleted_at",
+        "location_groups",
     )
 
     def search_placeholder(self):
@@ -331,6 +370,91 @@ class CompanyView(RowActionListMixin, MyModelView):
         # otherwise whatever the inherited method returns
         return super().allow_row_action(action, model)
 
+    def create_model(self, form):
+        """
+        Create model from form.
+
+        :param form:
+            Form instance
+        """
+
+        # Check if there is deleted company with such name
+        deleted_company = (
+            Company.query.with_deleted()
+            .filter_by(
+                name=form.name.data,
+                is_deleted=True,
+            )
+            .first()
+        )
+
+        try:
+            if deleted_company:
+                # Restore company
+                model = deleted_company
+                original_created_at = model.created_at
+                form.populate_obj(model)
+                model.is_deleted = False
+                model.deleted_at = None
+                model.created_at = original_created_at
+                model.created_from_pcc = False
+                self._on_model_change(form, model, True)
+                self.session.commit()
+
+                logger.info(f"Company {model.name} was restored.")
+            else:
+                model = self.build_new_instance()
+
+                form.populate_obj(model)
+                self.session.add(model)
+                self._on_model_change(form, model, True)
+                self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to create record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to create record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, True)
+
+        return model
+
+    def delete_model(self, model):
+        """
+        Soft deletion of model
+
+        :param model:
+            Model to delete
+        """
+        try:
+            self.on_model_delete(model)
+            self.session.flush()
+
+            model.delete(commit=False)
+
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to delete record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to delete record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_delete(model)
+
+        return True
+
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log
 
@@ -364,18 +488,19 @@ class CompanyView(RowActionListMixin, MyModelView):
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
-                result_query = self.session.query(self.model)
+                result_query = self.model.query
             case UserPermissionLevel.COMPANY:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.id == current_user.company_id
                 )
             case _:
-                result_query = self.session.query(self.model).filter(
-                    self.model.id == -1
-                )
+                result_query = self.model.query.filter(self.model.id == -1)
 
         return result_query.filter(self.model.is_global.is_(False))
 
     def get_count_query(self):
         actual_query = self.get_query()
         return actual_query.with_entities(func.count())
+
+    def get_one(self, id):
+        return self.model.query.filter_by(id=tools.iterdecode(id)).first()

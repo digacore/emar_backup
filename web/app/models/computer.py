@@ -62,9 +62,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     id = db.Column(db.Integer, primary_key=True)
 
     location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=True)
-    company_id = db.Column(
-        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=True
-    )
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True)
 
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
@@ -152,6 +150,17 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
             "identifier_key",
             "computer_ip",
         ]
+
+    def delete(self, commit: bool = True):
+        """Soft delete computer"""
+        self.activated = False
+        self.logs_enabled = False
+        self.last_time_logs_disabled = datetime.utcnow()
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+        if commit:
+            db.session.commit()
+        return self
 
     def restore(self):
         """Restore computer from soft delete"""
@@ -649,11 +658,7 @@ class ComputerView(RowActionListMixin, MyModelView):
             self.on_model_delete(model)
             self.session.flush()
 
-            # Deactivate computer and logs. Then delete it
-            model.activated = False
-            model.logs_enabled = False
-            model.is_deleted = True
-            model.deleted_at = datetime.utcnow()
+            model.delete(commit=False)
 
             self.session.commit()
         except Exception as ex:

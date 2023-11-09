@@ -62,6 +62,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
 
     company = relationship(
         "Company",
+        back_populates="location_groups",
     )
 
     locations = relationship(
@@ -79,6 +80,26 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
 
     def __repr__(self):
         return self.name
+
+    def delete(self, commit: bool = True):
+        """Soft delete location group
+
+        Args:
+            commit (bool, optional): Commit changes. Defaults to True.
+        """
+        # Delete location group users
+        for user in self.users:
+            user.delete(commit=False)
+
+        # Delete all locations from group
+        self.locations = []
+
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+
+        if commit:
+            db.session.commit()
+        return self
 
     @hybrid_property
     def company_name(self):
@@ -319,18 +340,7 @@ class LocationGroupView(RowActionListMixin, MyModelView):
             self.on_model_delete(model)
             self.session.flush()
 
-            # Delete location group users
-            for user in model.users:
-                user.location_group = []
-                user.location = []
-                user.is_deleted = True
-                user.deleted_at = datetime.utcnow()
-
-            # Delete all locations from group
-            model.locations = []
-
-            model.is_deleted = True
-            model.deleted_at = datetime.utcnow()
+            model.delete(commit=False)
 
             self.session.commit()
         except Exception as ex:
