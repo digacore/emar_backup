@@ -12,6 +12,7 @@ from flask_admin.babel import gettext
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 from flask_admin.form import Select2Widget
 from flask_admin.contrib.sqla.fields import QuerySelectField
+from flask_admin.contrib.sqla import tools
 
 from wtforms import validators
 
@@ -504,3 +505,6 @@ class LocationView(RowActionListMixin, MyModelView):
         actual_query = self.get_query()
 
         return actual_query.with_entities(func.count())
+
+    def get_one(self, id):
+        return self.model.query.filter_by(id=tools.iterdecode(id)).first()

@@ -8,6 +8,7 @@ from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
 from flask_admin.babel import gettext
 from flask_admin.model.template import EditRowAction, DeleteRowAction
+from flask_admin.contrib.sqla import tools
 
 from flask import flash
 from flask_login import current_user
@@ -750,3 +751,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         actual_query = self.get_query()
 
         return actual_query.with_entities(func.count())
+
+    def get_one(self, id):
+        return self.model.query.filter_by(id=tools.iterdecode(id)).first()
