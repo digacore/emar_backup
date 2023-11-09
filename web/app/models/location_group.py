@@ -319,6 +319,13 @@ class LocationGroupView(RowActionListMixin, MyModelView):
             self.on_model_delete(model)
             self.session.flush()
 
+            # Delete location group users
+            for user in model.users:
+                user.location_group = []
+                user.location = []
+                user.is_deleted = True
+                user.deleted_at = datetime.utcnow()
+
             # Delete all locations from group
             model.locations = []
 

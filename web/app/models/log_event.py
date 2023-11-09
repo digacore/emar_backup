@@ -26,7 +26,7 @@ class LogEvent(db.Model, ModelMixin):
     computer_id = db.Column(db.Integer, db.ForeignKey("computers.id"))
 
     log_type = db.Column(Enum(LogType), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     data = db.Column(db.String(128), server_default="", default="")
 
     def __repr__(self):

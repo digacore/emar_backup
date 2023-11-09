@@ -429,6 +429,21 @@ class LocationView(RowActionListMixin, MyModelView):
                 computer.is_deleted = True
                 computer.deleted_at = datetime.utcnow()
 
+            # Remove location from location group
+            model.group = []
+
+            # Delete users which have access only to this location
+            for user in model.users:
+                # If user connected to some location group - just remove connection to this location
+                if user.location_group:
+                    user.location = []
+                # Else delete user
+                else:
+                    user.location = []
+                    user.location_group = []
+                    user.is_deleted = True
+                    user.deleted_at = datetime.utcnow()
+
             model.is_deleted = True
             model.deleted_at = datetime.utcnow()
 

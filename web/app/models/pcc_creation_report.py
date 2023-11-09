@@ -23,9 +23,6 @@ class PCCCreationReport(db.Model, ModelMixin):
     company_id = db.Column(
         db.Integer, db.ForeignKey("companies.id", ondelete="SET NULL"), nullable=True
     )
-    status_changed_by_id = db.Column(
-        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
 
     data = db.Column(JSON)
     company_name = db.Column(db.String(255), nullable=False)

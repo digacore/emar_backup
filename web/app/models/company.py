@@ -36,6 +36,15 @@ class Company(db.Model, ModelMixin):
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
 
+    users = relationship(
+        "User",
+        back_populates="company",
+        cascade="all, delete",
+        passive_deletes=True,
+        lazy="select",
+        primaryjoin="and_(Company.id == User.company_id, User.is_deleted.is_(False))",
+    )
+
     locations = relationship(
         "Location",
         back_populates="company",

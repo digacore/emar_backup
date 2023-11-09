@@ -11,13 +11,12 @@ from app.utils import MyModelView
 
 
 class ClientVersion(db.Model, ModelMixin):
-
     __tablename__ = "client_versions"
 
     id = db.Column(db.Integer, primary_key=True)
 
     name = db.Column(db.String(64), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return self.name
@@ -46,7 +45,6 @@ class ClientVersionView(RowActionListMixin, MyModelView):
         return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
