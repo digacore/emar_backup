@@ -20,14 +20,13 @@ class PCCCreationReport(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    company_id = db.Column(
-        db.Integer, db.ForeignKey("companies.id", ondelete="SET NULL"), nullable=True
-    )
-    status_changed_by_id = db.Column(
-        db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True
-    )
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True)
 
     data = db.Column(JSON)
+
+    # NOTE: despite the fact that we have company_id and existence of company_name break 3rd normal form
+    # we need to have company_name here for the case when report has WAITING status
+    # and company hasn't been created in DB yet
     company_name = db.Column(db.String(255), nullable=False)
     created_at = db.Column(
         db.DateTime,

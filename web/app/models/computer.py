@@ -3,22 +3,27 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
+from flask_admin.babel import gettext
 from flask_admin.model.template import EditRowAction, DeleteRowAction
+from flask_admin.contrib.sqla import tools
 
+from flask import flash
 from flask_login import current_user
 
 from app import db
 from app.models.utils import ModelMixin, RowActionListMixin
 from app.utils import MyModelView
+from app.logger import logger
 
 from .desktop_client import DesktopClient
 from .user import UserPermissionLevel, UserRole
 from .company import Company
 from .location import Location
 from .system_log import SystemLogType
+from .utils import SoftDeleteMixin, QueryWithSoftDelete
 
 from config import BaseConfig as CFG
 
@@ -48,17 +53,16 @@ class ComputerStatus(enum.Enum):
     NOT_ACTIVATED = "NOT_ACTIVATED"
 
 
-class Computer(db.Model, ModelMixin):
+class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     __tablename__ = "computers"
+
+    # NOTE this is needed to filter soft deleted records
+    query_class = QueryWithSoftDelete
 
     id = db.Column(db.Integer, primary_key=True)
 
-    location_id = db.Column(
-        db.Integer, db.ForeignKey("locations.id", ondelete="CASCADE"), nullable=True
-    )
-    company_id = db.Column(
-        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=True
-    )
+    location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=True)
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True)
 
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
@@ -93,33 +97,32 @@ class Computer(db.Model, ModelMixin):
     activated = db.Column(db.Boolean, default=False)
 
     logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     computer_ip = db.Column(db.String(128))
 
-    last_time_logs_enabled = db.Column(db.DateTime, default=datetime.now)
+    last_time_logs_enabled = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_logs_disabled = db.Column(db.DateTime)
 
     company = relationship(
         "Company",
-        passive_deletes=True,
-        backref=backref("computers", cascade="delete"),
+        back_populates="computers",
         lazy="select",
     )
 
     location = relationship(
         "Location",
-        passive_deletes=True,
-        backref=backref("computers", cascade="delete"),
+        back_populates="computers",
         lazy="select",
     )
 
+    backup_logs = relationship("BackupLog", back_populates="computer", lazy="select")
+
     download_backup_calls = relationship(
         "DownloadBackupCall",
-        back_populates="computer",
-        cascade="all, delete",
-        passive_deletes=True,
         lazy="select",
     )
+
+    log_events = relationship("LogEvent", lazy="select")
 
     def __repr__(self):
         return self.computer_name
@@ -147,6 +150,43 @@ class Computer(db.Model, ModelMixin):
             "identifier_key",
             "computer_ip",
         ]
+
+    def delete(self, commit: bool = True):
+        """Soft delete computer"""
+        self.activated = False
+        self.logs_enabled = False
+        self.last_time_logs_disabled = datetime.utcnow()
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+        if commit:
+            db.session.commit()
+        return self
+
+    def restore(self):
+        """Restore computer from soft delete"""
+        # Check that computer location and company still exist
+        if (
+            self.location_id
+            and not Location.query.filter_by(id=self.location_id).first()
+        ):
+            self.location_id = None
+
+        if self.company_id and not Company.query.filter_by(id=self.company_id).first():
+            self.company_id = None
+
+        self.is_deleted = False
+        self.deleted_at = None
+        self.current_msi_version = None
+        self.download_status = None
+        self.last_downloaded = None
+        self.last_saved_path = None
+        self.files_checksum = "{}"
+        self.activated = False
+        self.logs_enabled = True
+        self.last_time_logs_enabled = datetime.utcnow()
+        self.computer_ip = None
+        db.session.commit()
+        return self
 
     @hybrid_property
     def location_name(self):
@@ -412,6 +452,8 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_time_logs_enabled",
         "last_time_logs_disabled",
         "download_backup_calls",
+        "is_deleted",
+        "deleted_at",
     )
 
     column_searchable_list = searchable_sortable_list
@@ -513,6 +555,18 @@ class ComputerView(RowActionListMixin, MyModelView):
         form.company.query_factory = self._available_companies
         form.location.query_factory = self._available_locations
 
+        # Remove unique validator from computer_name field if deleted computer with such name exists
+        deleted_computer = (
+            Computer.query.with_deleted()
+            .filter_by(
+                computer_name=form.computer_name.data,
+                is_deleted=True,
+            )
+            .first()
+        )
+        if deleted_computer:
+            form.computer_name.validators = form.computer_name.validators[1:]
+
         return form
 
     def edit_form(self, obj=None):
@@ -539,6 +593,89 @@ class ComputerView(RowActionListMixin, MyModelView):
                 model.last_time_logs_enabled = datetime.utcnow()
             else:
                 model.last_time_logs_disabled = datetime.utcnow()
+
+    def create_model(self, form):
+        """
+        Create model from form.
+
+        :param form:
+            Form instance
+        """
+        try:
+            # Check if there is deleted computer with such name
+            deleted_computer = (
+                Computer.query.with_deleted()
+                .filter_by(
+                    computer_name=form.computer_name.data,
+                    is_deleted=True,
+                )
+                .first()
+            )
+
+            if deleted_computer:
+                # Restore computer
+                model = deleted_computer
+                original_created_at = model.created_at
+                form.populate_obj(model)
+                model.is_deleted = False
+                model.deleted_at = None
+                model.created_at = original_created_at
+                self._on_model_change(form, model, True)
+                self.session.commit()
+
+                logger.info(f"Computer {model.computer_name} was restored.")
+            else:
+                model = self.build_new_instance()
+
+                form.populate_obj(model)
+                self.session.add(model)
+                self._on_model_change(form, model, True)
+                self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to create record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to create record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, True)
+
+        return model
+
+    def delete_model(self, model):
+        """
+        Soft deletion of model
+
+        :param model:
+            Model to delete
+        """
+        try:
+            self.on_model_delete(model)
+            self.session.flush()
+
+            model.delete(commit=False)
+
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to delete record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to delete record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_delete(model)
+
+        return True
 
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log
@@ -593,9 +730,9 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
-                result_query = self.session.query(self.model)
+                result_query = self.model.query
             case UserPermissionLevel.COMPANY:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     or_(
                         self.model.company_id == current_user.company_id,
                         self.model.location_id.in_(
@@ -604,28 +741,24 @@ class ComputerView(RowActionListMixin, MyModelView):
                     )
                 )
             case UserPermissionLevel.LOCATION_GROUP:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.location_id.in_(
                         [loc.id for loc in current_user.location_group[0].locations]
                     )
                 )
             case UserPermissionLevel.LOCATION:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.location_id == current_user.location[0].id
                 )
             case _:
-                result_query = self.session.query(self.model).filter(
-                    self.model.id == -1
-                )
+                result_query = self.model.query.filter(self.model.id == -1)
 
         return result_query
 
     def get_count_query(self):
         actual_query = self.get_query()
 
-        # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
-        # Instead add select_from(self.model) to query to count correctly
-        if current_user.permission == UserPermissionLevel.GLOBAL:
-            return actual_query.with_entities(func.count()).select_from(self.model)
-
         return actual_query.with_entities(func.count())
+
+    def get_one(self, id):
+        return self.model.query.filter_by(id=tools.iterdecode(id)).first()

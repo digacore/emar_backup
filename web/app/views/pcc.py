@@ -220,12 +220,26 @@ def get_creation_report(report_id: int):
         else:
             # Create the new company
             if company_obj.action == s.PCCReportAction.CREATE.value:
-                company = m.Company(
-                    name=company_obj.name,
-                    pcc_org_id=company_obj.pcc_org_id,
-                    created_from_pcc=True,
+                # Try to find company in deleted companies
+                deleted_company = (
+                    m.Company.query.with_deleted()
+                    .filter_by(name=company_obj.name)
+                    .first()
                 )
-                company.save()
+                if not deleted_company:
+                    company = m.Company(
+                        name=company_obj.name,
+                        pcc_org_id=company_obj.pcc_org_id,
+                        created_from_pcc=True,
+                    )
+                    company.save()
+                else:
+                    deleted_company.restore(commit=False)
+                    company = deleted_company
+                    company.pcc_org_id = company_obj.pcc_org_id
+                    company.created_from_pcc = True
+                    company.update()
+
                 create_system_log(m.SystemLogType.COMPANY_CREATED, company, None)
 
                 new_company_obj = s.PCCReportObject(
@@ -262,14 +276,32 @@ def get_creation_report(report_id: int):
 
             # Create the new location
             if obj.action == s.PCCReportAction.CREATE.value:
-                location = m.Location(
-                    name=obj.name,
-                    company_name=company.name,
-                    pcc_fac_id=obj.pcc_fac_id,
-                    use_pcc_backup=bool(obj.use_pcc_backup),
-                    created_from_pcc=True,
+                # Try to find location in deleted locations
+                deleted_location = (
+                    m.Location.query.with_deleted()
+                    .filter(
+                        m.Location.name == obj.name,
+                        m.Location.company_name == company.name,
+                    )
+                    .first()
                 )
-                location.save()
+                if not deleted_location:
+                    location = m.Location(
+                        name=obj.name,
+                        company_name=company.name,
+                        pcc_fac_id=obj.pcc_fac_id,
+                        use_pcc_backup=bool(obj.use_pcc_backup),
+                        created_from_pcc=True,
+                    )
+                    location.save()
+                else:
+                    deleted_location.restore(commit=False)
+                    location = deleted_location
+                    location.pcc_fac_id = obj.pcc_fac_id
+                    location.use_pcc_backup = bool(obj.use_pcc_backup)
+                    location.created_from_pcc = True
+                    location.update()
+
                 create_system_log(m.SystemLogType.LOCATION_CREATED, location, None)
 
                 new_obj = s.PCCReportObject(

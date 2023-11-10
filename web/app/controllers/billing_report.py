@@ -47,8 +47,15 @@ def create_company_billing_report(
     )
 
     # Write summarized information on the top(total locations, computers, users, alerts)
-    worksheet.write(1, 0, f"Total locations: {len(company.locations)}", centered_format)
-    worksheet.write(1, 1, f"Total computers: {len(company.computers)}", centered_format)
+    # Included deleted locations and computers
+    total_locations = (
+        m.Location.query.with_deleted().filter_by(company_id=company.id).count()
+    )
+    total_computers = (
+        m.Computer.query.with_deleted().filter_by(company_id=company.id).count()
+    )
+    worksheet.write(1, 0, f"Total locations: {total_locations}", centered_format)
+    worksheet.write(1, 1, f"Total computers: {total_computers}", centered_format)
     worksheet.write(1, 2, f"Total users: {len(company.users)}", centered_format)
     worksheet.write(
         1,
@@ -66,16 +73,23 @@ def create_company_billing_report(
     # Write main table data
     start_row = 4
     ordered_locations = (
-        m.Location.query.filter_by(company_id=company.id)
+        m.Location.query.with_deleted()
+        .filter_by(company_id=company.id)
         .order_by(m.Location.name)
         .all()
     )
     for location in ordered_locations:
+        ordered_computers_query = (
+            m.Computer.query.with_deleted()
+            .filter_by(location_id=location.id)
+            .order_by(m.Computer.computer_name)
+        )
+
         worksheet.write(start_row, 0, location.name, centered_format)
         worksheet.write(
             start_row,
             1,
-            f"Total_computers: {len(location.computers)}",
+            f"Total_computers: {ordered_computers_query.count()}",
             centered_format,
         )
         worksheet.write(
@@ -93,13 +107,7 @@ def create_company_billing_report(
 
         start_row += 1
 
-        ordered_computers = (
-            m.Computer.query.filter_by(location_id=location.id)
-            .order_by(m.Computer.computer_name)
-            .all()
-        )
-
-        for computer in ordered_computers:
+        for computer in ordered_computers_query.all():
             worksheet.write(start_row, 0, "", centered_format)
             worksheet.write(start_row, 1, computer.computer_name, centered_format)
             worksheet.write(
@@ -159,11 +167,23 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
         .order_by(m.Company.name)
         .all()
     )
-    locations_number = m.Location.query.count()
-    computers_number = m.Computer.query.filter(
-        m.Computer.company_id.is_not(None),
-        m.Computer.location_id.is_not(None),
-    ).count()
+    # Include deleted locations and computers
+    locations_number = (
+        m.Location.query.with_deleted()
+        .join(m.Company)
+        .filter(m.Company.is_deleted.is_(False))
+        .count()
+    )
+    computers_number = (
+        m.Computer.query.with_deleted()
+        .join(m.Company)
+        .filter(
+            m.Company.is_deleted.is_(False),
+            m.Computer.company_id.is_not(None),
+            m.Computer.location_id.is_not(None),
+        )
+        .count()
+    )
     users_number = m.User.query.filter(m.User.username != "emarsuperuser").count()
 
     alert_events_number = m.AlertEvent.query.filter(
@@ -187,12 +207,23 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
     # Write main table data
     start_row = 4
     for company in companies:
+        ordered_locations_query = (
+            m.Location.query.with_deleted()
+            .filter_by(company_id=company.id)
+            .order_by(m.Location.name)
+        )
+        total_company_computers = (
+            m.Computer.query.with_deleted().filter_by(company_id=company.id).count()
+        )
         worksheet.write(start_row, 0, company.name, centered_format)
         worksheet.write(
-            start_row, 1, f"Total_locations: {len(company.locations)}", centered_format
+            start_row,
+            1,
+            f"Total_locations: {ordered_locations_query.count()}",
+            centered_format,
         )
         worksheet.write(
-            start_row, 2, f"Total_computers: {len(company.computers)}", centered_format
+            start_row, 2, f"Total_computers: {total_company_computers}", centered_format
         )
         worksheet.write(
             start_row,
@@ -209,19 +240,18 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
 
         start_row += 1
 
-        ordered_locations = (
-            m.Location.query.filter_by(company_id=company.id)
-            .order_by(m.Location.name)
-            .all()
-        )
-
-        for location in ordered_locations:
+        for location in ordered_locations_query.all():
+            ordered_computers_query = (
+                m.Computer.query.with_deleted()
+                .filter_by(location_id=location.id)
+                .order_by(m.Computer.computer_name)
+            )
             worksheet.write(start_row, 0, "", centered_format)
             worksheet.write(start_row, 1, location.name, centered_format)
             worksheet.write(
                 start_row,
                 2,
-                f"Total_computers: {location.total_computers}",
+                f"Total_computers: {ordered_computers_query.count()}",
                 centered_format,
             )
             worksheet.write(
@@ -239,13 +269,7 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
 
             start_row += 1
 
-            ordered_computers = (
-                m.Computer.query.filter_by(location_id=location.id)
-                .order_by(m.Computer.computer_name)
-                .all()
-            )
-
-            for computer in ordered_computers:
+            for computer in ordered_computers_query.all():
                 worksheet.write(start_row, 0, "", centered_format)
                 worksheet.write(start_row, 1, "", centered_format)
                 worksheet.write(start_row, 2, computer.computer_name, centered_format)

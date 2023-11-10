@@ -23,9 +23,7 @@ class AlertEvent(db.Model, ModelMixin):
 
     id = db.Column(db.Integer, primary_key=True)
 
-    location_id = db.Column(
-        db.Integer, db.ForeignKey("locations.id", ondelete="CASCADE"), nullable=False
-    )
+    location_id = db.Column(db.Integer, db.ForeignKey("locations.id"), nullable=False)
 
     alert_type = db.Column(Enum(AlertEventType), nullable=False)
     created_at = db.Column(

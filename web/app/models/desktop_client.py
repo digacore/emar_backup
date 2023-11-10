@@ -17,7 +17,6 @@ from app.utils import MyModelView
 
 
 class DesktopClient(db.Model, ModelMixin, BlobMixin):
-
     __tablename__ = "desktop_clients"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -31,7 +30,7 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
     name = db.Column(db.String(64), unique=True, nullable=False)
     version = db.Column(db.String(64))
     description = db.Column(db.String(512))
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     flag = relationship("ClientVersion", passive_deletes=True)
 
@@ -128,7 +127,6 @@ class DesktopClientView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
@@ -140,7 +138,6 @@ class DesktopClientView(RowActionListMixin, MyModelView):
 
     # list rows depending on current user permissions
     def get_query(self):
-
         # check permissions
         if (
             current_user.permission == UserPermissionLevel.GLOBAL

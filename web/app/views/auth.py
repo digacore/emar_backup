@@ -17,7 +17,6 @@ from flask import (
 import identity
 import identity.web
 
-from flask import Blueprint, render_template, url_for, redirect, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 from flask_jwt_extended import (
     create_access_token,
@@ -86,7 +85,11 @@ def change_password():
 
     form = ChangePasswordForm(request.form)
     if form.validate_on_submit():
-        user: User = User.query.get_or_404(form.user_id.data)
+        user: User = User.query.filter_by(id=form.user_id.data).first()
+
+        if not user:
+            flash("User not found.", "danger")
+            return redirect(url_for("user.edit_view", id=form.user_id.data))
 
         user.password = form.new_password.data
         user.update()
@@ -99,7 +102,6 @@ def change_password():
 
 @auth_blueprint.route("/glogin", methods=["GET", "POST"])
 def glogin():
-
     # Find out what URL to hit for Google login
     google_provider_cfg = get_google_provider_cfg()
     authorization_endpoint = google_provider_cfg["authorization_endpoint"]

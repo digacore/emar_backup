@@ -26,7 +26,11 @@ def company_sftp_data(company_id: int):
     Returns:
         JSON: company sftp data
     """
-    company: m.Company = m.Company.query.get_or_404(company_id)
+    company: m.Company = m.Company.query.filter_by(id=company_id).first()
+
+    if not company:
+        logger.error("Company with id [{}] not found", company_id)
+        abort(404, "Company not found.")
 
     # Check if user has access to company information
     if not has_access_to_company(current_user, company):
@@ -59,7 +63,11 @@ def company_locations_list(company_id: int):
     Returns:
         JSON: company locations
     """
-    company: m.Company = m.Company.query.get_or_404(company_id)
+    company: m.Company = m.Company.query.filter_by(id=company_id).first()
+
+    if not company:
+        logger.error("Company with id [{}] not found", company_id)
+        abort(404, "Company not found.")
 
     # Check if user has access to company information
     if not has_access_to_company(current_user, company):
@@ -164,7 +172,9 @@ def company_billing_report(company_id: int):
     """
     # Only global users can access this information
     if current_user.permission != m.UserPermissionLevel.GLOBAL:
-        logger.error(f"User {current_user.username} tried to generate billing report for company {company_id}")
+        logger.error(
+            f"User {current_user.username} tried to generate billing report for company {company_id}"
+        )
         abort(403, "You don't have access to this information.")
 
     # We recognize these dates as EST timezone
@@ -187,7 +197,11 @@ def company_billing_report(company_id: int):
         logger.error(f"Incorrect date format to generate billing report {company_id}")
         abort(400, "Invalid date format.")
 
-    company: m.Company = m.Company.query.get_or_404(company_id)
+    company: m.Company = m.Company.query.filter_by(id=company_id).first()
+
+    if not company:
+        logger.error(f"Company with id {company_id} not found")
+        abort(404, "Company not found.")
 
     # Generate billing report for company
     report: io.BytesIO = create_company_billing_report(company, from_date, to_date)
@@ -196,5 +210,5 @@ def company_billing_report(company_id: int):
         report,
         mimetype="application/ms-excel",
         as_attachment=True,
-        download_name=f"Report_{company.name}.xlsx"
+        download_name=f"Report_{company.name}.xlsx",
     )

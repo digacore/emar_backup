@@ -1,18 +1,27 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import func, Enum, select
+from sqlalchemy import func, Enum, select, and_
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from flask import flash
 from flask_login import current_user, UserMixin, AnonymousUserMixin
 from flask_admin.model.template import EditRowAction, DeleteRowAction
+from flask_admin.contrib.sqla import tools
+from flask_admin.babel import gettext
 
 from app import db
-from app.models.utils import ModelMixin, RowActionListMixin
+from app.models.utils import (
+    ModelMixin,
+    RowActionListMixin,
+    SoftDeleteMixin,
+    QueryWithSoftDelete,
+)
 
 from app.utils import MyModelView
+from app.logger import logger
 
 from .company import Company
 from .location import Location
@@ -73,9 +82,10 @@ class UserRole(enum.Enum):
     USER = "USER"
 
 
-class User(db.Model, UserMixin, ModelMixin):
-
+class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin):
     __tablename__ = "users"
+
+    query_class = QueryWithSoftDelete
 
     id = db.Column(db.Integer, primary_key=True)
 
@@ -89,7 +99,7 @@ class User(db.Model, UserMixin, ModelMixin):
     email = db.Column(db.String(256), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
     activated = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_online = db.Column(db.DateTime)
 
     role = db.Column(
@@ -99,11 +109,39 @@ class User(db.Model, UserMixin, ModelMixin):
         server_default=UserRole.ADMIN.value,
     )
 
-    company = relationship("Company", backref="users", lazy="select")
+    company = relationship("Company", back_populates="users", lazy="select")
+
     location_group = relationship(
-        "LocationGroup", secondary=users_to_group, backref="users"
+        "LocationGroup",
+        secondary=users_to_group,
+        backref="users",
+        secondaryjoin=and_(
+            users_to_group.c.location_group_id == LocationGroup.id,
+            LocationGroup.is_deleted.is_(False),
+        ),
     )
-    location = relationship("Location", secondary=users_to_location, backref="users")
+
+    location = relationship(
+        "Location",
+        secondary=users_to_location,
+        backref="users",
+        secondaryjoin=and_(
+            users_to_location.c.location_id == Location.id,
+            Location.is_deleted.is_(False),
+        ),
+    )
+
+    def delete(self, commit: bool = True):
+        # Delete many-to-many connections with location groups and locations
+        self.location = []
+        self.location_group = []
+
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+
+        if commit:
+            db.session.commit()
+        return self
 
     @hybrid_property
     def password(self):
@@ -204,6 +242,8 @@ class UserView(RowActionListMixin, MyModelView):
         "last_time_online",
     )
 
+    form_excluded_columns = ("deleted_at", "is_deleted")
+
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
 
@@ -257,7 +297,6 @@ class UserView(RowActionListMixin, MyModelView):
             return False
 
     def allow_row_action(self, action, model):
-
         if isinstance(action, EditRowAction):
             return self._can_edit(model)
 
@@ -293,7 +332,106 @@ class UserView(RowActionListMixin, MyModelView):
         form.location_group.query_factory = self._available_location_groups
         form.location.query_factory = self._available_locations
 
+        # Check if there is deleted user with such email and username
+        deleted_user = (
+            User.query.with_deleted()
+            .filter_by(
+                username=form.username.data,
+                email=form.email.data,
+                is_deleted=True,
+            )
+            .first()
+        )
+        if deleted_user:
+            form.username.validators = form.username.validators[1:]
+            form.email.validators = form.email.validators[1:]
+
         return form
+
+    def create_model(self, form):
+        """
+        Create model from form.
+
+        :param form:
+            Form instance
+        """
+
+        # Check if there is deleted user with such email and username
+        deleted_user = (
+            User.query.with_deleted()
+            .filter_by(
+                username=form.username.data,
+                email=form.email.data,
+                is_deleted=True,
+            )
+            .first()
+        )
+
+        try:
+            if deleted_user:
+                # Restore user
+                model = deleted_user
+                original_created_at = model.created_at
+                form.populate_obj(model)
+                model.is_deleted = False
+                model.deleted_at = None
+                model.created_at = original_created_at
+                self._on_model_change(form, model, True)
+                self.session.commit()
+
+                logger.info(f"User {model.username} was restored.")
+            else:
+                model = self.build_new_instance()
+
+                form.populate_obj(model)
+                self.session.add(model)
+                self._on_model_change(form, model, True)
+                self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to create record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to create record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, True)
+
+        return model
+
+    def delete_model(self, model):
+        """
+        Soft deletion of model
+
+        :param model:
+            Model to delete
+        """
+        try:
+            self.on_model_delete(model)
+            self.session.flush()
+
+            model.delete(commit=False)
+
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to delete record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to delete record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_delete(model)
+
+        return True
 
     def get_query(self):
         if (
@@ -310,15 +448,15 @@ class UserView(RowActionListMixin, MyModelView):
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.username != "emarsuperuser"
                 )
             case UserPermissionLevel.COMPANY:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.company_id == current_user.company_id
                 )
             case UserPermissionLevel.LOCATION_GROUP:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.location_group.any(
                         LocationGroup.id.in_(
                             [group.id for group in current_user.location_group]
@@ -326,7 +464,7 @@ class UserView(RowActionListMixin, MyModelView):
                     )
                 )
             case UserPermissionLevel.LOCATION:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.location.any(
                         Location.id.in_(
                             [location.id for location in current_user.location]
@@ -334,12 +472,13 @@ class UserView(RowActionListMixin, MyModelView):
                     )
                 )
             case _:
-                result_query = self.session.query(self.model).filter(
-                    self.model.id == -1
-                )
+                result_query = self.model.query.filter(self.model.id == -1)
 
         return result_query
 
     def get_count_query(self):
         actual_query = self.get_query()
         return actual_query.with_entities(func.count())
+
+    def get_one(self, id):
+        return self.model.query.filter_by(id=tools.iterdecode(id)).first()

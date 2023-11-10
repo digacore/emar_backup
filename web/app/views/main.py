@@ -20,7 +20,7 @@ main_blueprint = Blueprint("main", __name__)
 @main_blueprint.route("/")
 @login_required
 def index():
-    viewer: User = User.query.get(current_user.id)
+    viewer: User = User.query.filter_by(id=current_user.id).first()
 
     match viewer.permission:
         case UserPermissionLevel.GLOBAL:
@@ -39,7 +39,6 @@ def index():
                 )
             )
         case UserPermissionLevel.LOCATION_GROUP:
-
             location_ids = [loc.id for loc in viewer.location_group[0].locations]
             total_locations_query: Query = Location.query.filter(
                 Location.id.in_(location_ids)

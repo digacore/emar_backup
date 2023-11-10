@@ -15,7 +15,6 @@ class BackupLogType(enum.Enum):
 
 
 class BackupLog(db.Model, ModelMixin):
-
     __tablename__ = "backup_logs"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -29,7 +28,9 @@ class BackupLog(db.Model, ModelMixin):
     notes = db.Column(db.String(128), server_default="", default="")
 
     computer = relationship(
-        "Computer", passive_deletes=True, backref="backup_logs", lazy="select"
+        "Computer",
+        back_populates="backup_logs",
+        lazy="select",
     )
 
     def __repr__(self):

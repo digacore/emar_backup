@@ -33,13 +33,31 @@ def merge_company_first_step(company_id: int):
         abort(403, "You don't have permission to access this page.")
 
     # Get the primary company
-    primary_company: m.Company = m.Company.query.get_or_404(company_id)
+    primary_company: m.Company = m.Company.query.filter_by(id=company_id).first()
+
+    if not primary_company:
+        logger.error(
+            "User {} tried to access company merge page. Primary Company with id {} not found.",
+            current_user.username,
+            company_id,
+        )
+        abort(404, "Company not found.")
 
     secondary_company_param: str | None = request.args.get("secondary_company", None)
     secondary_company_id: int | None = (
         int(secondary_company_param) if secondary_company_param else None
     )
-    secondary_company: m.Company = m.Company.query.get_or_404(secondary_company_id)
+    secondary_company: m.Company = m.Company.query.filter_by(
+        id=secondary_company_id
+    ).first()
+
+    if not secondary_company:
+        logger.error(
+            "User {} tried to access company merge page. Secondary Company with id {} not found.",
+            current_user.username,
+            secondary_company_id,
+        )
+        abort(404, "Company not found.")
 
     # Prevent from merging company with itself
     if primary_company.id == secondary_company.id:
@@ -82,14 +100,31 @@ def merge_company_second_step(company_id: int):
         abort(403, "You don't have permission to access this page.")
 
     # Get primary company and secondary companies
-    primary_company: m.Company = m.Company.query.get_or_404(company_id)
+    primary_company: m.Company = m.Company.query.filter_by(id=company_id).first()
+
+    if not primary_company:
+        logger.error(
+            "User {} tried to access company merge page (second step). Primary Company with id {} not found.",
+            current_user.username,
+            company_id,
+        )
+        abort(404, "Company not found.")
 
     is_confirmed_param: str | None = request.args.get("confirmed", None)
     is_confirmed: bool = True if is_confirmed_param == "True" else False
 
     sec_comp_id: str | None = request.args.get("secondary_company", None)
     sec_comp_id: int | None = int(sec_comp_id) if sec_comp_id else None
-    secondary_company: m.Company = m.Company.query.get_or_404(sec_comp_id)
+
+    secondary_company: m.Company = m.Company.query.filter_by(id=sec_comp_id).first()
+
+    if not secondary_company:
+        logger.error(
+            "User {} tried to access company merge page (second step). Secondary Company with id {} not found.",
+            current_user.username,
+            sec_comp_id,
+        )
+        abort(404, "Company not found.")
 
     # Form with selected data
     merged_locations = get_companies_merged_locations(
@@ -111,12 +146,12 @@ def merge_company_second_step(company_id: int):
         abort(400, "Invalid form data.")
 
     selected_locations: list[m.Location] = [
-        m.Location.query.get(location_id)
+        m.Location.query.filter_by(id=location_id).first()
         for location_id in merge_select_form.merged_locations_list.data
     ]
 
     selected_computers: list[m.Computer] = [
-        m.Computer.query.get(computer_id)
+        m.Computer.query.filter_by(id=computer_id).first()
         for computer_id in merge_select_form.merged_computers_list.data
     ]
 
@@ -147,10 +182,10 @@ def merge_company_second_step(company_id: int):
         if computer.location not in selected_locations:
             computer.location_id = None
 
-    # Delete primary company computers that were not selected
+    # Soft delete primary company computers that were not selected
     for computer in primary_company.computers:
         if computer not in selected_computers:
-            db.session.delete(computer)
+            computer.delete(commit=False)
 
     # NOTE: It is necessary to commit session changes here
     # Otherwise computers even with changed company and location will be marked for deletion because of cascade deleting
@@ -171,7 +206,7 @@ def merge_company_second_step(company_id: int):
                 if user.location[0] in selected_locations:
                     user.company_id = primary_company.id
                 else:
-                    db.session.delete(user)
+                    user.delete(commit=False)
 
     # Add new locations from secondary company to primary company
     for location in selected_locations:
@@ -181,17 +216,13 @@ def merge_company_second_step(company_id: int):
     # Delete primary company locations that were not selected
     for location in primary_company.locations:
         if location not in selected_locations:
-            db.session.delete(location)
+            location.delete(commit=False)
 
     # NOTE: the same behavior as for computers
     db.session.commit()
 
     # Delete secondary company
-    db.session.delete(secondary_company)
-    db.session.commit()
-
-    # Change primary company name after deletion of secondary company to avoid unique constraint error
-    primary_company.name = merge_select_form.name.data
+    secondary_company.delete()
     db.session.commit()
 
     logger.info(
@@ -220,7 +251,15 @@ def merge_location_first_step(location_id: int):
         abort(403, "You don't have permission to access this page.")
 
     # Get the primary and secondary locations
-    primary_location: m.Location = m.Location.query.get_or_404(location_id)
+    primary_location: m.Location = m.Location.query.filter_by(id=location_id).first()
+
+    if not primary_location:
+        logger.error(
+            "User {} tried to access location merge page. Primary Location with id {} not found.",
+            current_user.username,
+            location_id,
+        )
+        abort(404, "Location not found.")
 
     primary_company_param: str | None = request.args.get("primary_company", "")
     secondary_company_param: str | None = request.args.get("secondary_company", "")
@@ -228,7 +267,18 @@ def merge_location_first_step(location_id: int):
     secondary_location_id: int | None = (
         int(secondary_location_param) if secondary_location_param else None
     )
-    secondary_location: m.Location = m.Location.query.get_or_404(secondary_location_id)
+
+    secondary_location: m.Location = m.Location.query.filter_by(
+        id=secondary_location_id
+    ).first()
+
+    if not secondary_location:
+        logger.error(
+            "User {} tried to access location merge page. Secondary Location with id {} not found.",
+            current_user.username,
+            secondary_location_id,
+        )
+        abort(404, "Location not found.")
 
     # Prevent from merging company with itself
     if primary_location.id == secondary_location.id:
@@ -273,13 +323,32 @@ def merge_location_second_step(location_id: int):
     is_confirmed: bool = True if is_confirmed_param == "True" else False
 
     # Get primary and secondary locations
-    primary_location: m.Location = m.Location.query.get_or_404(location_id)
+    primary_location: m.Location = m.Location.query.filter_by(id=location_id).first()
+
+    if not primary_location:
+        logger.error(
+            "User {} tried to access location merge page (second step). Primary Location with id {} not found.",
+            current_user.username,
+            location_id,
+        )
+        abort(404, "Location not found.")
 
     primary_company_param: str | None = request.args.get("primary_company", "")
     secondary_company_param: str | None = request.args.get("secondary_company", "")
     sec_location_id: str | None = request.args.get("secondary_location", None)
     sec_location_id: int | None = int(sec_location_id) if sec_location_id else None
-    secondary_location: m.Location = m.Location.query.get_or_404(sec_location_id)
+
+    secondary_location: m.Location = m.Location.query.filter_by(
+        id=sec_location_id
+    ).first()
+
+    if not secondary_location:
+        logger.error(
+            "User {} tried to access location merge page (second step). Secondary Location with id {} not found.",
+            current_user.username,
+            sec_location_id,
+        )
+        abort(404, "Location not found.")
 
     # Form with selected data
     merged_computers = get_merged_computers_list(primary_location, secondary_location)
@@ -298,7 +367,7 @@ def merge_location_second_step(location_id: int):
         abort(400, "Invalid form data.")
 
     selected_computers: list[m.Computer] = [
-        m.Computer.query.get(computer_id)
+        m.Computer.query.filter_by(id=computer_id).first()
         for computer_id in merge_select_form.merged_computers_list.data
     ]
 
@@ -330,8 +399,11 @@ def merge_location_second_step(location_id: int):
 
     # Move users from secondary location
     for user in secondary_location.users.copy():
-        user.company_id = primary_location.company.id
-        user.location = [primary_location]
+        if user.location_group:
+            user.location.clear()
+        else:
+            user.company_id = primary_location.company.id
+            user.location = [primary_location]
 
     # Add new computers from secondary to primary location
     for computer in selected_computers:
@@ -341,14 +413,13 @@ def merge_location_second_step(location_id: int):
     # Delete primary location computers that were not selected
     for computer in primary_location.computers:
         if computer not in selected_computers:
-            db.session.delete(computer)
+            computer.delete(commit=False)
 
     # NOTE: the same reason as mentioned in companies merging procedure (line 148)
     db.session.commit()
 
     # Delete secondary location
-    db.session.delete(secondary_location)
-    db.session.commit()
+    secondary_location.delete()
 
     logger.info(
         "Successful merging of locations {} and {}",

@@ -40,7 +40,6 @@ flask_session = Session()
 
 
 def create_app(environment="development"):
-
     from config import config
     from app.views import (
         main_blueprint,

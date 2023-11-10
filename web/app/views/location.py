@@ -22,7 +22,11 @@ def location_sftp_data(location_id: int):
     Returns:
         JSON: location sftp data
     """
-    location: m.Location = m.Location.query.get_or_404(location_id)
+    location: m.Location = m.Location.query.filter_by(id=location_id).first()
+
+    if not location:
+        logger.error("Location with id [{}] not found", location_id)
+        abort(404, "Location not found.")
 
     # Check if user has access to location information
     if not has_access_to_location(current_user, location):

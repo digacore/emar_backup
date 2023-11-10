@@ -3,19 +3,28 @@ from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
 from sqlalchemy import func, sql, select, or_, Enum
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 
+from flask import flash
 from flask_login import current_user
+from flask_admin.babel import gettext
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 from flask_admin.form import Select2Widget
 from flask_admin.contrib.sqla.fields import QuerySelectField
+from flask_admin.contrib.sqla import tools
 
 from wtforms import validators
 
 from app import db
-from app.models.utils import ModelMixin, RowActionListMixin
+from app.models.utils import (
+    ModelMixin,
+    RowActionListMixin,
+    SoftDeleteMixin,
+    QueryWithSoftDelete,
+)
 from app.utils import MyModelView
+from app.logger import logger
 from .company import Company
 from .system_log import SystemLogType
 
@@ -28,14 +37,17 @@ class LocationStatus(enum.Enum):
     OFFLINE = "OFFLINE"
 
 
-class Location(db.Model, ModelMixin):
+class Location(db.Model, ModelMixin, SoftDeleteMixin):
     __tablename__ = "locations"
+
+    __table_args__ = (db.UniqueConstraint("company_id", "name"),)
+
+    # NOTE this is needed to filter soft deleted records
+    query_class = QueryWithSoftDelete
 
     id = db.Column(db.Integer, primary_key=True)
 
-    company_id = db.Column(
-        db.Integer, db.ForeignKey("companies.id", ondelete="CASCADE"), nullable=False
-    )
+    company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=False)
 
     name = db.Column(db.String(64), nullable=False)
     status = db.Column(Enum(LocationStatus), nullable=True)
@@ -43,7 +55,7 @@ class Location(db.Model, ModelMixin):
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
-    created_at = db.Column(db.DateTime, default=datetime.now)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     pcc_fac_id = db.Column(db.Integer, nullable=True)
     use_pcc_backup = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
@@ -54,17 +66,21 @@ class Location(db.Model, ModelMixin):
 
     company = relationship(
         "Company",
-        passive_deletes=True,
-        backref=backref("locations", cascade="delete"),
+        back_populates="locations",
         lazy="select",
     )
 
     alert_events = relationship(
         "AlertEvent",
         back_populates="location",
-        cascade="all, delete",
-        passive_deletes=True,
         lazy="select",
+    )
+
+    computers = relationship(
+        "Computer",
+        back_populates="location",
+        lazy="select",
+        primaryjoin="and_(Location.id == Computer.location_id, Computer.is_deleted.is_(False))",
     )
 
     def __repr__(self):
@@ -81,6 +97,42 @@ class Location(db.Model, ModelMixin):
             "pcc_fac_id",
             "use_pcc_backup",
         ]
+
+    def delete(self, commit: bool = True):
+        # Mark all the location computers and location itself as deleted
+        for computer in self.computers:
+            computer.delete(commit=False)
+
+        # Remove location from location group
+        self.group = []
+
+        # Delete users which have access only to this location
+        for user in self.users:
+            # If user connected to some location group - just remove connection to this location
+            if user.location_group:
+                user.location = []
+            # Else delete user
+            else:
+                user.delete(commit=False)
+
+        self.is_deleted = True
+        self.deleted_at = datetime.utcnow()
+
+        if commit:
+            db.session.commit()
+        return self
+
+    def restore(self, commit: bool = True):
+        self.status = None
+        self.computers_per_location = 0
+        self.computers_online = 0
+        self.computers_offline = 0
+        self.is_deleted = False
+        self.deleted_at = None
+
+        if commit:
+            db.session.commit()
+        return self
 
     @hybrid_property
     def company_name(self):
@@ -151,6 +203,7 @@ class Location(db.Model, ModelMixin):
         start_time: datetime,
         end_time: datetime,
     ) -> int:
+        from app.models.computer import Computer
         from app.models.download_backup_call import DownloadBackupCall
 
         # If the start_time and end_time has not UTC timezone, then convert it
@@ -160,7 +213,11 @@ class Location(db.Model, ModelMixin):
         if end_time.tzinfo and end_time.tzinfo != ZoneInfo("UTC"):
             end_time = end_time.astimezone(ZoneInfo("UTC"))
 
-        computers_ids: list[int] = [comp.id for comp in self.computers]
+        # Retrieve all the computers (even deleted ones) for this location
+        computers: list[Computer] = (
+            Computer.query.with_deleted().filter(Computer.location_id == self.id).all()
+        )
+        computers_ids: list[int] = [comp.id for comp in computers]
         total_pcc_api_calls: int = DownloadBackupCall.query.filter(
             DownloadBackupCall.computer_id.in_(computers_ids),
             DownloadBackupCall.created_at >= start_time,
@@ -232,7 +289,27 @@ class LocationView(RowActionListMixin, MyModelView):
         "created_at": {"readonly": True},
     }
 
-    form_excluded_columns = ("created_from_pcc", "users", "status", "alert_events")
+    # To set order of the fields in form
+    form_columns = (
+        "company",
+        "name",
+        "default_sftp_path",
+        "computers_per_location",
+        "computers_online",
+        "computers_offline",
+        "created_at",
+        "pcc_fac_id",
+        "use_pcc_backup",
+        "group",
+    )
+
+    form_excluded_columns = (
+        "created_from_pcc",
+        "users",
+        "status",
+        "alert_events",
+        "computers",
+    )
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
@@ -308,14 +385,95 @@ class LocationView(RowActionListMixin, MyModelView):
         return form
 
     def create_model(self, form):
+        """
+        Create model from form.
+
+        :param form:
+            Form instance
+        """
+
+        # Check if there is deleted location with such name and for such company
+        deleted_location = (
+            Location.query.with_deleted()
+            .filter_by(
+                name=form.name.data,
+                company_id=form.company.data.id,
+                is_deleted=True,
+            )
+            .first()
+        )
+
         group_data = form.group.data
         del form.group
-        model = super().create_model(form)
-        model.group = [group_data] if group_data else []
-        self.session.add(model)
-        self.session.commit()
+
+        try:
+            if deleted_location:
+                # Restore location
+                model = deleted_location
+                original_created_at = model.created_at
+                form.populate_obj(model)
+                model.is_deleted = False
+                model.deleted_at = None
+                model.created_at = original_created_at
+                model.created_from_pcc = False
+                model.group = [group_data] if group_data else []
+                self._on_model_change(form, model, True)
+                self.session.commit()
+
+                logger.info(f"Location {model.name} was restored.")
+            else:
+                model = self.build_new_instance()
+
+                form.populate_obj(model)
+                model.group = [group_data] if group_data else []
+                self.session.add(model)
+                self._on_model_change(form, model, True)
+                self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to create record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to create record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, True)
 
         return model
+
+    def delete_model(self, model):
+        """
+        Soft deletion of model
+
+        :param model:
+            Model to delete
+        """
+        try:
+            self.on_model_delete(model)
+            self.session.flush()
+
+            model.delete(commit=False)
+
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to delete record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to delete record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_delete(model)
+
+        return True
 
     def after_model_change(self, form, model, is_created):
         from app.controllers import create_system_log
@@ -350,35 +508,29 @@ class LocationView(RowActionListMixin, MyModelView):
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
-                result_query = self.session.query(self.model)
+                result_query = self.model.query
             case UserPermissionLevel.COMPANY:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.company_id == current_user.company_id
                 )
             case UserPermissionLevel.LOCATION_GROUP:
                 locations = current_user.location_group[0].locations
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.id.in_([location.id for location in locations])
                 )
             case UserPermissionLevel.LOCATION:
-                result_query = self.session.query(self.model).filter(
+                result_query = self.model.query.filter(
                     self.model.id == current_user.location[0].id
                 )
             case _:
-                result_query = self.session.query(self.model).filter(
-                    self.model.id == -1
-                )
+                result_query = self.model.query.filter(self.model.id == -1)
 
         return result_query
 
     def get_count_query(self):
-        from app.models.user import UserPermissionLevel
-
         actual_query = self.get_query()
 
-        # .with_entities(func.count()) doesn't count correctly when there is no filtering was applied to query
-        # Instead add select_from(self.model) to query to count correctly
-        if current_user.permission == UserPermissionLevel.GLOBAL:
-            return actual_query.with_entities(func.count()).select_from(self.model)
-
         return actual_query.with_entities(func.count())
+
+    def get_one(self, id):
+        return self.model.query.filter_by(id=tools.iterdecode(id)).first()

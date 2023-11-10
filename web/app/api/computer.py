@@ -16,7 +16,6 @@ computer_blueprint = BlueprintApi("/computer", __name__)
 @computer_blueprint.post("/register_computer")
 @logger.catch
 def register_computer(body: ComputerRegInfo):
-
     # TODO use some token to secure api routes
 
     computer: Computer = Computer.query.filter_by(
@@ -38,14 +37,30 @@ def register_computer(body: ComputerRegInfo):
         return jsonify(status="fail", message=message), 409
 
     elif body.identifier_key == "new_computer":
+        # Check if computer with such name already exists but was deleted
+        deleted_computer: Computer = (
+            Computer.query.with_deleted()
+            .filter_by(computer_name=body.computer_name)
+            .first()
+        )
+
         new_identifier_key = str(uuid.uuid4())
 
-        new_computer = Computer(
-            identifier_key=new_identifier_key,
-            computer_name=body.computer_name,
-            manager_host=CFG.DEFAULT_MANAGER_HOST,
-        )
-        new_computer.save()
+        # Restore deleted computer if it exists
+        if deleted_computer:
+            deleted_computer = deleted_computer.restore()
+            deleted_computer.identifier_key = new_identifier_key
+            deleted_computer.update()
+
+            new_computer = deleted_computer
+
+        else:
+            new_computer = Computer(
+                identifier_key=new_identifier_key,
+                computer_name=body.computer_name,
+                manager_host=CFG.DEFAULT_MANAGER_HOST,
+            )
+            new_computer.save()
 
         # Create system log that computer was created in the system
         create_system_log(SystemLogType.COMPUTER_CREATED, new_computer, None)
