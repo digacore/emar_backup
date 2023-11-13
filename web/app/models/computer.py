@@ -601,6 +601,51 @@ class ComputerView(RowActionListMixin, MyModelView):
         :param form:
             Form instance
         """
+        # Check that selected location has appropriate amount of computers
+        location_id = form.location.data.id if form.location.data else None
+        if location_id:
+            location = Location.query.filter_by(id=location_id).first()
+
+            if not location:
+                flash(
+                    gettext("Failed to create record. Location doesn't exist."),
+                    "error",
+                )
+                logger.error("Failed to create record. Location doesn't exist.")
+
+                return False
+
+            if (
+                location.company.is_trial
+                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_TRIAL
+            ):
+                flash(
+                    gettext(
+                        "Failed to create record. Locations of the trial company can have only one computer."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Locations of the trial company can have only one computer."
+                )
+
+                return False
+            elif (
+                not location.company.is_trial
+                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_PAID
+            ):
+                flash(
+                    gettext(
+                        "Failed to create record. Locations can have only 5 computers."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Locations can have only 5 computers."
+                )
+
+                return False
+
         try:
             # Check if there is deleted computer with such name
             deleted_computer = (

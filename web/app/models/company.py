@@ -46,6 +46,9 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
     is_global = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
+    is_trial = db.Column(
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
 
     users = relationship(
         "User",
