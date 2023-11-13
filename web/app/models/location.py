@@ -382,6 +382,11 @@ class LocationView(RowActionListMixin, MyModelView):
         form.company.query_factory = self._available_companies
         form.group.query_factory = self._available_location_groups
 
+        # Remove use_pcc_backup field if the company of location is trial
+        if obj.company.is_trial:
+            del form.pcc_fac_id
+            del form.use_pcc_backup
+
         return form
 
     def create_model(self, form):
@@ -405,6 +410,20 @@ class LocationView(RowActionListMixin, MyModelView):
 
         group_data = form.group.data
         del form.group
+
+        # Check that location can have enabled PCC backups
+        company = Company.query.filter_by(id=form.company.data.id).first()
+        if form.use_pcc_backup.data and company.is_trial:
+            flash(
+                gettext(
+                    "Location can't have enabled PCC backups because selected company is trial."
+                ),
+                "error",
+            )
+            logger.error(
+                "Location can't have enabled PCC backups because company is trial."
+            )
+            return False
 
         try:
             if deleted_location:

@@ -30,6 +30,21 @@ def download_backup_from_pcc(body: s.GetCredentials) -> Response:
                 {body.computer_name}, identifier_key: {body.identifier_key}",
         )
 
+    # Check that computer has company and location
+    if not computer.company or not computer.location:
+        logger.error(
+            "Can't download backup for computer {}. Company or location is not set",
+            computer,
+        )
+        abort(409, "Company or location is not set")
+
+    # Check that computer's company is not trial
+    if computer.company.is_trial:
+        logger.error(
+            "Can't download backup for computer {}. Company is trial", computer
+        )
+        abort(403, "Company is trial")
+
     # Check that pcc_org_id and pcc_fac_id are present
     if not computer.company.pcc_org_id or not computer.location.pcc_fac_id:
         logger.error(
