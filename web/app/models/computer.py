@@ -692,6 +692,80 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         return model
 
+    def update_model(self, form, model):
+        """
+        Update model from form.
+
+        :param form:
+            Form instance
+        :param model:
+            Model instance
+        """
+        # Check that selected location has appropriate amount of computers
+        location_id = form.location.data.id if form.location.data else None
+        if location_id:
+            location = Location.query.filter_by(id=location_id).first()
+
+            if not location:
+                flash(
+                    gettext("Failed to update record. Location doesn't exist."),
+                    "error",
+                )
+                logger.error("Failed to update record. Location doesn't exist.")
+
+                return False
+
+            if (
+                location.company.is_trial
+                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_TRIAL
+            ):
+                flash(
+                    gettext(
+                        "Failed to update record. Locations of the trial company can have only one computer."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Locations of the trial company can have only one computer."
+                )
+
+                return False
+            elif (
+                not location.company.is_trial
+                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_PAID
+            ):
+                flash(
+                    gettext(
+                        "Failed to update record. Locations can have only 5 computers."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Locations can have only 5 computers."
+                )
+
+                return False
+
+        try:
+            form.populate_obj(model)
+            self._on_model_change(form, model, False)
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to update record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.exception("Failed to update record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
+
     def delete_model(self, model):
         """
         Soft deletion of model

@@ -313,6 +313,7 @@ class CompanyView(RowActionListMixin, MyModelView):
     # To set order of the fields in form
     form_columns = (
         "name",
+        "is_trial",
         "default_sftp_username",
         "default_sftp_password",
         "locations_per_company",
