@@ -165,11 +165,21 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     def restore(self):
         """Restore computer from soft delete"""
         # Check that computer location and company still exist
-        if (
-            self.location_id
-            and not Location.query.filter_by(id=self.location_id).first()
-        ):
-            self.location_id = None
+        if self.location_id:
+            location = Location.query.filter_by(id=self.location_id).first()
+
+            if not location:
+                self.location_id = None
+            elif (
+                location.company.is_trial
+                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_TRIAL
+            ):
+                self.location_id = None
+            elif (
+                not location.company.is_trial
+                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_PAID
+            ):
+                self.location_id = None
 
         if self.company_id and not Company.query.filter_by(id=self.company_id).first():
             self.company_id = None
