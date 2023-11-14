@@ -260,7 +260,7 @@
                         <!-- total_computers field present in the Company table so change filter to flt2_16 -->
                         {% set comp_or_loc.col = '2_16' %}
                         <td>
-                            <a href="{{ url_for('computer.index_view', flt2_16=loc_compn_name.loc) }}">
+                            <a href="{{ url_for('computer.index_view') }}?flt2_16={{ loc_compn_name.loc }}&flt3_8=not+activated">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {% if form.csrf_token %}
@@ -277,7 +277,7 @@
                         </td>
                     {% elif c=="computers_per_location" %}
                         <td>
-                            <a href="{{ url_for('computer.index_view') }}?flt{{ comp_or_loc.col }}={{ loc_compn_name.loc }}">
+                            <a href="{{ url_for('computer.index_view') }}?flt{{ comp_or_loc.col }}={{ loc_compn_name.loc }}&flt3_8=not+activated">
                                 {% if admin_view.is_editable(c) %}
                                     {% set form = list_forms[get_pk_value(row)] %}
                                     {% if form.csrf_token %}

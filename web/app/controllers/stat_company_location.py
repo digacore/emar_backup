@@ -23,7 +23,7 @@ def update_companies_locations_statistic():
 
     for company in companies:
         company.locations_per_company = len(company.locations)
-        company.total_computers = len(company.computers)
+        company.total_computers = company.total_computers_counter
 
         offline_company_computers = company.total_offline_computers
         online_company_computers = Computer.query.filter(
@@ -40,7 +40,7 @@ def update_companies_locations_statistic():
     locations = Location.query.all()
 
     for location in locations:
-        location.computers_per_location = len(location.computers)
+        location.computers_per_location = location.total_computers
 
         online_location_computers = Computer.query.filter(
             Computer.location_id == location.id,
