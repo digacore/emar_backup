@@ -163,7 +163,8 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
 
     # Write summarized information on the top(total locations, computers, users, alerts)
     companies = (
-        m.Company.query.filter(m.Company.is_global.is_(False))
+        m.Company.query.with_deleted()
+        .filter(m.Company.is_global.is_(False))
         .order_by(m.Company.name)
         .all()
     )
@@ -184,7 +185,9 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
         )
         .count()
     )
-    users_number = m.User.query.filter(m.User.username != "emarsuperuser").count()
+    users_number = (
+        m.User.query.with_deleted().filter(m.User.username != "emarsuperuser").count()
+    )
 
     alert_events_number = m.AlertEvent.query.filter(
         m.AlertEvent.created_at >= from_date.astimezone(ZoneInfo("UTC")),
