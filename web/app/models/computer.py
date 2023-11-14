@@ -292,7 +292,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     @hybrid_property
     def offline_period(self) -> int:
         """
-        Returns current offline period of computer in last day or 24 hours
+        Returns current offline period of computer in last day
 
         Args:
             time (datetime, optional): current east time
@@ -405,6 +405,16 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         start_time: datetime,
         end_time: datetime,
     ) -> int:
+        """
+        Returns total number of PCC API calls during the specified period
+
+        Args:
+            start_time (datetime): start of the period
+            end_time (datetime): end of the period
+
+        Returns:
+            int: total number of PCC API calls
+        """
         from app.models.download_backup_call import DownloadBackupCall
 
         # If the start_time and end_time has not UTC timezone, then convert it
@@ -630,7 +640,9 @@ class ComputerView(RowActionListMixin, MyModelView):
             ):
                 flash(
                     gettext(
-                        "Failed to create record. Locations of the trial company can have only one computer."
+                        "Could not activate the new computer.\
+                        Limit of 1 computer per location while using eMAR Vault Lite edition.\
+                        Contact sales@emarvault.com to upgrade!"
                     ),
                     "error",
                 )
@@ -645,7 +657,8 @@ class ComputerView(RowActionListMixin, MyModelView):
             ):
                 flash(
                     gettext(
-                        "Failed to create record. Locations can have only 5 computers."
+                        "Could not activate the new computer. \
+                        Limit of 5 computers per location while using eMAR Vault Pro edition."
                     ),
                     "error",
                 )
@@ -730,7 +743,9 @@ class ComputerView(RowActionListMixin, MyModelView):
             ):
                 flash(
                     gettext(
-                        "Failed to update record. Locations of the trial company can have only one computer."
+                        "Could not activate the new computer.\
+                        Limit of 1 computer per location while using eMAR Vault Lite edition.\
+                        Contact sales@emarvault.com to upgrade!"
                     ),
                     "error",
                 )
@@ -745,7 +760,8 @@ class ComputerView(RowActionListMixin, MyModelView):
             ):
                 flash(
                     gettext(
-                        "Failed to update record. Locations can have only 5 computers."
+                        "Could not activate the new computer. \
+                        Limit of 5 computers per location while using eMAR Vault Pro edition."
                     ),
                     "error",
                 )

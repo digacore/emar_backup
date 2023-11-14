@@ -159,6 +159,12 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
 
     @hybrid_property
     def total_computers(self) -> int:
+        """
+        Total number of computers for this location (without deleted and not activated)
+
+        Returns:
+            int: total number of computers
+        """
         from app.models.computer import Computer
 
         return Computer.query.filter(
@@ -168,6 +174,12 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
 
     @hybrid_property
     def total_computers_offline(self) -> int:
+        """
+        Total number of offline computers for this location on the current moment
+
+        Returns:
+            int: total number of offline computers
+        """
         from app.models.computer import Computer
 
         time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
@@ -183,6 +195,12 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
 
     @hybrid_property
     def primary_computers_offline(self) -> int:
+        """
+        Total number of offline primary computers for this location on the current moment
+
+        Returns:
+            int: total number of offline primary computers
+        """
         from app.models.computer import Computer, DeviceRole
 
         time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
@@ -203,6 +221,16 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
         start_time: datetime,
         end_time: datetime,
     ) -> int:
+        """
+        Total number of PCC API calls from computers of this location (including deleted ones)
+
+        Args:
+            start_time (datetime): start time of the period
+            end_time (datetime): end time of the period
+
+        Returns:
+            int: total number of PCC API calls
+        """
         from app.models.computer import Computer
         from app.models.download_backup_call import DownloadBackupCall
 
@@ -232,6 +260,17 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
         start_time: datetime = datetime.utcnow() - timedelta(days=30),
         end_time: datetime = datetime.utcnow(),
     ) -> int:
+        """
+        Total number of alert events for this location
+
+        Args:
+            start_time (datetime, optional): start time of the period.
+                Defaults to datetime.utcnow() - timedelta(days=30).
+            end_time (datetime, optional): end time of the period.
+
+        Returns:
+            int: total number of alert events
+        """
         from app.models.alert_event import AlertEvent
 
         # If the start_time and end_time has not UTC timezone, then convert it
@@ -416,7 +455,9 @@ class LocationView(RowActionListMixin, MyModelView):
         if form.use_pcc_backup.data and company.is_trial:
             flash(
                 gettext(
-                    "Location can't have enabled PCC backups because selected company is trial."
+                    "Could not enable the PointClickCare backups.\
+                    eMAR Vault Lite edition does not include this feature.\
+                    Contact sales@emarvault.com to upgrade!"
                 ),
                 "error",
             )
