@@ -93,7 +93,6 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     # Place where backup file was saved last time (directory inside emar_backups.zip)
     last_saved_path = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
-    # TODO do we need this one? Could computer be deactivated?
     activated = db.Column(db.Boolean, default=False)
 
     logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
