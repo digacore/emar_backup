@@ -146,6 +146,41 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
         return computers_number
 
     @hybrid_property
+    def total_computers_with_deleted(self):
+        from app.models.computer import Computer
+
+        computers_number: int = (
+            Computer.query.with_deleted()
+            .filter(
+                Computer.company_id == self.id,
+            )
+            .count()
+        )
+        return computers_number
+
+    @hybrid_property
+    def total_locations_with_deleted(self):
+        from app.models.location import Location
+
+        locations_number: int = (
+            Location.query.with_deleted()
+            .filter(
+                Location.company_id == self.id,
+            )
+            .count()
+        )
+        return locations_number
+
+    @hybrid_property
+    def total_users_with_deleted(self):
+        from app.models.user import User
+
+        users_number: int = (
+            User.query.with_deleted().filter(User.company_id == self.id).count()
+        )
+        return users_number
+
+    @hybrid_property
     def primary_computers_offline(self):
         from app.models.computer import Computer, DeviceRole
 
