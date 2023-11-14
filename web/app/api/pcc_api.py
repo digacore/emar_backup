@@ -38,10 +38,11 @@ def download_backup_from_pcc(body: s.GetCredentials) -> Response:
         )
         abort(409, "Company or location is not set")
 
-    # Check that computer's company is not trial
-    if computer.company.is_trial:
+    # Check that computer's company is not trial and computer is activated
+    if computer.company.is_trial or not computer.activated:
         logger.error(
-            "Can't download backup for computer {}. Company is trial", computer
+            "Can't download backup for computer {}. Company is trial or computer not activated",
+            computer,
         )
         abort(403, "Company is trial")
 

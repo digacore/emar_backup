@@ -126,10 +126,12 @@ class BaseConfig(object):
     )
     LOG_EVENT_DELETION_PERIOD = int(os.environ.get("LOG_EVENT_DELETION_PERIOD", 10))
 
-    MAX_LOCATION_COMPUTERS_TRIAL = int(
-        os.environ.get("MAX_LOCATION_COMPUTERS_TRIAL", 1)
+    MAX_LOCATION_ACTIVE_COMPUTERS_LITE = int(
+        os.environ.get("MAX_LOCATION_ACTIVE_COMPUTERS_LITE", 1)
     )
-    MAX_LOCATION_COMPUTERS_PAID = int(os.environ.get("MAX_LOCATION_COMPUTERS_PAID", 5))
+    MAX_LOCATION_ACTIVE_COMPUTERS_PRO = int(
+        os.environ.get("MAX_LOCATION_ACTIVE_COMPUTERS_PRO", 5)
+    )
 
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time

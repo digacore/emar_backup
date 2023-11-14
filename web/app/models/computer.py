@@ -164,21 +164,11 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     def restore(self):
         """Restore computer from soft delete"""
         # Check that computer location and company still exist
-        if self.location_id:
-            location = Location.query.filter_by(id=self.location_id).first()
-
-            if not location:
-                self.location_id = None
-            elif (
-                location.company.is_trial
-                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_TRIAL
-            ):
-                self.location_id = None
-            elif (
-                not location.company.is_trial
-                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_PAID
-            ):
-                self.location_id = None
+        if (
+            self.location_id
+            and not Location.query.filter_by(id=self.location_id).first()
+        ):
+            self.location_id = None
 
         if self.company_id and not Company.query.filter_by(id=self.company_id).first():
             self.company_id = None
@@ -190,7 +180,6 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         self.last_downloaded = None
         self.last_saved_path = None
         self.files_checksum = "{}"
-        self.activated = False
         self.logs_enabled = True
         self.last_time_logs_enabled = datetime.utcnow()
         self.computer_ip = None
@@ -620,10 +609,12 @@ class ComputerView(RowActionListMixin, MyModelView):
         :param form:
             Form instance
         """
-        # Check that selected location has appropriate amount of computers
-        location_id = form.location.data.id if form.location.data else None
-        if location_id:
-            location = Location.query.filter_by(id=location_id).first()
+        # Check that selected location has appropriate amount of activated computers
+        if form.activated.data and form.location.data:
+            location = Location.query.filter_by(id=form.location.data.id).first()
+            location_activated_computers = Computer.query.filter_by(
+                location_id=location.id, activated=True
+            ).count()
 
             if not location:
                 flash(
@@ -636,7 +627,8 @@ class ComputerView(RowActionListMixin, MyModelView):
 
             if (
                 location.company.is_trial
-                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_TRIAL
+                and location_activated_computers
+                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
             ):
                 flash(
                     gettext(
@@ -653,7 +645,8 @@ class ComputerView(RowActionListMixin, MyModelView):
                 return False
             elif (
                 not location.company.is_trial
-                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_PAID
+                and location_activated_computers
+                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
             ):
                 flash(
                     gettext(
@@ -723,10 +716,12 @@ class ComputerView(RowActionListMixin, MyModelView):
         :param model:
             Model instance
         """
-        # Check that selected location has appropriate amount of computers
-        location_id = form.location.data.id if form.location.data else None
-        if location_id:
-            location = Location.query.filter_by(id=location_id).first()
+        # Check that selected location has appropriate amount of active computers
+        if form.activated.data and form.location.data:
+            location = Location.query.filter_by(id=form.location.data.id).first()
+            location_activated_computers = Computer.query.filter_by(
+                location_id=location.id, activated=True
+            ).count()
 
             if not location:
                 flash(
@@ -739,7 +734,8 @@ class ComputerView(RowActionListMixin, MyModelView):
 
             if (
                 location.company.is_trial
-                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_TRIAL
+                and location_activated_computers
+                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
             ):
                 flash(
                     gettext(
@@ -756,7 +752,8 @@ class ComputerView(RowActionListMixin, MyModelView):
                 return False
             elif (
                 not location.company.is_trial
-                and len(location.computers) >= CFG.MAX_LOCATION_COMPUTERS_PAID
+                and location_activated_computers
+                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
             ):
                 flash(
                     gettext(

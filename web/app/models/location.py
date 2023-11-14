@@ -505,6 +505,25 @@ class LocationView(RowActionListMixin, MyModelView):
 
         return model
 
+    def update_model(self, form, model):
+        # Check that location can have enabled PCC backups
+        company = Company.query.filter_by(id=form.company.data.id).first()
+        if form.use_pcc_backup.data and company.is_trial:
+            flash(
+                gettext(
+                    "Could not enable the PointClickCare backups.\
+                    eMAR Vault Lite edition does not include this feature.\
+                    Contact sales@emarvault.com to upgrade!"
+                ),
+                "error",
+            )
+            logger.error(
+                "Location can't have enabled PCC backups because company is trial."
+            )
+            return False
+
+        return super().update_model(form, model)
+
     def delete_model(self, model):
         """
         Soft deletion of model
