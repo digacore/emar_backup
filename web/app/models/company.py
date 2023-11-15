@@ -561,6 +561,68 @@ class CompanyView(RowActionListMixin, MyModelView):
 
         return model
 
+    def update_model(self, form, model):
+        """
+        Update model from form.
+
+        :param form:
+            Form instance
+        :param model:
+            Model instance
+        """
+        from app.models.computer import Computer, DeviceRole
+
+        try:
+            # If company changed to trial - deactivate computers in its locations
+            if form.is_trial.data and not model.is_trial:
+                for location in model.locations:
+                    primary_active_computer = Computer.query.filter(
+                        Computer.location_id == location.id,
+                        Computer.device_role == DeviceRole.PRIMARY,
+                        Computer.activated.is_(True),
+                    ).first()
+                    any_active_computer = Computer.query.filter(
+                        Computer.location_id == location.id,
+                        Computer.activated.is_(True),
+                    ).first()
+
+                    if not primary_active_computer and not any_active_computer:
+                        continue
+
+                    for computer in location.computers:
+                        if (
+                            primary_active_computer
+                            and computer.id == primary_active_computer.id
+                        ):
+                            continue
+                        elif (
+                            not primary_active_computer
+                            and computer.id == any_active_computer.id
+                        ):
+                            continue
+
+                        computer.activated = False
+
+            form.populate_obj(model)
+            self._on_model_change(form, model, False)
+
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to update record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to update record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
+
     def delete_model(self, model):
         """
         Soft deletion of model
