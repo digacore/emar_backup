@@ -187,6 +187,18 @@ def get_credentials(body: GetCredentials):
     ).first()
 
     if computer:
+        # If computer is not activated - prevent it from getting creds
+        if not computer.activated:
+            message = "Computer is not activated."
+            logger.info(
+                "Supplying credentials failed. computer: {}, \
+                id {}. Reason: {}",
+                body.computer_name,
+                body.identifier_key,
+                message,
+            )
+            return jsonify(status="fail", message=message), 400
+
         computer.computer_ip = request.headers.get(
             "X-Forwarded-For", request.remote_addr
         )

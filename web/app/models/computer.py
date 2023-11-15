@@ -93,7 +93,6 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     # Place where backup file was saved last time (directory inside emar_backups.zip)
     last_saved_path = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
-    # TODO do we need this one? Could computer be deactivated?
     activated = db.Column(db.Boolean, default=False)
 
     logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
@@ -181,7 +180,6 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         self.last_downloaded = None
         self.last_saved_path = None
         self.files_checksum = "{}"
-        self.activated = False
         self.logs_enabled = True
         self.last_time_logs_enabled = datetime.utcnow()
         self.computer_ip = None
@@ -283,7 +281,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     @hybrid_property
     def offline_period(self) -> int:
         """
-        Returns current offline period of computer in last day or 24 hours
+        Returns current offline period of computer in last day
 
         Args:
             time (datetime, optional): current east time
@@ -396,6 +394,16 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         start_time: datetime,
         end_time: datetime,
     ) -> int:
+        """
+        Returns total number of PCC API calls during the specified period
+
+        Args:
+            start_time (datetime): start of the period
+            end_time (datetime): end of the period
+
+        Returns:
+            int: total number of PCC API calls
+        """
         from app.models.download_backup_call import DownloadBackupCall
 
         # If the start_time and end_time has not UTC timezone, then convert it
@@ -601,6 +609,58 @@ class ComputerView(RowActionListMixin, MyModelView):
         :param form:
             Form instance
         """
+        # Check that selected location has appropriate amount of activated computers
+        if form.activated.data and form.location.data:
+            location = Location.query.filter_by(id=form.location.data.id).first()
+            location_activated_computers = Computer.query.filter_by(
+                location_id=location.id, activated=True
+            ).count()
+
+            if not location:
+                flash(
+                    gettext("Failed to create record. Location doesn't exist."),
+                    "error",
+                )
+                logger.error("Failed to create record. Location doesn't exist.")
+
+                return False
+
+            if (
+                location.company.is_trial
+                and location_activated_computers
+                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
+            ):
+                flash(
+                    gettext(
+                        "Could not activate the new computer.\
+                        Limit of 1 computer per location while using eMAR Vault Lite edition.\
+                        Contact sales@emarvault.com to upgrade!"
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Locations of the trial company can have only one computer."
+                )
+
+                return False
+            elif (
+                not location.company.is_trial
+                and location_activated_computers
+                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
+            ):
+                flash(
+                    gettext(
+                        "Could not activate the new computer. \
+                        Limit of 5 computers per location while using eMAR Vault Pro edition."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Locations can have only 5 computers."
+                )
+
+                return False
+
         try:
             # Check if there is deleted computer with such name
             deleted_computer = (
@@ -646,6 +706,87 @@ class ComputerView(RowActionListMixin, MyModelView):
             self.after_model_change(form, model, True)
 
         return model
+
+    def update_model(self, form, model):
+        """
+        Update model from form.
+
+        :param form:
+            Form instance
+        :param model:
+            Model instance
+        """
+        # Check that selected location has appropriate amount of active computers
+        if form.activated.data and form.location.data:
+            location = Location.query.filter_by(id=form.location.data.id).first()
+            location_activated_computers = Computer.query.filter_by(
+                location_id=location.id, activated=True
+            ).count()
+
+            if not location:
+                flash(
+                    gettext("Failed to update record. Location doesn't exist."),
+                    "error",
+                )
+                logger.error("Failed to update record. Location doesn't exist.")
+
+                return False
+
+            if (
+                location.company.is_trial
+                and location_activated_computers
+                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
+            ):
+                flash(
+                    gettext(
+                        "Could not activate the new computer.\
+                        Limit of 1 computer per location while using eMAR Vault Lite edition.\
+                        Contact sales@emarvault.com to upgrade!"
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Locations of the trial company can have only one computer."
+                )
+
+                return False
+            elif (
+                not location.company.is_trial
+                and location_activated_computers
+                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
+            ):
+                flash(
+                    gettext(
+                        "Could not activate the new computer. \
+                        Limit of 5 computers per location while using eMAR Vault Pro edition."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Locations can have only 5 computers."
+                )
+
+                return False
+
+        try:
+            form.populate_obj(model)
+            self._on_model_change(form, model, False)
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to update record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.exception("Failed to update record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
 
     def delete_model(self, model):
         """

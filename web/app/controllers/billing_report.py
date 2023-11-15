@@ -1,10 +1,19 @@
 import io
+import enum
 import xlsxwriter
 from zoneinfo import ZoneInfo
 from datetime import datetime
 
 from app import models as m
 from app.logger import logger
+
+
+class ItemStatus(enum.Enum):
+    """Status for a company/location/computer"""
+
+    ACTIVE = "ACTIVE"
+    NOT_ACTIVATED = "NOT_ACTIVATED"
+    DELETED = "DELETED"
 
 
 def create_company_billing_report(
@@ -30,7 +39,7 @@ def create_company_billing_report(
     centered_format = workbook.add_format({"align": "center", "border": 1})
 
     # Set width of first 4 columns to 20 characters
-    worksheet.set_column(0, 3, 20)
+    worksheet.set_column(0, 4, 20)
 
     # Merge the first 4 cells for the title
     title = (
@@ -69,6 +78,7 @@ def create_company_billing_report(
     worksheet.write(3, 1, "Computer", bold_centered_format)
     worksheet.write(3, 2, "API Calls", bold_centered_format)
     worksheet.write(3, 3, "Alerts", bold_centered_format)
+    worksheet.write(3, 4, "Status", bold_centered_format)
 
     # Write main table data
     start_row = 4
@@ -104,10 +114,28 @@ def create_company_billing_report(
             location.total_alert_events(from_date, to_date),
             centered_format,
         )
+        worksheet.write(
+            start_row,
+            4,
+            ItemStatus.DELETED.value.capitalize()
+            if location.is_deleted
+            else ItemStatus.ACTIVE.value.capitalize(),
+            centered_format,
+        )
 
         start_row += 1
 
         for computer in ordered_computers_query.all():
+            if computer.is_deleted:
+                computer_status = ItemStatus.DELETED.value.capitalize()
+            else:
+                if computer.activated:
+                    computer_status = ItemStatus.ACTIVE.value.capitalize()
+                else:
+                    computer_status = (
+                        ItemStatus.NOT_ACTIVATED.value.capitalize().replace("_", " ")
+                    )
+
             worksheet.write(start_row, 0, "", centered_format)
             worksheet.write(start_row, 1, computer.computer_name, centered_format)
             worksheet.write(
@@ -117,6 +145,12 @@ def create_company_billing_report(
                 centered_format,
             )
             worksheet.write(start_row, 3, "", centered_format)
+            worksheet.write(
+                start_row,
+                4,
+                computer_status,
+                centered_format,
+            )
 
             start_row += 1
 
@@ -149,7 +183,7 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
     centered_format = workbook.add_format({"align": "center", "border": 1})
 
     # Set width of first 5 columns to 20 characters
-    worksheet.set_column(0, 4, 20)
+    worksheet.set_column(0, 5, 20)
 
     # Merge the first 4 cells for the title
     worksheet.merge_range(
@@ -163,7 +197,8 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
 
     # Write summarized information on the top(total locations, computers, users, alerts)
     companies = (
-        m.Company.query.filter(m.Company.is_global.is_(False))
+        m.Company.query.with_deleted()
+        .filter(m.Company.is_global.is_(False))
         .order_by(m.Company.name)
         .all()
     )
@@ -184,7 +219,9 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
         )
         .count()
     )
-    users_number = m.User.query.filter(m.User.username != "emarsuperuser").count()
+    users_number = (
+        m.User.query.with_deleted().filter(m.User.username != "emarsuperuser").count()
+    )
 
     alert_events_number = m.AlertEvent.query.filter(
         m.AlertEvent.created_at >= from_date.astimezone(ZoneInfo("UTC")),
@@ -203,6 +240,7 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
     worksheet.write(3, 2, "Computer", bold_centered_format)
     worksheet.write(3, 3, "API Calls", bold_centered_format)
     worksheet.write(3, 4, "Alerts", bold_centered_format)
+    worksheet.write(3, 5, "Status", bold_centered_format)
 
     # Write main table data
     start_row = 4
@@ -237,6 +275,14 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
             company.total_alert_events(from_date, to_date),
             centered_format,
         )
+        worksheet.write(
+            start_row,
+            5,
+            ItemStatus.DELETED.value.capitalize()
+            if company.is_deleted
+            else ItemStatus.ACTIVE.value.capitalize(),
+            centered_format,
+        )
 
         start_row += 1
 
@@ -266,10 +312,30 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
                 location.total_alert_events(from_date, to_date),
                 centered_format,
             )
+            worksheet.write(
+                start_row,
+                5,
+                ItemStatus.DELETED.value.capitalize()
+                if location.is_deleted
+                else ItemStatus.ACTIVE.value.capitalize(),
+                centered_format,
+            )
 
             start_row += 1
 
             for computer in ordered_computers_query.all():
+                if computer.is_deleted:
+                    computer_status = ItemStatus.DELETED.value.capitalize()
+                else:
+                    if computer.activated:
+                        computer_status = ItemStatus.ACTIVE.value.capitalize()
+                    else:
+                        computer_status = (
+                            ItemStatus.NOT_ACTIVATED.value.capitalize().replace(
+                                "_", " "
+                            )
+                        )
+
                 worksheet.write(start_row, 0, "", centered_format)
                 worksheet.write(start_row, 1, "", centered_format)
                 worksheet.write(start_row, 2, computer.computer_name, centered_format)
@@ -280,6 +346,12 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
                     centered_format,
                 )
                 worksheet.write(start_row, 4, "", centered_format)
+                worksheet.write(
+                    start_row,
+                    5,
+                    computer_status,
+                    centered_format,
+                )
 
                 start_row += 1
 

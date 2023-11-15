@@ -108,13 +108,13 @@
                   {% endif %}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.locations|length }}
+                  {{ company.total_locations_with_deleted }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.computers|length }}
+                  {{ company.total_computers_with_deleted }}
                 </td>
                 <td class="p-2 text-gray align-middle">
-                  {{ company.users|length }}
+                  {{ company.total_users_with_deleted }}
                 </td>
                 <td class="p-2 text-gray align-middle">
                   {{ company.total_pcc_api_calls(from_date, to_date) }}

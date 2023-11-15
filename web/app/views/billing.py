@@ -69,7 +69,9 @@ def get_billing_page():
     )
 
     # Companies query
-    companies_query: Query = m.Company.query.filter(m.Company.is_global.is_(False))
+    companies_query: Query = m.Company.query.with_deleted().filter(
+        m.Company.is_global.is_(False)
+    )
 
     # Filter query by search query
     if q:

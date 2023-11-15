@@ -46,6 +46,9 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
     is_global = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
+    is_trial = db.Column(
+        db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
 
     users = relationship(
         "User",
@@ -97,6 +100,15 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
     # to update these columns
 
     def delete(self, commit: bool = True):
+        """
+        Soft delete the company
+
+        Args:
+            commit (bool, optional): Commit the changes. Defaults to True.
+
+        Returns:
+            Company: Company object
+        """
         # Delete all the users associated with this company
         for user in self.users:
             user.delete(commit)
@@ -121,6 +133,15 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
         return self
 
     def restore(self, commit: bool = True):
+        """
+        Restore the company from soft deletion
+
+        Args:
+            commit (bool, optional): Commit the changes. Defaults to True.
+
+        Returns:
+            Company: Company object
+        """
         self.locations_per_company = 0
         self.total_computers = 0
         self.computers_online = 0
@@ -134,6 +155,12 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
 
     @hybrid_property
     def total_computers_counter(self):
+        """
+        Total number of computers for this company (without deleted and not activated)
+
+        Returns:
+            int: total number of computers
+        """
         from app.models.computer import Computer
 
         computers_number: int = Computer.query.filter(
@@ -143,7 +170,66 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
         return computers_number
 
     @hybrid_property
+    def total_computers_with_deleted(self):
+        """
+        Total number of computers for this company (with deleted and not activated)
+
+        Returns:
+            int: total number of computers
+        """
+        from app.models.computer import Computer
+
+        computers_number: int = (
+            Computer.query.with_deleted()
+            .filter(
+                Computer.company_id == self.id,
+            )
+            .count()
+        )
+        return computers_number
+
+    @hybrid_property
+    def total_locations_with_deleted(self):
+        """
+        Total number of locations for this company (with deleted)
+
+        Returns:
+            int: total number of locations
+        """
+        from app.models.location import Location
+
+        locations_number: int = (
+            Location.query.with_deleted()
+            .filter(
+                Location.company_id == self.id,
+            )
+            .count()
+        )
+        return locations_number
+
+    @hybrid_property
+    def total_users_with_deleted(self):
+        """
+        Total number of users for this company (with deleted)
+
+        Returns:
+            int: total number of users
+        """
+        from app.models.user import User
+
+        users_number: int = (
+            User.query.with_deleted().filter(User.company_id == self.id).count()
+        )
+        return users_number
+
+    @hybrid_property
     def primary_computers_offline(self):
+        """
+        Total number of offline primary computers for this company (current moment)
+
+        Returns:
+            int: total number of offline primary computers
+        """
         from app.models.computer import Computer, DeviceRole
 
         current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
@@ -165,6 +251,12 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
 
     @hybrid_property
     def total_offline_computers(self):
+        """
+        Total number of offline computers for this company (current moment)
+
+        Returns:
+            int: total number of offline computers
+        """
         from app.models.computer import Computer
 
         current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
@@ -185,6 +277,12 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
 
     @hybrid_property
     def total_offline_locations(self):
+        """
+        Total number of offline locations for this company (current moment)
+
+        Returns:
+            int: total number of offline locations
+        """
         from app.models.computer import Computer
         from app.models.location import Location
 
@@ -218,6 +316,16 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
         start_time: datetime,
         end_time: datetime,
     ) -> int:
+        """
+        Total number of PCC API calls from computers of this company (including deleted ones)
+
+        Args:
+            start_time (datetime): start time of the period
+            end_time (datetime): end time of the period
+
+        Returns:
+            int: total number of PCC API calls
+        """
         from app.models.computer import Computer
         from app.models.download_backup_call import DownloadBackupCall
 
@@ -247,6 +355,17 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin):
         start_time: datetime = datetime.utcnow() - timedelta(days=30),
         end_time: datetime = datetime.utcnow(),
     ) -> int:
+        """
+        Total number of alert events from locations of this company (including deleted ones)
+
+        Args:
+            start_time (datetime, optional): start time of the period.
+                Defaults to datetime.utcnow() - timedelta(days=30).
+            end_time (datetime, optional): end time of the period.
+
+        Returns:
+            int: total number of alert events
+        """
         from app.models.location import Location
         from app.models.alert_event import AlertEvent
 
@@ -299,17 +418,10 @@ class CompanyView(RowActionListMixin, MyModelView):
 
     action_disallowed_list = ["delete"]
 
-    form_widget_args = {
-        "locations_per_company": {"readonly": True},
-        "total_computers": {"readonly": True},
-        "computers_online": {"readonly": True},
-        "computers_offline": {"readonly": True},
-        "created_at": {"readonly": True},
-    }
-
     # To set order of the fields in form
     form_columns = (
         "name",
+        "is_trial",
         "default_sftp_username",
         "default_sftp_password",
         "locations_per_company",
@@ -330,6 +442,18 @@ class CompanyView(RowActionListMixin, MyModelView):
         "deleted_at",
         "location_groups",
     )
+
+    form_widget_args = {
+        "locations_per_company": {"readonly": True},
+        "total_computers": {"readonly": True},
+        "computers_online": {"readonly": True},
+        "computers_offline": {"readonly": True},
+        "created_at": {"readonly": True},
+    }
+
+    form_args = {
+        "is_trial": {"label": "eMAR Vault Lite Edition"},
+    }
 
     def search_placeholder(self):
         """Defines what text will be displayed in Search input field
@@ -436,6 +560,68 @@ class CompanyView(RowActionListMixin, MyModelView):
             self.after_model_change(form, model, True)
 
         return model
+
+    def update_model(self, form, model):
+        """
+        Update model from form.
+
+        :param form:
+            Form instance
+        :param model:
+            Model instance
+        """
+        from app.models.computer import Computer, DeviceRole
+
+        try:
+            # If company changed to trial - deactivate computers in its locations
+            if form.is_trial.data and not model.is_trial:
+                for location in model.locations:
+                    primary_active_computer = Computer.query.filter(
+                        Computer.location_id == location.id,
+                        Computer.device_role == DeviceRole.PRIMARY,
+                        Computer.activated.is_(True),
+                    ).first()
+                    any_active_computer = Computer.query.filter(
+                        Computer.location_id == location.id,
+                        Computer.activated.is_(True),
+                    ).first()
+
+                    if not primary_active_computer and not any_active_computer:
+                        continue
+
+                    for computer in location.computers:
+                        if (
+                            primary_active_computer
+                            and computer.id == primary_active_computer.id
+                        ):
+                            continue
+                        elif (
+                            not primary_active_computer
+                            and computer.id == any_active_computer.id
+                        ):
+                            continue
+
+                        computer.activated = False
+
+            form.populate_obj(model)
+            self._on_model_change(form, model, False)
+
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to update record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to update record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
 
     def delete_model(self, model):
         """
