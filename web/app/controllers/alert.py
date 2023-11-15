@@ -39,7 +39,11 @@ def send_critical_alert():
         "<---Start sending critical alerts. Time: {}--->",
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
-    locations: list[m.Location] = m.Location.query.all()
+
+    # Select all the locations (except connected to trial companies)
+    locations: list[m.Location] = (
+        m.Location.query.join(m.Company).filter(m.Company.is_trial.is_(False)).all()
+    )
     for location in locations:
         location_computers_query: Query = m.Computer.query.filter(
             m.Computer.location_id == location.id,
@@ -186,15 +190,13 @@ def send_primary_computer_alert():
     ).all()
 
     for computer in all_primary_computers:
-        if not computer.location or not computer.company:
+        if not computer.location or not computer.company or computer.company.is_trial:
             continue
 
-        # Get all the users connected to the computer's
+        # Get all the users connected to the computer
         connected_users: list[m.User] = []
         all_company_users: list[m.User] = m.User.query.filter(
-            m.User.company_id
-            == computer.company_id
-            # m.User.down_notification.is_(True)
+            m.User.company_id == computer.company_id
         ).all()
 
         for user in all_company_users:
@@ -465,9 +467,10 @@ def send_daily_summary():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Select all the companies except global
+    # Select all the companies except global and trial
     companies: list[m.Company] = m.Company.query.filter(
-        m.Company.is_global.is_(False)
+        m.Company.is_global.is_(False),
+        m.Company.is_trial.is_(False),
     ).all()
 
     for company in companies:

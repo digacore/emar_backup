@@ -508,7 +508,7 @@ class LocationView(RowActionListMixin, MyModelView):
     def update_model(self, form, model):
         # Check that location can have enabled PCC backups
         company = Company.query.filter_by(id=form.company.data.id).first()
-        if form.use_pcc_backup.data and company.is_trial:
+        if form.use_pcc_backup and form.use_pcc_backup.data and company.is_trial:
             flash(
                 gettext(
                     "Could not enable the PointClickCare backups.\
@@ -519,6 +519,21 @@ class LocationView(RowActionListMixin, MyModelView):
             )
             logger.error(
                 "Location can't have enabled PCC backups because company is trial."
+            )
+            return False
+
+        # Check that location can be connected to selected company
+        if company.is_trial and model.total_computers >= 1:
+            flash(
+                gettext(
+                    "Could not connect location to this company.\
+                    eMAR Vault Lite edition does not allow more than 1 active computer for location.\
+                    Contact sales@emarvault.com to upgrade!"
+                ),
+                "error",
+            )
+            logger.error(
+                "Location can't be connected to this company because company is trial (more that 1 comp in location)."
             )
             return False
 
