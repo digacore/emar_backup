@@ -197,7 +197,7 @@ def company_billing_report(company_id: int):
         logger.error(f"Incorrect date format to generate billing report {company_id}")
         abort(400, "Invalid date format.")
 
-    company: m.Company = m.Company.query.filter_by(id=company_id).first()
+    company: m.Company = m.Company.query.with_deleted().filter_by(id=company_id).first()
 
     if not company:
         logger.error(f"Company with id {company_id} not found")
