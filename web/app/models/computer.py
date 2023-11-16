@@ -213,6 +213,10 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         self.company_id = new_company.id if new_company else None
 
     @hybrid_property
+    def is_company_trial(self):
+        return self.company.is_trial if self.company else None
+
+    @hybrid_property
     def status(self) -> ComputerStatus:
         current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
