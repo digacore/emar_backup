@@ -372,4 +372,5 @@ class MyModelView(ModelView):
             # Extras
             extra_args=view_args.extra_args,
             params_for_computers_page=params_for_computers_page,
+            model_name=self.model.__tablename__,
         )

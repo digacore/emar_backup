@@ -78,11 +78,11 @@
                         <input type="checkbox" name="rowtoggle" class="action-rowtoggle" title="{{ _gettext('Select all records') }}" />
                     </th>
                     {% endif %}
-                    {% block list_row_actions_header %}
-                        {% if admin_view.column_display_actions %}
-                        <th class="">&nbsp;</th>
-                        {% endif %}
-                    {% endblock %}
+
+                    <th>
+                        <div style="color: #4e73df;">Subscription</div>
+                    </th>
+
                     {% for c, name in list_columns %}
                     {% set column = loop.index0 %}
                     <th class="column-header col-{{c}}">
@@ -125,6 +125,12 @@
                         {% endif %}
                     </th>
                     {% endfor %}
+
+                    {% block list_row_actions_header %}
+                        {% if admin_view.column_display_actions %}
+                        <th class=""><div style="color: #4e73df;">Actions</div></th>
+                        {% endif %}
+                    {% endblock %}
                 {% endblock %}
             </tr>
         </thead>
@@ -136,72 +142,32 @@
                     <input type="checkbox" name="rowid" class="action-checkbox" value="{{ get_pk_value(row) }}" title="{{ _gettext('Select record') }}" />
                 </td>
                 {% endif %}
-                {% block list_row_actions_column scoped %}
-                    {% if admin_view.column_display_actions %}
-                    <td class="list-buttons-column">
-                        {% block list_row_actions scoped %}
-                            {% for action in list_row_actions %}
-                                {% if admin_view.allow_row_action(action, row) %}
-                                    {{ action.render_ctx(get_pk_value(row), row) }}
-                                {% endif %}
-                            {% endfor %}
-                        {% endblock %}
 
-                        {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
-                            {% set merge_object = "company" if "/admin/company/" in return_url else "location" %}
-                            <!-- Button trigger modal -->
-                            <a href="#mergeModal{{ get_pk_value(row) }}" data-toggle="modal">
-                                <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge {{ merge_object }}" style="height: 18px; width: 18px;">
-                            </a>
-
-                            <!-- Modal -->
-                            <div class="modal fade" id="mergeModal{{ get_pk_value(row) }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <form
-                                            class="merging-form"
-                                            action="/merge/{{ merge_object }}/{{ get_pk_value(row) }}/first-step"
-                                            method="GET"
-                                        >
-                                            <div class="modal-header">
-                                                <h5 class="modal-title text-wrap text-primary" id="exampleModalLabel">Merge {{ merge_object }} {{ get_value(row, "name") }} with:</h5>
-                                                <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
-                                                    <span aria-hidden="true" class="text-secondary">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="search-object-input-div">
-                                                    <input
-                                                        id="search-object-id-input-{{ get_pk_value(row) }}"
-                                                        type="hidden"
-                                                        name="secondary_{{ merge_object }}"
-                                                        class="search-object-id-input"
-                                                    >
-                                                    <input
-                                                        id="search-object-input-{{ get_pk_value(row) }}"
-                                                        class="search-object-input w-100 p-2 border rounded"
-                                                        placeholder="Search {{ merge_object }}"
-                                                        autocomplete="off"
-                                                    >
-                                                    <div class="search-object-hints-div mt-2" hidden>
-                                                        <p class="search-object-hint"></p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-light" data-dismiss="modal">
-                                                    <span class="text-secondary">Cancel</span>
-                                                </button>
-                                                <button type="submit" disabled class="btn btn-primary confirm-modal-button">Confirm</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
+                <td>
+                    {% if model_name == "companies" %}
+                        {% set is_trial = True if "is_trial: true" in get_value(row, "is_trial").unescape() else False %}
+                        {% if is_trial %}
+                            <div class="d-flex w-100 align-items-center">
+                                <img src="{{ url_for('static', filename='/img/table_lite_logo.png') }}" alt="Lite logo" style="height: 30px; width: 60px;" class="ml-2">
+                            </div>
+                        {% else %}
+                            <div class="d-flex w-100 align-items-center">
+                                <img src="{{ url_for('static', filename='/img/table_pro_logo.png') }}" alt="Pro logo" style="height: 30px; width: 60px;" class="ml-2">
                             </div>
                         {% endif %}
-                    </td>
+                    {% else %}
+                        {% set is_company_trial = True if "is_company_trial: true" in get_value(row, "is_company_trial").unescape() else False %}
+                        {% if is_company_trial %}
+                            <div class="d-flex w-100 align-items-center">
+                                <img src="{{ url_for('static', filename='/img/table_lite_logo.png') }}" alt="Lite logo" style="height: 30px; width: 60px;" class="ml-2">
+                            </div>
+                        {% else %}
+                            <div class="d-flex w-100 align-items-center">
+                                <img src="{{ url_for('static', filename='/img/table_pro_logo.png') }}" alt="Pro logo" style="height: 30px; width: 60px;" class="ml-2">
+                            </div>
+                        {% endif %}
                     {% endif %}
-                {% endblock %}
+                </td>
 
                 <!-- The name of company or location object -->
                 {% set loc_compn_name = namespace(loc='loc') %}
@@ -360,6 +326,73 @@
                         </td>
                     {% endif %}
                 {% endfor %}
+
+                {% block list_row_actions_column scoped %}
+                    {% if admin_view.column_display_actions %}
+                    <td class="list-buttons-column">
+                        {% block list_row_actions scoped %}
+                            {% for action in list_row_actions %}
+                                {% if admin_view.allow_row_action(action, row) %}
+                                    {{ action.render_ctx(get_pk_value(row), row) }}
+                                {% endif %}
+                            {% endfor %}
+                        {% endblock %}
+
+                        {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
+                            {% set merge_object = "company" if "/admin/company/" in return_url else "location" %}
+                            <!-- Button trigger modal -->
+                            <a href="#mergeModal{{ get_pk_value(row) }}" data-toggle="modal">
+                                <img src="{{ url_for('static', filename='/img/merge.png') }}" alt="merge_icon" title="Merge {{ merge_object }}" style="height: 18px; width: 18px;">
+                            </a>
+
+                            <!-- Modal -->
+                            <div class="modal fade" id="mergeModal{{ get_pk_value(row) }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <form
+                                            class="merging-form"
+                                            action="/merge/{{ merge_object }}/{{ get_pk_value(row) }}/first-step"
+                                            method="GET"
+                                        >
+                                            <div class="modal-header">
+                                                <h5 class="modal-title text-wrap text-primary" id="exampleModalLabel">Merge {{ merge_object }} {{ get_value(row, "name") }} with:</h5>
+                                                <button type="button" class="btn btn-light" data-dismiss="modal" aria-label="Close">
+                                                    <span aria-hidden="true" class="text-secondary">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="search-object-input-div">
+                                                    <input
+                                                        id="search-object-id-input-{{ get_pk_value(row) }}"
+                                                        type="hidden"
+                                                        name="secondary_{{ merge_object }}"
+                                                        class="search-object-id-input"
+                                                    >
+                                                    <input
+                                                        id="search-object-input-{{ get_pk_value(row) }}"
+                                                        class="search-object-input w-100 p-2 border rounded"
+                                                        placeholder="Search {{ merge_object }}"
+                                                        autocomplete="off"
+                                                    >
+                                                    <div class="search-object-hints-div mt-2" hidden>
+                                                        <p class="search-object-hint"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-light" data-dismiss="modal">
+                                                    <span class="text-secondary">Cancel</span>
+                                                </button>
+                                                <button type="submit" disabled class="btn btn-primary confirm-modal-button">Confirm</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </td>
+                    {% endif %}
+                {% endblock %}
             {% endblock %}
         </tr>
         {% else %}
