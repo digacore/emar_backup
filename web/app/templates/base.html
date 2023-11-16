@@ -53,7 +53,11 @@
       <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url_for('main.index') }}">
         <div class="sidebar-brand-icon ">
           <!-- original width="219" height="245" -->
-          <img src="{{ url_for('static', filename='/img/emar_icon_web.jpg') }}" width="44" height="49">
+          {% if current_user.permission.value != "GLOBAL" and current_user.company.is_trial %}
+            <img src="{{ url_for('static', filename='/img/global_lite_logo.png') }}" width="45" height="40">
+          {% else %}
+            <img src="{{ url_for('static', filename='/img/global_pro_logo.png') }}" width="45" height="40">
+          {% endif %}
         </div>
         <!-- prettier-ignore -->
         <div class="sidebar-brand-text mx-3">{{ config.APP_NAME }}</div>
