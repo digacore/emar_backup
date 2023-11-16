@@ -591,6 +591,7 @@ def send_weekly_summary():
                         total_offline_computers=company.total_offline_computers,
                         total_offline_locations=company.total_offline_locations,
                         computers_by_location=company_computers_by_location,
+                        is_company_trial=company.is_trial,
                     ),
                 )
                 logger.info(
@@ -646,6 +647,7 @@ def send_weekly_summary():
                             total_offline_computers=location_group.total_offline_computers,
                             total_offline_locations=location_group.total_offline_locations,
                             computers_by_location=group_computers_by_location,
+                            is_company_trial=company.is_trial,
                         ),
                     )
                     logger.info(
@@ -700,6 +702,7 @@ def send_weekly_summary():
                                     location_name
                                 ]
                             },
+                            is_company_trial=company.is_trial,
                         ),
                     )
                     logger.info(
