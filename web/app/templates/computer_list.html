@@ -319,8 +319,6 @@
     {{ lib.form_js() }}
     <script src="{{ admin_static.url(filename='admin/js/bs4_modal.js', v='1.0.0') }}"></script>
     <script src="{{ admin_static.url(filename='admin/js/bs4_filters.js', v='1.0.0') }}"></script>
-    <script src="{{ admin_static.url(filename='js/computer.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js')}}"></script>
 
     {{ actionlib.script(_gettext('Please select at least one record.'),
                         actions,
