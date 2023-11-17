@@ -51,17 +51,16 @@
         </li>
         {% endif %}
 
-        {% if actions %}
-        <li class="nav-item dropdown">
-            {{ actionlib.dropdown(actions) }}
-        </li>
-        {% endif %}
-
         {% if search_supported %}
         <li class="nav-item ml-2">
             {{ single_layout.single_search_form() }}
         </li>
         {% endif %}
+
+        <li class="nav-item ml-2">
+            <div class="d-flex align-items-center h-100 ml-4 selected-actions-wrapper"></div>
+        </li>
+
         {% block model_menu_bar_after_filters %}{% endblock %}
     </ul>
     {% endblock %}
@@ -78,9 +77,7 @@
             <tr>
                 {% block list_header scoped %}
                     {% if actions %}
-                    <th class="list-checkbox-column">
-                        <input type="checkbox" name="rowtoggle" class="action-rowtoggle" title="{{ _gettext('Select all records') }}" />
-                    </th>
+                    <th class="list-checkbox-column"></th>
                     {% endif %}
 
                     <th>
@@ -143,7 +140,7 @@
             {% block list_row scoped %}
                 {% if actions %}
                 <td>
-                    <input type="checkbox" name="rowid" class="action-checkbox" value="{{ get_pk_value(row) }}" title="{{ _gettext('Select record') }}" />
+                    <input type="checkbox" name="rowid" class="action-checkbox" value="{{ get_pk_value(row) }}" title="{{ _gettext('Select record') }}" autocomplete="off"/>
                 </td>
                 {% endif %}
 
@@ -267,13 +264,15 @@
                 {% block list_row_actions_column scoped %}
                     {% if admin_view.column_display_actions %}
                     <td class="list-buttons-column">
-                        {% block list_row_actions scoped %}
-                            {% for action in list_row_actions %}
-                                {% if admin_view.allow_row_action(action, row) %}
-                                    {{ action.render_ctx(get_pk_value(row), row) }}
-                                {% endif %}
-                            {% endfor %}
-                        {% endblock %}
+                        <div class="actions-wrapper-{{ get_pk_value(row) }}">
+                            {% block list_row_actions scoped %}
+                                {% for action in list_row_actions %}
+                                    {% if admin_view.allow_row_action(action, row) %}
+                                        {{ action.render_ctx(get_pk_value(row), row) }}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endblock %}
+                        </div>
                     </td>
                     {%- endif -%}
                 {% endblock %}
@@ -320,6 +319,7 @@
     {{ lib.form_js() }}
     <script src="{{ admin_static.url(filename='admin/js/bs4_modal.js', v='1.0.0') }}"></script>
     <script src="{{ admin_static.url(filename='admin/js/bs4_filters.js', v='1.0.0') }}"></script>
+    <script src="{{ admin_static.url(filename='js/computer.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js')}}"></script>
 
     {{ actionlib.script(_gettext('Please select at least one record.'),
