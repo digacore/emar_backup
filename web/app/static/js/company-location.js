@@ -89,7 +89,7 @@ const searchObjectParagraph = document.querySelector(".search-object-hint");
 const searchObjectInputs = document.querySelectorAll(".search-object-input");
 searchObjectInputs.forEach((searchObjectInput) => {
   searchObjectInput.addEventListener("input", async (e) => {
-    objectHintsContainer = searchObjectInput.parentElement.querySelector(".search-object-hints-div");
+        objectHintsContainer = searchObjectInput.parentElement.querySelector(".search-object-hints-div");
     confirmButton = searchObjectInput.parentElement.parentElement.parentElement.querySelector(".confirm-modal-button");
     confirmButton.setAttribute("disabled", "disabled");
 
@@ -134,6 +134,13 @@ const selectedActionsWrapper = document.querySelector(".selected-actions-wrapper
 const itemCheckboxes = document.querySelectorAll(".action-checkbox");
 itemCheckboxes.forEach((itemCheckbox) => {
   itemCheckbox.addEventListener("change", async (e) => {
+    // Uncheck all checkboxes
+    itemCheckboxes.forEach((itemCheckbox) => {
+      if (itemCheckbox.checked && itemCheckbox !== e.currentTarget) {
+        itemCheckbox.checked = false;
+      }
+    });
+
     const actionsWrapper = document.querySelector(`.actions-wrapper-${e.target.value}`);
     if (e.currentTarget.checked) {
       selectedActionsWrapper.innerHTML = null;
@@ -151,6 +158,8 @@ itemCheckboxes.forEach((itemCheckbox) => {
               childNode.style.background = "inherit";
             }
           });
+        } else if (action.className === "modal fade" && action.tagName === "DIV") {
+          return;
         }
 
         selectedActionsWrapper.appendChild(actionClone);
