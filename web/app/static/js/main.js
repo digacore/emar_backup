@@ -58,7 +58,7 @@ sidebarToggleButton.addEventListener("click", () => {
     bigLogo.style.display = "none";
   } else {
     smallLogo.style.display = "none";
-    sidebarLogoWrapper.style.padding = "20px 0px";
+    sidebarLogoWrapper.style.padding = "60px 0px";
     bigLogo.removeAttribute("style");
   }
 });
