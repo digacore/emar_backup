@@ -16,6 +16,7 @@ from app.models.utils import (
     RowActionListMixin,
     SoftDeleteMixin,
     QueryWithSoftDelete,
+    ActivatedMixin,
 )
 from app.utils import MyModelView
 from app.logger import logger
@@ -24,7 +25,7 @@ from .system_log import SystemLogType
 from config import BaseConfig as CFG
 
 
-class Company(db.Model, ModelMixin, SoftDeleteMixin):
+class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     __tablename__ = "companies"
 
     query_class = QueryWithSoftDelete

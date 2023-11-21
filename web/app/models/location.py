@@ -22,6 +22,7 @@ from app.models.utils import (
     RowActionListMixin,
     SoftDeleteMixin,
     QueryWithSoftDelete,
+    ActivatedMixin,
 )
 from app.utils import MyModelView
 from app.logger import logger
@@ -37,7 +38,7 @@ class LocationStatus(enum.Enum):
     OFFLINE = "OFFLINE"
 
 
-class Location(db.Model, ModelMixin, SoftDeleteMixin):
+class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     __tablename__ = "locations"
 
     __table_args__ = (db.UniqueConstraint("company_id", "name"),)

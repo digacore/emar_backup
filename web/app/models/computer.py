@@ -14,7 +14,13 @@ from flask import flash
 from flask_login import current_user
 
 from app import db
-from app.models.utils import ModelMixin, RowActionListMixin
+from app.models.utils import (
+    ModelMixin,
+    RowActionListMixin,
+    ActivatedMixin,
+    SoftDeleteMixin,
+    QueryWithSoftDelete,
+)
 from app.utils import MyModelView
 from app.logger import logger
 
@@ -23,7 +29,6 @@ from .user import UserPermissionLevel, UserRole
 from .company import Company
 from .location import Location
 from .system_log import SystemLogType
-from .utils import SoftDeleteMixin, QueryWithSoftDelete
 
 from config import BaseConfig as CFG
 
@@ -53,7 +58,7 @@ class ComputerStatus(enum.Enum):
     NOT_ACTIVATED = "NOT_ACTIVATED"
 
 
-class Computer(db.Model, ModelMixin, SoftDeleteMixin):
+class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     __tablename__ = "computers"
 
     # NOTE this is needed to filter soft deleted records
@@ -93,7 +98,6 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     # Place where backup file was saved last time (directory inside emar_backups.zip)
     last_saved_path = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
-    activated = db.Column(db.Boolean, default=False)
 
     logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
