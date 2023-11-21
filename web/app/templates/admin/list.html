@@ -96,12 +96,12 @@
                                         <span class="fa fa-chevron-down glyphicon glyphicon-chevron-down"></span>
                                     {% endif %}
                                 </a>
-                                
+
                             {% else %}
                             <a href="{{ sort_url(column, True) }}" title="{{ _gettext('Sort by %(name)s', name=name) }}">{{ name }}</a>
                             {% endif %}
-    
-                            <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"  
+
+                            <form method="GET" action="#" class="single-search-form form-inline my-2 my-lg-0" data-search_value="{{c}}"
                                 role="search">
                                 <div class="form-inline">
                                     <input class="single-search-cls" size="20" type="text" name="search" value=""
@@ -113,7 +113,7 @@
                                     ">
                                 </div>
                             </form>
-    
+
                         {% else %}
                             {{ name }}
                         {% endif %}
@@ -149,7 +149,7 @@
                     </td>
                     {%- endif -%}
                 {% endblock %}
-    
+
                 {% for c, name in list_columns %}
                     <td class="col-{{c}}">
                     {% if admin_view.is_editable(c) %}
@@ -209,7 +209,6 @@
     {{ lib.form_js() }}
     <script src="{{ admin_static.url(filename='admin/js/bs4_modal.js', v='1.0.0') }}"></script>
     <script src="{{ admin_static.url(filename='admin/js/bs4_filters.js', v='1.0.0') }}"></script>
-    <script src="{{ url_for('static', filename='js/main.js')}}"></script>
 
     {{ actionlib.script(_gettext('Please select at least one record.'),
                         actions,

@@ -151,6 +151,10 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
 
         self.company_id = new_company.id
 
+    @hybrid_property
+    def is_company_trial(self):
+        return self.company.is_trial
+
     # NOTE: unfortunately, next callable properties can't be used with Flask Admin (as table columns)
     # Because initialization of LocationView class is done before initialization of Compute model
     # So, we use next properties for the email templates but we still need to have columns

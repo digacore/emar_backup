@@ -37,3 +37,28 @@ function startTime() {
   document.getElementById("js-clock").innerHTML = today;
   setTimeout(startTime, 1000);
 }
+
+const sidebarObj = document.querySelector("#accordionSidebar");
+if (sidebarObj.className.includes("toggled")) {
+  const smallLogo = document.querySelector("#small-logo");
+  smallLogo.removeAttribute("style");
+} else {
+  const bigLogo = document.querySelector("#big-logo");
+  bigLogo.removeAttribute("style");
+}
+
+const sidebarLogoWrapper = document.querySelector("#sidebar-logo-wrapper");
+const sidebarToggleButton = document.querySelector("#sidebarToggle");
+sidebarToggleButton.addEventListener("click", () => {
+  const smallLogo = document.querySelector("#small-logo");
+  const bigLogo = document.querySelector("#big-logo");
+  if (sidebarObj.className.includes("toggled")) {
+    smallLogo.removeAttribute("style");
+    sidebarLogoWrapper.style.padding = "0px 0px";
+    bigLogo.style.display = "none";
+  } else {
+    smallLogo.style.display = "none";
+    sidebarLogoWrapper.style.padding = "60px 0px";
+    bigLogo.removeAttribute("style");
+  }
+});

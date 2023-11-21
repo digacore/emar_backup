@@ -50,14 +50,25 @@
 
       <!-- Sidebar - Brand -->
       <!-- prettier-ignore -->
-      <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url_for('main.index') }}">
-        <div class="sidebar-brand-icon ">
-          <!-- original width="219" height="245" -->
-          <img src="{{ url_for('static', filename='/img/emar_icon_web.jpg') }}" width="44" height="49">
-        </div>
-        <!-- prettier-ignore -->
-        <div class="sidebar-brand-text mx-3">{{ config.APP_NAME }}</div>
-      </a>
+      <div id="sidebar-logo-wrapper" class="d-flex justify-content-center" style="padding: 60px 0px;">
+        <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url_for('main.index') }}">
+          <div class="sidebar-brand-icon">
+            <!-- Small icon -->
+            <img id="small-logo" src="{{ url_for('static', filename='/img/emar_logo_circle.png') }}" width="55" height="55" style="display: none">
+
+            <!-- Big icon -->
+            {% if current_user.permission.value == "ANONYMOUS" %}
+              <img id="big-logo" src="{{ url_for('static', filename='/img/emar_logo_circle.png') }}" width="150" height="150" style="display: none">
+            {% elif current_user.permission.value == "GLOBAL" or not current_user.company.is_trial %}
+              <img id="big-logo" src="{{ url_for('static', filename='/img/global_pro_logo.png') }}" width="150" height="150" style="display: none">
+            {% else %}
+              <img id="big-logo" src="{{ url_for('static', filename='/img/global_lite_logo.png') }}" width="150" height="150" style="display: none">
+            {% endif %}
+          </div>
+          <!-- prettier-ignore -->
+          <!-- <div class="sidebar-brand-text mx-3">{{ config.APP_NAME }}</div> -->
+        </a>
+      </div>
 
 
       {% block flash_messages %}
