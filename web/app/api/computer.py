@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime
+
 from flask import jsonify
 
 from app.models import Computer, LogType, SystemLogType
@@ -59,6 +61,11 @@ def register_computer(body: ComputerRegInfo):
                 identifier_key=new_identifier_key,
                 computer_name=body.computer_name,
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
+                activated=False,
+                deactivated_at=datetime.utcnow(),
+                logs_enabled=False,
+                last_time_logs_enabled=None,
+                last_time_logs_disabled=datetime.utcnow(),
             )
             new_computer.save()
 
