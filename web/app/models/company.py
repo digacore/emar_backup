@@ -154,6 +154,72 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
             db.session.commit()
         return self
 
+    def deactivate(self, commit: bool = True):
+        """
+        Deactivate the company
+
+        Args:
+            commit (bool, optional): Commit the changes. Defaults to True.
+
+        Returns:
+            Company: Company object
+        """
+        deactivation_time: datetime = datetime.utcnow()
+
+        # Deactivate all active the users associated with this company
+        for user in self.users:
+            if user.activated:
+                user.deactivate(deactivated_at=deactivation_time, commit=False)
+
+        # Deactivate all the active locations associated with this company
+        for location in self.locations:
+            if location.activated:
+                location.deactivate(deactivated_at=deactivation_time, commit=False)
+
+        # Deactivate all the active computers associated with this company
+        for computer in self.computers:
+            if computer.activated:
+                computer.deactivate(deactivated_at=deactivation_time, commit=False)
+
+        self.activated = False
+        self.deactivated_at = deactivation_time
+
+        if commit:
+            db.session.commit()
+        return self
+
+    def activate(self, commit: bool = True):
+        """
+        Activate the company
+
+        Args:
+            commit (bool, optional): Commit the changes. Defaults to True.
+
+        Returns:
+            Company: Company object
+        """
+        # Activate users associated with this company (if they were deactivated with company)
+        for user in self.users:
+            if user.deactivated_at == self.deactivated_at:
+                user.activate(commit=False)
+
+        # Activate locations associated with this company (if they were deactivated with company)
+        for location in self.locations:
+            if location.deactivated_at == self.deactivated_at:
+                location.activate(commit=False)
+
+        # Activate computers associated with this company (if they were deactivated with company)
+        for computer in self.computers:
+            if computer.deactivated_at == self.deactivated_at:
+                computer.activate(commit=False)
+
+        self.activated = True
+        self.deactivated_at = None
+
+        if commit:
+            db.session.commit()
+        return self
+
     @hybrid_property
     def total_computers_counter(self):
         """
