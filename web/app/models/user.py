@@ -143,6 +143,22 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
             db.session.commit()
         return self
 
+    def activate(self, commit: bool = True):
+        self.activated = True
+        self.deactivated_at = None
+        if commit:
+            db.session.commit()
+        return self
+
+    def deactivate(
+        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
+    ):
+        self.activated = False
+        self.deactivated_at = deactivated_at
+        if commit:
+            db.session.commit()
+        return self
+
     @hybrid_property
     def password(self):
         return self.password_hash
@@ -376,6 +392,12 @@ class UserView(RowActionListMixin, MyModelView):
                 model.is_deleted = False
                 model.deleted_at = None
                 model.created_at = original_created_at
+
+                if form.activated.data:
+                    model.deactivated_at = None
+                else:
+                    model.deactivated_at = datetime.utcnow()
+
                 self._on_model_change(form, model, True)
                 self.session.commit()
 
@@ -384,6 +406,10 @@ class UserView(RowActionListMixin, MyModelView):
                 model = self.build_new_instance()
 
                 form.populate_obj(model)
+
+                if not form.activated.data:
+                    model.deactivated_at = datetime.utcnow()
+
                 self.session.add(model)
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -402,6 +428,39 @@ class UserView(RowActionListMixin, MyModelView):
             self.after_model_change(form, model, True)
 
         return model
+
+    def update_model(self, form, model):
+        """
+        Update model from form.
+
+        :param form:
+            Form instance
+        :param model:
+            Model instance
+        """
+        try:
+            # If user was deactivated
+            if not form.activated.data and form.activated.data != model.activated:
+                model.deactivated_at = datetime.utcnow()
+
+            form.populate_obj(model)
+            self._on_model_change(form, model, False)
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to update record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.exception("Failed to update record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
 
     def delete_model(self, model):
         """
