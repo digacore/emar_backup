@@ -372,6 +372,38 @@ class UserView(RowActionListMixin, MyModelView):
             Form instance
         """
 
+        # Check that selected company is active
+        if form.activated.data:
+            company = Company.query.filter_by(id=form.company.data.id).first()
+            if not company.activated:
+                flash(
+                    gettext(
+                        "Failed to create record. Company %(company)s is deactivated.",
+                        company=company.name,
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Company {} is deactivated.", company.name
+                )
+                return False
+
+        # If user has Location level permission, check that selected location is active
+        if not form.location_group.data and form.location.data:
+            location = Location.query.filter_by(id=form.location.data[0].id).first()
+            if not location.activated:
+                flash(
+                    gettext(
+                        "Failed to create record. Location %(location)s is deactivated.",
+                        location=location.name,
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Location {} is deactivated.",
+                    location.name,
+                )
+
         # Check if there is deleted user with such email and username
         deleted_user = (
             User.query.with_deleted()
@@ -401,7 +433,7 @@ class UserView(RowActionListMixin, MyModelView):
                 self._on_model_change(form, model, True)
                 self.session.commit()
 
-                logger.info(f"User {model.username} was restored.")
+                logger.info("User {} was restored.", model.username)
             else:
                 model = self.build_new_instance()
 
@@ -438,6 +470,38 @@ class UserView(RowActionListMixin, MyModelView):
         :param model:
             Model instance
         """
+        # Check that selected company is active
+        if form.activated.data:
+            company = Company.query.filter_by(id=form.company.data.id).first()
+            if not company.activated:
+                flash(
+                    gettext(
+                        "Failed to update record. Company %(company)s is deactivated.",
+                        company=company.name,
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Company {} is deactivated.", company.name
+                )
+                return False
+
+        # If user has Location level permission, check that selected location is active
+        if not form.location_group.data and form.location.data:
+            location = Location.query.filter_by(id=form.location.data[0].id).first()
+            if not location.activated:
+                flash(
+                    gettext(
+                        "Failed to update record. Location %(location)s is deactivated.",
+                        location=location.name,
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Location {} is deactivated.",
+                    location.name,
+                )
+
         try:
             # If user was deactivated
             if not form.activated.data and form.activated.data != model.activated:
@@ -452,7 +516,7 @@ class UserView(RowActionListMixin, MyModelView):
                     gettext("Failed to update record. %(error)s", error=str(ex)),
                     "error",
                 )
-                logger.exception("Failed to update record.")
+                logger.error("Failed to update record.")
 
             self.session.rollback()
 

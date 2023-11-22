@@ -194,6 +194,8 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         """Activate computer"""
         self.activated = True
         self.deactivated_at = None
+        self.logs_enabled = True
+        self.last_time_logs_enabled = datetime.utcnow()
 
         if commit:
             db.session.commit()
@@ -774,7 +776,7 @@ class ComputerView(RowActionListMixin, MyModelView):
                 self._on_model_change(form, model, True)
                 self.session.commit()
 
-                logger.info(f"Computer {model.computer_name} was restored.")
+                logger.info("Computer {} was restored.", model.computer_name)
             else:
                 model = self.build_new_instance()
 
@@ -922,7 +924,7 @@ class ComputerView(RowActionListMixin, MyModelView):
                     gettext("Failed to update record. %(error)s", error=str(ex)),
                     "error",
                 )
-                logger.exception("Failed to update record.")
+                logger.error("Failed to update record.")
 
             self.session.rollback()
 
