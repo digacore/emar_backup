@@ -56,24 +56,30 @@ def index():
 
     # Count locations information
     locations_offline_query: Query = total_locations_query.filter(
-        Location.status == LocationStatus.OFFLINE
+        Location.status == LocationStatus.OFFLINE,
+        Location.activated.is_(True),
     )
     locations_offline_perc: float = get_percentage(
-        total_locations_query.all(), locations_offline_query.all()
+        total_locations_query.filter_by(activated=True).all(),
+        locations_offline_query.all(),
     )
 
     locations_online_query: Query = total_locations_query.filter(
-        Location.status == LocationStatus.ONLINE
+        Location.status == LocationStatus.ONLINE,
+        Location.activated.is_(True),
     )
     locations_online_perc: float = get_percentage(
-        total_locations_query.all(), locations_online_query.all()
+        total_locations_query.filter_by(activated=True).all(),
+        locations_online_query.all(),
     )
 
     locations_primary_offline_query: Query = total_locations_query.filter(
-        Location.status == LocationStatus.ONLINE_PRIMARY_OFFLINE
+        Location.status == LocationStatus.ONLINE_PRIMARY_OFFLINE,
+        Location.activated.is_(True),
     )
     locations_primary_offline_perc: float = get_percentage(
-        total_locations_query.all(), locations_primary_offline_query.all()
+        total_locations_query.filter_by(activated=True).all(),
+        locations_primary_offline_query.all(),
     )
 
     # Overall computers information
@@ -81,7 +87,8 @@ def index():
         Computer.status == ComputerStatus.ONLINE.value
     )
     computers_online_perc: float = get_percentage(
-        total_computers_query.all(), computers_online_query.all()
+        total_computers_query.filter_by(activated=True).all(),
+        computers_online_query.all(),
     )
 
     computers_offline_query: Query = total_computers_query.filter(
@@ -89,7 +96,8 @@ def index():
         Computer.status != ComputerStatus.NOT_ACTIVATED.value.replace("_", " "),
     )
     computers_offline_perc: float = get_percentage(
-        total_computers_query.all(), computers_offline_query.all()
+        total_computers_query.filter_by(activated=True).all(),
+        computers_offline_query.all(),
     )
 
     # Primary computers information

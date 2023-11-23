@@ -61,7 +61,9 @@ def update_companies_locations_statistic():
         location.computers_online = online_location_computers
         location.computers_offline = offline_location_computers
 
-        if online_primary_computers:
+        if not location.activated:
+            location.status = None
+        elif online_primary_computers:
             location.status = LocationStatus.ONLINE
         elif online_location_computers:
             location.status = LocationStatus.ONLINE_PRIMARY_OFFLINE
