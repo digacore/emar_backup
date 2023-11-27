@@ -459,6 +459,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         return "ComputerView"
 
     list_template = "import-computer-to-dashboard.html"
+    can_create = False
 
     column_hide_backrefs = False
     column_list = [
@@ -1009,11 +1010,9 @@ class ComputerView(RowActionListMixin, MyModelView):
         if current_user.role == UserRole.ADMIN:
             if "delete" in self.action_disallowed_list:
                 self.action_disallowed_list.remove("delete")
-            self.can_create = True
         else:
             if "delete" not in self.action_disallowed_list:
                 self.action_disallowed_list.append("delete")
-            self.can_create = False
 
         match current_user.permission:
             case UserPermissionLevel.GLOBAL:
