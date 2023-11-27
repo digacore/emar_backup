@@ -282,7 +282,7 @@ def download_status(body: DownloadStatus):
         if body.last_saved_path:
             computer.last_saved_path = body.last_saved_path
 
-        computer.update()
+        computer.save()
 
         logger.info(
             "Download status for computer {} is updated to {}.",
