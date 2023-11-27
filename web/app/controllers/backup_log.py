@@ -55,6 +55,10 @@ def backup_log_on_download_success(
                 last_computer_log.update()
 
                 logger.debug(
+                    "<-----Computer status: {}----->", computer.download_status
+                )
+
+                logger.debug(
                     "Log on_download 2: Updated WITH_DOWNLOADS_LOG log for computer {}. Log ID: {}",
                     computer.computer_name,
                     last_computer_log.id,
@@ -681,7 +685,6 @@ def backup_log_on_download_error(computer: m.Computer):
 
         # If the last backup log has type NO_DOWNLOADS_PERIOD - update it
         elif last_computer_log.backup_log_type == m.BackupLogType.NO_DOWNLOADS_PERIOD:
-
             if computer.last_time_logs_enabled < last_computer_log.end_time:
                 last_computer_log.end_time = (
                     rounded_current_time + timedelta(hours=1) - timedelta(seconds=1)
