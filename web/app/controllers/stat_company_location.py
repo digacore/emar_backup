@@ -46,14 +46,16 @@ def update_companies_locations_statistic():
             Computer.location_id == location.id,
             Computer.activated.is_(True),
             Computer.last_download_time.is_not(None),
-            Computer.last_download_time >= current_east_time - timedelta(hours=1),
+            Computer.last_download_time
+            >= current_east_time - timedelta(hours=1, minutes=30),
         ).count()
         online_primary_computers = Computer.query.filter(
             Computer.location_id == location.id,
             Computer.activated.is_(True),
             Computer.device_role == DeviceRole.PRIMARY.value,
             Computer.last_download_time.is_not(None),
-            Computer.last_download_time >= current_east_time - timedelta(hours=1),
+            Computer.last_download_time
+            >= current_east_time - timedelta(hours=1, minutes=30),
         ).count()
 
         offline_location_computers = location.total_computers_offline

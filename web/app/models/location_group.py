@@ -137,7 +137,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
                 or_(
                     Computer.last_download_time.is_(None),
                     Computer.last_download_time
-                    < current_east_time - timedelta(hours=1),
+                    < current_east_time - timedelta(hours=1, minutes=30),
                 ),
             )
         ).count()
@@ -159,7 +159,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
                 or_(
                     Computer.last_download_time.is_(None),
                     Computer.last_download_time
-                    < current_east_time - timedelta(hours=1),
+                    < current_east_time - timedelta(hours=1, minutes=30),
                 ),
             )
         ).count()
@@ -186,7 +186,8 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
 
             online_computers = activated_computers_query.filter(
                 Computer.last_download_time.is_not(None),
-                Computer.last_download_time >= current_east_time - timedelta(hours=1),
+                Computer.last_download_time
+                >= current_east_time - timedelta(hours=1, minutes=30),
             ).all()
 
             if not online_computers:

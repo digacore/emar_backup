@@ -257,7 +257,8 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
             .filter(
                 Computer.id == self.id,
                 Computer.last_download_time.is_not(None),
-                Computer.last_download_time >= current_east_time - timedelta(hours=1),
+                Computer.last_download_time
+                >= current_east_time - timedelta(hours=1, minutes=30),
             )
             .first()
         ):
@@ -290,7 +291,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
                     and_(
                         cls.last_download_time.is_not(None),
                         cls.last_download_time
-                        >= current_east_time - timedelta(hours=1),
+                        >= current_east_time - timedelta(hours=1, minutes=30),
                     ),
                     ComputerStatus.ONLINE.value,
                 ),

@@ -1,12 +1,12 @@
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import date
 
 from .pcc_response_paging import Paging
 
 
 class FacilityActivationData(BaseModel):
-    activationDate: datetime
+    activationDate: date
     facId: int
 
 

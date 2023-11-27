@@ -29,7 +29,7 @@ def offset_to_est(dt_now: datetime.datetime):
     Returns:
         datetime.datetime: EST datetime
     """
-    est_norm_datetime = dt_now - datetime.timedelta(hours=4)
+    est_norm_datetime = dt_now - datetime.timedelta(hours=5)
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
@@ -426,7 +426,7 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
 
     # Check if new downloaded backup is present in the emar_backups.zip
     searching_result = re.search(r"(emarbackup_.*)$", tempdir)
-    new_backup_name = searching_result.group(0) if searching_result else ''
+    new_backup_name = searching_result.group(0) if searching_result else ""
 
     if not new_backup_name in dirs:
         logger.error(
@@ -472,7 +472,11 @@ def sftp_check_files_for_update_and_load(credentials):
                         "special_status": IP_BLACKLISTED,
                     },
                 )
-                logger.error("Computer cannot connect to sftp: {}, computer:{}", e, credentials["computer_name"])
+                logger.error(
+                    "Computer cannot connect to sftp: {}, computer:{}",
+                    e,
+                    credentials["computer_name"],
+                )
                 raise SSHConnectionError("Can't connect to sftp server")
             else:
                 logger.error("Exception occurred while connecting to sftp: {}", e)
@@ -784,7 +788,6 @@ def create_desktop_icon():
         shortcut.WorkingDirectory = wDir
         shortcut.Targetpath = target
         shortcut.save()
-
 
 
 @logger.catch

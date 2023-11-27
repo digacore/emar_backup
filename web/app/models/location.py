@@ -235,7 +235,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
             Computer.activated.is_(True),
             or_(
                 Computer.last_download_time.is_(None),
-                Computer.last_download_time < time - timedelta(hours=1),
+                Computer.last_download_time < time - timedelta(hours=1, minutes=30),
             ),
         ).count()
 
@@ -257,7 +257,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
             Computer.device_role == DeviceRole.PRIMARY,
             or_(
                 Computer.last_download_time.is_(None),
-                Computer.last_download_time < time - timedelta(hours=1),
+                Computer.last_download_time < time - timedelta(hours=1, minutes=30),
             ),
         ).count()
 

@@ -145,6 +145,7 @@ def create_app(environment="development"):
 
     # Flask-Mail
     mail.init_app(app)
+    app.extensions['mail'].debug = 0
 
     # Flask-Admin
     admin.init_app(

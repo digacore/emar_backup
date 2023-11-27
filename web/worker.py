@@ -30,21 +30,21 @@ app.config_from_object(celery_config)
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
     # Critical alert when location offline - run every hour
-    interval = crontab(minute=0)
-    entry = RedBeatSchedulerEntry(
-        "critical_alert_email", "worker.critical_alert_email", interval, app=app
-    )
-    entry.save()
+    # interval = crontab(minute=0)
+    # entry = RedBeatSchedulerEntry(
+    #     "critical_alert_email", "worker.critical_alert_email", interval, app=app
+    # )
+    # entry.save()
 
     # Alert when primary computer is down - run every hour
-    interval = crontab(minute=0)
-    entry = RedBeatSchedulerEntry(
-        "primary_computer_alert_email",
-        "worker.primary_computer_alert_email",
-        interval,
-        app=app,
-    )
-    entry.save()
+    # interval = crontab(minute=0)
+    # entry = RedBeatSchedulerEntry(
+    #     "primary_computer_alert_email",
+    #     "worker.primary_computer_alert_email",
+    #     interval,
+    #     app=app,
+    # )
+    # entry.save()
 
     # Send daily summary - run every day at 11:00 AM (EST)
     interval = crontab(hour=11, minute=0)
@@ -56,7 +56,7 @@ def setup_periodic_tasks(sender, **kwargs):
     # Send weekly summary - run every Monday at 11:00 AM (EST)
     interval = crontab(hour=11, minute=0, day_of_week="mon")
     entry = RedBeatSchedulerEntry(
-        "daily_summary_email", "worker.daily_summary_email", interval, app=app
+        "weekly_summary_email", "worker.weekly_summary_email", interval, app=app
     )
     entry.save()
 
