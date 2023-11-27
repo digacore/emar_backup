@@ -287,7 +287,7 @@ def download_status(body: DownloadStatus):
         logger.info(
             "Download status for computer {} is updated to {}.",
             computer.computer_name,
-            body.download_status,
+            computer.download_status,
         )
 
         if computer.logs_enabled and body.download_status == "error":
