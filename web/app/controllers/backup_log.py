@@ -55,10 +55,6 @@ def backup_log_on_download_success(
                 last_computer_log.update()
 
                 logger.debug(
-                    "<-----Computer status: {}----->", computer.download_status
-                )
-
-                logger.debug(
                     "Log on_download 2: Updated WITH_DOWNLOADS_LOG log for computer {}. Log ID: {}",
                     computer.computer_name,
                     last_computer_log.id,
