@@ -681,7 +681,6 @@ def backup_log_on_download_error(computer: m.Computer):
 
         # If the last backup log has type NO_DOWNLOADS_PERIOD - update it
         elif last_computer_log.backup_log_type == m.BackupLogType.NO_DOWNLOADS_PERIOD:
-
             if computer.last_time_logs_enabled < last_computer_log.end_time:
                 last_computer_log.end_time = (
                     rounded_current_time + timedelta(hours=1) - timedelta(seconds=1)

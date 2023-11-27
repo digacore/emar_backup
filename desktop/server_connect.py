@@ -85,7 +85,7 @@ class AppError(Exception):
     pass
 
 
-class NoSpecialStatusError(Exception):
+class SSHConnectionError(Exception):
     pass
 
 
@@ -368,7 +368,10 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
         [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
         stdout=PIPE,
     )
-    raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
+    if proc.stdout:
+        raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
+    else:
+        raw_list_stdout = []
     # NOTE f.split("Path = ")[1] is folder name
     # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
     files = {
@@ -403,7 +406,10 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
         [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
         stdout=PIPE,
     )
-    raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
+    if proc.stdout:
+        raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
+    else:
+        raw_list_stdout = []
     # NOTE f.split("Path = ")[1] is folder name
     # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
     files = {
@@ -419,7 +425,8 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
     pprint.pprint(f"after delete dirs:\n{ddirs}")
 
     # Check if new downloaded backup is present in the emar_backups.zip
-    new_backup_name = re.search(r"(emarbackup_.*)$", tempdir).group(0)
+    searching_result = re.search(r"(emarbackup_.*)$", tempdir)
+    new_backup_name = searching_result.group(0) if searching_result else ''
 
     if not new_backup_name in dirs:
         logger.error(
@@ -465,7 +472,8 @@ def sftp_check_files_for_update_and_load(credentials):
                         "special_status": IP_BLACKLISTED,
                     },
                 )
-                return offset_to_est(datetime.datetime.utcnow())
+                logger.error("Computer cannot connect to sftp: {}, computer:{}", e, credentials["computer_name"])
+                raise SSHConnectionError("Can't connect to sftp server")
             else:
                 logger.error("Exception occurred while connecting to sftp: {}", e)
                 raise AppError("Can't connect to sftp server")
@@ -634,15 +642,6 @@ def sftp_check_files_for_update_and_load(credentials):
             response.status_code,
         )
 
-        requests.post(
-            f'{credentials["manager_host"]}/special_status',
-            json={
-                "computer_name": credentials["computer_name"],
-                "identifier_key": credentials["identifier_key"],
-                "special_status": "ok",
-            },
-        )
-
     return offset_to_est(datetime.datetime.utcnow())
 
 
@@ -700,20 +699,6 @@ def download_file_from_pcc(credentials):
         last_downloaded=str(download_dir_path),
         last_saved_path=last_saved_path,
     )
-
-    try:
-        res = requests.post(
-            urljoin(credentials["manager_host"], "special_status"),
-            json={
-                "computer_name": credentials["computer_name"],
-                "identifier_key": credentials["identifier_key"],
-                "special_status": "ok",
-            },
-        )
-        res.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        logger.error("Exception occurred while sending special status: {}", e)
-        raise NoSpecialStatusError("Can't send special status to server")
 
     logger.info("<-------Finish downloading backup file from PCC API------->")
 
@@ -801,31 +786,6 @@ def create_desktop_icon():
         shortcut.save()
 
 
-# def download_file_from_pcc(credentials):
-#     """Retrive access token and certs from Web and download files from PCC API"""
-#     # Get access token
-#     access_token_response = requests.post(
-#         f'{credentials["manager_host"]}/get_pcc_access_token',
-#         json={
-#             "computer_name": credentials["computer_name"],
-#             "identifier_key": credentials["identifier_key"],
-#         },
-#     )
-
-#     # Get certs
-#     certs_response = requests.post(
-#         f'{credentials["manager_host"]}/get_ssl_cert',
-#         json={
-#             "computer_name": credentials["computer_name"],
-#             "identifier_key": credentials["identifier_key"],
-#         },
-#     )
-
-#     # Get backup files
-#     backup_files_response = requests.post(
-#         "https://connect2.pointclickcare.com/api/public/preview1/orgs/11848592-809a-42f4-82e3-5ce14964a007/facs/22/backup-files"
-#     )
-
 
 @logger.catch
 def main_func():
@@ -847,8 +807,6 @@ def main_func():
         except (AppError, FileNotFoundError):
             update_download_status("error", credentials)
             logger.info("Downloading process interrupted")
-        except NoSpecialStatusError:
-            logger.info("Downloading process succed but special status not sent")
 
         # user = getpass.getuser()
 

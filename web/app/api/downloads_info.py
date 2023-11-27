@@ -283,12 +283,12 @@ def download_status(body: DownloadStatus):
             computer.last_saved_path = body.last_saved_path
 
         computer.update()
-        # TODO enable if required
-        # logger.info(
-        #     "Download status for computer {} is updated to {}.",
-        #     computer.computer_name,
-        #     body.download_status,
-        # )
+
+        logger.info(
+            "Download status for computer {} is updated to {}.",
+            computer.computer_name,
+            computer.download_status,
+        )
 
         if computer.logs_enabled and body.download_status == "error":
             backup_log_on_download_error(computer)
