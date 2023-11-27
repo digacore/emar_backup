@@ -18,6 +18,7 @@ from app.models.utils import (
     RowActionListMixin,
     SoftDeleteMixin,
     QueryWithSoftDelete,
+    ActivatedMixin,
 )
 
 from app.utils import MyModelView
@@ -82,7 +83,7 @@ class UserRole(enum.Enum):
     USER = "USER"
 
 
-class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin):
+class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     __tablename__ = "users"
 
     query_class = QueryWithSoftDelete
@@ -98,7 +99,6 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin):
     username = db.Column(db.String(64), unique=True, nullable=False)
     email = db.Column(db.String(256), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    activated = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_online = db.Column(db.DateTime)
 
@@ -139,6 +139,22 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin):
         self.is_deleted = True
         self.deleted_at = datetime.utcnow()
 
+        if commit:
+            db.session.commit()
+        return self
+
+    def activate(self, commit: bool = True):
+        self.activated = True
+        self.deactivated_at = None
+        if commit:
+            db.session.commit()
+        return self
+
+    def deactivate(
+        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
+    ):
+        self.activated = False
+        self.deactivated_at = deactivated_at
         if commit:
             db.session.commit()
         return self
@@ -356,6 +372,38 @@ class UserView(RowActionListMixin, MyModelView):
             Form instance
         """
 
+        # Check that selected company is active
+        if form.activated.data:
+            company = Company.query.filter_by(id=form.company.data.id).first()
+            if not company.activated:
+                flash(
+                    gettext(
+                        "Failed to create record. Company %(company)s is deactivated.",
+                        company=company.name,
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Company {} is deactivated.", company.name
+                )
+                return False
+
+        # If user has Location level permission, check that selected location is active
+        if not form.location_group.data and form.location.data:
+            location = Location.query.filter_by(id=form.location.data[0].id).first()
+            if not location.activated:
+                flash(
+                    gettext(
+                        "Failed to create record. Location %(location)s is deactivated.",
+                        location=location.name,
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Location {} is deactivated.",
+                    location.name,
+                )
+
         # Check if there is deleted user with such email and username
         deleted_user = (
             User.query.with_deleted()
@@ -376,14 +424,24 @@ class UserView(RowActionListMixin, MyModelView):
                 model.is_deleted = False
                 model.deleted_at = None
                 model.created_at = original_created_at
+
+                if form.activated.data:
+                    model.deactivated_at = None
+                else:
+                    model.deactivated_at = datetime.utcnow()
+
                 self._on_model_change(form, model, True)
                 self.session.commit()
 
-                logger.info(f"User {model.username} was restored.")
+                logger.info("User {} was restored.", model.username)
             else:
                 model = self.build_new_instance()
 
                 form.populate_obj(model)
+
+                if not form.activated.data:
+                    model.deactivated_at = datetime.utcnow()
+
                 self.session.add(model)
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -402,6 +460,71 @@ class UserView(RowActionListMixin, MyModelView):
             self.after_model_change(form, model, True)
 
         return model
+
+    def update_model(self, form, model):
+        """
+        Update model from form.
+
+        :param form:
+            Form instance
+        :param model:
+            Model instance
+        """
+        # Check that selected company is active
+        if form.activated.data:
+            company = Company.query.filter_by(id=form.company.data.id).first()
+            if not company.activated:
+                flash(
+                    gettext(
+                        "Failed to update record. Company %(company)s is deactivated.",
+                        company=company.name,
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Company {} is deactivated.", company.name
+                )
+                return False
+
+        # If user has Location level permission, check that selected location is active
+        if not form.location_group.data and form.location.data:
+            location = Location.query.filter_by(id=form.location.data[0].id).first()
+            if not location.activated:
+                flash(
+                    gettext(
+                        "Failed to update record. Location %(location)s is deactivated.",
+                        location=location.name,
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Location {} is deactivated.",
+                    location.name,
+                )
+
+        try:
+            # If user was deactivated
+            if not form.activated.data and form.activated.data != model.activated:
+                model.deactivated_at = datetime.utcnow()
+
+            form.populate_obj(model)
+            self._on_model_change(form, model, False)
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to update record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to update record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
 
     def delete_model(self, model):
         """

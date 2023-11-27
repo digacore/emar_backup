@@ -40,10 +40,17 @@ def send_critical_alert():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Select all the locations (except connected to trial companies)
+    # Select all the active locations (except connected to trial and deactivated companies)
     locations: list[m.Location] = (
-        m.Location.query.join(m.Company).filter(m.Company.is_trial.is_(False)).all()
+        m.Location.query.join(m.Company)
+        .filter(
+            m.Location.activated.is_(True),
+            m.Company.is_trial.is_(False),
+            m.Company.activated.is_(True),
+        )
+        .all()
     )
+
     for location in locations:
         location_computers_query: Query = m.Computer.query.filter(
             m.Computer.location_id == location.id,
@@ -76,9 +83,11 @@ def send_critical_alert():
         ):
             continue
 
+        # Select all the company active users
         connected_users: list[m.User] = []
-        all_company_users: list[m.User] = m.User.query.filter_by(
-            company_id=location.company_id
+        all_company_users: list[m.User] = m.User.query.filter(
+            m.User.activated.is_(True),
+            m.User.company_id == location.company_id,
         ).all()
 
         for user in all_company_users:
@@ -180,8 +189,10 @@ def send_primary_computer_alert():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Get all the primary computers which downloaded last backup more than 2 hour ago and not more than 3 hours ago
+    # Get all the active primary computers which downloaded last backup more than 2 hour ago
+    # and not more than 3 hours ago
     all_primary_computers: list[m.Computer] = m.Computer.query.filter(
+        m.Computer.activated.is_(True),
         m.Computer.device_role == m.DeviceRole.PRIMARY,
         m.Computer.last_download_time.between(
             current_east_time - timedelta(hours=3),
@@ -193,10 +204,10 @@ def send_primary_computer_alert():
         if not computer.location or not computer.company or computer.company.is_trial:
             continue
 
-        # Get all the users connected to the computer
+        # Get all the active users connected to the computer
         connected_users: list[m.User] = []
         all_company_users: list[m.User] = m.User.query.filter(
-            m.User.company_id == computer.company_id
+            m.User.activated.is_(True), m.User.company_id == computer.company_id
         ).all()
 
         for user in all_company_users:
@@ -275,6 +286,9 @@ def company_users_by_permission(
     location_level_users: dict[str, m.User] = {}
 
     for user in company_users:
+        if not user.activated:
+            continue
+
         match user.permission:
             case m.UserPermissionLevel.COMPANY:
                 company_level_users.append(user)
@@ -467,10 +481,11 @@ def send_daily_summary():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Select all the companies except global and trial
+    # Select all the companies except global, trial and deactivated
     companies: list[m.Company] = m.Company.query.filter(
         m.Company.is_global.is_(False),
         m.Company.is_trial.is_(False),
+        m.Company.activated.is_(True),
     ).all()
 
     for company in companies:
@@ -545,9 +560,10 @@ def send_weekly_summary():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Select all the companies except global
+    # Select all the companies except global and deactivated
     companies: list[m.Company] = m.Company.query.filter(
-        m.Company.is_global.is_(False)
+        m.Company.is_global.is_(False),
+        m.Company.activated.is_(True),
     ).all()
 
     for company in companies:

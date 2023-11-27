@@ -12,7 +12,7 @@ class ItemStatus(enum.Enum):
     """Status for a company/location/computer"""
 
     ACTIVE = "ACTIVE"
-    NOT_ACTIVATED = "NOT_ACTIVATED"
+    DEACTIVATED = "DEACTIVATED"
     DELETED = "DELETED"
 
 
@@ -50,7 +50,7 @@ def create_company_billing_report(
         0,
         0,
         0,
-        3,
+        4,
         title,
         bold_centered_format,
     )
@@ -70,6 +70,12 @@ def create_company_billing_report(
         1,
         3,
         f"Total alerts: {company.total_alert_events(from_date, to_date)}",
+        centered_format,
+    )
+    worksheet.write(
+        1,
+        4,
+        f"Total API Calls: {company.total_pcc_api_calls(from_date, to_date)}",
         centered_format,
     )
 
@@ -95,6 +101,14 @@ def create_company_billing_report(
             .order_by(m.Computer.computer_name)
         )
 
+        if location.is_deleted:
+            location_status = ItemStatus.DELETED.value.capitalize()
+        else:
+            if location.activated:
+                location_status = ItemStatus.ACTIVE.value.capitalize()
+            else:
+                location_status = ItemStatus.DEACTIVATED.value.capitalize()
+
         worksheet.write(start_row, 0, location.name, centered_format)
         worksheet.write(
             start_row,
@@ -117,9 +131,7 @@ def create_company_billing_report(
         worksheet.write(
             start_row,
             4,
-            ItemStatus.DELETED.value.capitalize()
-            if location.is_deleted
-            else ItemStatus.ACTIVE.value.capitalize(),
+            location_status,
             centered_format,
         )
 
@@ -132,9 +144,7 @@ def create_company_billing_report(
                 if computer.activated:
                     computer_status = ItemStatus.ACTIVE.value.capitalize()
                 else:
-                    computer_status = (
-                        ItemStatus.NOT_ACTIVATED.value.capitalize().replace("_", " ")
-                    )
+                    computer_status = ItemStatus.DEACTIVATED.value.capitalize()
 
             worksheet.write(start_row, 0, "", centered_format)
             worksheet.write(start_row, 1, computer.computer_name, centered_format)
@@ -250,6 +260,15 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
             .filter_by(company_id=company.id)
             .order_by(m.Location.name)
         )
+
+        if company.is_deleted:
+            company_status = ItemStatus.DELETED.value.capitalize()
+        else:
+            if company.activated:
+                company_status = ItemStatus.ACTIVE.value.capitalize()
+            else:
+                company_status = ItemStatus.DEACTIVATED.value.capitalize()
+
         total_company_computers = (
             m.Computer.query.with_deleted().filter_by(company_id=company.id).count()
         )
@@ -278,9 +297,7 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
         worksheet.write(
             start_row,
             5,
-            ItemStatus.DELETED.value.capitalize()
-            if company.is_deleted
-            else ItemStatus.ACTIVE.value.capitalize(),
+            company_status,
             centered_format,
         )
 
@@ -292,6 +309,15 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
                 .filter_by(location_id=location.id)
                 .order_by(m.Computer.computer_name)
             )
+
+            if location.is_deleted:
+                location_status = ItemStatus.DELETED.value.capitalize()
+            else:
+                if location.activated:
+                    location_status = ItemStatus.ACTIVE.value.capitalize()
+                else:
+                    location_status = ItemStatus.DEACTIVATED.value.capitalize()
+
             worksheet.write(start_row, 0, "", centered_format)
             worksheet.write(start_row, 1, location.name, centered_format)
             worksheet.write(
@@ -315,9 +341,7 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
             worksheet.write(
                 start_row,
                 5,
-                ItemStatus.DELETED.value.capitalize()
-                if location.is_deleted
-                else ItemStatus.ACTIVE.value.capitalize(),
+                location_status,
                 centered_format,
             )
 
@@ -330,11 +354,7 @@ def create_general_billing_report(from_date: datetime, to_date: datetime) -> io.
                     if computer.activated:
                         computer_status = ItemStatus.ACTIVE.value.capitalize()
                     else:
-                        computer_status = (
-                            ItemStatus.NOT_ACTIVATED.value.capitalize().replace(
-                                "_", " "
-                            )
-                        )
+                        computer_status = ItemStatus.DEACTIVATED.value.capitalize()
 
                 worksheet.write(start_row, 0, "", centered_format)
                 worksheet.write(start_row, 1, "", centered_format)

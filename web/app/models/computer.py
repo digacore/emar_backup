@@ -1,4 +1,5 @@
 import enum
+from copy import copy
 from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
@@ -14,7 +15,13 @@ from flask import flash
 from flask_login import current_user
 
 from app import db
-from app.models.utils import ModelMixin, RowActionListMixin
+from app.models.utils import (
+    ModelMixin,
+    RowActionListMixin,
+    ActivatedMixin,
+    SoftDeleteMixin,
+    QueryWithSoftDelete,
+)
 from app.utils import MyModelView
 from app.logger import logger
 
@@ -23,7 +30,6 @@ from .user import UserPermissionLevel, UserRole
 from .company import Company
 from .location import Location
 from .system_log import SystemLogType
-from .utils import SoftDeleteMixin, QueryWithSoftDelete
 
 from config import BaseConfig as CFG
 
@@ -53,7 +59,7 @@ class ComputerStatus(enum.Enum):
     NOT_ACTIVATED = "NOT_ACTIVATED"
 
 
-class Computer(db.Model, ModelMixin, SoftDeleteMixin):
+class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     __tablename__ = "computers"
 
     # NOTE this is needed to filter soft deleted records
@@ -93,7 +99,6 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     # Place where backup file was saved last time (directory inside emar_backups.zip)
     last_saved_path = db.Column(db.String(256))
     files_checksum = db.Column(JSON)
-    activated = db.Column(db.Boolean, default=False)
 
     logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -153,6 +158,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
     def delete(self, commit: bool = True):
         """Soft delete computer"""
         self.activated = False
+        self.deactivated_at = datetime.utcnow()
         self.logs_enabled = False
         self.last_time_logs_disabled = datetime.utcnow()
         self.is_deleted = True
@@ -180,10 +186,32 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin):
         self.last_downloaded = None
         self.last_saved_path = None
         self.files_checksum = "{}"
-        self.logs_enabled = True
-        self.last_time_logs_enabled = datetime.utcnow()
         self.computer_ip = None
         db.session.commit()
+        return self
+
+    def activate(self, commit: bool = True):
+        """Activate computer"""
+        self.activated = True
+        self.deactivated_at = None
+        self.logs_enabled = True
+        self.last_time_logs_enabled = datetime.utcnow()
+
+        if commit:
+            db.session.commit()
+        return self
+
+    def deactivate(
+        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
+    ):
+        """Deactivate computer"""
+        self.activated = False
+        self.deactivated_at = deactivated_at
+        self.logs_enabled = False
+        self.last_time_logs_disabled = deactivated_at
+
+        if commit:
+            db.session.commit()
         return self
 
     @hybrid_property
@@ -458,6 +486,35 @@ class ComputerView(RowActionListMixin, MyModelView):
         "computer_ip",
     ]
 
+    # To set order of the fields in form
+    form_columns = (
+        "company",
+        "location",
+        "computer_name",
+        "activated",
+        "logs_enabled",
+        "sftp_host",
+        "sftp_username",
+        "sftp_password",
+        "sftp_folder_path",
+        "folder_password",
+        "type",
+        "device_type",
+        "device_role",
+        "msi_version",
+        "current_msi_version",
+        "download_status",
+        "last_download_time",
+        "last_time_online",
+        "identifier_key",
+        "manager_host",
+        "last_downloaded",
+        "last_saved_path",
+        "files_checksum",
+        "created_at",
+        "computer_ip",
+    )
+
     form_excluded_columns = (
         "log_events",
         "backup_logs",
@@ -466,6 +523,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "download_backup_calls",
         "is_deleted",
         "deleted_at",
+        "deactivated_at",
     )
 
     column_searchable_list = searchable_sortable_list
@@ -584,9 +642,6 @@ class ComputerView(RowActionListMixin, MyModelView):
     def edit_form(self, obj=None):
         form = super().edit_form(obj)
 
-        # Remember the prev value of the field logs_enabled
-        self.logs_enabled_prev_value = obj.logs_enabled
-
         # Put only available for user companies and locations in the select field
         form.company.query_factory = self._available_companies
 
@@ -599,13 +654,6 @@ class ComputerView(RowActionListMixin, MyModelView):
 
         return form
 
-    def on_model_change(self, form, model, is_created):
-        if not is_created and self.logs_enabled_prev_value != model.logs_enabled:
-            if model.logs_enabled:
-                model.last_time_logs_enabled = datetime.utcnow()
-            else:
-                model.last_time_logs_disabled = datetime.utcnow()
-
     def create_model(self, form):
         """
         Create model from form.
@@ -613,7 +661,24 @@ class ComputerView(RowActionListMixin, MyModelView):
         :param form:
             Form instance
         """
-        # Check that selected location has appropriate amount of activated computers
+        # Check that selected company is activated
+        if form.company.data and form.activated.data:
+            company = Company.query.filter_by(id=form.company.data.id).first()
+
+            if not company.activated:
+                flash(
+                    gettext(
+                        "Failed to create record. Selected company is not activated."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Selected company is not activated."
+                )
+
+                return False
+
+        # Check that selected location is active and has appropriate amount of activated computers
         if form.activated.data and form.location.data:
             location = Location.query.filter_by(id=form.location.data.id).first()
             location_activated_computers = Computer.query.filter_by(
@@ -625,7 +690,22 @@ class ComputerView(RowActionListMixin, MyModelView):
                     gettext("Failed to create record. Location doesn't exist."),
                     "error",
                 )
-                logger.error("Failed to create record. Location doesn't exist.")
+                logger.error(
+                    "Failed to create record. Selected location doesn't exist."
+                )
+
+                return False
+
+            if not location.activated:
+                flash(
+                    gettext(
+                        "Failed to create record. Selected location is not activated."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to create record. Selected location is not activated."
+                )
 
                 return False
 
@@ -684,14 +764,31 @@ class ComputerView(RowActionListMixin, MyModelView):
                 model.is_deleted = False
                 model.deleted_at = None
                 model.created_at = original_created_at
+
+                if form.activated.data:
+                    model.deactivated_at = None
+                else:
+                    model.deactivated_at = datetime.utcnow()
+
+                if form.logs_enabled.data:
+                    model.last_time_logs_enabled = datetime.utcnow()
+
                 self._on_model_change(form, model, True)
                 self.session.commit()
 
-                logger.info(f"Computer {model.computer_name} was restored.")
+                logger.info("Computer {} was restored.", model.computer_name)
             else:
                 model = self.build_new_instance()
 
                 form.populate_obj(model)
+
+                if not form.activated.data:
+                    model.deactivated_at = datetime.utcnow()
+
+                if not form.logs_enabled.data:
+                    model.last_time_logs_enabled = None
+                    model.last_time_logs_disabled = datetime.utcnow()
+
                 self.session.add(model)
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -720,6 +817,23 @@ class ComputerView(RowActionListMixin, MyModelView):
         :param model:
             Model instance
         """
+        # Check that selected company is activated
+        if form.company.data and form.activated.data:
+            company = Company.query.filter_by(id=form.company.data.id).first()
+
+            if not company.activated:
+                flash(
+                    gettext(
+                        "Failed to update record. Selected company is not activated."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Selected company is not activated."
+                )
+
+                return False
+
         # Check that selected location has appropriate amount of active computers
         if form.activated.data and form.location.data:
             location = Location.query.filter_by(id=form.location.data.id).first()
@@ -733,6 +847,19 @@ class ComputerView(RowActionListMixin, MyModelView):
                     "error",
                 )
                 logger.error("Failed to update record. Location doesn't exist.")
+
+                return False
+
+            if not location.activated:
+                flash(
+                    gettext(
+                        "Failed to update record. Selected location is not activated."
+                    ),
+                    "error",
+                )
+                logger.error(
+                    "Failed to update record. Selected location is not activated."
+                )
 
                 return False
 
@@ -773,8 +900,23 @@ class ComputerView(RowActionListMixin, MyModelView):
                 return False
 
         try:
+            model_copy = copy(model)
+
             form.populate_obj(model)
             self._on_model_change(form, model, False)
+
+            if form.logs_enabled.data != model_copy.logs_enabled:
+                if form.logs_enabled.data:
+                    model.last_time_logs_enabled = datetime.utcnow()
+                else:
+                    model.last_time_logs_disabled = datetime.utcnow()
+
+            if form.activated.data != model_copy.activated:
+                if form.activated.data:
+                    model.activate(commit=False)
+                else:
+                    model.deactivate(commit=False)
+
             self.session.commit()
         except Exception as ex:
             if not self.handle_view_exception(ex):
@@ -782,7 +924,7 @@ class ComputerView(RowActionListMixin, MyModelView):
                     gettext("Failed to update record. %(error)s", error=str(ex)),
                     "error",
                 )
-                logger.exception("Failed to update record.")
+                logger.error("Failed to update record.")
 
             self.session.rollback()
 

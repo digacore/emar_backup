@@ -2,7 +2,16 @@ import io
 from zoneinfo import ZoneInfo
 from datetime import datetime
 
-from flask import jsonify, Blueprint, abort, request, send_file
+from flask import (
+    jsonify,
+    Blueprint,
+    abort,
+    request,
+    send_file,
+    flash,
+    redirect,
+    url_for,
+)
 from flask_login import login_required, current_user
 
 from app import models as m
@@ -173,7 +182,9 @@ def company_billing_report(company_id: int):
     # Only global users can access this information
     if current_user.permission != m.UserPermissionLevel.GLOBAL:
         logger.error(
-            f"User {current_user.username} tried to generate billing report for company {company_id}"
+            "User {} tried to generate billing report for company {}",
+            current_user.username,
+            company_id,
         )
         abort(403, "You don't have access to this information.")
 
@@ -212,3 +223,53 @@ def company_billing_report(company_id: int):
         as_attachment=True,
         download_name=f"Report_{company.name}.xlsx",
     )
+
+
+@company_blueprint.route("/<int:company_id>/activation", methods=["GET"])
+@login_required
+def company_activation(company_id: int):
+    """
+    Activates or deactivates company
+
+    Args:
+        company_id (int): company id
+    """
+    # Check if the user is global admin
+    if (
+        current_user.permission != m.UserPermissionLevel.GLOBAL
+        or current_user.role != m.UserRole.ADMIN
+    ):
+        logger.error(
+            "User {} tried to activate/deactivate company {}",
+            current_user.username,
+            company_id,
+        )
+
+        abort(403, "You don't have access to this option.")
+
+    company: m.Company = m.Company.query.filter_by(id=company_id).first()
+
+    # Check if company exists
+    if not company:
+        logger.error(f"Company with id {company_id} not found")
+        abort(404, "Company not found.")
+
+    should_activate = request.args.get(
+        "activate", type=lambda value: True if value == "True" else False
+    )
+
+    # Check if activation parameter is provided
+    if should_activate is None:
+        logger.error("No activation parameter provided")
+        flash("No activation parameter provided.", "danger")
+
+        return redirect(url_for("company.edit_view", id=company_id))
+
+    if should_activate:
+        company.activate(commit=True)
+        flash(f"Company {company.name} was activated successfully.", "success")
+    else:
+        company.deactivate(commit=True)
+        flash(f"Company {company.name} was deactivated successfully.", "success")
+
+    return redirect(url_for("company.edit_view", id=company_id))

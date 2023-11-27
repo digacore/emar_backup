@@ -66,7 +66,10 @@ def login():
                 response.set_cookie("refresh_jwt_token", refresh_jwt_token)
                 return response
 
-            flash("This user is deactivated", "danger")
+            flash(
+                "This user is deactivated. Contact sales@emarvault.com to activate the account!",
+                "danger",
+            )
             return render_template("auth/login.html", form=form)
 
         flash("Wrong user ID or password.", "danger")
@@ -175,7 +178,10 @@ def callback():
         )
         user.save()
     if not user.activated:
-        flash("This user is deactivated", "danger")
+        flash(
+            "This user is deactivated. Contact sales@emarvault.com to activate the account!",
+            "danger",
+        )
         return redirect(url_for("auth.login"))
 
     # Begin user session by logging the user in
@@ -257,7 +263,10 @@ def auth_response():
         )
         user.save()
     if not user.activated:
-        flash("This user is deactivated", "danger")
+        flash(
+            "This user is deactivated. Contact sales@emarvault.com to activate the account!",
+            "danger",
+        )
         return redirect(url_for("auth.login"))
 
     # Begin user session by logging the user in

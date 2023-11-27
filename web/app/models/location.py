@@ -22,6 +22,7 @@ from app.models.utils import (
     RowActionListMixin,
     SoftDeleteMixin,
     QueryWithSoftDelete,
+    ActivatedMixin,
 )
 from app.utils import MyModelView
 from app.logger import logger
@@ -37,7 +38,7 @@ class LocationStatus(enum.Enum):
     OFFLINE = "OFFLINE"
 
 
-class Location(db.Model, ModelMixin, SoftDeleteMixin):
+class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     __tablename__ = "locations"
 
     __table_args__ = (db.UniqueConstraint("company_id", "name"),)
@@ -129,6 +130,47 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin):
         self.computers_offline = 0
         self.is_deleted = False
         self.deleted_at = None
+
+        if commit:
+            db.session.commit()
+        return self
+
+    def activate(self, commit: bool = True):
+        # Activate all the location computers (if they were deactivated with location)
+        for computer in self.computers:
+            if computer.deactivated_at == self.deactivated_at:
+                computer.activate(commit=False)
+
+        # Activate all the location users (if they were deactivated with location)
+        for user in self.users:
+            if (
+                user.permission.value == "LOCATION"
+                and user.deactivated_at == self.deactivated_at
+            ):
+                user.activate(commit=False)
+
+        self.activated = True
+        self.deactivated_at = None
+
+        if commit:
+            db.session.commit()
+        return self
+
+    def deactivate(
+        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
+    ):
+        # Deactivate all the location active computers
+        for computer in self.computers:
+            if computer.activated:
+                computer.deactivate(deactivated_at=deactivated_at, commit=False)
+
+        # Deactivate all the location active users
+        for user in self.users:
+            if user.permission.value == "LOCATION" and user.activated:
+                user.deactivate(deactivated_at=deactivated_at, commit=False)
+
+        self.activated = False
+        self.deactivated_at = deactivated_at
 
         if commit:
             db.session.commit()
@@ -336,6 +378,7 @@ class LocationView(RowActionListMixin, MyModelView):
     form_columns = (
         "company",
         "name",
+        "activated",
         "default_sftp_path",
         "computers_per_location",
         "computers_online",
@@ -470,6 +513,19 @@ class LocationView(RowActionListMixin, MyModelView):
             )
             return False
 
+        # Check that location can be activated
+        if form.activated.data and not company.activated:
+            flash(
+                gettext(
+                    "Could not activate location. Selected company is not activated."
+                ),
+                "error",
+            )
+            logger.error(
+                "Location can't be activated because company is not activated."
+            )
+            return False
+
         try:
             if deleted_location:
                 # Restore location
@@ -481,6 +537,12 @@ class LocationView(RowActionListMixin, MyModelView):
                 model.created_at = original_created_at
                 model.created_from_pcc = False
                 model.group = [group_data] if group_data else []
+
+                if form.activate.data:
+                    model.deactivated_at = None
+                else:
+                    model.deactivated_at = datetime.utcnow()
+
                 self._on_model_change(form, model, True)
                 self.session.commit()
 
@@ -490,6 +552,10 @@ class LocationView(RowActionListMixin, MyModelView):
 
                 form.populate_obj(model)
                 model.group = [group_data] if group_data else []
+
+                if not form.activated.data:
+                    model.deactivated_at = datetime.utcnow()
+
                 self.session.add(model)
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -526,6 +592,19 @@ class LocationView(RowActionListMixin, MyModelView):
             )
             return False
 
+        # Check that location can be activated
+        if form.activated.data and not company.activated:
+            flash(
+                gettext(
+                    "Could not activate location. Selected company is not activated."
+                ),
+                "error",
+            )
+            logger.error(
+                "Location can't be activated because company is not activated."
+            )
+            return False
+
         # Check that location can be connected to selected company
         if company.is_trial and model.total_computers >= 1:
             flash(
@@ -541,7 +620,30 @@ class LocationView(RowActionListMixin, MyModelView):
             )
             return False
 
-        return super().update_model(form, model)
+        try:
+            if form.activated.data and form.activated.data != model.activated:
+                model.activate(commit=False)
+            elif not form.activated.data and form.activated.data != model.activated:
+                model.deactivate(commit=False)
+
+            form.populate_obj(model)
+            self._on_model_change(form, model, False)
+            self.session.commit()
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                flash(
+                    gettext("Failed to update record. %(error)s", error=str(ex)),
+                    "error",
+                )
+                logger.error("Failed to update record.")
+
+            self.session.rollback()
+
+            return False
+        else:
+            self.after_model_change(form, model, False)
+
+        return True
 
     def delete_model(self, model):
         """

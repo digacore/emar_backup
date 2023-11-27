@@ -37,6 +37,13 @@ class SoftDeleteMixin(object):
         return self
 
 
+class ActivatedMixin(object):
+    activated = db.Column(
+        db.Boolean, default=True, server_default=sa.sql.true(), nullable=False
+    )
+    deactivated_at = db.Column(db.DateTime, nullable=True)
+
+
 class QueryWithSoftDelete(BaseQuery):
     def __new__(cls, *args, **kwargs):
         obj = super(QueryWithSoftDelete, cls).__new__(cls)
