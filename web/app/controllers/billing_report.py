@@ -15,6 +15,12 @@ class ItemStatus(enum.Enum):
     DEACTIVATED = "DEACTIVATED"
     DELETED = "DELETED"
 
+def truncate_string(input_string, max_length=20):
+    if len(input_string) > max_length:
+        truncated_string = input_string[:max_length]
+        return truncated_string
+    else:
+        return input_string
 
 def create_company_billing_report(
     company: m.Company, from_date: datetime, to_date: datetime
@@ -30,7 +36,8 @@ def create_company_billing_report(
     output = io.BytesIO()
 
     workbook = xlsxwriter.Workbook(output, {"in_memory": True})
-    worksheet = workbook.add_worksheet(f"Report_{company.name}")
+    name = truncate_string(company.name)
+    worksheet = workbook.add_worksheet(f"Report_{name}")
 
     # Cells styles
     bold_centered_format = workbook.add_format(
