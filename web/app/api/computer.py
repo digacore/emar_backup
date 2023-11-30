@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import jsonify
 
 from app.models import Computer, LogType, SystemLogType
-from app.schema import ComputerRegInfo, ComputerSpecialStatus
+from app.schema import ComputerRegInfo, ComputerSpecialStatus, ComputerPrinterStatus
 from app.views.blueprint import BlueprintApi
 from app.controllers import create_log_event, create_system_log
 from app.logger import logger
@@ -143,3 +143,25 @@ def special_status(body: ComputerSpecialStatus):
     return jsonify({"status": "success"}), 200
 
 #TODO: return on 142 change to negative status after the msi updates on all computers
+
+@computer_blueprint.post("/update_computer_printer")
+@logger.catch
+def update_computer_printer(body: ComputerPrinterStatus):
+    computer: Computer = Computer.query.filter_by(
+        identifier_key=body.identifier_key, computer_name=body.computer_name
+    ).first()
+
+    if not computer:
+        message = f"Computer with such identifier_key: {body.identifier_key} and computer_name: {body.computer_name} doesn't exist"
+        logger.info("Computer special status failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 404
+
+    if body.printer_status and body.printer_name:
+        computer.printer_status = body.printer_status
+        computer.printer_name = body.printer_name
+        computer.save()
+
+        if computer.logs_enabled:
+            create_log_event(computer, LogType.PRINTER_STATUS, body.printer_status)
+
+        return jsonify({"status": "success"}), 200
