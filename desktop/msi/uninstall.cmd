@@ -1,3 +1,3 @@
 pushd %~dp0
-msiexec  /l* uninstall.log /uninstall bin\agent.msi
+msiexec  /l*V uninstall.log /uninstall bin\agent.msi
 popd
