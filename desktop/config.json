@@ -1,5 +1,5 @@
 {
-    "version": "1.0.24.288342",
-    "manager_host": "https://app.emarvault.com/",
-    "backups_path": "C:\\backups"
+  "version": "1.0.24.288342",
+  "manager_host": "https://app.emarvault.com/",
+  "backups_path": "C:\\eMARVault"
 }

@@ -33,13 +33,13 @@ def offset_to_est(dt_now: datetime.datetime):
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
-STORAGE_PATH = os.path.join(Path("C:\\"), Path("eMARVault"))
+STORAGE_PATH = str(Path("C:\\") / "eMARVault")
 IP_BLACKLISTED = "red - ip blacklisted"
 
-log_format = "{time} - {name} - {level} - {message}"
+LOG_FORMAT = "{time} - {name} - {level} - {message}"
 logger.add(
-    sink=os.path.join(STORAGE_PATH, "emar_log.txt"),
-    format=log_format,
+    sink=(Path(STORAGE_PATH) / "emar_log.txt"),
+    format=LOG_FORMAT,
     serialize=True,
     level="DEBUG",
     colorize=True,
@@ -837,11 +837,11 @@ try:
     # NOTE: Check if this is the first script run
     is_first_run = not os.path.exists(STORAGE_PATH) or (
         len(os.listdir(STORAGE_PATH)) == 1
-        and os.listdir(STORAGE_PATH)[0] == "emar_log.txt"
+        and "emar_log.txt" in os.listdir(STORAGE_PATH)
     )
 
     if not is_first_run:
-        time.sleep(random.uniform(0, 1800))
+        time.sleep(random.uniform(0, 30*60))
 
     main_func()
     logger.info("Task finished")

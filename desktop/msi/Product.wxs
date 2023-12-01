@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.26.288378">
+           Version="1.0.30.289221">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -47,6 +47,9 @@
     <ComponentGroup Directory="MY_INSTALL_LOCATION" Id="ProductComponentGroup">
       <Component Id="cmp_version_txt">
         <File KeyPath="yes" Source="version.txt"></File>
+      </Component>
+      <Component Id="cmp_Common_ps1">
+        <File KeyPath="yes" Source="Common.ps1"></File>
       </Component>
       <Component Id="cmp_PostInstallActions_ps1">
         <File KeyPath="yes" Source="PostInstallActions.ps1"></File>
@@ -107,7 +110,7 @@
     <InstallExecuteSequence>
       <Custom Action='CA_AppendTextUsingPowerShell_FirstInstall' Before='InstallFinalize'>FirstInstall</Custom>
       <Custom Action='CA_AppendTextUsingPowerShell_Upgrading' Before='InstallFinalize'>Upgrading</Custom>
-      <Custom Action='CA_AppendTextUsingPowerShell_Uninstalling' Before='InstallFinalize'>Uninstalling</Custom>
+      <Custom Action='CA_AppendTextUsingPowerShell_Uninstalling' Before='RemoveFiles'>Uninstalling</Custom>
     </InstallExecuteSequence>
 
 
