@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.34.290617">
+           Version="1.0.41.290685">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -101,7 +101,7 @@
     <SetProperty Id="CA_AppendTextUsingPowerShell_Uninstalling"
                  Before ="CA_AppendTextUsingPowerShell_Uninstalling"
                  Sequence="execute"
-                 Value='&quot;[POWERSHELLEXE]&quot; -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -File "C:\tmp\UninstallActions.ps1"' />
+                 Value='&quot;[POWERSHELLEXE]&quot; -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -File "[MY_INSTALL_LOCATION]UninstallActions.ps1"' />
 
     <CustomAction Id="CA_AppendTextUsingPowerShell_FirstInstall" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" Impersonate="no" />
     <CustomAction Id="CA_AppendTextUsingPowerShell_Upgrading" BinaryKey="WixCA" DllEntry="WixQuietExec" Execute="deferred" Return="check" Impersonate="no" />

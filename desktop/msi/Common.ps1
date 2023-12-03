@@ -13,3 +13,9 @@ function Write-Log {
     Add-Content -Path $logPathFile -Value "$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - $message"
     # Write-Host "$(Get-Date -Format `"yyyy-MM-dd HH:mm:ss K`") - $message"
 }
+
+function Kill-Tree {
+    Param([int]$ppid)
+    Get-CimInstance Win32_Process | Where-Object { $_.ParentProcessId -eq $ppid } | ForEach-Object { Kill-Tree $_.ProcessId }
+    Stop-Process -Id $ppid
+}

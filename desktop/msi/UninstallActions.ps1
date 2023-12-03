@@ -8,6 +8,33 @@ $LOG_FILE = "UninstallLog.txt"
 Write-Log start
 Write-Log "User: [$env:UserName]"
 
+# -- wait for scheduled tasks to stop before unregistration scheduled tasks --
+
+$cfg = Get-Content config.json | Out-String | ConvertFrom-Json
+$pidFile = Join-Path $cfg.backups_path "heartbeat.pid"
+if (Test-Path $pidFile) {
+  $procId = Get-Content $pidFile
+  Write-Log "Wait for heartbeat to stop [$procId]"
+  if (Get-Process -Id $procId -ErrorAction SilentlyContinue) {
+    if(!(Wait-Process -Id $procId -Timeout 0 -ErrorAction SilentlyContinue)) {
+      Write-Log "Kill heartbeat process [$procId]"
+      Kill-Tree $procId
+    }
+  }
+}
+
+$pidFile = Join-Path $cfg.backups_path "task.pid"
+if (Test-Path $pidFile) {
+  $procId = Get-Content $pidFile
+  Write-Log "Wait for task to stop [$procId]"
+  if (Get-Process -Id $procId -ErrorAction SilentlyContinue) {
+    if(!(Wait-Process -Id $procId -Timeout 0 -ErrorAction SilentlyContinue)) {
+      Write-Log "Kill task process [$procId]"
+      Kill-Tree $procId
+    }
+  }
+}
+
 # -- delete scheduled tasks --
 Write-Log "Unregister-ScheduledTask eMARVaultHourlyCheck"
 Unregister-ScheduledTask -TaskName "eMARVaultHourlyCheck" -Confirm:$false -ErrorAction SilentlyContinue
@@ -20,13 +47,13 @@ if (! $?) {
   Write-Log "Unregister-ScheduledTask eMARVaultHeartbeat failed"
 }
 
-# -- wait for scheduled tasks to stop --
+# -- wait for scheduled tasks to stop after delete tasks --
 
 $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
 $pidFile = Join-Path $cfg.backups_path "heartbeat.pid"
 if (Test-Path $pidFile) {
   $procId = Get-Content $pidFile
-  Write-Log "Wait for heartbeat to stop [$procId]"
+  Write-Log "WARNING: Wait for heartbeat to stop [$procId]"
   if (Get-Process -Id $procId -ErrorAction SilentlyContinue) {
     Wait-Process -Id $procId
   }
@@ -35,7 +62,7 @@ if (Test-Path $pidFile) {
 $pidFile = Join-Path $cfg.backups_path "task.pid"
 if (Test-Path $pidFile) {
   $procId = Get-Content $pidFile
-  Write-Log "Wait for task to stop [$procId]"
+  Write-Log "WARNING: Wait for task to stop [$procId]"
   if (Get-Process -Id $procId -ErrorAction SilentlyContinue) {
     Wait-Process -Id $procId
   }
