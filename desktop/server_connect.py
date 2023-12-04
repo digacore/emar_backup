@@ -273,21 +273,22 @@ def get_credentials():
     else:
         response = register_computer()
 
+    config_data = response.json()
     if (
-        response.json()["message"] == "Supplying credentials"
-        or response.json()["message"] == "Computer registered"
+        config_data["message"] == "Supplying credentials"
+        or config_data["message"] == "Computer registered"
     ):
         msi_version = (
-            response.json()["msi_version"]
-            if "msi_version" in response.json()
+            config_data["msi_version"]
+            if "msi_version" in config_data
             else "stable"
         )
         with open(local_creds_json, "w") as f:
             json.dump(
                 {
-                    "computer_name": response.json()["computer_name"],
-                    "identifier_key": response.json()["identifier_key"],
-                    "manager_host": response.json()["manager_host"],
+                    "computer_name": config_data["computer_name"],
+                    "identifier_key": config_data["identifier_key"],
+                    "manager_host": config_data["manager_host"],
                     "msi_version": msi_version,
                 },
                 f,
@@ -298,7 +299,7 @@ def get_credentials():
 
         creds_json = creds_json if creds_json else dict()
 
-        return response.json(), creds_json
+        return config_data, creds_json
 
     else:
         raise ValueError(
@@ -841,7 +842,7 @@ try:
     )
 
     if not is_first_run:
-        time.sleep(random.uniform(0, 30*60))
+        time.sleep(random.uniform(0, 30 * 60))
 
     main_func()
     logger.info("Task finished")

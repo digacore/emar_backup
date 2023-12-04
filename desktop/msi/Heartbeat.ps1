@@ -6,7 +6,7 @@ $LOG_FILE = "UpdateLog.txt"
 
 . .\Common.ps1
 
-Write-Log Run heartbeat by user: $env:UserName
+Write-Log "Run heartbeat by user: $env:UserName"
 # Run python Heartbeat
 .\heartbeat.exe
 # TODO: Create process and wait for it to finish. put pid in heartbeat.pid file

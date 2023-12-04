@@ -4,8 +4,8 @@ $LOG_FILE = "InstallLog.txt"
 
 . .\Common.ps1
 
-Write_Log start
-Wrtite-Log "User: [$env:UserName]"
+Write-Log start
+Write-Log "User: [$env:UserName]"
 
 Unregister-ScheduledTask -TaskName "eMARVaultHourlyCheck" -Confirm:$false -ErrorAction Continue
 Write-Log "Unregister-ScheduledTask eMARVaultHourlyCheck"
@@ -34,7 +34,7 @@ $task = Register-ScheduledTask  -TaskName "eMARVaultHourlyCheck" -Description "P
   -Action $action `
   -Principal $principal `
   -Trigger $trigger `
-  -Settings $taskSettings 2>&1 | Tee-Object -Append -filePath $logFile
+  -Settings $taskSettings
 
 Write-Log "Register-ScheduledTask - [$task]"
 
