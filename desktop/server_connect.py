@@ -9,15 +9,26 @@ import random
 import shutil
 from urllib.parse import urljoin
 
-# import getpass
 from pathlib import Path
 import tempfile
 
 import requests
 from paramiko import SSHClient, AutoAddPolicy
 from loguru import logger
+from pydantic import BaseModel
 
 import pprint
+
+
+class Config(BaseModel):
+    version: str | None = None
+    manager_host: str
+    backups_path: str | None = None
+    message: str
+    msi_version: str = "stable"
+    identifier_key: str
+    computer_name: str
+    status: str
 
 
 def offset_to_est(dt_now: datetime.datetime):
@@ -235,13 +246,13 @@ def register_computer():
 
 
 def get_credentials():
-    logger.info("Recieving credentials.")
+    logger.info("Receiving credentials.")
     creds_json = None
 
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
-            logger.info(f"Credentials recieved from {local_creds_json}.")
+            logger.info(f"Credentials received from {local_creds_json}.")
 
         computer_name = creds_json["computer_name"]
         identifier_key = creds_json["identifier_key"]
@@ -273,33 +284,20 @@ def get_credentials():
     else:
         response = register_computer()
 
-    config_data = response.json()
+    config_data = Config.model_validate(response.json())
     if (
-        config_data["message"] == "Supplying credentials"
-        or config_data["message"] == "Computer registered"
+        config_data.message == "Supplying credentials"
+        or config_data.message == "Computer registered"
     ):
-        msi_version = (
-            config_data["msi_version"]
-            if "msi_version" in config_data
-            else "stable"
-        )
         with open(local_creds_json, "w") as f:
-            json.dump(
-                {
-                    "computer_name": config_data["computer_name"],
-                    "identifier_key": config_data["identifier_key"],
-                    "manager_host": config_data["manager_host"],
-                    "msi_version": msi_version,
-                },
-                f,
-            )
+            json.dump(config_data.model_dump(), f, indent=2)
             logger.info(
                 f"Full credentials recieved from server and {local_creds_json} updated."
             )
 
         creds_json = creds_json if creds_json else dict()
 
-        return config_data, creds_json
+        return config_data.model_dump(), creds_json
 
     else:
         raise ValueError(
@@ -793,7 +791,7 @@ def create_desktop_icon():
 
 @logger.catch
 def main_func():
-    logger.info("Downloading proccess started.")
+    logger.info("Downloading process started.")
     credentials, old_credentials = get_credentials()
     if not credentials:
         raise ValueError("Credentials not supplayed. Can't continue.")
