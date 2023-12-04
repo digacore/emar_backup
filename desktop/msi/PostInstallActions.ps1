@@ -4,14 +4,6 @@ $LOG_FILE = "InstallLog.txt"
 
 . .\Common.ps1
 
-$DataDir = Join-Path $ENV:AppData "Emar"
-New-Item -ItemType Directory -Path $DataDir -Force
-$logFile = Join-Path  $DataDir $logFileName
-if (!(Test-Path $logFile)) {
-  New-Item -path $DataDir -name $logFileName -type "file"
-}
-Write-Host $logFile
-
 Write_Log start
 Wrtite-Log "User: [$env:UserName]"
 
