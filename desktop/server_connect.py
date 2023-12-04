@@ -9,15 +9,26 @@ import random
 import shutil
 from urllib.parse import urljoin
 
-# import getpass
 from pathlib import Path
 import tempfile
 
 import requests
 from paramiko import SSHClient, AutoAddPolicy
 from loguru import logger
+from pydantic import BaseModel
 
 import pprint
+
+
+class Config(BaseModel):
+    version: str | None = None
+    manager_host: str
+    backups_path: str | None = None
+    message: str
+    msi_version: str = "stable"
+    identifier_key: str
+    computer_name: str
+    status: str
 
 
 def offset_to_est(dt_now: datetime.datetime):
@@ -33,13 +44,13 @@ def offset_to_est(dt_now: datetime.datetime):
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
-STORAGE_PATH = os.path.join(Path("C:\\"), Path("eMARVault"))
+STORAGE_PATH = str(Path("C:\\") / "eMARVault")
 IP_BLACKLISTED = "red - ip blacklisted"
 
-log_format = "{time} - {name} - {level} - {message}"
+LOG_FORMAT = "{time} - {name} - {level} - {message}"
 logger.add(
-    sink=os.path.join(STORAGE_PATH, "emar_log.txt"),
-    format=log_format,
+    sink=(Path(STORAGE_PATH) / "emar_log.txt"),
+    format=LOG_FORMAT,
     serialize=True,
     level="DEBUG",
     colorize=True,
@@ -235,13 +246,13 @@ def register_computer():
 
 
 def get_credentials():
-    logger.info("Recieving credentials.")
+    logger.info("Receiving credentials.")
     creds_json = None
 
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
             creds_json = json.load(f)
-            logger.info(f"Credentials recieved from {local_creds_json}.")
+            logger.info(f"Credentials received from {local_creds_json}.")
 
         computer_name = creds_json["computer_name"]
         identifier_key = creds_json["identifier_key"]
@@ -273,32 +284,20 @@ def get_credentials():
     else:
         response = register_computer()
 
+    config_data = Config.model_validate(response.json())
     if (
-        response.json()["message"] == "Supplying credentials"
-        or response.json()["message"] == "Computer registered"
+        config_data.message == "Supplying credentials"
+        or config_data.message == "Computer registered"
     ):
-        msi_version = (
-            response.json()["msi_version"]
-            if "msi_version" in response.json()
-            else "stable"
-        )
         with open(local_creds_json, "w") as f:
-            json.dump(
-                {
-                    "computer_name": response.json()["computer_name"],
-                    "identifier_key": response.json()["identifier_key"],
-                    "manager_host": response.json()["manager_host"],
-                    "msi_version": msi_version,
-                },
-                f,
-            )
+            json.dump(config_data.model_dump(), f, indent=2)
             logger.info(
                 f"Full credentials recieved from server and {local_creds_json} updated."
             )
 
         creds_json = creds_json if creds_json else dict()
 
-        return response.json(), creds_json
+        return config_data.model_dump(), creds_json
 
     else:
         raise ValueError(
@@ -792,7 +791,7 @@ def create_desktop_icon():
 
 @logger.catch
 def main_func():
-    logger.info("Downloading proccess started.")
+    logger.info("Downloading process started.")
     credentials, old_credentials = get_credentials()
     if not credentials:
         raise ValueError("Credentials not supplayed. Can't continue.")
@@ -837,11 +836,11 @@ try:
     # NOTE: Check if this is the first script run
     is_first_run = not os.path.exists(STORAGE_PATH) or (
         len(os.listdir(STORAGE_PATH)) == 1
-        and os.listdir(STORAGE_PATH)[0] == "emar_log.txt"
+        and "emar_log.txt" in os.listdir(STORAGE_PATH)
     )
 
     if not is_first_run:
-        time.sleep(random.uniform(0, 1800))
+        time.sleep(random.uniform(0, 30 * 60))
 
     main_func()
     logger.info("Task finished")
