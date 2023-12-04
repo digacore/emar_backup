@@ -1,0 +1,27 @@
+{
+  "python.terminal.activateEnvironment": true,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/*/**": true,
+    "**/.venv/*/**": true
+  },
+  "cSpell.words": [
+    "dotenv",
+    "fastapi",
+    "flowbite",
+    "jsonify",
+    "pydantic",
+    "pytest",
+    "sqlalchemy",
+    "tailwindcss",
+    "werkzeug",
+    "wsgi",
+    "wtforms"
+  ],
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  }
+}

@@ -1,3 +1,3 @@
 pushd %~dp0
-msiexec  /l* install.log /i bin\agent.msi /quiet
+msiexec  /L*V install.log /i bin\agent.msi /quiet
 popd

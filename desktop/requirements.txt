@@ -5,3 +5,4 @@ requests
 pyzipper
 pyinstaller
 pywin32
+pydantic
