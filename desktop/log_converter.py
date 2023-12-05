@@ -68,17 +68,21 @@ class LogLine(BaseModel):
 
 
 def main():
-    with open(INPUT_LOG_FILE_PATH, "r") as i_f:
+    with open(INPUT_LOG_FILE_PATH, "r", encoding="utf-8") as i_f:
         with open(OUTPUT_LOG_FILE_PATH, "w") as o_f:
-            for line in i_f:
-                log_line = LogLine.model_validate_json(line)
-                o_f.writelines(
-                    [
-                        f"{log_line.record.time.repr}:{log_line.record.module}:{log_line.record.level.name}:{log_line.record.message}",
-                        "\n",
-                    ]
-                )
-    pass
+            line_no = 1
+            try:
+                for line in i_f:
+                    log_line = LogLine.model_validate_json(line)
+                    o_f.writelines(
+                        [
+                            f"{log_line.record.time.repr}:{log_line.record.module}:{log_line.record.level.name}:{log_line.record.message}",
+                            "\n",
+                        ]
+                    )
+                    line_no += 1
+            except UnicodeDecodeError as e:
+                print(f"Line {line_no} is not valid json. Error: {e}")
 
 
 if __name__ == "__main__":

@@ -7,6 +7,42 @@ import random
 import json
 import requests
 from loguru import logger
+import win32print
+from pydantic import BaseModel
+
+
+class PrinterInfo(BaseModel):
+    pPrinterName: str = "Unknown"
+    pPortName: str = "Unknown"
+    Status: int = -1
+
+
+def get_printer_info(handle):
+    assert handle
+    info = PrinterInfo.model_validate(win32print.GetPrinter(handle, 2))
+    logger.info("Printer name: [{}]", info.pPrinterName)
+    logger.info("Port name: [{}]", info.pPortName)
+    logger.info("Printer status: [{}]", hex(info.Status))
+    logger.info("Is USB: {}", "USB" in info.pPortName)
+
+
+def printer_check():
+    logger.info("---- All printers info ----")
+    for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL):
+        flags, desc, name, comment = printer
+        handle = win32print.OpenPrinter(name)
+        assert handle
+        get_printer_info(handle)
+        win32print.ClosePrinter(handle)
+
+    # get default printer
+    # logger.info("---- Default printer info ----")
+    # printer_name = win32print.GetDefaultPrinter()
+    # handle = win32print.OpenPrinter(printer_name)
+    # assert handle
+    # get_printer_info(handle)
+    # win32print.ClosePrinter(handle)
+    logger.info("---- End of printers info ----")
 
 
 def offset_to_est(dt_now: datetime.datetime):
@@ -116,6 +152,7 @@ def changes_lookup(comp_remote_data):
 @logger.catch
 def main_func():
     creds_json = None
+    printer_check()
 
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
@@ -131,7 +168,6 @@ def main_func():
             f.write("{}")
 
     comp_remote_data = send_activity(manager_host, creds_json)
-
     changes_lookup(comp_remote_data)
 
 
