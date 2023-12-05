@@ -1,5 +1,5 @@
 import os
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import datetime
 from pathlib import Path
 import time
@@ -7,42 +7,28 @@ import random
 import json
 import requests
 from loguru import logger
-import win32print
-from pydantic import BaseModel
 
 
-class PrinterInfo(BaseModel):
-    pPrinterName: str = "Unknown"
-    pPortName: str = "Unknown"
-    Status: int = -1
-
-
-def get_printer_info(handle):
-    assert handle
-    info = PrinterInfo.model_validate(win32print.GetPrinter(handle, 2))
-    logger.info("Printer name: [{}]", info.pPrinterName)
-    logger.info("Port name: [{}]", info.pPortName)
-    logger.info("Printer status: [{}]", hex(info.Status))
-    logger.info("Is USB: {}", "USB" in info.pPortName)
-
-
-def printer_check():
-    logger.info("---- All printers info ----")
-    for printer in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL):
-        flags, desc, name, comment = printer
-        handle = win32print.OpenPrinter(name)
-        assert handle
-        get_printer_info(handle)
-        win32print.ClosePrinter(handle)
-
-    # get default printer
-    # logger.info("---- Default printer info ----")
-    # printer_name = win32print.GetDefaultPrinter()
-    # handle = win32print.OpenPrinter(printer_name)
-    # assert handle
-    # get_printer_info(handle)
-    # win32print.ClosePrinter(handle)
-    logger.info("---- End of printers info ----")
+# Get-Printer | where { $_.PortName -like "*USB*" } | select -Property PrinterStatus,Name | select -first 1 | convertto-json
+def get_printer_info_by_posh() -> dict | None:
+    """Get printer info by powershell"""
+    logger.info("get_printer_info_by_posh: start")
+    PS_COMMAND = "Get-Printer | where { $_.PortName -like '*USB*' } | select -Property PrinterStatus,Name | select -first 1 | ConvertTo-Json"
+    shell = Popen(
+        [
+            "powershell.exe",
+            "-command",
+            PS_COMMAND,
+        ],
+        stdout=PIPE,
+        stderr=PIPE,
+    )
+    stdout, stderr = shell.communicate()
+    logger.info("stdout: {}", stdout)
+    if stdout.startswith(b"{"):
+        return json.loads(stdout.decode("utf-8"))
+    if stderr:
+        logger.error("get_printer_info_by_posh: stderr: {}", stderr.decode("utf-8"))
 
 
 def offset_to_est(dt_now: datetime.datetime):
@@ -150,9 +136,23 @@ def changes_lookup(comp_remote_data):
 
 
 @logger.catch
+def send_printer_info(manager_host, creds_json, printer_info):
+    url = f"{manager_host}/printer_info"
+    response = requests.post(
+        url,
+        json={
+            "computer_name": creds_json["computer_name"],
+            "identifier_key": creds_json["identifier_key"],
+            "printer_info": printer_info,
+        },
+    )
+    logger.info("Printer info sent. Response: {}", response.json())
+
+
+@logger.catch
 def main_func():
     creds_json = None
-    printer_check()
+    printer_info = get_printer_info_by_posh()
 
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
@@ -169,6 +169,11 @@ def main_func():
 
     comp_remote_data = send_activity(manager_host, creds_json)
     changes_lookup(comp_remote_data)
+
+    if printer_info:
+        logger.info("Printer info: {}", printer_info)
+        # send printer info to server
+        send_printer_info(manager_host, creds_json, printer_info)
 
 
 try:
