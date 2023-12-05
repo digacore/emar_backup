@@ -15,7 +15,7 @@ class LogType(enum.Enum):
     STATUS_GREEN = "STATUS_GREEN"
     STATUS_YELLOW = "STATUS_YELLOW"
     STATUS_RED = "STATUS_RED"
-SPECIAL_STATUS = "SPECIAL_STATUS"
+    SPECIAL_STATUS = "SPECIAL_STATUS"
 
 
 class LogEvent(db.Model, ModelMixin):

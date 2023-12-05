@@ -33,9 +33,3 @@ class ComputerSpecialStatus(BaseModel):
     identifier_key: str
     computer_name: str
     special_status: str
-
-class ComputerPrinterStatus(BaseModel):
-    identifier_key: str
-    computer_name: str
-    printer_status: str
-    printer_name: str
