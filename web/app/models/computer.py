@@ -58,11 +58,6 @@ class ComputerStatus(enum.Enum):
     OFFLINE_NO_BACKUP = "OFFLINE_NO_BACKUP"
     NOT_ACTIVATED = "NOT_ACTIVATED"
 
-class PrinterStatus(enum.Enum):
-    ONLINE = "ONLINE"
-    OFFLINE = "OFFLINE"
-    NOT_ACTIVATED = "NOT_ACTIVATED"
-
 
 class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     __tablename__ = "computers"
@@ -111,9 +106,6 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     last_time_logs_enabled = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_logs_disabled = db.Column(db.DateTime)
-
-    printer_status = db.Column(db.String(128))
-    printer_name = db.Column(db.String(128))
 
     company = relationship(
         "Company",
