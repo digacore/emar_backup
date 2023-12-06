@@ -16,3 +16,7 @@ from .pcc_daily_request import PCCDailyRequest
 from .location_group import LocationGroup, LocationGroupView
 from .download_backup_call import DownloadBackupCall
 from .alert_event import AlertEvent, AlertEventType
+from .telemetry_settings import TelemetrySettings
+from .computer_settings_link_table import ComputerSettingsLinkTable
+from .location_settings_link_table import LocationSettingsLinkTable
+from .company_settings_link_table import CompanySettingsLinkTable
