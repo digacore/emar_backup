@@ -5,7 +5,7 @@ import datetime
 from flask import jsonify, request
 
 from app.models import Computer, DesktopClient, LogType
-from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
+from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum,PrinterInfo
 from app.views.blueprint import BlueprintApi
 from app.controllers import (
     create_log_event,
@@ -69,6 +69,36 @@ def check_msi_version(computer: Computer, body, time_type: str):
         return lst_times[time_type] + datetime.timedelta(hours=1)
     return lst_times[time_type]
 
+@downloads_info_blueprint.post("/printer_info")
+@logger.catch
+def printer_info(body: PrinterInfo):
+    computer: Computer = (
+        Computer.query.filter_by(identifier_key=body.identifier_key).first()
+        if body.identifier_key
+        else None
+    )
+
+    if computer:
+
+        computer.printer_name = body.printer_info.Name
+        computer.printer_status = body.printer_info.PrinterStatus
+
+        computer.update()
+
+        return (
+            jsonify(
+                status="success",
+                message="Writing printer info to db",
+                printer_name=computer.printer_name,
+                printer_status=computer.printer_status,
+            ),
+            200,
+        )
+    else:
+        message = "Wrong request data. Computer not found."
+        logger.info(f"Printer info update failed. Reason: {message}")
+        return jsonify(status="fail", message=message), 400
+
 
 @downloads_info_blueprint.post("/last_time")
 @logger.catch
@@ -81,7 +111,7 @@ def last_time(body: LastTime):
         else None
     )
 
-    computer_name: Computer = Computer.query.filter_by(
+    computer_by_name: Computer = Computer.query.filter_by(
         computer_name=body.computer_name
     ).first()
 
@@ -148,7 +178,7 @@ def last_time(body: LastTime):
             200,
         )
 
-    elif computer_name:
+    elif computer_by_name:
         message = "Wrong id."
         logger.info(
             "Last download/online time update failed. computer: {}, \

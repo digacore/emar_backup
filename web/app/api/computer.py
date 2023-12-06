@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import jsonify
 
 from app.models import Computer, LogType, SystemLogType
-from app.schema import ComputerRegInfo, ComputerSpecialStatus
+from app.schema import ComputerRegInfo, ComputerSpecialStatus,TelemetryRequestId,AgentTelemetry
 from app.views.blueprint import BlueprintApi
 from app.controllers import create_log_event, create_system_log
 from app.logger import logger
@@ -143,3 +143,17 @@ def special_status(body: ComputerSpecialStatus):
     return jsonify({"status": "success"}), 200
 
 #TODO: return on 142 change to negative status after the msi updates on all computers
+
+@computer_blueprint.get("/get_telemetry_info")
+@logger.catch
+def get_telemetry_info(body:TelemetryRequestId):
+    computer: Computer = Computer.query.filter_by(
+        identifier_key=body.identifier_key
+    ).first()
+
+    if not computer:
+        message = f"Computer with such identifier_key: {body.identifier_key} doesn't exist"
+        logger.info("Computer telemetry info failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 404
+
+    return  jsonify(status= "success",send_printer_info=computer.receive_printer_info), 200
