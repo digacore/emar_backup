@@ -2,22 +2,26 @@ import os
 import re
 from subprocess import Popen, PIPE
 from stat import S_ISDIR, S_ISREG
+
 import time
 import datetime
 import json
+
 import random
 import shutil
 from urllib.parse import urljoin
 
 from pathlib import Path
 import tempfile
+import pprint
+import platform
 
 import requests
 from paramiko import SSHClient, AutoAddPolicy
 from loguru import logger
 from pydantic import BaseModel
 
-import pprint
+COMPUTER_NAME = platform.node()
 
 
 class Config(BaseModel):
@@ -183,54 +187,26 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
 
 
 def register_computer():
-    import socket
-    import platform
-
-    computer_name = socket.gethostname()
-    logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
-    if not isinstance(computer_name, str):
-        computer_name = platform.node()
-        logger.debug("Computer Name {}, type {}", computer_name, type(computer_name))
-    if not isinstance(computer_name, str):
+    logger.debug("Computer Name {}, type {}", COMPUTER_NAME, type(COMPUTER_NAME))
+    if not isinstance(COMPUTER_NAME, str):
         raise (
             ValueError(
                 "Can't get computer name. Name {}, type {}",
-                computer_name,
-                type(computer_name),
+                COMPUTER_NAME,
+                type(COMPUTER_NAME),
             )
         )
     identifier_key = "new_computer"
 
+    # TODO: replace f string in request with urljoin
+    URL = urljoin(g_manager_host, "register_computer")
     response = requests.post(
-        f"{g_manager_host}/register_computer",
+        URL,
         json={
-            "computer_name": computer_name,
+            "computer_name": COMPUTER_NAME,
             "identifier_key": identifier_key,
         },
     )
-
-    logger.debug(
-        "response.request.method on /register_computer {}", response.request.method
-    )
-
-    if response.request.method == "GET":
-        logger.warning(
-            "Instead of POST method we have GET on /register_computer. \
-                Retry with allow_redirects=False"
-        )
-        response = requests.post(
-            f"{g_manager_host}/register_computer",
-            allow_redirects=False,
-            json={
-                "computer_name": computer_name,
-                "identifier_key": identifier_key,
-            },
-        )
-        print("response.history", response.history)
-        logger.debug(
-            "Retry response.request.method on /register_computer. Method = {}",
-            response.request.method,
-        )
 
     if response.status_code == 200:
         logger.info(
@@ -794,7 +770,7 @@ def main_func():
     logger.info("Downloading process started.")
     credentials, old_credentials = get_credentials()
     if not credentials:
-        raise ValueError("Credentials not supplayed. Can't continue.")
+        raise ValueError("Credentials not supplied. Can't continue.")
 
     if credentials["status"] == "success":
         # Handle errors in files downloading and zip

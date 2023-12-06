@@ -64,12 +64,12 @@ class BaseConfig(object):
 
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "1234")
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(
-        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION", 0))
     )
 
     # Flask-Session parameters
     PERMANENT_SESSION_LIFETIME = datetime.timedelta(
-        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION", 0))
     )
     SESSION_FILE_THRESHOLD = int(os.environ.get("SESSION_FILE_THRESHOLD", 500))
     SESSION_TYPE = "filesystem"
