@@ -16,7 +16,7 @@ if (Test-Path $pidFile) {
   $procId = Get-Content $pidFile
   Write-Log "Wait for heartbeat to stop [$procId]"
   if (Get-Process -Id $procId -ErrorAction SilentlyContinue) {
-    if(!(Wait-Process -Id $procId -Timeout 0 -ErrorAction SilentlyContinue)) {
+    if (!(Wait-Process -Id $procId -Timeout 0 -ErrorAction SilentlyContinue)) {
       Write-Log "Kill heartbeat process [$procId]"
       Kill-Tree $procId
     }
@@ -28,7 +28,7 @@ if (Test-Path $pidFile) {
   $procId = Get-Content $pidFile
   Write-Log "Wait for task to stop [$procId]"
   if (Get-Process -Id $procId -ErrorAction SilentlyContinue) {
-    if(!(Wait-Process -Id $procId -Timeout 0 -ErrorAction SilentlyContinue)) {
+    if (!(Wait-Process -Id $procId -Timeout 0 -ErrorAction SilentlyContinue)) {
       Write-Log "Kill task process [$procId]"
       Kill-Tree $procId
     }
@@ -69,7 +69,7 @@ if (Test-Path $pidFile) {
 }
 
 # -- delete files --
-Write-Log "Remove-Item $cfg.backups_path -Recurse -Force"
+Write-Log "Remove-Item $($cfg.backups_path) -Recurse -Force"
 Remove-Item $cfg.backups_path -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
 if (! $?) {
   Write-Log "Remove Folder $($cfg.backups_path) failed"

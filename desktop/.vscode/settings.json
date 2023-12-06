@@ -11,6 +11,7 @@
     "fastapi",
     "flowbite",
     "jsonify",
+    "loguru",
     "pydantic",
     "pytest",
     "sqlalchemy",

@@ -1,5 +1,5 @@
 import os
-from subprocess import Popen
+from subprocess import Popen, PIPE
 import datetime
 from pathlib import Path
 import time
@@ -7,6 +7,28 @@ import random
 import json
 import requests
 from loguru import logger
+
+
+# Get-Printer | where { $_.PortName -like "*USB*" } | select -Property PrinterStatus,Name | select -first 1 | convertto-json
+def get_printer_info_by_posh() -> dict | None:
+    """Get printer info by powershell"""
+    logger.info("get_printer_info_by_posh: start")
+    PS_COMMAND = "Get-Printer | where { $_.PortName -like '*USB*' } | select -Property PrinterStatus,Name | select -first 1 | ConvertTo-Json"
+    shell = Popen(
+        [
+            "powershell.exe",
+            "-command",
+            PS_COMMAND,
+        ],
+        stdout=PIPE,
+        stderr=PIPE,
+    )
+    stdout, stderr = shell.communicate()
+    logger.info("stdout: {}", stdout)
+    if stdout.startswith(b"{"):
+        return json.loads(stdout.decode("utf-8"))
+    if stderr:
+        logger.error("get_printer_info_by_posh: stderr: {}", stderr.decode("utf-8"))
 
 
 def offset_to_est(dt_now: datetime.datetime):
@@ -114,8 +136,23 @@ def changes_lookup(comp_remote_data):
 
 
 @logger.catch
+def send_printer_info(manager_host, creds_json, printer_info):
+    url = f"{manager_host}/printer_info"
+    response = requests.post(
+        url,
+        json={
+            "computer_name": creds_json["computer_name"],
+            "identifier_key": creds_json["identifier_key"],
+            "printer_info": printer_info,
+        },
+    )
+    logger.info("Printer info sent. Response: {}", response.json())
+
+
+@logger.catch
 def main_func():
     creds_json = None
+    printer_info = get_printer_info_by_posh()
 
     if os.path.isfile(local_creds_json):
         with open(local_creds_json, "r") as f:
@@ -131,8 +168,12 @@ def main_func():
             f.write("{}")
 
     comp_remote_data = send_activity(manager_host, creds_json)
-
     changes_lookup(comp_remote_data)
+
+    if printer_info:
+        logger.info("Printer info: {}", printer_info)
+        # send printer info to server
+        send_printer_info(manager_host, creds_json, printer_info)
 
 
 try:

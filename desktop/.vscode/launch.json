@@ -5,6 +5,14 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "heartbeat",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/heartbeat.py",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
       "name": "server-connect",
       "type": "python",
       "request": "launch",
