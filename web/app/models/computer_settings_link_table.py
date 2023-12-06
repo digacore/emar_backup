@@ -7,7 +7,7 @@ class ComputerSettingsLinkTable(db.Model, ModelMixin):
     __tablename__ = "computer_settings_link_table"
 
     id = db.Column(db.Integer, primary_key=True)
-    computer_id = db.Column(db.Integer, db.ForeignKey("computer.id"))
+    computer_id = db.Column(db.Integer, db.ForeignKey("computers.id"))
     telemetry_settings_id = db.Column(db.Integer, db.ForeignKey("telemetry_settings.id"),default=1)
 
     def __repr__(self):
