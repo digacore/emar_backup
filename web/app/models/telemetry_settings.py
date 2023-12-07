@@ -12,7 +12,4 @@ class TelemetrySettings(db.Model, ModelMixin):
     send_agent_logs = db.Column(db.Boolean, default=True)
 
     def __repr__(self):
-        return {
-            "send_printer_info": self.send_printer_info,
-            "send_agent_logs": self.send_agent_logs,
-        }
+        return "<TelemetrySettings %r>" % self.id

@@ -460,6 +460,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         return "ComputerView"
 
     list_template = "import-computer-to-dashboard.html"
+    edit_template = "import-edit-computer.html"
     can_create = False
 
     column_hide_backrefs = False

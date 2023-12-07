@@ -8,3 +8,4 @@ from .pcc import pcc_blueprint
 from .search import search_blueprint
 from .merge import merge_blueprint
 from .billing import billing_blueprint
+from .computer_settings import computer_settings_blueprint

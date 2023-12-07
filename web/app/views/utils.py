@@ -118,3 +118,21 @@ def has_access_to_company(user: m.User, company: m.Company):
             return company.id == user.location[0].company_id
         case _:
             return False
+
+
+def get_telemetry_settings_for_computer(computer: m.Computer) -> m.TelemetrySettings:
+    """Get telemetry settings for computer"""
+    linked_table = m.ComputerSettingsLinkTable.query.filter_by(computer_id=computer.id).first()
+    if not linked_table:
+        linked_table = m.LocationSettingsLinkTable.query.filter_by(location_id=computer.location_id).first()
+        if not linked_table:
+            linked_table = m.CompanySettingsLinkTable.query.filter_by(company_id=computer.company_id).first()
+            if not linked_table:
+                linked_table = m.TelemetrySettings.query.get(1)
+                if not linked_table:
+                    linked_table = m.TelemetrySettings()
+                    linked_table.save()
+                    return linked_table
+                return linked_table
+    telemetry_settings = m.TelemetrySettings.query.filter_by(id=linked_table.telemetry_settings_id).first()
+    return telemetry_settings
