@@ -5,6 +5,7 @@ import datetime
 from flask import jsonify, request
 
 from app.models import Computer, DesktopClient, LogType
+from app.models.computer import PrinterStatus
 from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum,PrinterInfo
 from app.views.blueprint import BlueprintApi
 from app.controllers import (
@@ -68,36 +69,6 @@ def check_msi_version(computer: Computer, body, time_type: str):
     if int(msi_version.version.replace(".", "")) < int("1.0.9.100769".replace(".", "")):
         return lst_times[time_type] + datetime.timedelta(hours=1)
     return lst_times[time_type]
-
-@downloads_info_blueprint.post("/printer_info")
-@logger.catch
-def printer_info(body: PrinterInfo):
-    computer: Computer = (
-        Computer.query.filter_by(identifier_key=body.identifier_key).first()
-        if body.identifier_key
-        else None
-    )
-
-    if computer:
-
-        computer.printer_name = body.printer_info.Name
-        computer.printer_status = body.printer_info.PrinterStatus
-
-        computer.update()
-
-        return (
-            jsonify(
-                status="success",
-                message="Writing printer info to db",
-                printer_name=computer.printer_name,
-                printer_status=computer.printer_status,
-            ),
-            200,
-        )
-    else:
-        message = "Wrong request data. Computer not found."
-        logger.info(f"Printer info update failed. Reason: {message}")
-        return jsonify(status="fail", message=message), 400
 
 
 @downloads_info_blueprint.post("/last_time")
@@ -362,3 +333,45 @@ def files_checksum(body: FilesChecksum):
     message = "Wrong request data. Computer not found."
     logger.info(f"Files checksum update failed. Reason: {message}")
     return jsonify(status="fail", message=message), 400
+
+
+@downloads_info_blueprint.post("/printer_info")
+@logger.catch
+def printer_info(body: PrinterInfo):
+    computer: Computer = (
+        Computer.query.filter_by(identifier_key=body.identifier_key).first()
+        if body.identifier_key
+        else None
+    )
+
+    if computer:
+        print_status = PrinterStatus.UNKNOWN
+
+        #TODO: fill this match with gathered data from customers pc
+        match body.printer_info.PrinterStatus:
+            case 0:
+                print_status = PrinterStatus.NORMAL
+            case 128:
+                print_status = PrinterStatus.OFFLINE
+            case _:
+                print_status = PrinterStatus.UNKNOWN
+
+        computer.printer_name = body.printer_info.Name
+        computer.printer_status = print_status
+        computer.printer_status_timestamp = CFG.offset_to_est(datetime.datetime.utcnow(), True)
+
+        computer.update()
+
+        return (
+            jsonify(
+                status="success",
+                message="Writing printer info to db",
+                printer_name=computer.printer_name,
+                printer_status=computer.printer_status,
+            ),
+            200,
+        )
+    else:
+        message = "Wrong request data. Computer not found."
+        logger.info(f"Printer info update failed. Reason: {message}")
+        return jsonify(status="fail", message=message), 400

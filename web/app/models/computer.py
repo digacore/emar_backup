@@ -58,6 +58,12 @@ class ComputerStatus(enum.Enum):
     OFFLINE_NO_BACKUP = "OFFLINE_NO_BACKUP"
     NOT_ACTIVATED = "NOT_ACTIVATED"
 
+class PrinterStatus(enum.Enum):
+    NORMAL = "NORMAL"
+    OFFLINE = "OFFLINE"
+    UNKNOWN = "UNKNOWN"
+
+
 
 class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     __tablename__ = "computers"
@@ -106,6 +112,14 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     last_time_logs_enabled = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_logs_disabled = db.Column(db.DateTime)
+
+    printer_name = db.Column(db.String(128),default="")
+    printer_status = db.Column(
+        Enum(PrinterStatus),
+        nullable=True,
+        default=PrinterStatus.UNKNOWN,
+        server_default=sql.text("'UNKNOWN'"))
+    printer_status_timestamp = db.Column(db.DateTime, default=datetime.utcnow())
 
     company = relationship(
         "Company",
@@ -475,6 +489,8 @@ class ComputerView(RowActionListMixin, MyModelView):
         "last_download_time",
         "last_time_online",
         "computer_ip",
+        "printer_name",
+        "printer_status",
     ]
 
     searchable_sortable_list = [

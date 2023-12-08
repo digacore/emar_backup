@@ -153,14 +153,18 @@ def send_printer_info(manager_host, creds_json, printer_info):
     # check fields: need_send_printer_info, need_send_log_file
     with open(CREDS_FILE, "r") as f:
         creds_json = json.load(f)
-        url= urljoin(creds_json["manager_host"], "get_telemetry_info")
+        url = urljoin(creds_json["manager_host"], "get_telemetry_info")
     response = requests.get(
         url,
         json={
             "identifier_key": creds_json["identifier_key"],
-        })
-    if response.status_code ==404:
-        logger.info("Failed to retrieve telemetry info from server. Response: {}", response.json())
+        },
+    )
+    if response.status_code == 404:
+        logger.info(
+            "Failed to retrieve telemetry info from server. Response: {}",
+            response.json(),
+        )
     else:
         if response.json()["send_printer_info"]:
             printer_info = get_printer_info_by_posh()
@@ -187,7 +191,6 @@ def send_printer_info(manager_host, creds_json, printer_info):
 @logger.catch
 def main_func():
     creds_json = None
-    printer_info = get_printer_info_by_posh()
 
     if os.path.isfile(LOCAL_CREDS_JSON):
         with open(LOCAL_CREDS_JSON, "r") as f:
@@ -203,17 +206,7 @@ def main_func():
             f.write("{}")
 
     comp_remote_data = send_activity(manager_host, creds_json)
-
-    print("printer_info creds", creds_json)
-    if printer_info:
-        logger.info("Printer info: {}", printer_info)
-        # send printer info to server
-        send_printer_info(manager_host, creds_json, printer_info)
-
-    if printer_info:
-        logger.info("Printer info: {}", printer_info)
-        # send printer info to server
-        send_printer_info(manager_host, creds_json, printer_info)
+    changes_lookup(comp_remote_data)
 
 
 try:
