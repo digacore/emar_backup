@@ -8,6 +8,12 @@ $LOG_FILE = "UninstallLog.txt"
 Write-Log start
 Write-Log "User: [$env:UserName]"
 
+# -- delete copmuter from web --
+Write-Log "Run computer_delete.exe by user: $env:UserName"
+# Run python Heartbeat
+.\computer_delete.exe
+Write-Log "Run computer_delete.exe by user: $env:UserName - done"
+
 # -- wait for scheduled tasks to stop before unregistration scheduled tasks --
 
 $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
@@ -80,9 +86,7 @@ $pathToShortcut = Join-Path $ENV:Public\Desktop "eMARVault.lnk"
 Write-Log "Remove-Item $pathToShortcut"
 Remove-Item $pathToShortcut -ErrorAction SilentlyContinue | Out-Null
 
-# -- delete copmuter from web --
-Write-Log "Run computer_delete.exe by user: $env:UserName"
-# Run python Heartbeat
-.\computer_delete.exe
+
+
 
 Pop-Location
