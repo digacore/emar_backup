@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from flask import jsonify
+from flask import jsonify, request
 
 from app.models import Computer, LogType, SystemLogType
 from app.schema import ComputerRegInfo, ComputerSpecialStatus
@@ -143,3 +143,21 @@ def special_status(body: ComputerSpecialStatus):
     return jsonify({"status": "success"}), 200
 
 #TODO: return on 142 change to negative status after the msi updates on all computers
+
+@computer_blueprint.get("/delete_computer")
+@logger.catch
+def delete_computer():
+    identifier_key = request.args.get("identifier_key")
+    computer: Computer = Computer.query.filter_by(identifier_key=identifier_key).first()
+
+    if not computer:
+        message = f"Computer with such identifier_key: {identifier_key} doesn't exist"
+        logger.info("Computer delete failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 404
+
+    computer.delete()
+
+    # Create system log that computer was deleted from the system
+    create_system_log(SystemLogType.COMPUTER_DELETED, computer, None)
+    logger.info("Computer deleted. {}", computer.computer_name)
+    return jsonify({"status": "success"}), 200
