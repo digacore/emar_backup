@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.60.292475">
+           Version="1.0.66.297772">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -68,6 +68,9 @@
       </Component>
       <Component Id="cmp_log_convertor_exe">
         <File KeyPath="yes" Source="dist\log_converter.exe"></File>
+      </Component>
+      <Component Id="cmp_computer_delete_exe">
+        <File KeyPath="yes" Source="dist\computer_delete.exe"></File>
       </Component>
       <Component Id="cmp_Heartbeat_ps1">
         <File KeyPath="yes" Source="Heartbeat.ps1"></File>
