@@ -138,9 +138,9 @@ def changes_lookup(comp_remote_data: dict):
 
 @logger.catch
 def send_printer_info(manager_host, creds_json, printer_info):
-    url = f"{manager_host}/printer_info"
+    URL = urljoin(manager_host, "printer_info")
     response = requests.post(
-        url,
+        URL,
         json={
             "computer_name": creds_json["computer_name"],
             "identifier_key": creds_json["identifier_key"],
@@ -149,8 +149,7 @@ def send_printer_info(manager_host, creds_json, printer_info):
     )
     logger.info("Printer info sent. Response: {}", response.json())
 
-    # TODO: Check if need send any telemetry data to server
-    # check fields: need_send_printer_info, need_send_log_file
+    # check fields: need_send_printer_info
     with open(CREDS_FILE, "r") as f:
         creds_json = json.load(f)
         url = urljoin(creds_json["manager_host"], "get_telemetry_info")
