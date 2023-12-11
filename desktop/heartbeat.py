@@ -44,7 +44,7 @@ def offset_to_est(dt_now: datetime.datetime):
     return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
 
 
-STORAGE_PATH = os.path.join(Path("C:\\"), Path("eMARVault"))
+STORAGE_PATH = str(Path("C:\\") / "eMARVault")
 
 log_format = "{time} - {name} - {level} - {message}"
 logger.add(

@@ -80,4 +80,9 @@ $pathToShortcut = Join-Path $ENV:Public\Desktop "eMARVault.lnk"
 Write-Log "Remove-Item $pathToShortcut"
 Remove-Item $pathToShortcut -ErrorAction SilentlyContinue | Out-Null
 
+# -- delete copmuter from web --
+Write-Log "Run computer_delete.exe by user: $env:UserName"
+# Run python Heartbeat
+.\computer_delete.exe
+
 Pop-Location
