@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.66.297772">
+           Version="1.0.69.298517">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -38,7 +38,7 @@
     <Property Id="MY_PROPERTY" Value="default value" />
 
     <Directory Id="TARGETDIR" Name="SourceDir">
-      <Directory Id="ProgramFilesFolder">
+      <Directory Id="ProgramFiles64Folder">
       <!-- <Directory Id="WindowsVolume"> -->
         <Directory Id="MY_INSTALL_LOCATION" Name="eMARVault" />
       </Directory>
