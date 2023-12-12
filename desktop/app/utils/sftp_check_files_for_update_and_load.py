@@ -177,7 +177,7 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
     searching_result = re.search(r"(emarbackup_.*)$", tempdir)
     new_backup_name = searching_result.group(0) if searching_result else ""
 
-    if not new_backup_name in dirs:
+    if not new_backup_name in dirs:  # noqa: E713
         logger.error(
             "The new downloaded backup {} was not founded in the emar_backups.zip",
             new_backup_name,
