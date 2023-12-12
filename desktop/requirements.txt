@@ -1,8 +1,0 @@
-loguru
-paramiko
-python-dotenv
-requests
-pyzipper
-pyinstaller
-pywin32
-pydantic

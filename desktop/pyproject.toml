@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "emar"
+version = "1.0.69"
+description = "Emar runner"
+authors = ["Kostia <saintkos117@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "3.12"
+loguru = "^0.7.2"
+paramiko = "^3.3.1"
+python-dotenv = "^1.0.0"
+requests = "^2.31.0"
+pyzipper = "^0.3.6"
+pyinstaller = "^6.3.0"
+pywin32 = "^306"
+pydantic = "^2.5.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.7"
+mypy = "^1.7.1"
+pytest = "^7.4.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
