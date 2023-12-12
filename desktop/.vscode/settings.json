@@ -7,6 +7,7 @@
     "**/.venv/*/**": true
   },
   "cSpell.words": [
+    "consts",
     "dotenv",
     "fastapi",
     "flowbite",

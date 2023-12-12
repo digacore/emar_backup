@@ -8,9 +8,9 @@ $LOG_FILE = "UpdateLog.txt"
 
 Write-Log "Run heartbeat by user: $env:UserName"
 # Run python Heartbeat
-.\heartbeat.exe
+.\emar.exe --heartbeat
 # TODO: Create process and wait for it to finish. put pid in heartbeat.pid file
-# $proc = Start-Process -FilePath "heartbeat.exe"
+# $proc = Start-Process -FilePath .\emar.exe --heartbeat
 # $proc.Id | Out-File (Join-Path $cfg.backups_path "heartbeat.pid")
 # Wait-Process $proc
 
