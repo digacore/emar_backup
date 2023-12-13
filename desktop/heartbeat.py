@@ -138,42 +138,6 @@ def changes_lookup(comp_remote_data: dict):
 
 @logger.catch
 def send_printer_info(manager_host, creds_json, printer_info):
-    URL = urljoin(manager_host, "printer_info")
-    response = requests.post(
-        URL,
-        json={
-            "computer_name": creds_json["computer_name"],
-            "identifier_key": creds_json["identifier_key"],
-            "printer_info": printer_info,
-        },
-    )
-    logger.info("Printer info sent. Response: {}", response.json())
-
-    # check fields: need_send_printer_info
-
-    url = urljoin(creds_json["manager_host"], "get_telemetry_info")
-    response = requests.get(
-        url,
-        json={
-            "identifier_key": creds_json["identifier_key"],
-        },
-    )
-    if response.status_code == 404:
-        logger.info(
-            "Failed to retrieve telemetry info from server. Response: {}",
-            response.json(),
-        )
-    else:
-        if response.json()["send_printer_info"]:
-            printer_info = get_printer_info_by_posh()
-            if printer_info:
-                logger.info("Printer info: {}", printer_info)
-                # send printer info to server
-                send_printer_info(creds_json["manager_host"], creds_json, printer_info)
-
-
-@logger.catch
-def send_printer_info(manager_host, creds_json, printer_info):
     url = urljoin(manager_host, "printer_info")
     response = requests.post(
         url,
@@ -210,6 +174,26 @@ def main_func():
 
     comp_remote_data = send_activity(manager_host, creds_json)
     changes_lookup(comp_remote_data)
+    # logic for printer check
+    url = urljoin(creds_json["manager_host"], "get_telemetry_info")
+    response = requests.get(
+        url,
+        json={
+            "identifier_key": creds_json["identifier_key"],
+        },
+    )
+    if response.status_code == 404:
+        logger.info(
+            "Failed to retrieve telemetry info from server. Response: {}",
+            response.json(),
+        )
+    else:
+        if response.json()["send_printer_info"]:
+            printer_info = get_printer_info_by_posh()
+            if printer_info:
+                logger.info("Printer info: {}", printer_info)
+                # send printer info to server
+                send_printer_info(creds_json["manager_host"], creds_json, printer_info)
 
 
 try:
