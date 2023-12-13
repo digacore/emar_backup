@@ -2,7 +2,7 @@ import os
 
 import json
 
-from app import logger
+from app.logger import logger
 from app.consts import COMPSTAT_FILE, LOCAL_CREDS_JSON, G_MANAGER_HOST
 from app.utils import (
     get_printer_info_by_posh,

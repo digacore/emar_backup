@@ -2,7 +2,7 @@ import requests
 import datetime
 
 from urllib.parse import urljoin
-from app import logger
+from app.logger import logger
 
 
 def offset_to_est(dt_now: datetime.datetime):

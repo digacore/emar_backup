@@ -1,7 +1,7 @@
 import datetime
 
 
-from app import logger
+from app.logger import logger
 
 from app.consts import STORAGE_PATH
 from app.utils import (

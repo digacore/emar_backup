@@ -1,6 +1,6 @@
 import json
 
-from app import logger
+from app.logger import logger
 from app.consts import COMPSTAT_FILE
 
 

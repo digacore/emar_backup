@@ -1,6 +1,6 @@
 import argparse
 
-from app import logger
+from app.logger import logger
 from app import controllers as c
 
 

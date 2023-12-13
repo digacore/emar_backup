@@ -2,7 +2,7 @@ import requests
 
 from urllib.parse import urljoin
 
-from app import logger
+from app.logger import logger
 
 from app.consts import MANAGER_HOST, IDENTIFIER_KEY
 

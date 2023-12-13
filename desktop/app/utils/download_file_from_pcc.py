@@ -6,7 +6,7 @@ import tempfile
 from urllib.parse import urljoin
 
 import requests
-from app import logger
+from app.logger import logger
 from app.utils.send_activity import offset_to_est
 from app.utils.sftp_check_files_for_update_and_load import (
     AppError,
@@ -23,9 +23,7 @@ def download_file_from_pcc(credentials):
     # Set status as downloading
     logger.info("<-------Start downloading backup file from PCC API------->")
     update_download_status("downloading", credentials)
-    est_datetime = datetime.datetime.fromisoformat(
-        offset_to_est(datetime.datetime.utcnow())
-    )
+    est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.utcnow()))
     download_dir = f"emarbackup_{est_datetime.strftime('%H-%M_%b-%d-%Y')}"
 
     # Create temp directory to save downloaded backup and zip it
@@ -49,9 +47,7 @@ def download_file_from_pcc(credentials):
             ) as res:
                 res.raise_for_status()
 
-                filename = re.findall(
-                    "filename=(.+)", res.headers["Content-Disposition"]
-                )[0]
+                filename = re.findall("filename=(.+)", res.headers["Content-Disposition"])[0]
                 filepath = os.path.join(download_dir_path, filename)
                 with open(filepath, "wb") as f:
                     shutil.copyfileobj(res.raw, f)

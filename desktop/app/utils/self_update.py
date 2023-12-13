@@ -4,7 +4,7 @@ import requests
 from pathlib import Path
 from subprocess import Popen
 
-from app import logger
+from app.logger import logger
 
 
 def self_update(STORAGE_PATH, credentials, old_credentials):
@@ -37,9 +37,7 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
             },
         )
 
-        filepath = (
-            Path(STORAGE_PATH) / response.headers["Content-disposition"].split("=")[1]
-        )
+        filepath = Path(STORAGE_PATH) / response.headers["Content-disposition"].split("=")[1]
         print(filepath)
         with open(
             filepath,
@@ -59,18 +57,9 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
             credentials["msi_version"],
         )
         # NOTE rerun PostInstallActions.ps1 after installation as Admin
-        posha_path = os.path.join(
-            Path("C:\\") / "Program Files" / "eMARVault" / "PostInstallActions.ps1"
-        )
-        posha_path_86 = os.path.join(
-            Path("C:\\")
-            / "Program Files (x86)"
-            / "eMARVault"
-            / "PostInstallActions.ps1"
-        )
-        posha_path_to_use = (
-            posha_path_86 if os.path.isfile(posha_path_86) else posha_path
-        )
+        posha_path = os.path.join(Path("C:\\") / "Program Files" / "eMARVault" / "PostInstallActions.ps1")
+        posha_path_86 = os.path.join(Path("C:\\") / "Program Files (x86)" / "eMARVault" / "PostInstallActions.ps1")
+        posha_path_to_use = posha_path_86 if os.path.isfile(posha_path_86) else posha_path
         Popen(["powershell.exe", "-File", posha_path_to_use, "-verb", "runas"])
         logger.debug("Scheduled task updated.")
 

@@ -1,7 +1,7 @@
 from subprocess import Popen, PIPE
 import json
 
-from app import logger
+from app.logger import logger
 
 
 # Get-Printer | where { $_.PortName -like "*USB*" } | select -Property PrinterStatus,Name | select -first 1 | convertto-json

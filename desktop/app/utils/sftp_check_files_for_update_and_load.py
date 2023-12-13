@@ -10,7 +10,7 @@ from pathlib import Path
 from subprocess import Popen, PIPE
 from paramiko import SSHClient, AutoAddPolicy
 
-from app import logger
+from app.logger import logger
 from app.consts import IP_BLACKLISTED, STORAGE_PATH, MANAGER_HOST
 from stat import S_ISDIR, S_ISREG
 
