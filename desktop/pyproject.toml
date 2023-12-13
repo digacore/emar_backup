@@ -6,14 +6,13 @@ authors = ["Kostia <saintkos117@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "3.12"
+python = "~3.12"
 loguru = "^0.7.2"
 paramiko = "^3.3.1"
 python-dotenv = "^1.0.0"
 requests = "^2.31.0"
 pyzipper = "^0.3.6"
 pyinstaller = "^6.3.0"
-pywin32 = "^306"
 pydantic = "^2.5.2"
 
 [tool.poetry.group.dev.dependencies]
