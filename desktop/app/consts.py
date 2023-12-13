@@ -35,3 +35,16 @@ def get_config_json() -> s.ConfigFile:
 CONFIG = get_config_json()
 
 G_MANAGER_HOST = CONFIG.manager_host
+
+
+def get_credentials() -> s.ConfigFile:
+    assert LOCAL_CREDS_JSON.exists()  # creds.json must exist
+    with open(LOCAL_CREDS_JSON, "r") as f:
+        creds_json = json.load(f)
+    return s.CredsFile.model_validate(creds_json)
+
+
+CREDENTIALS = get_credentials()
+
+MANAGER_HOST = CREDENTIALS.manager_host or str(G_MANAGER_HOST)
+IDENTIFIER_KEY = CREDENTIALS.identifier_key
