@@ -1,13 +1,14 @@
 import requests
 
+from urllib.parse import urljoin
 from app import logger
 
 
 @logger.catch
 def send_printer_info(manager_host, creds_json, printer_info):
-    url = f"{manager_host}/printer_info"
+    URL = urljoin(manager_host, "printer_info")
     response = requests.post(
-        url,
+        URL,
         json={
             "computer_name": creds_json["computer_name"],
             "identifier_key": creds_json["identifier_key"],

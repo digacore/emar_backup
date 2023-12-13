@@ -1,6 +1,7 @@
 import requests
 import datetime
 
+from urllib.parse import urljoin
 from app import logger
 
 
@@ -20,10 +21,11 @@ def offset_to_est(dt_now: datetime.datetime):
 @logger.catch
 def send_activity(manager_host, creds_json=None):
     if creds_json:
-        url = f"{manager_host}/last_time"
+        URL = urljoin(manager_host, "last_time")
+
         last_time_online = offset_to_est(datetime.datetime.utcnow())
         response = requests.post(
-            url,
+            URL,
             json={
                 "computer_name": creds_json["computer_name"],
                 "identifier_key": creds_json["identifier_key"],

@@ -1,1 +1,2 @@
-from .logger import logger  # noqa: F401
+# ruff: noqa: F401
+from .logger import logger

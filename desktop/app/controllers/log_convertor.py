@@ -1,10 +1,10 @@
 from app import schemas as s
 
-from app.consts import OUTPUT_LOG_FILE_PATH
+from app.consts import OUTPUT_LOG_FILE_PATH, INPUT_LOG_FILE_PATH
 
 
 def log_convertor():
-    with open(OUTPUT_LOG_FILE_PATH, "r", encoding="utf-8") as i_f:
+    with open(INPUT_LOG_FILE_PATH, "r", encoding="utf-8") as i_f:
         with open(OUTPUT_LOG_FILE_PATH, "w") as o_f:
             line_no = 1
             try:

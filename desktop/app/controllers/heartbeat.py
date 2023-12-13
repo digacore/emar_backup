@@ -3,10 +3,9 @@ import os
 # import time
 # import random
 import json
-from pathlib import Path
-from loguru import logger
 
-from app.consts import COMPSTAT_FILE, LOCAL_CREDS_JSON, STORAGE_PATH
+from app import logger
+from app.consts import COMPSTAT_FILE, LOCAL_CREDS_JSON, G_MANAGER_HOST
 from app.utils import (
     get_printer_info_by_posh,
     send_activity,
@@ -14,29 +13,8 @@ from app.utils import (
     send_printer_info,
 )
 
-log_format = "{time} - {name} - {level} - {message}"
-logger.add(
-    sink=os.path.join(STORAGE_PATH, "emar_log.txt"),
-    format=log_format,
-    serialize=True,
-    level="DEBUG",
-    colorize=True,
-)
-
 
 def heartbeat():
-    if os.path.isfile(Path("config.json").absolute()):
-        with open("config.json", "r") as f:
-            config_json = json.load(f)
-        try:
-            g_manager_host = config_json["manager_host"]
-        except Exception as e:
-            logger.warning(f"Failed to get info from config.json. Error: {e}")
-            raise Exception(
-                "Can't find manager_host in config.json. Check that field and file exist."
-            )
-    else:
-        raise FileNotFoundError("Can't find config.json file. Check if file exists.")
     try:
         # NOTE wait randomly from 0 to 279 sec
         # to spread load on the server
@@ -50,10 +28,10 @@ def heartbeat():
             manager_host = (
                 creds_json["manager_host"]
                 if creds_json["manager_host"]
-                else g_manager_host
+                else G_MANAGER_HOST
             )
         else:
-            manager_host = g_manager_host
+            manager_host = G_MANAGER_HOST
 
         if not os.path.isfile(COMPSTAT_FILE):
             with open(COMPSTAT_FILE, "w") as f:
