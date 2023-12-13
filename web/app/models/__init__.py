@@ -1,4 +1,4 @@
-# flake8: noqa F401
+# ruff: noqa: F401
 from .user import User, AnonymousUser, UserView, UserRole, UserPermissionLevel
 from .company import Company, CompanyView
 from .computer import Computer, ComputerView, DeviceType, DeviceRole, ComputerStatus
