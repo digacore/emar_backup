@@ -1,4 +1,4 @@
-# flake8: noqa F401
+# ruff: noqa: F401
 from .get_credentials import GetCredentials
 from .last_time import LastTime
 from .download_status import DownloadStatus
@@ -19,3 +19,5 @@ from .pcc_report_object import PCCReportObject, PCCReportType, PCCReportAction
 from .search import SearchObj
 from .alert import ComputersByLocation
 from .location import LocationInfo
+from .printer_info import PrinterInfoDict, PrinterInfo
+from .agent_telemetry import AgentTelemetry, TelemetryRequestId

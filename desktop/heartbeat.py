@@ -3,6 +3,9 @@ from subprocess import Popen, PIPE
 import datetime
 from pathlib import Path
 import time
+from urllib.parse import urljoin
+
+
 import random
 import json
 import requests
@@ -79,18 +82,18 @@ else:
     raise FileNotFoundError("Can't find config.json file. Check if file exists.")
 
 
-creds_file = "creds.json"
-compstat_file = os.path.join(STORAGE_PATH, "compstat.json")
-local_creds_json = os.path.join(STORAGE_PATH, creds_file)
+CREDS_FILE = "creds.json"
+COMPSTAT_FILE = os.path.join(STORAGE_PATH, "compstat.json")
+LOCAL_CREDS_JSON = os.path.join(STORAGE_PATH, CREDS_FILE)
 
 
 @logger.catch
 def send_activity(manager_host, creds_json=None):
     if creds_json:
-        url = f"{manager_host}/last_time"
+        URL = urljoin(manager_host, "last_time")
         last_time_online = offset_to_est(datetime.datetime.utcnow())
         response = requests.post(
-            url,
+            URL,
             json={
                 "computer_name": creds_json["computer_name"],
                 "identifier_key": creds_json["identifier_key"],
@@ -105,23 +108,21 @@ def send_activity(manager_host, creds_json=None):
 
 
 @logger.catch
-def changes_lookup(comp_remote_data):
-    f = open(compstat_file, "r")
-    compstat = json.load(f)
-    f.close()
+def changes_lookup(comp_remote_data: dict):
+    # with open(COMPSTAT_FILE, "r") as f:
+    #     compstat = json.load(f)
 
-    for field in compstat:
-        if len(compstat) == 0:
-            break
-        if compstat[field] != comp_remote_data[field]:
-            subprs = Popen(
-                [
-                    Path(".") / "server_connect.exe",
-                ]
-            )
-            subprs.communicate()
+    # TODO: BUG!!!
+    # for field in compstat:
+    #     if compstat[field] != comp_remote_data[field]:
+    #         subprs = Popen(
+    #             [
+    #                 Path(".") / "server_connect.exe",
+    #             ]
+    #         )
+    #         subprs.communicate()
 
-    with open(compstat_file, "w") as f:
+    with open(COMPSTAT_FILE, "w") as f:
         json.dump(
             {
                 "sftp_host": comp_remote_data["sftp_host"],
@@ -137,9 +138,9 @@ def changes_lookup(comp_remote_data):
 
 @logger.catch
 def send_printer_info(manager_host, creds_json, printer_info):
-    url = f"{manager_host}/printer_info"
+    URL = urljoin(manager_host, "printer_info")
     response = requests.post(
-        url,
+        URL,
         json={
             "computer_name": creds_json["computer_name"],
             "identifier_key": creds_json["identifier_key"],
@@ -148,14 +149,54 @@ def send_printer_info(manager_host, creds_json, printer_info):
     )
     logger.info("Printer info sent. Response: {}", response.json())
 
+    # check fields: need_send_printer_info
+
+    url = urljoin(creds_json["manager_host"], "get_telemetry_info")
+    response = requests.get(
+        url,
+        json={
+            "identifier_key": creds_json["identifier_key"],
+        },
+    )
+    if response.status_code == 404:
+        logger.info(
+            "Failed to retrieve telemetry info from server. Response: {}",
+            response.json(),
+        )
+    else:
+        if response.json()["send_printer_info"]:
+            printer_info = get_printer_info_by_posh()
+            if printer_info:
+                logger.info("Printer info: {}", printer_info)
+                # send printer info to server
+                send_printer_info(creds_json["manager_host"], creds_json, printer_info)
+
+
+@logger.catch
+def send_printer_info(manager_host, creds_json, printer_info):
+    url = urljoin(manager_host, "printer_info")
+    response = requests.post(
+        url,
+        json={
+            "computer_name": creds_json["computer_name"],
+            "identifier_key": creds_json["identifier_key"],
+            "printer_info": printer_info,
+        },
+    )
+    if response.status_code == 404:
+        logger.info(
+            "Failed to retrieve telemetry info from server. Response: {}",
+            response.json(),
+        )
+    logger.info("Printer info sent. Response: {}", response.json())
+
 
 @logger.catch
 def main_func():
     creds_json = None
-    printer_info = get_printer_info_by_posh()
 
-    if os.path.isfile(local_creds_json):
-        with open(local_creds_json, "r") as f:
+    if os.path.isfile(LOCAL_CREDS_JSON):
+        with open(LOCAL_CREDS_JSON, "r") as f:
             creds_json = json.load(f)
         manager_host = (
             creds_json["manager_host"] if creds_json["manager_host"] else g_manager_host
@@ -163,17 +204,12 @@ def main_func():
     else:
         manager_host = g_manager_host
 
-    if not os.path.isfile(compstat_file):
-        with open(compstat_file, "w") as f:
+    if not os.path.isfile(COMPSTAT_FILE):
+        with open(COMPSTAT_FILE, "w") as f:
             f.write("{}")
 
     comp_remote_data = send_activity(manager_host, creds_json)
     changes_lookup(comp_remote_data)
-
-    if printer_info:
-        logger.info("Printer info: {}", printer_info)
-        # send printer info to server
-        send_printer_info(manager_host, creds_json, printer_info)
 
 
 try:

@@ -8,15 +8,15 @@ from urllib.parse import urljoin
 
 STORAGE_PATH = str(Path("C:\\") / "eMARVault")
 
-creds_file = "creds.json"
-local_creds_json = os.path.join(STORAGE_PATH, creds_file)
+CREDS_FILE = "creds.json"
+LOCAL_CREDS_JSON = os.path.join(STORAGE_PATH, CREDS_FILE)
 
 
 @logger.catch
 def main_func():
     creds_json = None
 
-    with open(local_creds_json, "r") as f:
+    with open(LOCAL_CREDS_JSON, "r") as f:
         creds_json = json.load(f)
     manager_host = creds_json["manager_host"]
 

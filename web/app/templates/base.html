@@ -1,56 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
 
-<head>
-
-  <meta charset="utf-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="">
-  <meta name="author" content="">
-
-  <!-- prettier-ignore -->
-  {% block meta %}
+    <!-- prettier-ignore -->
+    {% block meta %}
   {% endblock %}
 
-  <title> eMAR Vault - Admin Panel</title>
+    <title>eMAR Vault - Admin Panel</title>
 
-  <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link
+      rel="shortcut icon"
+      href="{{ url_for('static', filename='favicon.ico') }}"
+    />
 
-  <!-- Custom fonts for this template-->
-  <link href="{{ url_for('static', filename='/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
-  <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+    <!-- Custom fonts for this template-->
+    <link
+      href="{{ url_for('static', filename='/vendor/fontawesome-free/css/all.min.css') }}"
+      rel="stylesheet"
+      type="text/css"
+    />
+    <link
+      href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+      rel="stylesheet"
+    />
 
-  <!-- Custom styles for this template-->
-  <link href="{{ url_for('static', filename='/css/sb-admin-2.min.css') }}" rel="stylesheet">
+    <!-- Custom styles for this template-->
+    <link
+      href="{{ url_for('static', filename='/css/sb-admin-2.min.css') }}"
+      rel="stylesheet"
+    />
 
-  <!-- Custom styles for list view-->
-  <link href="{{ url_for('static', filename='/css/custom-model-views.css') }}" rel="stylesheet">
+    <!-- Custom styles for list view-->
+    <link
+      href="{{ url_for('static', filename='/css/custom-model-views.css') }}"
+      rel="stylesheet"
+    />
 
-  <!-- Custom CSS-->
-  <link href="{{ url_for('static', filename='/css/main.css') }}" rel="stylesheet">
+    <!-- Custom CSS-->
+    <link
+      href="{{ url_for('static', filename='/css/main.css') }}"
+      rel="stylesheet"
+    />
 
-  <!-- prettier-ignore -->
-  {% block links %}
+    <!-- prettier-ignore -->
+    {% block links %}
   {% endblock %}
 
-  <!-- prettier-ignore -->
-  {% block head_scripts %}
+    <!-- prettier-ignore -->
+    {% block head_scripts %}
   {% endblock %}
+  </head>
 
-</head>
-
-<body id="page-top" onload="startTime()">
-
-  <!-- Page Wrapper -->
-  <div id="wrapper">
-
-    <!-- Sidebar -->
-    <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
-
-      <!-- Sidebar - Brand -->
-      <!-- prettier-ignore -->
-      <div id="sidebar-logo-wrapper" class="d-flex justify-content-center" style="padding: 60px 0px;">
+  <body id="page-top" onload="startTime()">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+      <!-- Sidebar -->
+      <ul
+        class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion"
+        id="accordionSidebar"
+      >
+        <!-- Sidebar - Brand -->
+        <!-- prettier-ignore -->
+        <div id="sidebar-logo-wrapper" class="d-flex justify-content-center" style="padding: 60px 0px;">
         <a class="sidebar-brand d-flex align-items-center justify-content-center" href="{{ url_for('main.index') }}">
           <div class="sidebar-brand-icon">
             <!-- Small icon -->
@@ -70,72 +89,107 @@
         </a>
       </div>
 
+        {% block flash_messages %} {% if request.endpoint %} {% if 'static' not
+        in request.endpoint %} {% if 'admin' not in
+        url_for(request.endpoint,**(request.view_args if request.view_args else
+        {})) %} {% with messages = get_flashed_messages() %} {% if messages %}
+        <div
+          class="d-flex align-items-center alert alert-info alert-dismissable"
+        >
+          {% for message in messages %}
+          <div>
+            {{ message }}
+            <button
+              type="button"
+              class="close"
+              data-dismiss="alert"
+              aria-hidden="true"
+            >
+              ×
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %} {% endwith %} {% endif %} {% endif %} {% endif %} {%
+        endblock flash_messages %}
 
-      {% block flash_messages %}
-        {% if request.endpoint %}
-          {% if 'static' not in request.endpoint %}
-            {% if 'admin' not in url_for(request.endpoint) %}
-              {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                  <div class="d-flex align-items-center alert alert-info alert-dismissable">
-                  {% for message in messages %}
-                    <div>{{ message }}
-                      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">×</button>
-                    </div>
-                  {% endfor %}
-                  </div>
-                {% endif %}
-              {% endwith %}
-            {% endif %}
-          {% endif %}
-        {% endif %}
-      {% endblock flash_messages %}
-
-      <!-- Divider -->
-      <hr class="sidebar-divider my-0">
-
-      <!-- Nav Item - Dashboard -->
-      <li class="nav-item active">
-        <a class="nav-link" href="{{ url_for('main.index') }}">
-          <i class="fas fa-fw fa-tachometer-alt"></i>
-          <span style="color: lawngreen;" title='Overview with some widgets "Offline Devices, Total Devices" etc…'>Dashboard</span></a>
-      </li>
-
-      {% if current_user.is_authenticated %}
         <!-- Divider -->
-        <hr class="sidebar-divider">
+        <hr class="sidebar-divider my-0" />
+
+        <!-- Nav Item - Dashboard -->
+        <li class="nav-item active">
+          <a class="nav-link" href="{{ url_for('main.index') }}">
+            <i class="fas fa-fw fa-tachometer-alt"></i>
+            <span
+              style="color: lawngreen"
+              title='Overview with some widgets "Offline Devices, Total Devices" etc…'
+              >Dashboard</span
+            ></a
+          >
+        </li>
+
+        {% if current_user.is_authenticated %}
+        <!-- Divider -->
+        <hr class="sidebar-divider" />
 
         <!-- Heading -->
-        <div class="sidebar-heading">
-          Admin tabs
-        </div>
+        <div class="sidebar-heading">Admin tabs</div>
 
         <!-- Nav Item - Company -->
         {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
-          <li class="nav-item active">
-            <a class="nav-link" href="/admin/company/">
-              <i class="fas fa-fw fa-hospital"></i>
-              <span style="color: lawngreen;" title='Create or view overview of a "Company"'>Company</span></a>
-          </li>
+        <li class="nav-item active">
+          <a class="nav-link" href="/admin/company/">
+            <i class="fas fa-fw fa-hospital"></i>
+            <span
+              style="color: lawngreen"
+              title='Create or view overview of a "Company"'
+              >Company</span
+            ></a
+          >
+        </li>
         {% endif %}
         <!-- Nav Item - Computer -->
         <li class="nav-item active">
           <a class="nav-link" href="/admin/computer/">
             <i class="fas fa-fw fa-desktop"></i>
-            <span style="color: lawngreen;" title="View All eMARVault devices. Edit Devices etc….">Computer</span></a>
+            <span
+              style="color: lawngreen"
+              title="View All eMARVault devices. Edit Devices etc…."
+              >Computer</span
+            ></a
+          >
         </li>
         <!-- Nav Item - Location -->
         <li class="nav-item active">
-          <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLocation" aria-expanded="true" aria-controls="collapseLocation">
+          <a
+            class="nav-link collapsed"
+            href="#"
+            data-toggle="collapse"
+            data-target="#collapseLocation"
+            aria-expanded="true"
+            aria-controls="collapseLocation"
+          >
             <i class="fas fa-fw fa-map-marker"></i>
-            <span style="color: lawngreen;" title="View Sites/Locations, Add Sites/Locations associated with a company, View Site Overview (Offline Online devices etc..) ">Location</span>
+            <span
+              style="color: lawngreen"
+              title="View Sites/Locations, Add Sites/Locations associated with a company, View Site Overview (Offline Online devices etc..) "
+              >Location</span
+            >
           </a>
-          <div id="collapseLocation" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
+          <div
+            id="collapseLocation"
+            class="collapse"
+            aria-labelledby="headingOne"
+            data-parent="#accordionSidebar"
+          >
             <div class="bg-white py-2 collapse-inner rounded">
               <h6 class="collapse-header">Location tabs:</h6>
               <a class="collapse-item" href="/admin/location/">Location</a>
-              {% if current_user.permission.value in ["GLOBAL", "COMPANY", "LOCATION_GROUP"] %}
-                <a class="collapse-item" href="/admin/locationgroup/">Location Groups</a>
+              {% if current_user.permission.value in ["GLOBAL", "COMPANY",
+              "LOCATION_GROUP"] %}
+              <a class="collapse-item" href="/admin/locationgroup/"
+                >Location Groups</a
+              >
               {% endif %}
             </div>
           </div>
@@ -143,214 +197,262 @@
 
         <!-- Nav Item - Pages Collapse Menu -->
         <li class="nav-item active">
-          <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+          <a
+            class="nav-link collapsed"
+            href="#"
+            data-toggle="collapse"
+            data-target="#collapseOne"
+            aria-expanded="true"
+            aria-controls="collapseOne"
+          >
             <i class="fas fa-fw fa-cog"></i>
-            <span style="color: lawngreen;" title="Download lates desktop install">System Settings</span>
+            <span
+              style="color: lawngreen"
+              title="Download lates desktop install"
+              >System Settings</span
+            >
           </a>
-          <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordionSidebar">
+          <div
+            id="collapseOne"
+            class="collapse"
+            aria-labelledby="headingOne"
+            data-parent="#accordionSidebar"
+          >
             <div class="bg-white py-2 collapse-inner rounded">
               <h6 class="collapse-header">System tabs:</h6>
               <a class="collapse-item" href="/admin/user/">User</a>
-              <a class="collapse-item" href="/admin/desktopclient/">Desktop Client</a>
+              <a class="collapse-item" href="/admin/desktopclient/"
+                >Desktop Client</a
+              >
               {% if current_user.permission.value == "GLOBAL" %}
-                <a class="collapse-item" href="/admin/clientversion/">Client Version</a>
-              {% endif %}
-
-              {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
-                <a class="collapse-item" href="{{ url_for('info.system_log_info') }}">System logs</a>
-                <a class="collapse-item" href="{{ url_for('pcc.creation_reports') }}">PointClickCare import</a>
+              <a class="collapse-item" href="/admin/clientversion/"
+                >Client Version</a
+              >
+              {% endif %} {% if current_user.permission.value == "GLOBAL" and
+              current_user.role.value == "ADMIN" %}
+              <a
+                class="collapse-item"
+                href="{{ url_for('info.system_log_info') }}"
+                >System logs</a
+              >
+              <a
+                class="collapse-item"
+                href="{{ url_for('pcc.creation_reports') }}"
+                >PointClickCare import</a
+              >
               {% endif %}
             </div>
           </div>
         </li>
-      {% endif %}
+        {% endif %}
 
-      <!-- Nav Item - Reporting -->
-      {% if current_user.permission.value == "GLOBAL" %}
+        <!-- Nav Item - Reporting -->
+        {% if current_user.permission.value == "GLOBAL" %}
         <li class="nav-item active">
           <a class="nav-link" href="{{ url_for('billing.get_billing_page') }}">
             <i class="fas fa-fw fa-calculator"></i>
-            <span style="color: lawngreen;" title="Reporting page">Reporting</span></a>
+            <span style="color: lawngreen" title="Reporting page"
+              >Reporting</span
+            ></a
+          >
         </li>
-      {% endif %}
-
-      <!-- Divider -->
-      <hr class="sidebar-divider d-none d-md-block">
-
-      <!-- Sidebar Toggler (Sidebar) -->
-
-      {% block sidebar_toggle %}
-        {% if request.endpoint %}
-          {% if 'static' not in request.endpoint %}
-            {% if 'admin' in url_for(request.endpoint) %}
-            <script>
-              document.addEventListener("DOMContentLoaded",
-                function(){
-              $("#sidebarToggle").click();
-              })
-            </script>
-            {% endif %}
-          {% endif %}
         {% endif %}
-      {% endblock sidebar_toggle %}
 
-      <div class="text-center d-none d-md-inline">
-        <button class="rounded-circle border-0" id="sidebarToggle"></button>
-      </div>
+        <!-- Divider -->
+        <hr class="sidebar-divider d-none d-md-block" />
 
-    </ul>
-    <!-- End of Sidebar -->
+        <!-- Sidebar Toggler (Sidebar) -->
 
-    <!-- Content Wrapper -->
-    <div id="content-wrapper" class="d-flex flex-column">
+        {% block sidebar_toggle %} {% if request.endpoint %} {% if 'static' not
+        in request.endpoint %} {% if 'admin' in
+        url_for(request.endpoint,**(request.view_args if request.view_args else
+        {})) %}
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            $("#sidebarToggle").click();
+          });
+        </script>
+        {% endif %} {% endif %} {% endif %} {% endblock sidebar_toggle %}
 
-      <!-- Main Content -->
-      <div id="content">
+        <div class="text-center d-none d-md-inline">
+          <button class="rounded-circle border-0" id="sidebarToggle"></button>
+        </div>
+      </ul>
+      <!-- End of Sidebar -->
 
-        <!-- Topbar -->
-        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+      <!-- Content Wrapper -->
+      <div id="content-wrapper" class="d-flex flex-column">
+        <!-- Main Content -->
+        <div id="content">
+          <!-- Topbar -->
+          <nav
+            class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow"
+          >
+            <!-- Sidebar Toggle (Topbar) -->
+            <button
+              id="sidebarToggleTop"
+              class="btn btn-link d-md-none rounded-circle mr-3"
+            >
+              <i class="fa fa-bars"></i>
+            </button>
 
-          <!-- Sidebar Toggle (Topbar) -->
-          <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
-            <i class="fa fa-bars"></i>
-          </button>
+            <div id="js-clock"></div>
 
-          <div id="js-clock"></div>
-
-          <!-- Topbar Navbar -->
-          <ul class="navbar-nav ml-auto">
-
-            <!-- Nav Item - Search Dropdown (Visible Only XS) -->
-            <li class="nav-item dropdown no-arrow d-sm-none">
-              <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <i class="fas fa-search fa-fw"></i>
-              </a>
-              <!-- Dropdown - Messages -->
-              <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in" aria-labelledby="searchDropdown">
-                <form class="form-inline mr-auto w-100 navbar-search">
-                  <div class="input-group">
-                    <input type="text" class="form-control bg-light border-0 small" placeholder="Search for..." aria-label="Search" aria-describedby="basic-addon2">
-                    <div class="input-group-append">
-                      <button class="btn btn-primary" type="button">
-                        <i class="fas fa-search fa-sm"></i>
-                      </button>
-                    </div>
-                  </div>
-                </form>
-              </div>
-            </li>
-
-            <!-- Login/Logout -->
-            {% if current_user.is_authenticated %}
-            <!-- prettier-ignore -->
-              {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
-                <a class="nav-item d-flex align-items-center nav-link" href="/admin/company/" >
-                  Company
+            <!-- Topbar Navbar -->
+            <ul class="navbar-nav ml-auto">
+              <!-- Nav Item - Search Dropdown (Visible Only XS) -->
+              <li class="nav-item dropdown no-arrow d-sm-none">
+                <a
+                  class="nav-link dropdown-toggle"
+                  href="#"
+                  id="searchDropdown"
+                  role="button"
+                  data-toggle="dropdown"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  <i class="fas fa-search fa-fw"></i>
                 </a>
+                <!-- Dropdown - Messages -->
+                <div
+                  class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in"
+                  aria-labelledby="searchDropdown"
+                >
+                  <form class="form-inline mr-auto w-100 navbar-search">
+                    <div class="input-group">
+                      <input
+                        type="text"
+                        class="form-control bg-light border-0 small"
+                        placeholder="Search for..."
+                        aria-label="Search"
+                        aria-describedby="basic-addon2"
+                      />
+                      <div class="input-group-append">
+                        <button class="btn btn-primary" type="button">
+                          <i class="fas fa-search fa-sm"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
+              </li>
+
+              <!-- Login/Logout -->
+              {% if current_user.is_authenticated %}
+              <!-- prettier-ignore -->
+              {% if current_user.permission.value in ["GLOBAL", "COMPANY"] %}
+              <a
+                class="nav-item d-flex align-items-center nav-link"
+                href="/admin/company/"
+              >
+                Company
+              </a>
               {% endif %}
-              <a class="nav-item d-flex align-items-center nav-link" href="/admin/computer/" >
+              <a
+                class="nav-item d-flex align-items-center nav-link"
+                href="/admin/computer/"
+              >
                 Computer
               </a>
-              <a class="nav-item d-flex align-items-center nav-link" href="/admin/location/" >
+              <a
+                class="nav-item d-flex align-items-center nav-link"
+                href="/admin/location/"
+              >
                 Location
               </a>
-            <!-- prettier-ignore -->
-            {% endif %}
+              <!-- prettier-ignore -->
+              {% endif %}
 
-            <div class="topbar-divider d-none d-sm-block"></div>
+              <div class="topbar-divider d-none d-sm-block"></div>
 
-            <!-- Login/Logout -->
-            {% if current_user.is_authenticated %}
-            <!-- prettier-ignore -->
-            <a class="nav-item d-flex align-items-center" href="{{ url_for('auth.logout') }}" >
+              <!-- Login/Logout -->
+              {% if current_user.is_authenticated %}
+              <!-- prettier-ignore -->
+              <a class="nav-item d-flex align-items-center" href="{{ url_for('auth.logout') }}" >
               <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
               Logout
             </a>
-            <!-- prettier-ignore -->
-            {% else %}
-            <a class="nav-item d-flex align-items-center" href="{{ url_for('auth.login') }}" >
-              <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
-              Login
-            </a>
-            <!-- prettier-ignore -->
-            {% endif %}
+              <!-- prettier-ignore -->
+              {% else %}
+              <a
+                class="nav-item d-flex align-items-center"
+                href="{{ url_for('auth.login') }}"
+              >
+                <i
+                  class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"
+                ></i>
+                Login
+              </a>
+              <!-- prettier-ignore -->
+              {% endif %}
+            </ul>
+          </nav>
+          <!-- End of Topbar -->
 
-          </ul>
-
-        </nav>
-        <!-- End of Topbar -->
-
-        <!-- Begin Page Content -->
-        <div class="container-fluid">
-          {% block content %}
-
-          {% endblock %}
+          <!-- Begin Page Content -->
+          <div class="container-fluid">{% block content %} {% endblock %}</div>
+          <!-- End of Main Content -->
         </div>
-        <!-- End of Main Content -->
-      </div>
 
-      <!-- Footer -->
-      <footer class="sticky-footer bg-white">
-        <div class="container my-auto">
-          <div class="copyright d-flex justify-content-between my-auto">
-            <span>Support:  <a class="text-decoration-none text-primary">support@emarvault.com</a></span>
-            <a
-              class="text-decoration-none"
-              href="https://emarvault.com/index.php/privacy-policy/"
-              target="_blank"
-            >
-              Privacy Statement
-            </a>
-            <span>Copyright &copy; Digacore 2023</span>
+        <!-- Footer -->
+        <footer class="sticky-footer bg-white">
+          <div class="container my-auto">
+            <div class="copyright d-flex justify-content-between my-auto">
+              <span
+                >Support:
+                <a class="text-decoration-none text-primary"
+                  >support@emarvault.com</a
+                ></span
+              >
+              <a
+                class="text-decoration-none"
+                href="https://emarvault.com/index.php/privacy-policy/"
+                target="_blank"
+              >
+                Privacy Statement
+              </a>
+              <span>Copyright &copy; Digacore 2023</span>
+            </div>
           </div>
-        </div>
-      </footer>
-      <!-- End of Footer -->
-
+        </footer>
+        <!-- End of Footer -->
+      </div>
+      <!-- End of Content Wrapper -->
     </div>
-    <!-- End of Content Wrapper -->
+    <!-- End of Page Wrapper -->
 
-  </div>
-  <!-- End of Page Wrapper -->
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+      <i class="fas fa-angle-up"></i>
+    </a>
 
-  <!-- Scroll to Top Button-->
-  <a class="scroll-to-top rounded" href="#page-top">
-    <i class="fas fa-angle-up"></i>
-  </a>
+    <!-- Bootstrap core JavaScript-->
+    {% block bootstrap_core %} {% if request.endpoint %} {% if 'static' not in
+    request.endpoint %} {% if 'admin' not in
+    url_for(request.endpoint,**(request.view_args if request.view_args else {}))
+    %}
+    <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
+    <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+    {% endif %} {% endif %} {% endif %} {% endblock bootstrap_core %}
+    <script src="{{ url_for('static', filename='/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='/vendor/bootstrap/js/bootstrap.bundle.min.js.map') }}"></script>
 
-  <!-- Bootstrap core JavaScript-->
-  {% block bootstrap_core %}
-    {% if request.endpoint %}
-      {% if 'static' not in request.endpoint %}
-        {% if 'admin' not in url_for(request.endpoint) %}
-          <!-- This if statement is required to avoid double import if jQuery. Otherwise some funtions brake -->
-          <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
-          <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
-          <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
-        {% endif %}
-      {% endif %}
-    {% endif %}
-  {% endblock bootstrap_core %}
-  <script src="{{ url_for('static', filename='/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='/vendor/bootstrap/js/bootstrap.bundle.min.js.map') }}"></script>
+    <!-- Core plugin JavaScript-->
+    <script src="{{ url_for('static', filename='/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
 
-  <!-- Core plugin JavaScript-->
-  <script src="{{ url_for('static', filename='/vendor/jquery-easing/jquery.easing.min.js') }}"></script>
+    <!-- Custom scripts for all pages-->
+    <script src="{{ url_for('static', filename='/js/sb-admin-2.min.js') }}"></script>
 
-  <!-- Custom scripts for all pages-->
-  <script src="{{ url_for('static', filename='/js/sb-admin-2.min.js') }}"></script>
+    <!-- Page level plugins -->
+    <script src="{{ url_for('static', filename='/vendor/chart.js/Chart.min.js') }}"></script>
 
-  <!-- Page level plugins -->
-  <script src="{{ url_for('static', filename='/vendor/chart.js/Chart.min.js') }}"></script>
+    <!-- Page level custom scripts -->
+    <script src="{{ url_for('static', filename='/js/demo/chart-area-demo.js') }}"></script>
+    <script src="{{ url_for('static', filename='/js/demo/chart-pie-demo.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js')}}"></script>
 
-  <!-- Page level custom scripts -->
-  <script src="{{ url_for('static', filename='/js/demo/chart-area-demo.js') }}"></script>
-  <script src="{{ url_for('static', filename='/js/demo/chart-pie-demo.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/main.js')}}"></script>
-
-  {% block scripts %}
-  {% endblock %}
-
-</body>
-
+    {% block scripts %} {% endblock %}
+  </body>
 </html>
