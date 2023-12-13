@@ -3,7 +3,6 @@ import os
 import re
 import pprint
 import requests
-import json
 import tempfile
 
 from urllib.parse import urljoin
@@ -12,7 +11,7 @@ from subprocess import Popen, PIPE
 from paramiko import SSHClient, AutoAddPolicy
 
 from app import logger
-from app.consts import IP_BLACKLISTED, LOCAL_CREDS_JSON, G_MANAGER_HOST, STORAGE_PATH
+from app.consts import IP_BLACKLISTED, STORAGE_PATH, MANAGER_HOST
 from stat import S_ISDIR, S_ISREG
 
 from app.utils.send_activity import offset_to_est
@@ -27,19 +26,7 @@ class SSHConnectionError(Exception):
 
 
 def update_download_status(status, creds, last_downloaded="", last_saved_path=""):
-    if os.path.isfile(LOCAL_CREDS_JSON):
-        with open(LOCAL_CREDS_JSON, "r") as f:
-            creds_json = json.load(f)
-            logger.info(f"Credentials recieved from {LOCAL_CREDS_JSON}.")
-        manager_host = (
-            creds_json["manager_host"]
-            if creds_json["manager_host"]
-            else str(G_MANAGER_HOST)
-        )
-    else:
-        manager_host = str(G_MANAGER_HOST)
-
-    m_host = manager_host if "manager_host" not in creds else creds["manager_host"]
+    m_host = MANAGER_HOST if "manager_host" not in creds else creds["manager_host"]
 
     URL = urljoin(m_host, "download_status")
     requests.post(
@@ -184,9 +171,7 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
             "The new downloaded backup {} was not founded in the emar_backups.zip",
             new_backup_name,
         )
-        raise FileNotFoundError(
-            "The new downloaded backup was not found in the emar_backups.zip"
-        )
+        raise FileNotFoundError("The new downloaded backup was not found in the emar_backups.zip")
 
     return os.path.join(zip_name, new_backup_name)
 
@@ -196,9 +181,7 @@ def sftp_check_files_for_update_and_load(credentials):
     files_cheksum = {}
     print('credentials["files_checksum"]', type(credentials["files_checksum"]))
     pprint.pprint(credentials["files_checksum"])
-    download_directory = (
-        credentials["sftp_folder_path"] if credentials["sftp_folder_path"] else None
-    )
+    download_directory = credentials["sftp_folder_path"] if credentials["sftp_folder_path"] else None
 
     with SSHClient() as ssh:
         # TODO check for real key
@@ -236,20 +219,10 @@ def sftp_check_files_for_update_and_load(credentials):
         with ssh.open_sftp() as sftp:
             # get list of all files and folders on sftp server
             if download_directory:
-                list_dirs = (
-                    sftp.listdir_attr(download_directory)
-                    if download_directory
-                    else sftp.listdir_attr()
-                )
-                dir_names = [
-                    f"./{download_directory}/{i.filename}"
-                    for i in list_dirs
-                    if S_ISDIR(i.st_mode)
-                ]
+                list_dirs = sftp.listdir_attr(download_directory) if download_directory else sftp.listdir_attr()
+                dir_names = [f"./{download_directory}/{i.filename}" for i in list_dirs if S_ISDIR(i.st_mode)]
                 file_paths = {
-                    f"./{download_directory}/{i.filename}": "-".join(
-                        i.longname.split()[4:8]
-                    )
+                    f"./{download_directory}/{i.filename}": "-".join(i.longname.split()[4:8])
                     for i in list_dirs
                     if S_ISREG(i.st_mode)
                 }
@@ -258,9 +231,7 @@ def sftp_check_files_for_update_and_load(credentials):
                 list_dirs = sftp.listdir_attr()
                 dir_names = [i.filename for i in list_dirs if S_ISDIR(i.st_mode)]
                 file_paths = {
-                    f"./{i.filename}": "-".join(i.longname.split()[4:8])
-                    for i in list_dirs
-                    if S_ISREG(i.st_mode)
+                    f"./{i.filename}": "-".join(i.longname.split()[4:8]) for i in list_dirs if S_ISREG(i.st_mode)
                 }
 
             while len(dir_names) > 0:
@@ -270,15 +241,9 @@ def sftp_check_files_for_update_and_load(credentials):
                 for objname in dir_names:
                     sanitized_objname = objname.lstrip("./")
                     inside_dirs = sftp.listdir_attr(sanitized_objname)
-                    ins_dir_names = [
-                        f"./{sanitized_objname}/{i.filename}"
-                        for i in inside_dirs
-                        if S_ISDIR(i.st_mode)
-                    ]
+                    ins_dir_names = [f"./{sanitized_objname}/{i.filename}" for i in inside_dirs if S_ISDIR(i.st_mode)]
                     ins_file_paths = {
-                        f"./{sanitized_objname}/{i.filename}": "-".join(
-                            i.longname.split()[4:8]
-                        )
+                        f"./{sanitized_objname}/{i.filename}": "-".join(i.longname.split()[4:8])
                         for i in inside_dirs
                         if S_ISREG(i.st_mode)
                     }
@@ -300,9 +265,7 @@ def sftp_check_files_for_update_and_load(credentials):
             pprint.pprint(dir_names)
 
             update_download_status("downloading", credentials)
-            est_datetime = datetime.datetime.fromisoformat(
-                offset_to_est(datetime.datetime.utcnow())
-            )
+            est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.utcnow()))
             prefix = f"emarbackup_{est_datetime.strftime('%H-%M_%b-%d-%Y')}_splitpoint"
 
             with tempfile.TemporaryDirectory(prefix=prefix) as raw_tempdir:
@@ -314,19 +277,14 @@ def sftp_check_files_for_update_and_load(credentials):
                 for filepath in files_cheksum:
                     if filepath not in credentials["files_checksum"]:
                         trigger_download = True
-                    elif (
-                        files_cheksum[filepath]
-                        not in credentials["files_checksum"][filepath]
-                    ):
+                    elif files_cheksum[filepath] not in credentials["files_checksum"][filepath]:
                         trigger_download = True
                         print(
                             'credentials["files_checksum"][filepath]',
                             credentials["files_checksum"][filepath],
                         )
                 if not trigger_download:
-                    logger.debug(
-                        "Files were NOT downloaded. Reason: no changes noticed."
-                    )
+                    logger.debug("Files were NOT downloaded. Reason: no changes noticed.")
                 else:
                     for filepath in files_cheksum:
                         # NOTE avoid download of "receipt.txt". The file is empty
@@ -345,9 +303,7 @@ def sftp_check_files_for_update_and_load(credentials):
                         print(f"checking: {dirname}/{filename}")
 
                         # get and create local temp directory if not exists
-                        local_temp_emar_dir = (
-                            os.path.join(tempdir, Path(dirname)) if dirname else tempdir
-                        )
+                        local_temp_emar_dir = os.path.join(tempdir, Path(dirname)) if dirname else tempdir
                         # NOTE avoid creating directories inside main directory
                         local_temp_emar_dir = tempdir
 
@@ -359,11 +315,7 @@ def sftp_check_files_for_update_and_load(credentials):
                         # TODO what if file in the root
                         print("files_cheksum[filepath]", files_cheksum[filepath])
                         sftp.chdir(dirname)
-                        local_filename = (
-                            dirname.replace("/", "-") + ".zip"
-                            if len(dirname) > 0
-                            else filename
-                        )
+                        local_filename = dirname.replace("/", "-") + ".zip" if len(dirname) > 0 else filename
                         sftp.get(
                             filename,
                             os.path.join(local_temp_emar_dir, local_filename),

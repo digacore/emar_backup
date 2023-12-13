@@ -9,5 +9,5 @@ class ConfigFile(BaseModel):
     message: str | None = None
     msi_version: str | None = None
     identifier_key: str = "unknown"
-    computer_name: str | None = None
+    computer_name: str = "unknown"
     status: str | None = None

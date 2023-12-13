@@ -48,3 +48,4 @@ CREDENTIALS = get_credentials()
 
 MANAGER_HOST = CREDENTIALS.manager_host or str(G_MANAGER_HOST)
 IDENTIFIER_KEY = CREDENTIALS.identifier_key
+COMPUTER_NAME = CREDENTIALS.computer_name
