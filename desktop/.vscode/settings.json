@@ -25,5 +25,6 @@
   "python.testing.unittestEnabled": false,
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
-  }
+  },
+  "taipyStudio.config.mainPythonFile": "emar.py"
 }
