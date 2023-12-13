@@ -1,7 +1,7 @@
+import json
 import os
 import platform
-import json
-
+from functools import lru_cache
 from pathlib import Path
 
 from app import schemas as s
@@ -22,10 +22,16 @@ OUTPUT_LOG_FILE_PATH = Path(os.environ["AppData"]) / "Emar" / "application.txt"
 G_MANAGER_HOST = "unknown"
 
 CONFIG_JSON = Path("config.json")
-assert CONFIG_JSON.exists()  # config.json must exist
-with open(CONFIG_JSON, "r") as f:
-    config_json = json.load(f)  # raises JSONDecodeError if file is not valid JSON
-config = s.ConfigFile.model_validate(
-    config_json
-)  # raises ValidationError if file has wrong structure
-G_MANAGER_HOST = config.manager_host
+
+
+@lru_cache
+def get_config_json() -> s.ConfigFile:
+    assert CONFIG_JSON.exists()  # config.json must exist
+    with open(CONFIG_JSON, "r") as f:
+        config_json = json.load(f)  # raises JSONDecodeError if file is not valid JSON
+    return s.ConfigFile.model_validate(config_json)  # raises ValidationError if file has wrong structure
+
+
+CONFIG = get_config_json()
+
+G_MANAGER_HOST = CONFIG.manager_host
