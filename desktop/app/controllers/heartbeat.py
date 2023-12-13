@@ -28,10 +28,10 @@ def heartbeat():
             manager_host = (
                 creds_json["manager_host"]
                 if creds_json["manager_host"]
-                else G_MANAGER_HOST
+                else str(G_MANAGER_HOST)
             )
         else:
-            manager_host = G_MANAGER_HOST
+            manager_host = str(G_MANAGER_HOST)
 
         if not os.path.isfile(COMPSTAT_FILE):
             with open(COMPSTAT_FILE, "w") as f:

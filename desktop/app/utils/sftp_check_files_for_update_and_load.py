@@ -32,10 +32,12 @@ def update_download_status(status, creds, last_downloaded="", last_saved_path=""
             creds_json = json.load(f)
             logger.info(f"Credentials recieved from {LOCAL_CREDS_JSON}.")
         manager_host = (
-            creds_json["manager_host"] if creds_json["manager_host"] else G_MANAGER_HOST
+            creds_json["manager_host"]
+            if creds_json["manager_host"]
+            else str(G_MANAGER_HOST)
         )
     else:
-        manager_host = G_MANAGER_HOST
+        manager_host = str(G_MANAGER_HOST)
 
     m_host = manager_host if "manager_host" not in creds else creds["manager_host"]
 

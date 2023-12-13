@@ -22,7 +22,7 @@ def register_computer():
     identifier_key = "new_computer"
 
     # TODO: replace f string in request with urljoin
-    URL = urljoin(G_MANAGER_HOST, "register_computer")
+    URL = urljoin(str(G_MANAGER_HOST), "register_computer")
     response = requests.post(
         URL,
         json={
@@ -56,7 +56,9 @@ def get_credentials():
         computer_name = creds_json["computer_name"]
         identifier_key = creds_json["identifier_key"]
         manager_host = (
-            creds_json["manager_host"] if creds_json["manager_host"] else G_MANAGER_HOST
+            creds_json["manager_host"]
+            if creds_json["manager_host"]
+            else str(G_MANAGER_HOST)
         )
 
         URL = urljoin(manager_host, "get_credentials")
