@@ -3,21 +3,10 @@ import json
 import requests
 
 from app import logger
-from pydantic import BaseModel
 from urllib.parse import urljoin
 
+from app import schemas as s
 from app.consts import COMPUTER_NAME, LOCAL_CREDS_JSON, G_MANAGER_HOST
-
-
-class Config(BaseModel):
-    version: str | None = None
-    manager_host: str
-    backups_path: str | None = None
-    message: str
-    msi_version: str = "stable"
-    identifier_key: str
-    computer_name: str
-    status: str
 
 
 def register_computer():
@@ -70,8 +59,10 @@ def get_credentials():
             creds_json["manager_host"] if creds_json["manager_host"] else G_MANAGER_HOST
         )
 
+        URL = urljoin(manager_host, "get_credentials")
+
         response = requests.post(
-            f"{manager_host}/get_credentials",
+            URL,
             json={
                 "computer_name": computer_name,
                 "identifier_key": str(identifier_key),
@@ -94,7 +85,7 @@ def get_credentials():
     else:
         response = register_computer()
 
-    config_data = Config.model_validate(response.json())
+    config_data = s.ConfigResponse.model_validate(response.json())
     if (
         config_data.message == "Supplying credentials"
         or config_data.message == "Computer registered"
@@ -102,7 +93,7 @@ def get_credentials():
         with open(LOCAL_CREDS_JSON, "w") as f:
             json.dump(config_data.model_dump(), f, indent=2)
             logger.info(
-                f"Full credentials recieved from server and {LOCAL_CREDS_JSON} updated."
+                f"Full credentials received from server and {LOCAL_CREDS_JSON} updated."
             )
 
         creds_json = creds_json if creds_json else dict()

@@ -1,5 +1,6 @@
 import argparse
 
+from app import logger
 from app import controllers as c
 
 
@@ -14,15 +15,19 @@ def main():
     args = parser.parse_args()
 
     if args.heartbeat:
+        logger.info("Heartbeat")
         c.heartbeat()
     elif args.server_connect:
+        logger.info("Server connect")
         c.server_connect()
     elif args.computer_delete:
+        logger.info("Computer delete")
         c.computer_delete()
     elif args.log_convertor:
+        logger.info("Log convertor")
         c.log_convertor()
     else:
-        print("No arguments were passed.")
+        logger.error("No arguments passed")
 
 
 if __name__ == "__main__":

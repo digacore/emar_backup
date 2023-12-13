@@ -5,11 +5,16 @@ import datetime
 from app import logger
 
 from app.consts import STORAGE_PATH
-from app.utils import get_credentials, sftp_check_files_for_update_and_load
-from app.utils.create_desktop_icon import create_desktop_icon
-from app.utils.download_file_from_pcc import download_file_from_pcc
-from app.utils.self_update import self_update
-from app.utils.send_activity import offset_to_est, send_activity
+from app.utils import (
+    get_credentials,
+    sftp_check_files_for_update_and_load,
+    create_desktop_icon,
+    download_file_from_pcc,
+    self_update,
+    send_activity,
+)
+
+from app.utils.send_activity import offset_to_est
 from app.utils.sftp_check_files_for_update_and_load import (
     AppError,
     update_download_status,
