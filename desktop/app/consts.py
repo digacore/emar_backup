@@ -50,4 +50,7 @@ CREDENTIALS = get_credentials()
 
 MANAGER_HOST = CREDENTIALS.manager_host or str(G_MANAGER_HOST)
 IDENTIFIER_KEY = CREDENTIALS.identifier_key
-COMPUTER_NAME = CREDENTIALS.computer_name
+if not CREDENTIALS.computer_name:
+    CREDENTIALS.computer_name = COMPUTER_NAME
+
+ZIP_FILE_NAME = "emar_backups.zip"

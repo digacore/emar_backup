@@ -44,13 +44,8 @@ def self_update(STORAGE_PATH, credentials, old_credentials):
             "wb",
         ) as msi:
             msi.write(response.content)
-        print(response.status_code)
-        # run agent.msi through install.cmd
-        install_path = Path(STORAGE_PATH) / "install.cmd"
-        with open(install_path, "w") as f:
-            f.write(f"msiexec  /l* install.log /i {filepath}")
 
-        Popen([install_path])
+        Popen(["msiexec", "/i", filepath])
         logger.debug(
             "New msi version installed. From {} to {}",
             old_credentials["msi_version"],

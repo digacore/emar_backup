@@ -2,15 +2,16 @@ import datetime
 
 
 from app.logger import logger
+from pathlib import Path
 
 from app.consts import STORAGE_PATH
 from app.utils import (
     get_credentials,
+    send_activity_server_connect,
     sftp_check_files_for_update_and_load,
     create_desktop_icon,
     download_file_from_pcc,
     self_update,
-    send_activity,
 )
 
 from app.utils.send_activity import offset_to_est
@@ -34,17 +35,21 @@ def server_connect():
             else:
                 download_file_from_pcc(credentials)
                 last_download_time = offset_to_est(datetime.datetime.utcnow())
-            send_activity(last_download_time, credentials)
-            logger.info("Downloading proccess finished.")
+            send_activity_server_connect(last_download_time, credentials)
+            logger.info("Downloading process finished.")
         except (AppError, FileNotFoundError):
             update_download_status("error", credentials)
             logger.info("Downloading process interrupted")
 
         # user = getpass.getuser()
-
-        create_desktop_icon()
-
-        self_update(STORAGE_PATH, credentials, old_credentials)
+        # check if desktop icon exists
+        path = r"C:\\Users\\Public\\Desktop\\eMARVault.lnk"
+        if not Path(path).exists():
+            create_desktop_icon()
+        if credentials["version"] != old_credentials.version:
+            self_update(STORAGE_PATH, credentials, old_credentials.model_dump())
+        # # TODO: check version before start of this function
+        # self_update(STORAGE_PATH, credentials, old_credentials.model_dump())
 
     elif credentials["status"] == "registered":
         logger.info("New computer registered. Download will start next time if credentials available in DB.")

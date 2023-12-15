@@ -10,7 +10,16 @@
       "request": "launch",
       "program": "${workspaceFolder}/emar.py",
       "console": "integratedTerminal",
-      "args": ["heartbeat"],
+      "args": ["--heartbeat"],
+      "justMyCode": true
+    },
+    {
+      "name": "computer-delete",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--computer-delete"],
       "justMyCode": true
     },
     {
@@ -19,7 +28,7 @@
       "request": "launch",
       "program": "${workspaceFolder}/emar.py",
       "console": "integratedTerminal",
-      "args": ["server-connect"],
+      "args": ["--server-connect"],
       "justMyCode": true
     },
     {

@@ -10,3 +10,4 @@ from .sftp_check_files_for_update_and_load import (
 from .download_file_from_pcc import download_file_from_pcc
 from .create_desktop_icon import create_desktop_icon
 from .self_update import self_update
+from .send_activity_server_connect import send_activity_server_connect

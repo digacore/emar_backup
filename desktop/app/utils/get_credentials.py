@@ -2,11 +2,11 @@ import os
 import json
 import requests
 
-from app import logger
+from app.logger import logger
 from urllib.parse import urljoin
 
 from app import schemas as s
-from app.consts import COMPUTER_NAME, LOCAL_CREDS_JSON, G_MANAGER_HOST
+from app.consts import COMPUTER_NAME, LOCAL_CREDS_JSON, MANAGER_HOST, CONFIG, IDENTIFIER_KEY
 
 
 def register_computer():
@@ -22,7 +22,7 @@ def register_computer():
     identifier_key = "new_computer"
 
     # TODO: replace f string in request with urljoin
-    URL = urljoin(str(G_MANAGER_HOST), "register_computer")
+    URL = urljoin(str(MANAGER_HOST), "register_computer")
     response = requests.post(
         URL,
         json={
@@ -37,42 +37,29 @@ def register_computer():
                 if credentials inserted to DB."
         )
     else:
-        logger.warning(
-            "Something went wrong. Response status code = {}", response.status_code
-        )
+        logger.warning("Something went wrong. Response status code = {}", response.status_code)
 
     return response
 
 
-def get_credentials():
+def get_credentials() -> tuple[s.ConfigFile, s.ConfigFile]:  # return new and old values
     logger.info("Receiving credentials.")
-    creds_json = None
+    creds_json = CONFIG
 
-    if os.path.isfile(LOCAL_CREDS_JSON):
-        with open(LOCAL_CREDS_JSON, "r") as f:
-            creds_json = json.load(f)
-            logger.info(f"Credentials received from {LOCAL_CREDS_JSON}.")
-
-        computer_name = creds_json["computer_name"]
-        identifier_key = creds_json["identifier_key"]
-        manager_host = (
-            creds_json["manager_host"]
-            if creds_json["manager_host"]
-            else str(G_MANAGER_HOST)
+    if LOCAL_CREDS_JSON.exists():
+        # Computer already registered
+        URL = urljoin(str(MANAGER_HOST), "get_credentials")
+        data = s.GetCredentialsData(
+            computer_name=COMPUTER_NAME,
+            identifier_key=IDENTIFIER_KEY,
         )
-
-        URL = urljoin(manager_host, "get_credentials")
-
         response = requests.post(
             URL,
-            json={
-                "computer_name": computer_name,
-                "identifier_key": str(identifier_key),
-            },
+            json=data.model_dump(),
         )
 
-        if response.status_code == 500 or response.status_code == 400:
-            raise ConnectionAbortedError(response.text)
+        if response.status_code >= 500:
+            raise ConnectionAbortedError(f"status-code: {response.status_code}: {response.text}")
 
         if "rmcreds" in response.json():
             if os.path.isfile(LOCAL_CREDS_JSON):
@@ -80,29 +67,28 @@ def get_credentials():
                 logger.warning(
                     "Remote server can't find computer {}. \
                         Deleting creds.json and registering current computer.",
-                    computer_name,
+                    COMPUTER_NAME,
                 )
-                register_computer()
+                response = register_computer()
+                config_data = s.ConfigResponse.model_validate(response.json())
+        if "message" in response.json() and response.json()["message"] == "Computer is not activated.":
+            logger.warning("Computer is not activated. Server-connect script ended.")
+            return None, None
+
+        config_data = s.ConfigResponse.model_validate(response.json())
 
     else:
+        # Computer is not registered yet
         response = register_computer()
+        config_data = s.ConfigResponse.model_validate(response.json())
 
-    config_data = s.ConfigResponse.model_validate(response.json())
-    if (
-        config_data.message == "Supplying credentials"
-        or config_data.message == "Computer registered"
-    ):
+    if config_data.message == "Supplying credentials" or config_data.message == "Computer registered":
+        config = CONFIG.model_dump()
+        config.update(config_data.model_dump(exclude_none=True))
         with open(LOCAL_CREDS_JSON, "w") as f:
-            json.dump(config_data.model_dump(), f, indent=2)
-            logger.info(
-                f"Full credentials received from server and {LOCAL_CREDS_JSON} updated."
-            )
+            json.dump(config, f, indent=2)
+            logger.info(f"Full credentials received from server and {LOCAL_CREDS_JSON} updated.")
 
-        creds_json = creds_json if creds_json else dict()
+        return config, creds_json
 
-        return config_data.model_dump(), creds_json
-
-    else:
-        raise ValueError(
-            "Wrong response data. Can't proceed without correct credentials."
-        )
+    raise ValueError("Wrong response data. Can't proceed without correct credentials.")

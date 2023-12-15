@@ -15,6 +15,7 @@ from app.consts import IP_BLACKLISTED, STORAGE_PATH, MANAGER_HOST
 from stat import S_ISDIR, S_ISREG
 
 from app.utils.send_activity import offset_to_est
+from app import schemas as s
 
 
 class AppError(Exception):
@@ -26,7 +27,7 @@ class SSHConnectionError(Exception):
 
 
 def update_download_status(status, creds, last_downloaded="", last_saved_path=""):
-    m_host = MANAGER_HOST if "manager_host" not in creds else creds["manager_host"]
+    m_host = str(MANAGER_HOST) if "manager_host" not in creds else creds["manager_host"]
 
     URL = urljoin(m_host, "download_status")
     requests.post(
@@ -50,6 +51,7 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
     """
     zip_name = os.path.join(STORAGE_PATH, "emar_backups.zip")
     print("zip_name", zip_name)
+    # TODO: check if zip_name exists and 7z.exe exists
     subprs = Popen(
         [
             Path(".") / "7z.exe",
@@ -176,10 +178,11 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
     return os.path.join(zip_name, new_backup_name)
 
 
-def sftp_check_files_for_update_and_load(credentials):
+def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
     # key = path, value = checksum
-    files_cheksum = {}
-    print('credentials["files_checksum"]', type(credentials["files_checksum"]))
+    files_checksum = {}
+    # TODO: logger.info("Checking files for update and load. With")
+    print('credentials["files_checksum"]', credentials)
     pprint.pprint(credentials["files_checksum"])
     download_directory = credentials["sftp_folder_path"] if credentials["sftp_folder_path"] else None
 
@@ -195,6 +198,7 @@ def sftp_check_files_for_update_and_load(credentials):
                 password=credentials["sftp_password"],
                 timeout=10,
                 auth_timeout=10,
+                port=52222,
             )
         except Exception as e:
             if isinstance(e, TimeoutError):
@@ -219,7 +223,7 @@ def sftp_check_files_for_update_and_load(credentials):
         with ssh.open_sftp() as sftp:
             # get list of all files and folders on sftp server
             if download_directory:
-                list_dirs = sftp.listdir_attr(download_directory) if download_directory else sftp.listdir_attr()
+                list_dirs = sftp.listdir_attr(download_directory)
                 dir_names = [f"./{download_directory}/{i.filename}" for i in list_dirs if S_ISDIR(i.st_mode)]
                 file_paths = {
                     f"./{download_directory}/{i.filename}": "-".join(i.longname.split()[4:8])
@@ -234,7 +238,7 @@ def sftp_check_files_for_update_and_load(credentials):
                     f"./{i.filename}": "-".join(i.longname.split()[4:8]) for i in list_dirs if S_ISREG(i.st_mode)
                 }
 
-            while len(dir_names) > 0:
+            while dir_names:
                 lvl_ins_dir_names = []
                 lvl_ins_file_paths = {}
 
@@ -260,7 +264,7 @@ def sftp_check_files_for_update_and_load(credentials):
 
             print("\nfile_paths: ")
             pprint.pprint(file_paths)
-            files_cheksum.update(file_paths)
+            files_checksum.update(file_paths)
             print("\ndir_names: ")
             pprint.pprint(dir_names)
 
@@ -274,10 +278,10 @@ def sftp_check_files_for_update_and_load(credentials):
                 trigger_download = False
                 last_saved_path = ""
 
-                for filepath in files_cheksum:
+                for filepath in files_checksum:
                     if filepath not in credentials["files_checksum"]:
                         trigger_download = True
-                    elif files_cheksum[filepath] not in credentials["files_checksum"][filepath]:
+                    elif files_checksum[filepath] not in credentials["files_checksum"][filepath]:
                         trigger_download = True
                         print(
                             'credentials["files_checksum"][filepath]',
@@ -286,7 +290,7 @@ def sftp_check_files_for_update_and_load(credentials):
                 if not trigger_download:
                     logger.debug("Files were NOT downloaded. Reason: no changes noticed.")
                 else:
-                    for filepath in files_cheksum:
+                    for filepath in files_checksum:
                         # NOTE avoid download of "receipt.txt". The file is empty
                         if "receipt.txt" in filepath:
                             continue
@@ -313,7 +317,7 @@ def sftp_check_files_for_update_and_load(credentials):
 
                         # get file from sftp server if it was changed
                         # TODO what if file in the root
-                        print("files_cheksum[filepath]", files_cheksum[filepath])
+                        print("files_cheksum[filepath]", files_checksum[filepath])
                         sftp.chdir(dirname)
                         local_filename = dirname.replace("/", "-") + ".zip" if len(dirname) > 0 else filename
                         sftp.get(
@@ -339,7 +343,7 @@ def sftp_check_files_for_update_and_load(credentials):
         response = requests.post(
             f"{credentials['manager_host']}/files_checksum",
             json={
-                "files_checksum": files_cheksum,
+                "files_checksum": files_checksum,
                 "identifier_key": str(credentials["identifier_key"]),
                 "last_time_online": offset_to_est(datetime.datetime.utcnow()),
             },
