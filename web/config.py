@@ -51,6 +51,7 @@ class BaseConfig(object):
     CLIENT_VERSIONS = [("stable", "stable"), ("latest", "latest")]
 
     DEFAULT_SFTP_HOST = os.environ.get("DEFAULT_SFTP_HOST", "ftpus.pointclickcare.com")
+    DEFAULT_SFTP_PORT = os.environ.get("DEFAULT_SFTP_PORT", "22")
     DEFAULT_SFTP_USERNAME = os.environ.get("DEFAULT_SFTP_USERNAME", "Username")
     DEFAULT_SFTP_PASSWORD = os.environ.get("DEFAULT_SFTP_PASSWORD", "password")
     DEFAULT_FOLDER_PASSWORD = os.environ.get("DEFAULT_FOLDER_PASSWORD", "password")

@@ -1,8 +1,9 @@
 [tool.poetry]
-name = "Emar-Web"
-version = "0.1.0"
-description = ""
+name = "emarweb"
+version = "1.0.0"
+description = "Emar Web App"
 authors = ["petro <xavrais312@gmail.com>"]
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -40,7 +41,6 @@ xlsxwriter = "^3.1.9"
 [tool.poetry.group.dev.dependencies]
 flake8 = "^6.0.0"
 pytest = "^7.1.1"
-black = "^22.3.0"
 requests-mock = "^1.10.0"
 ruff = "^0.1.8"
 

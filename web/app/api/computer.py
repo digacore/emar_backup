@@ -38,11 +38,6 @@ def register_computer(body: ComputerRegInfo):
         logger.info("Computer registration failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 409
 
-    elif computer_name:
-        message = f"Such computer_name: {body.computer_name} already exists. Wrong computer id."
-        logger.info("Computer registration failed. Reason: {}", message)
-        return jsonify(status="fail", message=message), 409
-
     elif body.identifier_key == "new_computer":
         # Check if computer with such name already exists but was deleted
         deleted_computer: Computer = (
@@ -97,6 +92,11 @@ def register_computer(body: ComputerRegInfo):
             ),
             200,
         )
+
+    elif computer_name:
+        message = f"Such computer_name: {body.computer_name} already exists. Wrong computer id."
+        logger.info("Computer registration failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 409
 
     else:
         message = "Wrong request data."

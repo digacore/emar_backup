@@ -58,11 +58,11 @@ class ComputerStatus(enum.Enum):
     OFFLINE_NO_BACKUP = "OFFLINE_NO_BACKUP"
     NOT_ACTIVATED = "NOT_ACTIVATED"
 
+
 class PrinterStatus(enum.Enum):
     NORMAL = "NORMAL"
     OFFLINE = "OFFLINE"
     UNKNOWN = "UNKNOWN"
-
 
 
 class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
@@ -78,6 +78,11 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
+    sftp_port = db.Column(
+        db.Integer,
+        server_default=CFG.DEFAULT_SFTP_PORT,
+        default=CFG.DEFAULT_SFTP_PORT,
+    )
     sftp_username = db.Column(db.String(64), default=CFG.DEFAULT_SFTP_USERNAME)
     sftp_password = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_PASSWORD)
     sftp_folder_path = db.Column(db.String(256))
@@ -113,12 +118,13 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     last_time_logs_enabled = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_logs_disabled = db.Column(db.DateTime)
 
-    printer_name = db.Column(db.String(128),default="")
+    printer_name = db.Column(db.String(128), default="")
     printer_status = db.Column(
         Enum(PrinterStatus),
         nullable=True,
         default=PrinterStatus.UNKNOWN,
-        server_default=sql.text("'UNKNOWN'"))
+        server_default=sql.text("'UNKNOWN'"),
+    )
     printer_status_timestamp = db.Column(db.DateTime, default=datetime.utcnow())
 
     company = relationship(
@@ -156,6 +162,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
             "msi_version",
             "current_msi_version",
             "sftp_host",
+            "sftp_port",
             "sftp_username",
             "sftp_folder_path",
             "type",
@@ -513,6 +520,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "activated",
         "logs_enabled",
         "sftp_host",
+        "sftp_port",
         "sftp_username",
         "sftp_password",
         "sftp_folder_path",
@@ -573,6 +581,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "current_msi_version": {"readonly": True},
         "computer_ip": {"readonly": True},
         "type": {"readonly": True},
+        "sftp_port": {"readonly": True},
         # "files_checksum": {"readonly": True},
     }
 
@@ -582,6 +591,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "company_id": {"label": "Company id", "id": "company_id"},
         "location_id": {"label": "Location id", "id": "location_id"},
         "sftp_host": {"label": "SFTP host"},
+        "sftp_port": {"label": "SFTP port"},
         "sftp_username": {"label": "SFTP username"},
         "sftp_password": {"label": "SFTP password"},
         "sftp_folder_path": {"label": "SFTP folder path"},
