@@ -39,6 +39,7 @@ def send_activity(manager_host: str, creds_json: s.ConfigFile | None = None) -> 
         logger.info("User last time online {} sent.", data.last_time_online)
         if response.status_code != 200:
             logger.error("Failed to send last time online. Response: {}", response.json())
+            return
         res = s.LastTimeResponse.model_validate(response.json())
         with open(COMPSTAT_FILE, "w") as f:
             json.dump(

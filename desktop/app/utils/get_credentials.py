@@ -1,6 +1,7 @@
-import os
 import json
 import requests
+
+from subprocess import Popen, PIPE
 
 from app.logger import logger
 from urllib.parse import urljoin
@@ -62,15 +63,22 @@ def get_credentials() -> tuple[s.ConfigFile, s.ConfigFile]:  # return new and ol
             raise ConnectionAbortedError(f"status-code: {response.status_code}: {response.text}")
 
         if "rmcreds" in response.json():
-            if os.path.isfile(LOCAL_CREDS_JSON):
-                os.remove(LOCAL_CREDS_JSON)
-                logger.warning(
-                    "Remote server can't find computer {}. \
-                        Deleting creds.json and registering current computer.",
-                    COMPUTER_NAME,
-                )
-                response = register_computer()
-                config_data = s.ConfigResponse.model_validate(response.json())
+            # invoke powershell script to remove eMARVault
+            PS_COMMAND = "(Get-WmiObject -Class Win32_Product | Where-Object {$_.Name -eq 'eMARVault'}).Uninstall()"
+            shell = Popen(
+                [
+                    "powershell.exe",
+                    "-command",
+                    PS_COMMAND,
+                ],
+                stdout=PIPE,
+                stderr=PIPE,
+            )
+            stdout, stderr = shell.communicate()
+            logger.info("stdout: {}", stdout.decode("utf-8"))
+            if stderr:
+                logger.error("delete_computer: stderr: {}", stderr.decode("utf-8"))
+            return None, None
         if "message" in response.json() and response.json()["message"] == "Computer is not activated.":
             logger.warning("Computer is not activated. Server-connect script ended.")
             return None, None
