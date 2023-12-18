@@ -371,8 +371,6 @@ def printer_info(body: PrinterInfo):
             jsonify(
                 status="success",
                 message="Writing printer info to db",
-                printer_name=computer.printer_name,
-                printer_status=computer.printer_status,
             ),
             200,
         )

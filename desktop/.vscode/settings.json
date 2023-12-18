@@ -7,6 +7,9 @@
     "**/.venv/*/**": true
   },
   "cSpell.words": [
+    "COMPSTAT",
+    "consts",
+    "creds",
     "dotenv",
     "fastapi",
     "flowbite",
@@ -22,7 +25,11 @@
   ],
   "python.testing.pytestEnabled": true,
   "python.testing.unittestEnabled": false,
+  "taipyStudio.config.mainPythonFile": "emar.py",
+  "mypy.dmypyExecutable": "${workspaceFolder}/.venv/bin/dmypy",
   "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-  }
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "charliermarsh.ruff"
+  },
+  "taipyStudio.gUI.elementsFilePaths": []
 }

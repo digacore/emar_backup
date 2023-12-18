@@ -9,10 +9,10 @@ Write-Log start
 Write-Log "User: [$env:UserName]"
 
 # -- delete copmuter from web --
-Write-Log "Run computer_delete.exe by user: $env:UserName"
+Write-Log "Run computer_delete script by user: $env:UserName"
 # Run python Heartbeat
-.\computer_delete.exe
-Write-Log "Run computer_delete.exe by user: $env:UserName - done"
+.\emar.exe --computer-delete
+Write-Log "Run computer_delete script by user: $env:UserName - done"
 
 # -- wait for scheduled tasks to stop before unregistration scheduled tasks --
 

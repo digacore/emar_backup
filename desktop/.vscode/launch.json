@@ -8,16 +8,36 @@
       "name": "heartbeat",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/heartbeat.py",
+      "program": "${workspaceFolder}/emar.py",
       "console": "integratedTerminal",
+      "args": ["--heartbeat"],
+      "justMyCode": true
+    },
+    {
+      "name": "computer-delete",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--computer-delete"],
+      "justMyCode": true
+    },
+    {
+      "name": "log-convertor",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--log-convertor"],
       "justMyCode": true
     },
     {
       "name": "server-connect",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/server_connect.py",
+      "program": "${workspaceFolder}/emar.py",
       "console": "integratedTerminal",
+      "args": ["--server-connect"],
       "justMyCode": true
     },
     {

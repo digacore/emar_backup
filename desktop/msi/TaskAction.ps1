@@ -9,7 +9,7 @@ $LOG_FILE = "UpdateLog.txt"
 Write-Log Run update by user: $env:UserName
 
 # Run python updater
-.\server_connect.exe
+.\emar.exe --server-connect
 
 
 Pop-Location

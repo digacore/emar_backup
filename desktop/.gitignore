@@ -28,3 +28,5 @@ sftp_files_old/
 *.exe
 *.dll
 /*.spec
+
+/Create-DesktopShortcut.ps1
