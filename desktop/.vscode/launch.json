@@ -23,6 +23,15 @@
       "justMyCode": true
     },
     {
+      "name": "log-convertor",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--log-convertor"],
+      "justMyCode": true
+    },
+    {
       "name": "server-connect",
       "type": "python",
       "request": "launch",

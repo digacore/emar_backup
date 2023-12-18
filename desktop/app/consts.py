@@ -48,7 +48,7 @@ def get_credentials() -> s.ConfigFile:
 
 CREDENTIALS = get_credentials()
 
-MANAGER_HOST = CREDENTIALS.manager_host or str(G_MANAGER_HOST)
+MANAGER_HOST = CREDENTIALS.manager_host or G_MANAGER_HOST
 IDENTIFIER_KEY = CREDENTIALS.identifier_key
 if not CREDENTIALS.computer_name:
     CREDENTIALS.computer_name = COMPUTER_NAME

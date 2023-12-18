@@ -10,7 +10,7 @@ from app.consts import MANAGER_HOST, IDENTIFIER_KEY
 @logger.catch
 def computer_delete():
     URL = urljoin(
-        str(MANAGER_HOST),
+        MANAGER_HOST,
         f"delete_computer?identifier_key={IDENTIFIER_KEY}",
     )
     response = requests.get(

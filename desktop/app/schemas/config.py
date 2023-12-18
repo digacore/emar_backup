@@ -1,9 +1,9 @@
-from pydantic import BaseModel, AnyUrl
+from pydantic import BaseModel
 
 
 class ConfigFile(BaseModel):
     version: str
-    manager_host: AnyUrl
+    manager_host: str
     backups_path: str
     message: str | None = None
     msi_version: str | None = None

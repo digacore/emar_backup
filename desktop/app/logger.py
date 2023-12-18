@@ -1,3 +1,7 @@
+import os
+
+# ruff: noqa: E402
+os.environ["LOGURU_COLORIZE"] = "NO"
 from loguru import logger
 from pathlib import Path
 
@@ -9,5 +13,5 @@ logger.add(
     format=LOG_FORMAT,
     serialize=True,
     level="DEBUG",
-    colorize=True,
+    colorize=False,
 )

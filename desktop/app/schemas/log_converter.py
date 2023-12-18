@@ -8,7 +8,9 @@ class Elapsed(BaseModel):
 
 
 class Exception(BaseModel):
-    pass
+    type: str
+    value: str
+    traceback: bool
 
 
 class Extra(BaseModel):

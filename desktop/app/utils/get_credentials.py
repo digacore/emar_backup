@@ -22,7 +22,7 @@ def register_computer():
     identifier_key = "new_computer"
 
     # TODO: replace f string in request with urljoin
-    URL = urljoin(str(MANAGER_HOST), "register_computer")
+    URL = urljoin(MANAGER_HOST, "register_computer")
     response = requests.post(
         URL,
         json={
@@ -48,7 +48,7 @@ def get_credentials() -> tuple[s.ConfigFile, s.ConfigFile]:  # return new and ol
 
     if LOCAL_CREDS_JSON.exists():
         # Computer already registered
-        URL = urljoin(str(MANAGER_HOST), "get_credentials")
+        URL = urljoin(MANAGER_HOST, "get_credentials")
         data = s.GetCredentialsData(
             computer_name=COMPUTER_NAME,
             identifier_key=IDENTIFIER_KEY,

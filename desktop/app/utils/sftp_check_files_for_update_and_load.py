@@ -27,7 +27,7 @@ class SSHConnectionError(Exception):
 
 
 def update_download_status(status, creds, last_downloaded="", last_saved_path=""):
-    m_host = str(MANAGER_HOST) if "manager_host" not in creds else creds["manager_host"]
+    m_host = MANAGER_HOST if "manager_host" not in creds else creds["manager_host"]
 
     URL = urljoin(m_host, "download_status")
     requests.post(

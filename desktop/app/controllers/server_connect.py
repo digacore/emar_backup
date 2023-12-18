@@ -21,6 +21,7 @@ from app.utils.sftp_check_files_for_update_and_load import (
 )
 
 
+@logger.catch
 def server_connect():
     logger.info("Downloading process started.")
     credentials, old_credentials = get_credentials()
@@ -35,7 +36,7 @@ def server_connect():
             else:
                 download_file_from_pcc(credentials)
                 last_download_time = offset_to_est(datetime.datetime.utcnow())
-            send_activity_server_connect(last_download_time, credentials)
+            send_activity_server_connect(last_download_time)
             logger.info("Downloading process finished.")
         except (AppError, FileNotFoundError):
             update_download_status("error", credentials)
