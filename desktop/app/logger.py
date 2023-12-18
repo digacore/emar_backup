@@ -8,10 +8,15 @@ from pathlib import Path
 from app.consts import STORAGE_PATH
 
 LOG_FORMAT = "{time} - {name} - {level} - {message}"
-logger.add(
-    sink=(Path(STORAGE_PATH) / "emar_log.txt"),
-    format=LOG_FORMAT,
-    serialize=True,
-    level="DEBUG",
-    colorize=False,
-)
+
+# catch PermissionError
+try:
+    logger.add(
+        sink=(Path(STORAGE_PATH) / "emar_log.txt"),
+        format=LOG_FORMAT,
+        serialize=True,
+        level="DEBUG",
+        colorize=False,
+    )
+except PermissionError:
+    logger.warning("Can't create log file. Permission denied.")
