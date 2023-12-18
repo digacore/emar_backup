@@ -1,4 +1,4 @@
-# flake8: noqa F401
+# ruff: noqa: F401
 from .auth import auth_blueprint
 from .main import main_blueprint
 from .info import info_blueprint
@@ -8,3 +8,4 @@ from .pcc import pcc_blueprint
 from .search import search_blueprint
 from .merge import merge_blueprint
 from .billing import billing_blueprint
+from .computer_settings import computer_settings_blueprint
