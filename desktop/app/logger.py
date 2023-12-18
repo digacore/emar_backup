@@ -9,7 +9,6 @@ from app.consts import STORAGE_PATH
 
 LOG_FORMAT = "{time} - {name} - {level} - {message}"
 
-# catch PermissionError
 try:
     logger.add(
         sink=(Path(STORAGE_PATH) / "emar_log.txt"),
