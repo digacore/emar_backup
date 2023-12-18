@@ -1,6 +1,6 @@
 import os
 import json
-
+import warnings
 # from datetime import datetime, timedelta
 
 from flask import render_template, url_for
@@ -28,6 +28,8 @@ class MainIndexLink(MenuLink):
         return url_for("main.index")
 
 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
 # instantiate extensions
 login_manager = LoginManager()
 db = SQLAlchemy()
@@ -51,7 +53,7 @@ def create_app(environment="development"):
         search_blueprint,
         merge_blueprint,
         billing_blueprint,
-        computer_settings_blueprint
+        computer_settings_blueprint,
     )
     from app.api import (
         downloads_info_blueprint,
@@ -147,7 +149,7 @@ def create_app(environment="development"):
 
     # Flask-Mail
     mail.init_app(app)
-    app.extensions['mail'].debug = 0
+    app.extensions["mail"].debug = 0
 
     # Flask-Admin
     admin.init_app(
