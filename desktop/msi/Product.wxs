@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.88.303654">
+           Version="1.0.93.304467">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -65,9 +65,6 @@
       </Component>
       <Component Id="cmp_Heartbeat_ps1">
         <File KeyPath="yes" Source="Heartbeat.ps1"></File>
-      </Component>
-      <Component Id="cmp_CreateDesktopShortcut_ps1">
-        <File KeyPath="yes" Source="Create-DesktopShortcut.ps1"></File>
       </Component>
       <Component Id="cmp_config_json">
         <File KeyPath="yes" Source="dist\config.json"></File>
