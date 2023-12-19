@@ -117,6 +117,7 @@ class BaseConfig(object):
     PCC_DAILY_QUOTA_LIMIT = int(os.environ.get("PCC_DAILY_QUOTA_LIMIT", 10000))
     CERTIFICATE_PATH = os.environ.get("CERTIFICATE_PATH", None)
     PRIVATEKEY_PATH = os.environ.get("PRIVATEKEY_PATH", None)
+    GLOBAL_COMPANY_ID = os.environ.get("GLOBAL_COMPANY_ID", 1)
 
     # Logs deletion periods in days
     SYSTEM_LOGS_DELETION_PERIOD = int(

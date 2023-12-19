@@ -11,6 +11,7 @@ from flask_login import current_user, UserMixin, AnonymousUserMixin
 from flask_admin.model.template import EditRowAction, DeleteRowAction
 from flask_admin.contrib.sqla import tools
 from flask_admin.babel import gettext
+from config import BaseConfig as CFG
 
 from app import db
 from app.models.utils import (
@@ -94,6 +95,7 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         db.Integer,
         db.ForeignKey("companies.id"),
         nullable=False,
+        default=CFG.GLOBAL_COMPANY_ID,
     )
 
     username = db.Column(db.String(64), unique=True, nullable=False)
