@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from app import models as m, db
 from app.controllers import create_pagination, backup_log_on_request_to_view
 
-from .utils import has_access_to_computer
+from .utils import has_access_to_company, has_access_to_computer, has_access_to_location
 
 from config import BaseConfig as CFG
 
@@ -229,4 +229,37 @@ def system_log_info():
         daily_limit=pcc_daily_requests_limit,
         current_requests_count=pcc_daily_requests_count,
         usage_percent=usage_percent,
+    )
+
+
+@info_blueprint.route("/location/<int:location_id>", methods=["GET"])
+@login_required
+def location_info(location_id):
+    location = m.Location.query.filter_by(id=location_id).first_or_404()
+
+    # Check if user has access to computer information
+    if not has_access_to_location(current_user, location):
+        abort(403, "You don't have access to this location information.")
+
+    return render_template(
+        "info/location.html",
+        location=location,
+        computers=location.computers,
+    )
+
+
+@info_blueprint.route("/company/<int:company_id>", methods=["GET"])
+@login_required
+def company_info(company_id):
+    company = m.Company.query.filter_by(id=company_id).first_or_404()
+
+    # Check if user has access to computer information
+    if not has_access_to_company(current_user, company):
+        abort(403, "You don't have access to this company information.")
+
+    # get locations online and offline and in percentages
+
+    return render_template(
+        "info/company.html",
+        company=company,
     )
