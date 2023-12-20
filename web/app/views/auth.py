@@ -269,6 +269,15 @@ def auth_response():
             "danger",
         )
         return redirect(url_for("auth.login"))
+    # if user is deleted
+    if user and user.is_deleted:
+        user.is_deleted = False
+        user.update()
+        flash(
+            "This user is deactivated. Contact sales@emarvault.com to activate the account!",
+            "danger",
+        )
+        return redirect(url_for("auth.login"))
 
     # Begin user session by logging the user in
     login_user(user)
