@@ -253,6 +253,15 @@ def auth_response():
         return redirect(url_for("auth.login"))
 
     user = User.query.filter_by(email=result["preferred_username"]).first()
+    # if user is deleted
+    if user and user.is_deleted:
+        user.is_deleted = False
+        user.update()
+        flash(
+            "This user is deactivated. Contact sales@emarvault.com to activate the account!",
+            "danger",
+        )
+        return redirect(url_for("auth.login"))
 
     # Create a user in our db with the information provided by Microsoft
     if not user:
@@ -264,15 +273,6 @@ def auth_response():
         )
         user.save()
     if not user.activated:
-        flash(
-            "This user is deactivated. Contact sales@emarvault.com to activate the account!",
-            "danger",
-        )
-        return redirect(url_for("auth.login"))
-    # if user is deleted
-    if user and user.is_deleted:
-        user.is_deleted = False
-        user.update()
         flash(
             "This user is deactivated. Contact sales@emarvault.com to activate the account!",
             "danger",
