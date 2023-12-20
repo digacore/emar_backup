@@ -260,6 +260,7 @@ def auth_response():
             username=str(result["name"]).lower().replace(" ", "-"),
             email=result["preferred_username"],
             password=str(uuid4()),
+            activated=False,
         )
         user.save()
     if not user.activated:
