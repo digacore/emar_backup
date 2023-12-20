@@ -252,7 +252,9 @@ def auth_response():
         flash(f"Can't verify user {result['name']} email", "danger")
         return redirect(url_for("auth.login"))
 
-    user = User.query.filter_by(email=result["preferred_username"]).first()
+    user = (
+        User.query.with_deleted().filter_by(email=result["preferred_username"]).first()
+    )
     # if user is deleted
     if user and user.is_deleted:
         user.is_deleted = False
