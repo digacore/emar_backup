@@ -198,7 +198,7 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                 password=credentials["sftp_password"],
                 timeout=10,
                 auth_timeout=10,
-                port=52222,
+                # port=52222,
             )
         except Exception as e:
             if isinstance(e, TimeoutError):
