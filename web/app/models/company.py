@@ -378,6 +378,42 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
         return offline_locations_counter
 
+    @hybrid_property
+    def total_online_locations(self):
+        """
+        Total number of offline locations for this company (current moment)
+
+        Returns:
+            int: total number of offline locations
+        """
+        from app.models.computer import Computer
+        from app.models.location import Location
+
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        online_locations_counter: int = 0
+
+        locations: list[Location] = self.locations
+
+        for location in locations:
+            activated_computers_query: Query = Computer.query.filter(
+                Computer.location_id == location.id,
+                Computer.activated.is_(True),
+            )
+
+            if not activated_computers_query.count():
+                continue
+
+            online_computers: list[Computer] = activated_computers_query.filter(
+                Computer.last_download_time.is_not(None),
+                Computer.last_download_time
+                >= current_east_time - timedelta(hours=1, minutes=30),
+            ).all()
+
+            if online_computers:
+                online_locations_counter += 1
+
+        return online_locations_counter
+
     @hybrid_method
     def total_pcc_api_calls(
         self,

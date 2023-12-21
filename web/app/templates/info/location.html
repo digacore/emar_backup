@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+<!-- prettier-ignore -->
+{% block flash_messages %} {% endblock %}
+<!-- prettier-ignore -->
+{% block content %}
+<div class="d-flex flex-column justify-content-center w-100">
+  <!-- "Go back" button -->
+  <!-- prettier-ignore -->
+  <div class="d-flex w-100 mb-4">
+    <!-- prettier-ignore -->
+    <a class="text-decoration-none small" href="{{ url_for('location.index_view')}}" > <i class="fas fa-arrow-left"></i> Go back </a>
+  </div>
+  <!-- End "Go back" button -->
+
+  <!-- Status header -->
+  {% if not location.activated %}
+  <div
+    class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+    style="background-color: #848383; padding: 10px 0"
+  >
+    <span style="font-size: 25px; font-weight: bold"
+      >Location is not activated</span
+    >
+  </div>
+  {% elif location.status.value=="OFFLINE" %}
+  <div
+    class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+    style="background-color: #e74a3b; padding: 10px 0"
+  >
+    <span style="font-size: 25px; font-weight: bold">Offline</span>
+  </div>
+  {% elif location.status.value=="ONLINE_PRIMARY_OFFLINE" %}
+  <div
+    class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+    style="background-color: #f6c23e; padding: 10px 0"
+  >
+    <span style="font-size: 25px; font-weight: bold"
+      >Online-primary-offline</span
+    >
+  </div>
+  {% elif location.status.value=="ONLINE" %}
+  <div
+    class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+    style="background-color: #1cc88a; padding: 10px 0"
+  >
+    <span style="font-size: 25px; font-weight: bold">Online</span>
+  </div>
+  {% endif %}
+  <!-- End status header -->
+
+  <!-- Location info -->
+  <div class="d-flex w-100 p-4">
+    <div class="d-flex w-100 flex-column justify-content-center m-3">
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Company</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.company.name }}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Sftp Path</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.default_sftp_path }}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">PCC Facility ID</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.pcc_fac_id }}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Computers online</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.computers_online }}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Computers offline</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.computers_offline }}</span
+        >
+      </div>
+    </div>
+
+    <div class="d-flex w-100 flex-column justify-content-center m-3">
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Location</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.name }}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Location Status</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.status.value.capitalize()}}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Location Created</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.created_at }}</span
+        >
+      </div>
+    </div>
+  </div>
+  <!-- End location info -->
+
+  <!-- Computers table -->
+  <div
+    class="d-flex w-100 p-4 justify-content-center flex-column align-items-center"
+  >
+    {% if not computers %}
+    <span>This location has no computers</span>
+    {% else %}
+    <div class="text-grey mb-2 d-flex justify-content-center">
+      Computers in this location
+    </div>
+    <div class="w-100">
+      <div>
+        <table
+          class="w-full text-xs text-center table table-striped table-bordered table-hover pr-2 pl-2"
+        >
+          <thead class="text-sm text-center" style="color: #4e73df">
+            <tr>
+              <th scope="col">Device Name</th>
+              <th scope="col" class="pr-2 pl-2">Status</th>
+              <th scope="col">Role</th>
+              <th scope="col">Type</th>
+              <th scope="col">Last download time</th>
+              <th scope="col">Last time online</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for computer in computers %}
+            <tr>
+              <td class="p-2 text-gray align-middle">
+                <div>{{ computer.computer_name }}</div>
+              </td>
+              {% if computer.status.value == "ONLINE" %}
+              <td
+                class="p-2 text-dark align-middle"
+                style="background-color: #1cc88a"
+              >
+                <div>"ONLINE"</div>
+              </td>
+              {% elif computer.status.value == "ONLINE_NO_BACKUP" %}
+              <td
+                class="p-2 text-dark align-middle"
+                style="background-color: #f6c23e"
+              >
+                <div>"ONLINE_NO_BACKUP"</div>
+              </td>
+              {% elif computer.status.value == "OFFLINE_NO_BACKUP" %}
+              <td
+                class="p-2 text-white align-middle"
+                style="background-color: #e74a3b"
+              >
+                <div>"OFFLINE_NO_BACKUP"</div>
+              </td>
+              {% elif computer.status.value == "NOT_ACTIVATED" %}
+              <td
+                class="p-2 text-white align-middle"
+                style="background-color: #848383"
+              >
+                <div>"NOT_ACTIVATED"</div>
+              </td>
+              {% endif %}
+              <td class="p-2 text-gray align-middle">
+                <span>{{ computer.device_role.value }}</span>
+              </td>
+              <td class="p-2 text-gray align-middle">
+                <span>{{ computer.device_type.value }}</span>
+              </td>
+              <td class="p-2 text-gray align-middle">
+                <div>{{ computer.last_download_time }}</div>
+              </td>
+              <td class="p-2 text-gray align-middle">
+                <div>{{ computer.last_time_online }}</div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %} {% block sidebar_toggle %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    $("#sidebarToggle").click();
+  });
+</script>
+{% endblock sidebar_toggle %} {% block bootstrap_core %}
+<!-- This if statement is required to avoid double import if jQuery. Otherwise some functions brake -->
+<script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+<script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+{% endblock bootstrap_core %}
