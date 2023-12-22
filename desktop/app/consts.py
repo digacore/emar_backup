@@ -1,6 +1,8 @@
 import json
 import os
 import platform
+
+from pydantic import ValidationError
 from functools import lru_cache
 from pathlib import Path
 
@@ -43,12 +45,22 @@ def get_credentials() -> s.ConfigFile:
         file_path = CONFIG_JSON
     with open(file_path, "r") as f:
         creds_json = json.load(f)
-    return s.ConfigFile.model_validate(creds_json)
+    try:
+        creds_data = s.ConfigFile.model_validate(creds_json)
+    except ValidationError:
+        config_data_dict = CONFIG.model_dump(exclude_none=True)
+        config_data_dict.update(creds_json)
+        with open(LOCAL_CREDS_JSON, "w") as f:
+            json.dump(config_data_dict, f, indent=2)
+        creds_data = s.ConfigFile.model_validate(config_data_dict)
+    return creds_data
 
 
 CREDENTIALS = get_credentials()
 
 MANAGER_HOST = CREDENTIALS.manager_host or G_MANAGER_HOST
+if CREDENTIALS.identifier_key == "unknown":
+    CREDENTIALS.identifier_key = None
 IDENTIFIER_KEY = CREDENTIALS.identifier_key
 if not CREDENTIALS.computer_name:
     CREDENTIALS.computer_name = COMPUTER_NAME

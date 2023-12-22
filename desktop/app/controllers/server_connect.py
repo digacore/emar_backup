@@ -2,7 +2,6 @@ import datetime
 
 
 from app.logger import logger
-from pathlib import Path
 
 from app.consts import STORAGE_PATH
 from app.utils import (

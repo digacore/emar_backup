@@ -26,7 +26,8 @@ class SSHConnectionError(Exception):
     pass
 
 
-def update_download_status(status, creds, last_downloaded="", last_saved_path=""):
+def update_download_status(status: str, creds: s.ConfigFile, last_downloaded="", last_saved_path="", error_message=""):
+    # TODO: for error logging feature put message in request if there an error and in web put this message in error.log
     m_host = MANAGER_HOST if "manager_host" not in creds else creds["manager_host"]
 
     URL = urljoin(m_host, "download_status")

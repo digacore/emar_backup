@@ -16,7 +16,7 @@ def printer_info_check():
     if response.status_code == 404:
         logger.info(
             "Failed to retrieve telemetry info from server. Response: {}",
-            response.json(),
+            response.text[:32],
         )
     else:
         printer_info = get_printer_info_by_posh()

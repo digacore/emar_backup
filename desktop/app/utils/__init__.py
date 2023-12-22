@@ -10,3 +10,4 @@ from .download_file_from_pcc import download_file_from_pcc
 from .self_update import self_update
 from .send_activity_server_connect import send_activity_server_connect
 from .printer_info_check import printer_info_check
+from .version import Version
