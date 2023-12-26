@@ -165,7 +165,6 @@ def get_telemetry_info(body: TelemetryRequestId):
         )
         logger.info("Computer telemetry info failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 404
-    # TODO: here comes logic for getting telemetry info
     telemetry_settings: TelemetrySettings = get_telemetry_settings_for_computer(
         computer
     )
