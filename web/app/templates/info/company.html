@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+<!-- prettier-ignore -->
+{% block flash_messages %} {% endblock %}
+<!-- prettier-ignore -->
+{% block content %}
+<div class="d-flex flex-column justify-content-center w-100">
+  <!-- "Go back" button -->
+  <!-- prettier-ignore -->
+  <div class="d-flex w-100 mb-4">
+    <!-- prettier-ignore -->
+    <a class="text-decoration-none small" href="{{ url_for('company.index_view')}}" > <i class="fas fa-arrow-left"></i> Go back </a>
+  </div>
+  <!-- End "Go back" button -->
+
+  <!-- Locations online and offline block -->
+  <div class="row">
+    <!-- Locations Offline Card -->
+    <div class="col mb-4">
+      <div class="card border-left-danger shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div
+                class="text-xxs font-weight-bold text-danger text-uppercase mb-1"
+              >
+                <p class="dash-cards">Locations Offline</p>
+              </div>
+              <div class="row no-gutters align-items-center">
+                <div class="col-auto">
+                  <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">
+                    {{company.total_offline_locations}}
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="col">
+                    <div class="progress progress-sm mr-2">
+                      <div
+                        class="progress-bar bg-danger"
+                        role="progressbar"
+                        style="width: {{ (company.total_offline_locations/(company.locations|length))*100 }}%"
+                        aria-valuenow="50"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-auto align-items-center">
+              <div class="row no-gutters h5">
+                <i
+                  class="fas fa-map-marker-alt fa-1x text-danger center-hor"
+                ></i>
+              </div>
+              <div class="row no-gutters h5">
+                <i class="fas fa-power-off fa-1x text-danger center-hor"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: locations online; locations alternate only -->
+  <div class="row">
+    <!-- Locations online -->
+    <div class="col mb-4">
+      <div class="card border-left-success shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div
+                class="text-xxs font-weight-bold text-success text-uppercase mb-1"
+              >
+                <p class="dash-cards">Locations Online</p>
+              </div>
+              <div class="row no-gutters align-items-center">
+                <div class="col-auto">
+                  <div class="h3 mb-0 mr-3 font-weight-bold text-gray-800">
+                    {{ company.total_online_locations }}
+                  </div>
+                </div>
+                <div class="col">
+                  <div class="col">
+                    <div class="progress progress-sm mr-2">
+                      <div
+                        class="progress-bar bg-success"
+                        role="progressbar"
+                        style="width: {{ (company.total_online_locations/(company.locations|length))*100 }}%"
+                        aria-valuenow="50"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-auto align-items-center">
+              <div class="row no-gutters h5">
+                <i
+                  class="fas fa-map-marker-alt fa-1x text-success center-hor"
+                ></i>
+              </div>
+              <div class="row no-gutters h5">
+                <i class="fas fa-power-off fa-1x text-success center-hor"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- End of online and offline locations -->
+  <!-- Location info -->
+  <div class="d-flex w-100 p-4">
+    <div class="d-flex w-100 flex-column justify-content-center m-3">
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Company</span>
+        <span class="mb-3 small text-dark text-center">{{ company.name }}</span>
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Sftp UserName</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ company.default_sftp_username}}</span
+        >
+      </div>
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Sftp Password</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ company.default_sftp_password}}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">PCC Org ID</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ company.pcc_org_id }}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Computers online</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ company.computers_online }}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Computers offline</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ company.computers_offline }}</span
+        >
+      </div>
+    </div>
+  </div>
+  <!-- End location info -->
+
+  {% for loc in company.locations %}
+  <p>{{loc.name}}</p>
+    {% if not loc.computers %}
+      <div class="text-grey mb-2 d-flex justify-content-center">
+      No computers in this location
+    </div>
+    {% else %}
+  <div
+    class="d-flex w-100 p-4 justify-content-center flex-column align-items-center"
+  >
+    <div class="text-grey mb-2 d-flex justify-content-center">
+      Computers in this location
+    </div>
+    <div class="w-100">
+      <div>
+        <table
+          class="w-full text-xs text-center table table-striped table-bordered table-hover pr-2 pl-2"
+        >
+          <thead class="text-sm text-center" style="color: #4e73df">
+            <tr>
+              <th scope="col">Device Name</th>
+              <th scope="col" class="pr-2 pl-2">Status</th>
+              <th scope="col">Role</th>
+              <th scope="col">Type</th>
+              <th scope="col">Last download time</th>
+              <th scope="col">Last time online</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for computer in loc.computers %}
+            <tr>
+              <td class="p-2 text-gray align-middle">
+                <div>{{ computer.computer_name }}</div>
+              </td>
+              {% if computer.status.value == "ONLINE" %}
+              <td
+                class="p-2 text-dark align-middle"
+                style="background-color: #1cc88a"
+              >
+                <div>"ONLINE"</div>
+              </td>
+              {% elif computer.status.value == "ONLINE_NO_BACKUP" %}
+              <td
+                class="p-2 text-dark align-middle"
+                style="background-color: #f6c23e"
+              >
+                <div>"ONLINE_NO_BACKUP"</div>
+              </td>
+              {% elif computer.status.value == "OFFLINE_NO_BACKUP" %}
+              <td
+                class="p-2 text-white align-middle"
+                style="background-color: #e74a3b"
+              >
+                <div>"OFFLINE_NO_BACKUP"</div>
+              </td>
+              {% elif computer.status.value == "NOT_ACTIVATED" %}
+              <td
+                class="p-2 text-white align-middle"
+                style="background-color: #848383"
+              >
+                <div>"NOT_ACTIVATED"</div>
+              </td>
+              {% endif %}
+              <td class="p-2 text-gray align-middle">
+                <span>{{ computer.device_role.value }}</span>
+              </td>
+              <td class="p-2 text-gray align-middle">
+                <span>{{ computer.device_type.value }}</span>
+              </td>
+              <td class="p-2 text-gray align-middle">
+                <div>{{ computer.last_download_time }}</div>
+              </td>
+              <td class="p-2 text-gray align-middle">
+                <div>{{ computer.last_time_online }}</div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+{% endblock %} {% block sidebar_toggle %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      $("#sidebarToggle").click();
+    });
+  </script>
+  {% endblock sidebar_toggle %} {% block bootstrap_core %}
+  <!-- This if statement is required to avoid double import if jQuery. Otherwise some functions brake -->
+  <script src="{{ url_for('static', filename='/vendor/jquery/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='/vendor/jquery/popper.min.js.map') }}"></script>
+  {% endblock bootstrap_core %}
+</div>

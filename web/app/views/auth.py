@@ -252,7 +252,18 @@ def auth_response():
         flash(f"Can't verify user {result['name']} email", "danger")
         return redirect(url_for("auth.login"))
 
-    user = User.query.filter_by(email=result["preferred_username"]).first()
+    user = (
+        User.query.with_deleted().filter_by(email=result["preferred_username"]).first()
+    )
+    # if user is deleted
+    if user and user.is_deleted:
+        user.is_deleted = False
+        user.update()
+        flash(
+            "This user is deactivated. Contact sales@emarvault.com to activate the account!",
+            "danger",
+        )
+        return redirect(url_for("auth.login"))
 
     # Create a user in our db with the information provided by Microsoft
     if not user:
@@ -260,6 +271,7 @@ def auth_response():
             username=str(result["name"]).lower().replace(" ", "-"),
             email=result["preferred_username"],
             password=str(uuid4()),
+            activated=False,
         )
         user.save()
     if not user.activated:

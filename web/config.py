@@ -51,6 +51,7 @@ class BaseConfig(object):
     CLIENT_VERSIONS = [("stable", "stable"), ("latest", "latest")]
 
     DEFAULT_SFTP_HOST = os.environ.get("DEFAULT_SFTP_HOST", "ftpus.pointclickcare.com")
+    DEFAULT_SFTP_PORT = os.environ.get("DEFAULT_SFTP_PORT", "22")
     DEFAULT_SFTP_USERNAME = os.environ.get("DEFAULT_SFTP_USERNAME", "Username")
     DEFAULT_SFTP_PASSWORD = os.environ.get("DEFAULT_SFTP_PASSWORD", "password")
     DEFAULT_FOLDER_PASSWORD = os.environ.get("DEFAULT_FOLDER_PASSWORD", "password")
@@ -64,12 +65,12 @@ class BaseConfig(object):
 
     JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "1234")
     JWT_ACCESS_TOKEN_EXPIRES = datetime.timedelta(
-        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION", 0))
     )
 
     # Flask-Session parameters
     PERMANENT_SESSION_LIFETIME = datetime.timedelta(
-        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION"))
+        minutes=int(os.environ.get("EXPIRATION_TIME_JWT_AND_SESSION", 0))
     )
     SESSION_FILE_THRESHOLD = int(os.environ.get("SESSION_FILE_THRESHOLD", 500))
     SESSION_TYPE = "filesystem"
@@ -116,6 +117,7 @@ class BaseConfig(object):
     PCC_DAILY_QUOTA_LIMIT = int(os.environ.get("PCC_DAILY_QUOTA_LIMIT", 10000))
     CERTIFICATE_PATH = os.environ.get("CERTIFICATE_PATH", None)
     PRIVATEKEY_PATH = os.environ.get("PRIVATEKEY_PATH", None)
+    GLOBAL_COMPANY_ID = os.environ.get("GLOBAL_COMPANY_ID", 1)
 
     # Logs deletion periods in days
     SYSTEM_LOGS_DELETION_PERIOD = int(

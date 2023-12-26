@@ -1,0 +1,16 @@
+<!-- prettier-ignore -->
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>SETTINGS PAGE</h1>
+<div class="form-check">
+  <input class="form-check-input" type="checkbox" {% if
+  telemetry_settings.send_printer_info ==True %}checked {% endif %}
+  data-computer-id={{ computer.id }} id="printer_checkbox" />
+  <label class="form-check-label" for="printer_checkbox">
+    Send printer info
+  </label>
+</div>
+{% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='/js/computer_settings.js') }}"></script>
+{% endblock %}

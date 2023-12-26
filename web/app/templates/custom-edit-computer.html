@@ -1,0 +1,39 @@
+<!-- prettier-ignore -->
+{% extends 'admin/master.html' %}
+{% import 'admin/lib.html' as lib with context%}
+{% from 'admin/lib.html' import extra with context %}
+{# backward compatible#}
+
+
+{% block head %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/main.css') }}"
+/>
+
+{{ super() }} {{ lib.form_css() }} {% endblock %} {% block body %} {% block
+navlinks %}
+<ul class="nav nav-tabs">
+  <li class="nav-item">
+    <a href="{{ return_url }}" class="nav-link">{{ _gettext('List') }}</a>
+  </li>
+  <li class="nav-item">
+    <a href="javascript:void(0)" class="nav-link active"
+      >{{ _gettext('Edit') }}</a
+    >
+  </li>
+  <li class="nav-item">
+    <a
+      href="{{ url_for('computer_settings.settings_list',computer_id=model.id) }}"
+      class="nav-link"
+      >{{ _gettext('Settings') }}</a
+    >
+  </li>
+</ul>
+<!-- prettier-ignore -->
+{% endblock %}
+
+{% block edit_form %}
+{{ lib.render_form(form, return_url, extra(), form_opts) }}
+{% endblock %} {% endblock %} {% block tail %} {{ super()}} {{ lib.form_js() }}
+{% endblock %}

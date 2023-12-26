@@ -1,13 +1,18 @@
 import uuid
 from datetime import datetime
 
-from flask import jsonify
+from flask import jsonify, request
 
-from app.models import Computer, LogType, SystemLogType
-from app.schema import ComputerRegInfo, ComputerSpecialStatus
+from app.models import Computer, LogType, SystemLogType, TelemetrySettings
+from app.schema import (
+    ComputerRegInfo,
+    ComputerSpecialStatus,
+    TelemetryRequestId,
+)
 from app.views.blueprint import BlueprintApi
 from app.controllers import create_log_event, create_system_log
 from app.logger import logger
+from app.views.utils import get_telemetry_settings_for_computer
 
 from config import BaseConfig as CFG
 
@@ -30,11 +35,6 @@ def register_computer(body: ComputerRegInfo):
 
     if computer:
         message = "Wrong request data. Such computer already exists"
-        logger.info("Computer registration failed. Reason: {}", message)
-        return jsonify(status="fail", message=message), 409
-
-    elif computer_name:
-        message = f"Such computer_name: {body.computer_name} already exists. Wrong computer id."
         logger.info("Computer registration failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 409
 
@@ -93,6 +93,11 @@ def register_computer(body: ComputerRegInfo):
             200,
         )
 
+    elif computer_name:
+        message = f"Such computer_name: {body.computer_name} already exists. Wrong computer id."
+        logger.info("Computer registration failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 409
+
     else:
         message = "Wrong request data."
         logger.info("Computer registration failed. Reason: {}", message)
@@ -142,4 +147,49 @@ def special_status(body: ComputerSpecialStatus):
 
     return jsonify({"status": "success"}), 200
 
-#TODO: return on 142 change to negative status after the msi updates on all computers
+
+# TODO: return on 142 change to negative status after the msi updates on all computers
+
+
+@computer_blueprint.get("/get_telemetry_info")
+@logger.catch
+def get_telemetry_info(body: TelemetryRequestId):
+    computer: Computer = Computer.query.filter_by(
+        identifier_key=body.identifier_key
+    ).first()
+
+    if not computer:
+        message = (
+            f"Computer with such identifier_key: {body.identifier_key} doesn't exist"
+        )
+        logger.info("Computer telemetry info failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 404
+    # TODO: here comes logic for getting telemetry info
+    telemetry_settings: TelemetrySettings = get_telemetry_settings_for_computer(
+        computer
+    )
+    return (
+        jsonify(
+            status="success", send_printer_info=telemetry_settings.send_printer_info
+        ),
+        200,
+    )
+
+
+@computer_blueprint.get("/delete_computer")
+@logger.catch
+def delete_computer():
+    identifier_key = request.args.get("identifier_key")
+    computer: Computer = Computer.query.filter_by(identifier_key=identifier_key).first()
+
+    if not computer:
+        message = f"Computer with such identifier_key: {identifier_key} doesn't exist"
+        logger.info("Computer delete failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 404
+
+    computer.delete()
+
+    # Create system log that computer was deleted from the system
+    create_system_log(SystemLogType.COMPUTER_DELETED, computer, None)
+    logger.info("Computer deleted. {}", computer.computer_name)
+    return jsonify({"status": "success"}), 200
