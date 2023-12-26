@@ -38,13 +38,14 @@ def register_computer(body: ComputerRegInfo):
         logger.info("Computer registration failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 409
 
-    elif body.identifier_key == "new_computer":
+    elif body.identifier_key == "new_computer" and not computer_name:
         # Check if computer with such name already exists but was deleted
-        deleted_computer: Computer = (
+        deleted_computer_query: Computer = (
             Computer.query.with_deleted()
             .filter_by(computer_name=body.computer_name)
             .first()
         )
+        deleted_computer = deleted_computer_query and deleted_computer_query.is_deleted
 
         new_identifier_key = str(uuid.uuid4())
 
