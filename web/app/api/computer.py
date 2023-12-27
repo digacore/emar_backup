@@ -38,23 +38,24 @@ def register_computer(body: ComputerRegInfo):
         logger.info("Computer registration failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 409
 
-    elif body.identifier_key == "new_computer":
+    elif body.identifier_key == "new_computer" and not computer_name:
         # Check if computer with such name already exists but was deleted
-        deleted_computer: Computer = (
+        deleted_computer_query: Computer = (
             Computer.query.with_deleted()
             .filter_by(computer_name=body.computer_name)
             .first()
         )
+        deleted_computer = deleted_computer_query and deleted_computer_query.is_deleted
 
         new_identifier_key = str(uuid.uuid4())
 
         # Restore deleted computer if it exists
         if deleted_computer:
-            deleted_computer = deleted_computer.restore()
-            deleted_computer.identifier_key = new_identifier_key
-            deleted_computer.update()
+            deleted_computer_query = deleted_computer_query.restore()
+            deleted_computer_query.identifier_key = new_identifier_key
+            deleted_computer_query.update()
 
-            new_computer = deleted_computer
+            new_computer = deleted_computer_query
 
         else:
             new_computer = Computer(
@@ -164,7 +165,6 @@ def get_telemetry_info(body: TelemetryRequestId):
         )
         logger.info("Computer telemetry info failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 404
-    # TODO: here comes logic for getting telemetry info
     telemetry_settings: TelemetrySettings = get_telemetry_settings_for_computer(
         computer
     )
