@@ -51,11 +51,11 @@ def register_computer(body: ComputerRegInfo):
 
         # Restore deleted computer if it exists
         if deleted_computer:
-            deleted_computer = deleted_computer.restore()
-            deleted_computer.identifier_key = new_identifier_key
-            deleted_computer.update()
+            deleted_computer_query = deleted_computer_query.restore()
+            deleted_computer_query.identifier_key = new_identifier_key
+            deleted_computer_query.update()
 
-            new_computer = deleted_computer
+            new_computer = deleted_computer_query
 
         else:
             new_computer = Computer(
