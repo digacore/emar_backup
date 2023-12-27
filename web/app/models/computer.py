@@ -895,7 +895,7 @@ class ComputerView(RowActionListMixin, MyModelView):
             if (
                 location.company.is_trial
                 and location_activated_computers
-                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
+                > CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
             ):
                 flash(
                     gettext(
