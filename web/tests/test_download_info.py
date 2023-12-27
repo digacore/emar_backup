@@ -7,7 +7,6 @@ from config import BaseConfig as CFG
 
 
 def test_last_time(client):
-
     response = client.post(
         "/last_time",
         json=dict(
@@ -50,7 +49,6 @@ def test_last_time(client):
 
 
 def test_get_credentials(client):
-
     response = client.post(
         "/get_credentials",
         json=dict(identifier_key="comp4_identifier_key", computer_name="comp4_test"),
@@ -70,9 +68,15 @@ def test_get_credentials(client):
     assert response.status_code == 400
     assert response.json["status"] == "fail"
 
+    response = client.post(
+        "/get_credentials", json=dict(identifier_key=None, computer_name=222)
+    )
+
+    assert response
+    assert response.status_code == 422
+
 
 def test_download_status(client):
-
     response = client.post(
         "/download_status",
         json=dict(
@@ -114,7 +118,6 @@ def test_download_status(client):
 
 
 def test_files_checksum(client):
-
     # last_time_online: datetime
     # identifier_key: str
     # files_checksum: dict
@@ -154,7 +157,6 @@ def test_files_checksum(client):
 
 
 def test_check_msi_version(client):
-
     computer_old_msi: Computer = Computer.query.filter_by(
         computer_name="comp1_intime"
     ).first()

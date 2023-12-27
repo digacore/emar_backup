@@ -237,7 +237,7 @@ def system_log_info():
 def location_info(location_id):
     location = m.Location.query.filter_by(id=location_id).first_or_404()
 
-    # Check if user has access to computer information
+    # Check if user has access to location information
     if not has_access_to_location(current_user, location):
         abort(403, "You don't have access to this location information.")
 
@@ -253,7 +253,7 @@ def location_info(location_id):
 def company_info(company_id):
     company = m.Company.query.filter_by(id=company_id).first_or_404()
 
-    # Check if user has access to computer information
+    # Check if user has access to company information
     if not has_access_to_company(current_user, company):
         abort(403, "You don't have access to this company information.")
 
