@@ -73,22 +73,6 @@
       </div>
 
       <div class="d-flex flex-column justify-content-start">
-        <span class="text-grey mb-1 small text-center">Computers online</span>
-        <span class="mb-3 small text-dark text-center"
-          >{{ location.computers_online }}</span
-        >
-      </div>
-
-      <div class="d-flex flex-column justify-content-start">
-        <span class="text-grey mb-1 small text-center">Computers offline</span>
-        <span class="mb-3 small text-dark text-center"
-          >{{ location.computers_offline }}</span
-        >
-      </div>
-    </div>
-
-    <div class="d-flex w-100 flex-column justify-content-center m-3">
-      <div class="d-flex flex-column justify-content-start">
         <span class="text-grey mb-1 small text-center">Location</span>
         <span class="mb-3 small text-dark text-center"
           >{{ location.name }}</span
@@ -101,11 +85,26 @@
           >{{ location.status.value.capitalize()}}</span
         >
       </div>
+    </div>
 
+    <div class="d-flex w-100 flex-column justify-content-center m-3">
       <div class="d-flex flex-column justify-content-start">
         <span class="text-grey mb-1 small text-center">Location Created</span>
         <span class="mb-3 small text-dark text-center"
           >{{ location.created_at }}</span
+        >
+      </div>
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Computers online</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.computers_online }}</span
+        >
+      </div>
+
+      <div class="d-flex flex-column justify-content-start">
+        <span class="text-grey mb-1 small text-center">Computers offline</span>
+        <span class="mb-3 small text-dark text-center"
+          >{{ location.computers_offline }}</span
         >
       </div>
     </div>
