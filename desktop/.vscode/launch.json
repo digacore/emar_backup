@@ -1,16 +1,52 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Python: Current File",
-            "type": "python",
-            "request": "launch",
-            "program": "${file}",
-            "console": "integratedTerminal",
-            "justMyCode": true
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "heartbeat",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--heartbeat"],
+      "justMyCode": true
+    },
+    {
+      "name": "computer-delete",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--computer-delete"],
+      "justMyCode": true
+    },
+    {
+      "name": "log-convertor",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--log-convertor"],
+      "justMyCode": true
+    },
+    {
+      "name": "server-connect",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--server-connect"],
+      "justMyCode": true
+    },
+    {
+      "name": "Python: Current File",
+      "type": "python",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ]
 }
