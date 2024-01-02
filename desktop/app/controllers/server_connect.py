@@ -18,6 +18,8 @@ from app.utils.sftp_check_files_for_update_and_load import (
     update_download_status,
 )
 
+from app.utils.version import Version
+
 
 @logger.catch
 def server_connect():
@@ -41,7 +43,8 @@ def server_connect():
             logger.info("Downloading process interrupted")
 
         # user = getpass.getuser()
-        if credentials["version"] != old_credentials.version:
+        # if credentials["version"] != old_credentials.version:
+        if Version().from_str(credentials["version"]) > Version().from_str(old_credentials.version):
             self_update(credentials, old_credentials.model_dump())
         # # TODO: check version before start of this function
         # self_update(credentials, old_credentials.model_dump())

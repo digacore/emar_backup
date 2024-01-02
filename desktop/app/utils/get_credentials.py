@@ -24,12 +24,13 @@ def register_computer():
 
     # TODO: replace f string in request with urljoin
     URL = urljoin(MANAGER_HOST, "register_computer")
+    data = s.GetCredentialsData(
+        computer_name=COMPUTER_NAME,
+        identifier_key=identifier_key,
+    )
     response = requests.post(
         URL,
-        json={
-            "computer_name": COMPUTER_NAME,
-            "identifier_key": identifier_key,
-        },
+        json=data.model_dump(),
     )
 
     if response.status_code == 200:

@@ -205,8 +205,9 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
             )
         except Exception as e:
             if isinstance(e, TimeoutError):
+                URL = urljoin(MANAGER_HOST, "special_status")
                 response = requests.post(
-                    f'{credentials["manager_host"]}/special_status',
+                    URL,
                     json={
                         "computer_name": credentials["computer_name"],
                         "identifier_key": credentials["identifier_key"],
@@ -342,9 +343,9 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                     last_downloaded=str(tempdir),
                     last_saved_path=last_saved_path,
                 )
-
+        URL = urljoin(MANAGER_HOST, "files_checksum")
         response = requests.post(
-            f"{credentials['manager_host']}/files_checksum",
+            URL,
             json={
                 "files_checksum": files_checksum,
                 "identifier_key": str(credentials["identifier_key"]),
