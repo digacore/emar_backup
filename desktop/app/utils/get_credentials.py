@@ -21,17 +21,29 @@ def register_computer():
             )
         )
     identifier_key = "new_computer"
+    # check if CONFIG has lid field
+    if CONFIG.lid:
+        # if lid exists call register_computer with lid
+        URL = urljoin(MANAGER_HOST, "register_computer_lid")
+        response = requests.post(
+            URL,
+            json={
+                "computer_name": COMPUTER_NAME,
+                "identifier_key": identifier_key,
+                "lid": CONFIG.lid,
+            },
+        )
 
-    # TODO: replace f string in request with urljoin
-    URL = urljoin(MANAGER_HOST, "register_computer")
-    data = s.GetCredentialsData(
-        computer_name=COMPUTER_NAME,
-        identifier_key=identifier_key,
-    )
-    response = requests.post(
-        URL,
-        json=data.model_dump(),
-    )
+    else:
+        # Regular registration
+        URL = urljoin(MANAGER_HOST, "register_computer")
+        response = requests.post(
+            URL,
+            json={
+                "computer_name": COMPUTER_NAME,
+                "identifier_key": identifier_key,
+            },
+        )
 
     if response.status_code == 200:
         logger.info(

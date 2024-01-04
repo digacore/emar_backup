@@ -67,7 +67,7 @@ if (Test-Path -Path $cfg.backups_path) {
     Continue
 }
 else {
-     New-Item -ItemType Directory -Path $cfg.backups_path
+    New-Item -ItemType Directory -Path $cfg.backups_path
 }
 Push-Location $cfg.backups_path
 New-Item -ItemType File -Name "emar_backups.zip"
@@ -82,6 +82,22 @@ $shortcut.IconLocation = $IconLocation
 $shortcut.WorkingDirectory = $cfg.backups_path
 $shortcut.Save()
 Write-Log "Desktop shortcut created"
+
+# Get location is from msi CommandLine
+Get-WmiObject Win32_Process -Filter "name = 'msiexec.exe'" | Select-Object CommandLine | foreach {  $_.CommandLine -match '^.+lid_(\d+)\.msi.*$' }
+if ($Matches){
+    $lid = $Matches[1]
+    Write-Log "lid - [$lid]"
+    $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
+    if (-not $cfg.PSObject.Properties["lid"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "lid" -Value $null
+    }
+    $cfg.lid = $lid
+    $cfg | ConvertTo-Json | Set-Content config.json
+}else{
+    Write-Log "Warning: lid not found"
+}
+
 Write-Log finish
 
 Pop-Location
