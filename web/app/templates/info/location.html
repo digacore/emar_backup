@@ -9,6 +9,7 @@
   <div class="d-flex w-100 mb-4">
     <!-- prettier-ignore -->
     <a class="text-decoration-none small" href="{{ url_for('location.index_view')}}" > <i class="fas fa-arrow-left"></i> Go back </a>
+    <a class="text-decoration-none small ml-auto" href="{{ url_for('download_msi.download_lid_msi',lid=location.id)}}" > Download Desktop Client for this Location </a>
   </div>
   <!-- End "Go back" button -->
 

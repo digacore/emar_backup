@@ -1,8 +1,9 @@
 import io
+import os
 from flask import send_file, jsonify, Response, Blueprint
 
 from app.views.blueprint import BlueprintApi
-from app.models import DesktopClient, Computer, LogType
+from app.models import DesktopClient, Computer, LogType, Location
 from app.schema import LoadMSI, UpdateMSIVersion
 from app.controllers import create_log_event
 
@@ -38,7 +39,6 @@ def msi_download_to_local(body: LoadMSI):
     )
 
     if computer:
-
         msi: DesktopClient = (
             DesktopClient.query.filter_by(flag_name=body.flag).first()
             if body.flag == "stable" or body.flag == "latest"
@@ -78,7 +78,6 @@ def update_current_msi_version(body: UpdateMSIVersion):
     )
 
     if computer:
-
         msi: DesktopClient = (
             DesktopClient.query.filter_by(flag_name=body.current_msi_version).first()
             if body.current_msi_version == "stable"
@@ -108,3 +107,25 @@ def update_current_msi_version(body: UpdateMSIVersion):
     message = "Wrong request data. Computer not found."
     logger.info("MSI version update failed. Reason: {}", message)
     return jsonify(status="fail", text=message), 400
+
+
+# Route for downloading MSI with LID (location id)
+@download_msi_fblueprint.route("/download_lid/<int:lid>", methods=["GET"])
+@logger.catch
+def download_lid_msi(lid: int):
+    msi = DesktopClient.query.filter_by(flag_name="stable").first()
+    if not msi:
+        msi = DesktopClient.query.filter_by(flag_name="latest").first()
+        if not msi:
+            msi = DesktopClient.query.first()
+            if not msi:
+                return jsonify(status="fail", message="No MSI found."), 400
+    location = Location.query.filter_by(id=lid).first()
+    base_filename, extension = os.path.splitext(msi.filename)
+    filename = f"{base_filename}_lid_{location.id}{extension}"
+    if msi and location:
+        return send_file(
+            io.BytesIO(msi.blob), download_name=filename, mimetype=msi.mimetype
+        )
+    else:
+        return jsonify(status="fail", message="Wrong request data."), 400
