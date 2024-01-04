@@ -19,3 +19,4 @@ class ConfigFile(BaseModel):
     folder_password: str | None = None
     files_checksum: dict[str, str] | None = None
     use_pcc_backup: bool | None = None
+    lid: int | None = None
