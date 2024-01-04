@@ -29,6 +29,12 @@ class ComputerRegInfo(BaseModel):
     computer_name: str
 
 
+class ComputerRegInfoLid(BaseModel):
+    identifier_key: str
+    computer_name: str
+    lid: int
+
+
 class ComputerSpecialStatus(BaseModel):
     identifier_key: str
     computer_name: str
