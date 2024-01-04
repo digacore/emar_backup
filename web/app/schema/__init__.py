@@ -2,7 +2,12 @@
 from .get_credentials import GetCredentials
 from .last_time import LastTime
 from .download_status import DownloadStatus
-from .computer import ComputerRegInfo, ComputerSpecialStatus, ComputerInfo
+from .computer import (
+    ComputerRegInfo,
+    ComputerSpecialStatus,
+    ComputerInfo,
+    ComputerRegInfoLid,
+)
 from .files_checksum import FilesChecksum
 from .load_msi import LoadMSI
 from .update_msi_version import UpdateMSIVersion

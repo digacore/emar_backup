@@ -3,9 +3,10 @@ from datetime import datetime
 
 from flask import jsonify, request
 
-from app.models import Computer, LogType, SystemLogType, TelemetrySettings
+from app.models import Computer, LogType, SystemLogType, TelemetrySettings, Location
 from app.schema import (
     ComputerRegInfo,
+    ComputerRegInfoLid,
     ComputerSpecialStatus,
     TelemetryRequestId,
 )
@@ -193,3 +194,90 @@ def delete_computer():
     create_system_log(SystemLogType.COMPUTER_DELETED, computer, None)
     logger.info("Computer deleted. {}", computer.computer_name)
     return jsonify({"status": "success"}), 200
+
+
+@computer_blueprint.post("/register_computer_lid")
+@logger.catch
+def register_computer_lid(body: ComputerRegInfoLid):
+    computer: Computer = Computer.query.filter_by(
+        identifier_key=body.identifier_key, computer_name=body.computer_name
+    ).first()
+    location: Location = Location.query.filter_by(id=body.lid).first()
+    computer_name: Computer = Computer.query.filter_by(
+        computer_name=body.computer_name
+    ).first()
+
+    if computer:
+        message = "Wrong request data. Such computer already exists"
+        logger.info("Computer registration failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 409
+
+    elif body.identifier_key == "new_computer" and not computer_name and location:
+        # Check if computer with such name already exists but was deleted
+        deleted_computer_query: Computer = (
+            Computer.query.with_deleted()
+            .filter_by(computer_name=body.computer_name)
+            .first()
+        )
+        deleted_computer = deleted_computer_query and deleted_computer_query.is_deleted
+
+        new_identifier_key = str(uuid.uuid4())
+
+        # Restore deleted computer if it exists
+        if deleted_computer:
+            deleted_computer_query = deleted_computer_query.restore()
+            deleted_computer_query.identifier_key = new_identifier_key
+            deleted_computer_query.location_id = location.id
+            deleted_computer_query.company_id = location.company_id
+            deleted_computer_query.activated = True
+            deleted_computer_query.update()
+
+            new_computer = deleted_computer_query
+
+        else:
+            new_computer = Computer(
+                identifier_key=new_identifier_key,
+                computer_name=body.computer_name,
+                manager_host=CFG.DEFAULT_MANAGER_HOST,
+                activated=True,
+                logs_enabled=True,
+                last_time_logs_enabled=datetime.utcnow(),
+                last_time_logs_disabled=None,
+                location_id=location.id,
+                company_id=location.company_id,
+            )
+            new_computer.save()
+
+        # Create system log that computer was created in the system
+        create_system_log(SystemLogType.COMPUTER_CREATED, new_computer, None)
+        logger.info(
+            "Computer registered. {} identifier_key was set.", body.computer_name
+        )
+        return (
+            jsonify(
+                status="success",
+                message="Supplying credentials",
+                host=new_computer.manager_host,
+                company_name=new_computer.company_name,
+                location_name=new_computer.location_name,
+                sftp_username=new_computer.sftp_username,
+                sftp_password=new_computer.sftp_password,
+                sftp_folder_path=new_computer.sftp_folder_path,
+                identifier_key=new_computer.identifier_key,
+                computer_name=new_computer.computer_name,
+                folder_password=new_computer.folder_password,
+                manager_host=CFG.DEFAULT_MANAGER_HOST,
+                msi_version="stable",
+            ),
+            200,
+        )
+
+    elif computer_name:
+        message = f"Such computer_name: {body.computer_name} already exists. Wrong computer id."
+        logger.info("Computer registration failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 409
+
+    else:
+        message = "Wrong request data."
+        logger.info("Computer registration failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 400
