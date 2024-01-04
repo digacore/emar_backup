@@ -3,6 +3,7 @@ import zoneinfo
 import datetime
 
 from flask import jsonify, request
+from app.controllers.backup_log import backup_log_on_download_error_with_message
 
 from app.models import Computer, DesktopClient, LogType
 from app.models.computer import PrinterStatus
@@ -294,9 +295,19 @@ def download_status(body: DownloadStatus):
             computer.download_status,
         )
 
-        if computer.logs_enabled and body.download_status == "error":
+        if (
+            computer.logs_enabled
+            and body.download_status == "error"
+            and body.error_message == ""
+        ):
             backup_log_on_download_error(computer)
-
+        elif (
+            computer.logs_enabled
+            and body.download_status == "error"
+            and body.error_message != ""
+        ):
+            # backup_log_on_download_success(computer)
+            backup_log_on_download_error_with_message(computer, body.error_message)
         return jsonify(status="success", message="Writing download status to db"), 200
 
     message = "Wrong request data. Computer not found."
