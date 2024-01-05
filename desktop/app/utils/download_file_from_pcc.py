@@ -14,6 +14,9 @@ from app.utils.sftp_check_files_for_update_and_load import (
     update_download_status,
 )
 
+from app.consts import MANAGER_HOST, COMPUTER_NAME, IDENTIFIER_KEY
+from app import schemas as s
+
 
 def download_file_from_pcc(credentials):
     """
@@ -35,14 +38,15 @@ def download_file_from_pcc(credentials):
 
         # Download backup file
         server_route = "pcc_api/download_backup"
-        url = urljoin(credentials["manager_host"], server_route)
+        url = urljoin(MANAGER_HOST, server_route)
+        data = s.GetCredentialsData(
+            computer_name=COMPUTER_NAME,
+            identifier_key=IDENTIFIER_KEY,
+        )
         try:
             with requests.post(
                 url,
-                json={
-                    "computer_name": credentials["computer_name"],
-                    "identifier_key": credentials["identifier_key"],
-                },
+                json=data.model_dump(),
                 stream=True,
             ) as res:
                 res.raise_for_status()

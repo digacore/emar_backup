@@ -730,3 +730,21 @@ def backup_log_on_download_error(computer: m.Computer):
                     last_computer_log.id,
                     new_no_downloads_log.id,
                 )
+
+
+def backup_log_on_download_error_with_message(computer: m.Computer, message: str):
+    # Current time in UTC rounded to hours
+    rounded_current_time = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    new_no_downloads_log = m.BackupLog(
+        backup_log_type=m.BackupLogType.NO_DOWNLOADS_PERIOD,
+        start_time=rounded_current_time,
+        end_time=rounded_current_time + timedelta(minutes=59, seconds=59),
+        computer_id=computer.id,
+        error=BackupLogError.ONE_HOUR.value,
+        notes=message,
+    )
+    new_no_downloads_log.save()
+    logger.debug(
+        "Log on_download_error 1: Created first backup log (unsuccessful) for computer {}",
+        computer.computer_name,
+    )
