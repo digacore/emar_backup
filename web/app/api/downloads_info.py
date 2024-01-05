@@ -306,7 +306,6 @@ def download_status(body: DownloadStatus):
             and body.download_status == "error"
             and body.error_message != ""
         ):
-            # backup_log_on_download_success(computer)
             backup_log_on_download_error_with_message(computer, body.error_message)
         return jsonify(status="success", message="Writing download status to db"), 200
 
