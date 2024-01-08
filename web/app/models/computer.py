@@ -1,7 +1,7 @@
 import enum
 from copy import copy
 from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
 from sqlalchemy.orm import relationship
@@ -125,7 +125,9 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         default=PrinterStatus.UNKNOWN,
         server_default=sql.text("'UNKNOWN'"),
     )
-    printer_status_timestamp = db.Column(db.DateTime, default=datetime.utcnow())
+    printer_status_timestamp = db.Column(
+        db.DateTime, default=datetime.now(timezone.utc)
+    )
 
     company = relationship(
         "Company",
@@ -179,11 +181,11 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     def delete(self, commit: bool = True):
         """Soft delete computer"""
         self.activated = False
-        self.deactivated_at = datetime.utcnow()
+        self.deactivated_at = datetime.now(timezone.utc)
         self.logs_enabled = False
-        self.last_time_logs_disabled = datetime.utcnow()
+        self.last_time_logs_disabled = datetime.now(timezone.utc)
         self.is_deleted = True
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now(timezone.utc)
         if commit:
             db.session.commit()
         return self
@@ -216,14 +218,14 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         self.activated = True
         self.deactivated_at = None
         self.logs_enabled = True
-        self.last_time_logs_enabled = datetime.utcnow()
+        self.last_time_logs_enabled = datetime.now(timezone.utc)
 
         if commit:
             db.session.commit()
         return self
 
     def deactivate(
-        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
+        self, deactivated_at: datetime = datetime.now(timezone.utc), commit: bool = True
     ):
         """Deactivate computer"""
         self.activated = False
@@ -241,7 +243,11 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     @location_name.expression
     def location_name(cls):
-        return select([Location.name]).where(cls.location_id == Location.id).as_scalar()
+        return (
+            select([Location.name])
+            .where(cls.location_id == Location.id)
+            .scalar_subquery()
+        )
 
     @location_name.setter
     def location_name(self, value):
@@ -254,7 +260,9 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     @company_name.expression
     def company_name(cls):
-        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+        return (
+            select([Company.name]).where(cls.company_id == Company.id).scalar_subquery()
+        )
 
     @company_name.setter
     def company_name(self, value):
@@ -267,7 +275,9 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     @hybrid_property
     def status(self) -> ComputerStatus:
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
 
         # Not activated status
         if not self.activated:
@@ -300,7 +310,9 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     @status.expression
     def status(cls):
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
 
         return case(
             [
@@ -342,7 +354,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         Returns:
             int: offline period in hours
         """
-        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
 
         if not self.last_download_time:
             return 24
@@ -362,7 +374,9 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         Returns:
             int: number of occurrences
         """
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
 
         # If computer backup logs disables - return None
         if not self.logs_enabled:
@@ -398,7 +412,9 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         Returns:
             timedelta: summarized offline time
         """
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
 
         # If computer backup logs disables - return None
         if not self.logs_enabled:
@@ -797,10 +813,10 @@ class ComputerView(RowActionListMixin, MyModelView):
                 if form.activated.data:
                     model.deactivated_at = None
                 else:
-                    model.deactivated_at = datetime.utcnow()
+                    model.deactivated_at = datetime.now(timezone.utc)
 
                 if form.logs_enabled.data:
-                    model.last_time_logs_enabled = datetime.utcnow()
+                    model.last_time_logs_enabled = datetime.now(timezone.utc)
 
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -812,11 +828,11 @@ class ComputerView(RowActionListMixin, MyModelView):
                 form.populate_obj(model)
 
                 if not form.activated.data:
-                    model.deactivated_at = datetime.utcnow()
+                    model.deactivated_at = datetime.now(timezone.utc)
 
                 if not form.logs_enabled.data:
                     model.last_time_logs_enabled = None
-                    model.last_time_logs_disabled = datetime.utcnow()
+                    model.last_time_logs_disabled = datetime.now(timezone.utc)
 
                 self.session.add(model)
                 self._on_model_change(form, model, True)
@@ -936,9 +952,9 @@ class ComputerView(RowActionListMixin, MyModelView):
 
             if form.logs_enabled.data != model_copy.logs_enabled:
                 if form.logs_enabled.data:
-                    model.last_time_logs_enabled = datetime.utcnow()
+                    model.last_time_logs_enabled = datetime.now(timezone.utc)
                 else:
-                    model.last_time_logs_disabled = datetime.utcnow()
+                    model.last_time_logs_disabled = datetime.now(timezone.utc)
 
             if form.activated.data != model_copy.activated:
                 if form.activated.data:

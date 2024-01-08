@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import jsonify, request
 
@@ -64,10 +64,10 @@ def register_computer(body: ComputerRegInfo):
                 computer_name=body.computer_name,
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
                 activated=False,
-                deactivated_at=datetime.utcnow(),
+                deactivated_at=datetime.now(timezone.utc),
                 logs_enabled=False,
                 last_time_logs_enabled=None,
-                last_time_logs_disabled=datetime.utcnow(),
+                last_time_logs_disabled=datetime.now(timezone.utc),
             )
             new_computer.save()
 
@@ -241,7 +241,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
                 activated=True,
                 logs_enabled=True,
-                last_time_logs_enabled=datetime.utcnow(),
+                last_time_logs_enabled=datetime.now(timezone.utc),
                 last_time_logs_disabled=None,
                 location_id=location.id,
                 company_id=location.company_id,

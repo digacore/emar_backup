@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app import db
 from app.logger import logger
@@ -83,8 +83,10 @@ def init_db(test_me: bool = False):
         computers = {
             "comp1_intime": {
                 "computer_name": "comp1_intime",
-                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True),
-                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_download_time": CFG.offset_to_est(
+                    datetime.now(timezone.utc), True
+                ),
+                "last_time_online": CFG.offset_to_est(datetime.now(timezone.utc), True),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp1_sftp_host",
@@ -99,9 +101,11 @@ def init_db(test_me: bool = False):
             },
             "comp2_late": {
                 "computer_name": "comp2_late",
-                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True)
+                "last_download_time": CFG.offset_to_est(
+                    datetime.now(timezone.utc), True
+                )
                 - timedelta(seconds=60 * 60 * 13),
-                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True)
+                "last_time_online": CFG.offset_to_est(datetime.now(timezone.utc), True)
                 - timedelta(seconds=60 * 60 * 13),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
@@ -117,8 +121,10 @@ def init_db(test_me: bool = False):
             },
             "comp3_test": {
                 "computer_name": "comp3_test",
-                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True),
-                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_download_time": CFG.offset_to_est(
+                    datetime.now(timezone.utc), True
+                ),
+                "last_time_online": CFG.offset_to_est(datetime.now(timezone.utc), True),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp3_sftp_host",
@@ -133,8 +139,10 @@ def init_db(test_me: bool = False):
             },
             "comp4_test": {
                 "computer_name": "comp4_test",
-                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True),
-                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_download_time": CFG.offset_to_est(
+                    datetime.now(timezone.utc), True
+                ),
+                "last_time_online": CFG.offset_to_est(datetime.now(timezone.utc), True),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp4_sftp_host",
@@ -149,8 +157,10 @@ def init_db(test_me: bool = False):
             },
             "comp5_test": {
                 "computer_name": "comp5_test",
-                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True),
-                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_download_time": CFG.offset_to_est(
+                    datetime.now(timezone.utc), True
+                ),
+                "last_time_online": CFG.offset_to_est(datetime.now(timezone.utc), True),
                 "company_name": "Atlas",
                 "location_name": "Maywood",
                 "sftp_host": "comp5_sftp_host",
@@ -164,7 +174,7 @@ def init_db(test_me: bool = False):
             },
             "comp7_no_download_time": {
                 "computer_name": "comp7_no_download_time",
-                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True),
+                "last_time_online": CFG.offset_to_est(datetime.now(timezone.utc), True),
                 "company_name": "Dro",
                 "location_name": "SpringField",
                 "sftp_host": "comp7_sftp_host",
@@ -178,9 +188,11 @@ def init_db(test_me: bool = False):
             },
             "comp6_late": {
                 "computer_name": "comp6_late",
-                "last_download_time": CFG.offset_to_est(datetime.utcnow(), True)
+                "last_download_time": CFG.offset_to_est(
+                    datetime.now(timezone.utc), True
+                )
                 - timedelta(seconds=60 * 60 * 50),
-                "last_time_online": CFG.offset_to_est(datetime.utcnow(), True)
+                "last_time_online": CFG.offset_to_est(datetime.now(timezone.utc), True)
                 - timedelta(seconds=60 * 60 * 50),
                 "company_name": "Dro",
                 "location_name": "SpringField",

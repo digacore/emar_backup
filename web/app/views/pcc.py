@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import (
     render_template,
@@ -341,7 +341,7 @@ def get_creation_report(report_id: int):
         report.status = m.CreationReportStatus.APPROVED
         report.data = json.dumps(created_objects)
         report.company_id = company.id
-        report.status_changed_at = datetime.utcnow()
+        report.status_changed_at = datetime.now(timezone.utc)
         report.update()
 
     return redirect(url_for("pcc.creation_reports"))

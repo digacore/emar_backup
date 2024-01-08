@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import flash
 from flask_login import current_user
@@ -95,7 +95,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
         self.locations = []
 
         self.is_deleted = True
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now(timezone.utc)
 
         if commit:
             db.session.commit()
@@ -107,7 +107,9 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
 
     @company_name.expression
     def company_name(cls):
-        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+        return (
+            select([Company.name]).where(cls.company_id == Company.id).scalar_subquery()
+        )
 
     @hybrid_property
     def total_computers(self):
@@ -125,7 +127,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
     def primary_computers_offline(self):
         from app.models.computer import Computer, DeviceRole
 
-        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time = CFG.offset_to_est(datetime.now(timezone.utc), True)
 
         location_ids: list[int] = [location.id for location in self.locations]
 
@@ -148,7 +150,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
     def total_offline_computers(self):
         from app.models.computer import Computer
 
-        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time = CFG.offset_to_est(datetime.now(timezone.utc), True)
 
         location_ids: list[int] = [location.id for location in self.locations]
 
@@ -170,7 +172,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
     def total_offline_locations(self):
         from app.models.computer import Computer
 
-        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time = CFG.offset_to_est(datetime.now(timezone.utc), True)
         offline_locations_counter = 0
 
         locations = self.locations
