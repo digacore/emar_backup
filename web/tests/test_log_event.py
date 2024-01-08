@@ -1,4 +1,3 @@
-from app import db
 from app.models import Computer, LogType, LogEvent
 from app.controllers import create_log_event
 

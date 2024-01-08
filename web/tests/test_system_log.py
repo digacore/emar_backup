@@ -1,6 +1,5 @@
 from flask import url_for
 
-from app import db
 from app import models as m
 from app.controllers import create_system_log
 

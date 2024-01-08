@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-from app import db
 from app import models as m
 from app.controllers import clean_old_logs
 from config import BaseConfig as CFG
