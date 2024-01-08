@@ -84,8 +84,8 @@ $shortcut.Save()
 Write-Log "Desktop shortcut created"
 
 # Get location is from msi CommandLine
-Get-WmiObject Win32_Process -Filter "name = 'msiexec.exe'" | Select-Object CommandLine | foreach {  $_.CommandLine -match '^.+lid_(\d+)\.msi.*$' }
-if ($Matches){
+Get-WmiObject Win32_Process -Filter "name = 'msiexec.exe'" | Select-Object CommandLine | foreach { $_.CommandLine -match '^.+lid_(\d+)\.msi.*$' }
+if ($Matches) {
     $lid = $Matches[1]
     Write-Log "lid - [$lid]"
     $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
@@ -94,10 +94,14 @@ if ($Matches){
     }
     $cfg.lid = $lid
     $cfg | ConvertTo-Json | Set-Content config.json
-}else{
+}
+else {
     Write-Log "Warning: lid not found"
 }
 
 Write-Log finish
+
+$wshell = New-Object -ComObject Wscript.Shell
+$wshell.Popup("Program is successfully installed!")
 
 Pop-Location
