@@ -20,3 +20,7 @@ class ConfigFile(BaseModel):
     files_checksum: dict[str, str] | None = None
     use_pcc_backup: bool | None = None
     lid: int | None = None
+    device_type: str | None = None
+    device_role: str | None = None
+    enable_logs: bool | None = None
+    activate_device: bool | None = None

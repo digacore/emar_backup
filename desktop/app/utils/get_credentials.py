@@ -25,24 +25,34 @@ def register_computer():
     if CONFIG.lid:
         # if lid exists call register_computer with lid
         URL = urljoin(MANAGER_HOST, "register_computer_lid")
+        data = s.RegistrationDataWithLid(
+            computer_name=COMPUTER_NAME,
+            identifier_key=identifier_key,
+            lid=CONFIG.lid,
+            device_type=CONFIG.device_type,
+            device_role=CONFIG.device_role,
+            enable_logs=CONFIG.enable_logs,
+            activate_device=CONFIG.activate_device,
+        )
         response = requests.post(
             URL,
-            json={
-                "computer_name": COMPUTER_NAME,
-                "identifier_key": identifier_key,
-                "lid": CONFIG.lid,
-            },
+            json=data.model_dump(),
         )
 
     else:
         # Regular registration
         URL = urljoin(MANAGER_HOST, "register_computer")
+        data = s.RegistrationDataWithOutLid(
+            computer_name=COMPUTER_NAME,
+            identifier_key=identifier_key,
+            device_type=CONFIG.device_type,
+            device_role=CONFIG.device_role,
+            enable_logs=CONFIG.enable_logs,
+            activate_device=CONFIG.activate_device,
+        )
         response = requests.post(
             URL,
-            json={
-                "computer_name": COMPUTER_NAME,
-                "identifier_key": identifier_key,
-            },
+            json=data.model_dump(),
         )
 
     if response.status_code == 200:
