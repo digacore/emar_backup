@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "emar"
-version = "1.0.108.321797"
+version = "1.0.109.322842"
 description = "Emar runner"
 authors = ["Kostia <saintkos117@gmail.com>"]
 readme = "README.md"
