@@ -94,119 +94,117 @@ if ($Matches) {
     }
     $cfg.lid = $lid
     $cfg | ConvertTo-Json | Set-Content config.json
-
-    # Window with options for computer
-    Add-Type -AssemblyName System.Windows.Forms
-    Add-Type -AssemblyName System.Drawing
-
-    $form = New-Object System.Windows.Forms.Form
-    $form.Text = 'Select a Device Optinons'
-    $form.Size = New-Object System.Drawing.Size(350, 350)
-    $form.StartPosition = 'CenterScreen'
-
-    $okButton = New-Object System.Windows.Forms.Button
-    $okButton.Location = New-Object System.Drawing.Point(75, 275)
-    $okButton.Size = New-Object System.Drawing.Size(75, 23)
-    $okButton.Text = 'OK'
-    $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
-    $form.AcceptButton = $okButton
-    $form.Controls.Add($okButton)
-
-    $cancelButton = New-Object System.Windows.Forms.Button
-    $cancelButton.Location = New-Object System.Drawing.Point(150, 275)
-    $cancelButton.Size = New-Object System.Drawing.Size(75, 23)
-    $cancelButton.Text = 'Cancel'
-    $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-    $form.CancelButton = $cancelButton
-    $form.Controls.Add($cancelButton)
-
-    $label = New-Object System.Windows.Forms.Label
-    $label.Location = New-Object System.Drawing.Point(10, 10)
-    $label.Size = New-Object System.Drawing.Size(280, 20)
-    $label.Text = 'Please select a device type:'
-    $form.Controls.Add($label)
-
-    $comboBox = New-Object System.Windows.Forms.ComboBox
-    $comboBox.Location = New-Object System.Drawing.Point(10, 30)
-    $comboBox.Size = New-Object System.Drawing.Size(260, 20)
-    $comboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
-
-    [void]$comboBox.Items.Add('DESKTOP')
-    [void]$comboBox.Items.Add('LAPTOP')
-
-    $form.Controls.Add($comboBox)
-
-    $label2 = New-Object System.Windows.Forms.Label
-    $label2.Location = New-Object System.Drawing.Point(10, 60)
-    $label2.Size = New-Object System.Drawing.Size(280, 20)
-    $label2.Text = 'Please select a device role:'
-    $form.Controls.Add($label2)
-
-    $comboBox2 = New-Object System.Windows.Forms.ComboBox
-    $comboBox2.Location = New-Object System.Drawing.Point(10, 80)
-    $comboBox2.Size = New-Object System.Drawing.Size(260, 20)
-    $comboBox2.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
-
-    [void]$comboBox2.Items.Add('PRIMARY')
-    [void]$comboBox2.Items.Add('ALTERNATE')
-
-    $form.Controls.Add($comboBox2)
-
-    $checkBox1 = New-Object System.Windows.Forms.CheckBox
-    $checkBox1.Location = New-Object System.Drawing.Point(20, 120)
-    $checkBox1.Size = New-Object System.Drawing.Size(200, 40)
-    $checkBox1.Text = "Enable logs for this device"
-    $form.Controls.Add($checkBox1)
-
-    $checkBox2 = New-Object System.Windows.Forms.CheckBox
-    $checkBox2.Location = New-Object System.Drawing.Point(20, 160)
-    $checkBox2.Size = New-Object System.Drawing.Size(200, 40)
-    $checkBox2.Text = "Activate this device"
-    $form.Controls.Add($checkBox2)
-
-    $form.Topmost = $true
-
-    $result = $form.ShowDialog()
-
-    if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
-        $selectedDeviceType = $comboBox.SelectedItem
-        $selectedDeviceRole = $comboBox2.SelectedItem
-        $enableLogs = $checkBox1.Checked
-        $activateDevice = $checkBox2.Checked
-
-        $message = "Selected Device Type: $selectedDeviceType`n"
-        $message += "Selected Device Role: $selectedDeviceRole`n"
-        $message += "Enable Logs: $enableLogs`n"
-        $message += "Activate Device: $activateDevice"
-
-        # write collected data to config.json
-        $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
-        if (-not $cfg.PSObject.Properties["device_type"]) {
-            $cfg | Add-Member -MemberType NoteProperty -Name "device_type" -Value $null
-        }
-        $cfg.device_type = $selectedDeviceType
-        if (-not $cfg.PSObject.Properties["device_role"]) {
-            $cfg | Add-Member -MemberType NoteProperty -Name "device_role" -Value $null
-        }
-        $cfg.device_role = $selectedDeviceRole
-        if (-not $cfg.PSObject.Properties["enable_logs"]) {
-            $cfg | Add-Member -MemberType NoteProperty -Name "enable_logs" -Value $null
-        }
-        $cfg.enable_logs = $enableLogs
-        if (-not $cfg.PSObject.Properties["activate_device"]) {
-            $cfg | Add-Member -MemberType NoteProperty -Name "activate_device" -Value $null
-        }
-        $cfg.activate_device = $activateDevice
-        $cfg | ConvertTo-Json | Set-Content config.json
-
-        [System.Windows.Forms.MessageBox]::Show($message, "Results", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-    }
 }
 else {
     Write-Log "Warning: lid not found"
 }
 
+# Window with options for computer
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
 
+$form = New-Object System.Windows.Forms.Form
+$form.Text = 'Select a Device Optinons'
+$form.Size = New-Object System.Drawing.Size(350, 350)
+$form.StartPosition = 'CenterScreen'
+
+$okButton = New-Object System.Windows.Forms.Button
+$okButton.Location = New-Object System.Drawing.Point(75, 275)
+$okButton.Size = New-Object System.Drawing.Size(75, 23)
+$okButton.Text = 'OK'
+$okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
+$form.AcceptButton = $okButton
+$form.Controls.Add($okButton)
+
+$cancelButton = New-Object System.Windows.Forms.Button
+$cancelButton.Location = New-Object System.Drawing.Point(150, 275)
+$cancelButton.Size = New-Object System.Drawing.Size(75, 23)
+$cancelButton.Text = 'Cancel'
+$cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
+$form.CancelButton = $cancelButton
+$form.Controls.Add($cancelButton)
+
+$label = New-Object System.Windows.Forms.Label
+$label.Location = New-Object System.Drawing.Point(10, 10)
+$label.Size = New-Object System.Drawing.Size(280, 20)
+$label.Text = 'Please select a device type:'
+$form.Controls.Add($label)
+
+$comboBox = New-Object System.Windows.Forms.ComboBox
+$comboBox.Location = New-Object System.Drawing.Point(10, 30)
+$comboBox.Size = New-Object System.Drawing.Size(260, 20)
+$comboBox.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+
+[void]$comboBox.Items.Add('DESKTOP')
+[void]$comboBox.Items.Add('LAPTOP')
+
+$form.Controls.Add($comboBox)
+
+$label2 = New-Object System.Windows.Forms.Label
+$label2.Location = New-Object System.Drawing.Point(10, 60)
+$label2.Size = New-Object System.Drawing.Size(280, 20)
+$label2.Text = 'Please select a device role:'
+$form.Controls.Add($label2)
+
+$comboBox2 = New-Object System.Windows.Forms.ComboBox
+$comboBox2.Location = New-Object System.Drawing.Point(10, 80)
+$comboBox2.Size = New-Object System.Drawing.Size(260, 20)
+$comboBox2.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
+
+[void]$comboBox2.Items.Add('PRIMARY')
+[void]$comboBox2.Items.Add('ALTERNATE')
+
+$form.Controls.Add($comboBox2)
+
+$checkBox1 = New-Object System.Windows.Forms.CheckBox
+$checkBox1.Location = New-Object System.Drawing.Point(20, 120)
+$checkBox1.Size = New-Object System.Drawing.Size(200, 40)
+$checkBox1.Text = "Enable logs for this device"
+$form.Controls.Add($checkBox1)
+
+$checkBox2 = New-Object System.Windows.Forms.CheckBox
+$checkBox2.Location = New-Object System.Drawing.Point(20, 160)
+$checkBox2.Size = New-Object System.Drawing.Size(200, 40)
+$checkBox2.Text = "Activate this device"
+$form.Controls.Add($checkBox2)
+
+$form.Topmost = $true
+
+$result = $form.ShowDialog()
+
+if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+    $selectedDeviceType = $comboBox.SelectedItem
+    $selectedDeviceRole = $comboBox2.SelectedItem
+    $enableLogs = $checkBox1.Checked
+    $activateDevice = $checkBox2.Checked
+
+    $message = "Selected Device Type: $selectedDeviceType`n"
+    $message += "Selected Device Role: $selectedDeviceRole`n"
+    $message += "Enable Logs: $enableLogs`n"
+    $message += "Activate Device: $activateDevice"
+
+    # write collected data to config.json
+    $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
+    if (-not $cfg.PSObject.Properties["device_type"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "device_type" -Value $null
+    }
+    $cfg.device_type = $selectedDeviceType
+    if (-not $cfg.PSObject.Properties["device_role"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "device_role" -Value $null
+    }
+    $cfg.device_role = $selectedDeviceRole
+    if (-not $cfg.PSObject.Properties["enable_logs"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "enable_logs" -Value $null
+    }
+    $cfg.enable_logs = $enableLogs
+    if (-not $cfg.PSObject.Properties["activate_device"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "activate_device" -Value $null
+    }
+    $cfg.activate_device = $activateDevice
+    $cfg | ConvertTo-Json | Set-Content config.json
+
+    [System.Windows.Forms.MessageBox]::Show($message, "Results", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+}
 
 Write-Log finish
 
