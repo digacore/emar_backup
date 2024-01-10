@@ -70,7 +70,7 @@ def register_computer(body: ComputerRegInfo):
                 activated=body.activate_device,
                 device_type=body.device_type,
                 device_role=body.device_role,
-                deactivated_at=datetime.utcnow(),
+                deactivated_at=datetime.utcnow() if not body.activate_device else None,
                 logs_enabled=body.enable_logs,
                 last_time_logs_enabled=datetime.now(timezone.utc)
                 if body.enable_logs
@@ -207,6 +207,7 @@ def delete_computer():
 @computer_blueprint.post("/register_computer_lid")
 @logger.catch
 def register_computer_lid(body: ComputerRegInfoLid):
+    logger.info("register_computer_lid. {} in body.", body.activate_device)
     computer: Computer = Computer.query.filter_by(
         identifier_key=body.identifier_key, computer_name=body.computer_name
     ).first()
