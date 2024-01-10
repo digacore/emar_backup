@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import jsonify, request
 
@@ -54,6 +54,10 @@ def register_computer(body: ComputerRegInfo):
         if deleted_computer:
             deleted_computer_query = deleted_computer_query.restore()
             deleted_computer_query.identifier_key = new_identifier_key
+            deleted_computer_query.device_type = body.device_type
+            deleted_computer_query.device_role = body.device_role
+            deleted_computer_query.logs_enabled = body.enable_logs
+            deleted_computer_query.activated = False
             deleted_computer_query.update()
 
             new_computer = deleted_computer_query
@@ -64,10 +68,14 @@ def register_computer(body: ComputerRegInfo):
                 computer_name=body.computer_name,
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
                 activated=False,
+                device_type=body.device_type,
+                device_role=body.device_role,
                 deactivated_at=datetime.utcnow(),
-                logs_enabled=False,
-                last_time_logs_enabled=None,
-                last_time_logs_disabled=datetime.utcnow(),
+                logs_enabled=body.enable_logs,
+                last_time_logs_enabled=datetime.now(timezone.utc)
+                if body.enable_logs
+                else None,
+                last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
             )
             new_computer.save()
 
@@ -199,6 +207,7 @@ def delete_computer():
 @computer_blueprint.post("/register_computer_lid")
 @logger.catch
 def register_computer_lid(body: ComputerRegInfoLid):
+    logger.info("register_computer_lid. {} in body.", body.activate_device)
     computer: Computer = Computer.query.filter_by(
         identifier_key=body.identifier_key, computer_name=body.computer_name
     ).first()
@@ -229,7 +238,10 @@ def register_computer_lid(body: ComputerRegInfoLid):
             deleted_computer_query.identifier_key = new_identifier_key
             deleted_computer_query.location_id = location.id
             deleted_computer_query.company_id = location.company_id
-            deleted_computer_query.activated = True
+            deleted_computer_query.device_type = body.device_type
+            deleted_computer_query.device_role = body.device_role
+            deleted_computer_query.logs_enabled = body.enable_logs
+            deleted_computer_query.activated = body.activate_device
             deleted_computer_query.update()
 
             new_computer = deleted_computer_query
@@ -239,10 +251,12 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 identifier_key=new_identifier_key,
                 computer_name=body.computer_name,
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
-                activated=True,
-                logs_enabled=True,
-                last_time_logs_enabled=datetime.utcnow(),
-                last_time_logs_disabled=None,
+                device_type=body.device_type,
+                device_role=body.device_role,
+                logs_enabled=body.enable_logs,
+                activated=body.activate_device,
+                last_time_logs_enabled=datetime.utcnow() if body.enable_logs else None,
+                last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
                 location_id=location.id,
                 company_id=location.company_id,
             )
