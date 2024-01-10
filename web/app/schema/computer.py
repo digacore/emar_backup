@@ -27,12 +27,20 @@ class ComputerInfo(BaseModel):
 class ComputerRegInfo(BaseModel):
     identifier_key: str
     computer_name: str
+    device_type: str = "DESKTOP"
+    device_role: str = "PRIMARY"
+    enable_logs: bool = True
+    activate_device: bool = False
 
 
 class ComputerRegInfoLid(BaseModel):
-    identifier_key: str
     computer_name: str
+    identifier_key: str
     lid: int
+    device_type: str = "DESKTOP"
+    device_role: str = "PRIMARY"
+    enable_logs: bool = True
+    activate_device: bool = True
 
 
 class ComputerSpecialStatus(BaseModel):
