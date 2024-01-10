@@ -8,4 +8,4 @@ from .activity import ActivityData
 from .last_time_response import LastTimeResponse
 from .download_status_data import DownloadStatusData
 from .msi_download_data import MsiDownloadData
-from registration_with_lid import RegistrationDataWithLid, RegistrationDataWithOutLid
+from .registration_with_lid import RegistrationDataWithLid, RegistrationDataWithOutLid

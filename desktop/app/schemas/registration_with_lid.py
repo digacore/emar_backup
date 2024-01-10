@@ -17,4 +17,4 @@ class RegistrationDataWithOutLid(BaseModel):
     device_type: str = "DESKTOP"
     device_role: str = "PRIMARY"
     enable_logs: bool = True
-    activate_device: bool = True
+    activate_device: bool = False
