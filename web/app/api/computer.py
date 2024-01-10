@@ -57,7 +57,7 @@ def register_computer(body: ComputerRegInfo):
             deleted_computer_query.device_type = body.device_type
             deleted_computer_query.device_role = body.device_role
             deleted_computer_query.logs_enabled = body.enable_logs
-            deleted_computer_query.activated = body.activate_device
+            deleted_computer_query.activated = False
             deleted_computer_query.update()
 
             new_computer = deleted_computer_query
@@ -67,10 +67,10 @@ def register_computer(body: ComputerRegInfo):
                 identifier_key=new_identifier_key,
                 computer_name=body.computer_name,
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
-                activated=body.activate_device,
+                activated=False,
                 device_type=body.device_type,
                 device_role=body.device_role,
-                deactivated_at=datetime.utcnow() if not body.activate_device else None,
+                deactivated_at=datetime.utcnow(),
                 logs_enabled=body.enable_logs,
                 last_time_logs_enabled=datetime.now(timezone.utc)
                 if body.enable_logs
