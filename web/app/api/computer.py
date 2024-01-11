@@ -281,7 +281,6 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 computer_name=new_computer.computer_name,
                 folder_password=new_computer.folder_password,
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
-                use_pcc_backup=computer.location.use_pcc_backup,
                 msi_version="stable",
             ),
             200,
