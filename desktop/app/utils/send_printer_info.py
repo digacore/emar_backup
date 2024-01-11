@@ -4,12 +4,14 @@ from urllib.parse import urljoin
 from app.logger import logger
 from app import schemas as s
 
+from app.consts import COMPUTER_NAME
+
 
 @logger.catch
 def send_printer_info(manager_host, creds_json: s.ConfigFile, printer_info: s.PrinterInfo):
     URL = urljoin(manager_host, "printer_info")
     data = s.PrinterInfoData(
-        computer_name=creds_json.company_name,
+        computer_name=COMPUTER_NAME,
         identifier_key=creds_json.identifier_key,
         printer_info=printer_info,
     )
