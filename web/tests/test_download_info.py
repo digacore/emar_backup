@@ -1,7 +1,7 @@
 import datetime
 from app.models import Computer
 from app.api import check_msi_version
-from app.schema import LastTime, GetCredentials
+from app.schema import LastTime
 
 from config import BaseConfig as CFG
 

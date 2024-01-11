@@ -17,7 +17,6 @@ def test_download_msi(client):
 
 
 def test_msi_download_to_local(client):
-
     response = client.post(
         "/msi_download_to_local",
         json=dict(
@@ -35,7 +34,6 @@ def test_msi_download_to_local(client):
 
 
 def test_update_current_msi_version(client):
-
     response = client.post(
         "/update_current_msi_version",
         json=dict(
@@ -46,3 +44,12 @@ def test_update_current_msi_version(client):
 
     assert response
     assert response.status_code == 200
+
+
+def test_lid_msi(client):
+    response = client.get("/download_lid/1")
+
+    assert response
+    assert response.status_code == 200
+    # ensure that the filename is correct
+    assert "_lid_1.msi" in response.headers["Content-Disposition"]

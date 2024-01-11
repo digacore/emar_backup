@@ -11,3 +11,4 @@ class DownloadStatus(BaseModel):
     identifier_key: str
     last_downloaded: Optional[str]
     last_saved_path: Optional[str]
+    error_message: Optional[str]

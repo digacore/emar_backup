@@ -1,4 +1,4 @@
-# flake8: noqa F401
+# ruff: noqa: F401
 from .alert import (
     send_critical_alert,
     send_primary_computer_alert,
@@ -27,6 +27,7 @@ from .backup_log import (
     backup_log_on_download_success,
     backup_log_on_request_to_view,
     backup_log_on_download_error,
+    backup_log_on_download_error_with_message,
 )
 from .pagination import create_pagination
 from .system_log import create_system_log

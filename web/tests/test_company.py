@@ -69,9 +69,7 @@ def test_company_sftp_data(client, test_db):
     login_response = login(client, "test_user_view", "test_user_view")
     assert b"Login successful." in login_response.data
 
-    response = client.get(
-        f"/company/99999/sftp_data",
-    )
+    response = client.get("/company/99999/sftp_data")
 
     assert response and response.status_code == 404
 
@@ -151,8 +149,6 @@ def test_company_locations_list(client, test_db):
     login_response = login(client, "test_user_view", "test_user_view")
     assert b"Login successful." in login_response.data
 
-    response = client.get(
-        f"/company/99999/locations",
-    )
+    response = client.get("/company/99999/locations")
 
     assert response and response.status_code == 404

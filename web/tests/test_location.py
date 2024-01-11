@@ -64,9 +64,7 @@ def test_location_sftp_data(client, test_db):
     login_response = login(client, "test_user_view", "test_user_view")
     assert b"Login successful." in login_response.data
 
-    response = client.get(
-        f"/location/99999/sftp_data",
-    )
+    response = client.get("/location/99999/sftp_data")
 
     assert response and response.status_code == 404
 
@@ -85,9 +83,7 @@ def test_all_locations_list(client, test_db):
     login_response = login(client, "test_user_view", "test_user_view")
     assert b"Login successful." in login_response.data
 
-    response = client.get(
-        f"/location/",
-    )
+    response = client.get("/location/")
 
     assert response and response.status_code == 200
     assert len(response.json["locations"]) == len(all_locations)
@@ -100,9 +96,7 @@ def test_all_locations_list(client, test_db):
     login_response = login(client, "test_user_company", "test_user_company")
     assert b"Login successful." in login_response.data
 
-    response = client.get(
-        f"/location/",
-    )
+    response = client.get("/location/")
 
     assert response and response.status_code == 200
     assert len(response.json["locations"]) == len(company_locations)
@@ -118,9 +112,7 @@ def test_all_locations_list(client, test_db):
     login_response = login(client, "test_user_location", "test_user_location")
     assert b"Login successful." in login_response.data
 
-    response = client.get(
-        f"/location/",
-    )
+    response = client.get("/location/")
 
     assert response and response.status_code == 200
     assert len(response.json["locations"]) == 1

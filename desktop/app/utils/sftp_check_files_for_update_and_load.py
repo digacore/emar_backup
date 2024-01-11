@@ -28,20 +28,22 @@ class SSHConnectionError(Exception):
 
 def update_download_status(status: str, creds: s.ConfigFile, last_downloaded="", last_saved_path="", error_message=""):
     # TODO: for error logging feature put message in request if there an error and in web put this message in error.log
-    m_host = MANAGER_HOST if "manager_host" not in creds else creds["manager_host"]
-
-    URL = urljoin(m_host, "download_status")
+    credentials = s.ConfigFile.model_validate(creds)
+    now = offset_to_est(datetime.datetime.utcnow())
+    URL = urljoin(MANAGER_HOST, "download_status")
+    data = s.DownloadStatusData(
+        company_name=credentials.company_name,
+        location_name=credentials.location_name,
+        download_status=status,
+        last_time_online=now,
+        identifier_key=credentials.identifier_key,
+        last_downloaded=last_downloaded,
+        last_saved_path=last_saved_path,
+        error_message=error_message,
+    )
     requests.post(
         URL,
-        json={
-            "company_name": creds["company_name"],
-            "location_name": creds["location_name"],
-            "download_status": status,
-            "last_time_online": offset_to_est(datetime.datetime.utcnow()),
-            "identifier_key": creds["identifier_key"],
-            "last_downloaded": last_downloaded,
-            "last_saved_path": last_saved_path,
-        },
+        json=data.model_dump(),
     )
     logger.info(f"Download status: {status}.")
 
@@ -203,8 +205,9 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
             )
         except Exception as e:
             if isinstance(e, TimeoutError):
+                URL = urljoin(MANAGER_HOST, "special_status")
                 response = requests.post(
-                    f'{credentials["manager_host"]}/special_status',
+                    URL,
                     json={
                         "computer_name": credentials["computer_name"],
                         "identifier_key": credentials["identifier_key"],
@@ -340,9 +343,9 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                     last_downloaded=str(tempdir),
                     last_saved_path=last_saved_path,
                 )
-
+        URL = urljoin(MANAGER_HOST, "files_checksum")
         response = requests.post(
-            f"{credentials['manager_host']}/files_checksum",
+            URL,
             json={
                 "files_checksum": files_checksum,
                 "identifier_key": str(credentials["identifier_key"]),

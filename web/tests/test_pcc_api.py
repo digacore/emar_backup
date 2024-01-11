@@ -1,5 +1,4 @@
 import pytest
-import json
 from datetime import datetime, timedelta
 
 from flask import current_app
@@ -10,7 +9,6 @@ from app.controllers import (
     get_pcc_2_legged_token,
     get_activations,
     get_org_facilities_list,
-    create_new_creation_reports,
     update_daily_requests_count,
     check_daily_requests_count,
 )

@@ -19,3 +19,8 @@ class ConfigFile(BaseModel):
     folder_password: str | None = None
     files_checksum: dict[str, str] | None = None
     use_pcc_backup: bool | None = None
+    lid: int | None = None
+    device_type: str = "DESKTOP"
+    device_role: str = "PRIMARY"
+    enable_logs: bool = True
+    activate_device: bool = False
