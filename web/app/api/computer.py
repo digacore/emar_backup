@@ -271,7 +271,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
             jsonify(
                 status="success",
                 message="Supplying credentials",
-                host=new_computer.manager_host,
+                host=new_computer.sftp_host,
                 company_name=new_computer.company_name,
                 location_name=new_computer.location_name,
                 sftp_username=new_computer.sftp_username,
@@ -281,6 +281,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 computer_name=new_computer.computer_name,
                 folder_password=new_computer.folder_password,
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
+                use_pcc_backup=computer.location.use_pcc_backup,
                 msi_version="stable",
             ),
             200,
