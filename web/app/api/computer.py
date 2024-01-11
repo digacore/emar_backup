@@ -288,7 +288,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
             jsonify(
                 status="success",
                 message="Supplying credentials",
-                host=new_computer.sftp_host,
+                host=new_computer.manager_host,
                 company_name=new_computer.company_name,
                 location_name=new_computer.location_name,
                 sftp_username=new_computer.sftp_username,
@@ -324,7 +324,6 @@ def register_computer_lid(body: ComputerRegInfoLid):
             ),
             200,
         )
-
     else:
         message = "Wrong request data."
         logger.info("Computer registration failed. Reason: {}", message)
