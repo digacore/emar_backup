@@ -1,11 +1,7 @@
 def test_delete_computer(client):
-
     response = client.post(
         "/register_computer",
-        json=dict(
-            identifier_key="new_computer",
-            computer_name="new_test_computer"
-        )
+        json=dict(identifier_key="new_computer", computer_name="new_test_computer"),
     )
 
     assert response
@@ -22,3 +18,16 @@ def test_delete_computer(client):
 
     assert response
 
+
+def test_register_computer_lid(client):
+    response = client.post(
+        "/register_computer_lid",
+        json=dict(
+            identifier_key="new_computer", computer_name="new_test_computer", lid=1
+        ),
+    )
+
+    assert response
+    assert response.status_code == 200
+    assert response.json["status"] == "success"
+    assert "new_test_computer" in response.json["computer_name"]

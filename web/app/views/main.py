@@ -24,11 +24,14 @@ def index():
 
     match viewer.permission:
         case UserPermissionLevel.GLOBAL:
-            total_locations_query: Query = Location.query
+            total_locations_query: Query = Location.query.filter(
+                Location.computers_per_location > 0
+            )
             total_computers_query: Query = Computer.query
         case UserPermissionLevel.COMPANY:
-            total_locations_query: Query = Location.query.filter_by(
-                company_id=viewer.company_id
+            total_locations_query: Query = Location.query.filter(
+                Location.company_id == viewer.company_id,
+                Location.computers_per_location > 0,
             )
             total_computers_query = Computer.query.filter(
                 or_(
@@ -41,14 +44,16 @@ def index():
         case UserPermissionLevel.LOCATION_GROUP:
             location_ids = [loc.id for loc in viewer.location_group[0].locations]
             total_locations_query: Query = Location.query.filter(
-                Location.id.in_(location_ids)
+                Location.id.in_(location_ids),
+                Location.computers_per_location > 0,
             )
             total_computers_query: Query = Computer.query.filter(
                 Computer.location_id.in_(location_ids),
             )
         case UserPermissionLevel.LOCATION:
             total_locations_query: Query = Location.query.filter(
-                Location.id == viewer.location[0].id
+                Location.id == viewer.location[0].id,
+                Location.computers_per_location > 0,
             )
             total_computers_query = Computer.query.filter(
                 Computer.location_id == viewer.location[0].id

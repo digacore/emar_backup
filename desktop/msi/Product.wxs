@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.100.307282">
+           Version="1.0.114.323581">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 

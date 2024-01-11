@@ -11,7 +11,6 @@ app.config["TESTING"] = True
 
 @pytest.fixture
 def client():
-
     with app.test_client() as client:
         app_ctx = app.app_context()
         app_ctx.push()
@@ -26,8 +25,7 @@ def client():
 
 @pytest.fixture
 def test_db():
-
-    with app.test_client() as client:
+    with app.test_client():
         app_ctx = app.app_context()
         app_ctx.push()
         db.drop_all()

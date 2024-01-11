@@ -3,7 +3,6 @@ import datetime
 
 from app.logger import logger
 
-from app.consts import STORAGE_PATH
 from app.utils import (
     get_credentials,
     send_activity_server_connect,
@@ -17,6 +16,8 @@ from app.utils.sftp_check_files_for_update_and_load import (
     AppError,
     update_download_status,
 )
+
+from app.utils.version import Version
 
 
 @logger.catch
@@ -36,15 +37,13 @@ def server_connect():
                 last_download_time = offset_to_est(datetime.datetime.utcnow())
             send_activity_server_connect(last_download_time)
             logger.info("Downloading process finished.")
-        except (AppError, FileNotFoundError):
-            update_download_status("error", credentials)
+        except (AppError, FileNotFoundError) as e:
+            update_download_status("error", credentials, error_message=str(e))
             logger.info("Downloading process interrupted")
 
         # user = getpass.getuser()
-        if credentials["version"] != old_credentials.version:
-            self_update(STORAGE_PATH, credentials, old_credentials.model_dump())
-        # # TODO: check version before start of this function
-        # self_update(STORAGE_PATH, credentials, old_credentials.model_dump())
+        if Version().from_str(credentials["version"]) > Version().from_str(old_credentials.version):
+            self_update(credentials, old_credentials.model_dump())
 
     elif credentials["status"] == "registered":
         logger.info("New computer registered. Download will start next time if credentials available in DB.")
