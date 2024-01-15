@@ -106,9 +106,26 @@ def register_computer(body: ComputerRegInfo):
         )
 
     elif computer_name:
-        message = f"Such computer_name: {body.computer_name} already exists. Wrong computer id."
+        message = f"Such computer_name: {body.computer_name} already exists. Sending creds to agent."
         logger.info("Computer registration failed. Reason: {}", message)
-        return jsonify(status="fail", message=message), 409
+        return (
+            jsonify(
+                status="success",
+                message="Supplying credentials",
+                host="",
+                company_name="",
+                location="",
+                sftp_username="",
+                sftp_password="",
+                sftp_folder_path="",
+                identifier_key=computer_name.identifier_key,
+                computer_name=computer_name.computer_name,
+                folder_password="",
+                manager_host=CFG.DEFAULT_MANAGER_HOST,
+                msi_version="stable",
+            ),
+            200,
+        )
 
     else:
         message = "Wrong request data."
@@ -277,7 +294,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
             jsonify(
                 status="success",
                 message="Supplying credentials",
-                host=new_computer.manager_host,
+                host=new_computer.sftp_host,
                 company_name=new_computer.company_name,
                 location_name=new_computer.location_name,
                 sftp_username=new_computer.sftp_username,
@@ -295,7 +312,24 @@ def register_computer_lid(body: ComputerRegInfoLid):
     elif computer_name:
         message = f"Such computer_name: {body.computer_name} already exists. Wrong computer id."
         logger.info("Computer registration failed. Reason: {}", message)
-        return jsonify(status="fail", message=message), 409
+        return (
+            jsonify(
+                status="success",
+                message="Supplying credentials",
+                host="",
+                company_name="",
+                location="",
+                sftp_username="",
+                sftp_password="",
+                sftp_folder_path="",
+                identifier_key=computer_name.identifier_key,
+                computer_name=computer_name.computer_name,
+                folder_password="",
+                manager_host=CFG.DEFAULT_MANAGER_HOST,
+                msi_version="stable",
+            ),
+            200,
+        )
 
     else:
         message = "Wrong request data."
