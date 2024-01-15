@@ -606,6 +606,7 @@ def send_weekly_summary():
                         primary_computers_offline=company.primary_computers_offline,
                         total_offline_computers=company.total_offline_computers,
                         total_offline_locations=company.total_offline_locations,
+                        total_locations=company.locations_per_company,
                         computers_by_location=company_computers_by_location,
                         is_company_trial=company.is_trial,
                     ),

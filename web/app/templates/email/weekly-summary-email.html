@@ -6,8 +6,9 @@
     <div style="width: 100%; margin: 10px 0px; text-align: center">
       {% if is_company_trial %}
       <p style="font-size: 1rem; line-height: 1rem">
-        Upgrade to eMAR Vault Pro to get additional summaries, critical alerts,
-        and access to advanced features! Reach out to sales@emarvault.com.
+        Upgrade to the eMAR Vault Pro to get daily and more detailed summaries,
+        critical alerts, and access to more backup computers! Reach out to
+        sales@emarvault.com.
       </p>
 
       <p>
@@ -37,19 +38,10 @@
 
               <td style="width: 120px; border: 1px solid; border-radius: 8px">
                 <p style="font-size: 0.75rem; line-height: 1rem">
-                  Primary Endpoints DOWN
-                </p>
-                <p style="font-size: 2rem; line-height: 1rem">
-                  {{ primary_computers_offline }}
-                </p>
-              </td>
-
-              <td style="width: 120px; border: 1px solid; border-radius: 8px">
-                <p style="font-size: 0.75rem; line-height: 1rem">
                   Total Endpoints DOWN
                 </p>
                 <p style="font-size: 2rem; line-height: 1rem">
-                  {{ total_offline_computers }}
+                  {{ total_offline_computers }}/{{ total_computers }}
                 </p>
               </td>
 
@@ -58,7 +50,7 @@
                   Locations DOWN
                 </p>
                 <p style="font-size: 2rem; line-height: 1rem">
-                  {{ total_offline_locations }}
+                  {{ total_offline_locations }}/{{ total_locations }}
                 </p>
               </td>
             </tr>
@@ -91,16 +83,6 @@
                 "
               >
                 Computer
-              </th>
-              <th
-                style="
-                  border: 1px solid black;
-                  padding: 10px 0;
-                  background-color: #345fee;
-                  color: white;
-                "
-              >
-                Device Role
               </th>
               <th
                 style="
@@ -198,9 +180,6 @@
               <td style="border: 1px solid; padding: 10px 0"></td>
               <td style="border: 1px solid; padding: 10px 0">
                 {{ computer.computer_name }}
-              </td>
-              <td style="border: 1px solid; padding: 10px 0">
-                {{ computer.device_role.value }}
               </td>
               {% if computer.status.value == "ONLINE" %}
               <td
