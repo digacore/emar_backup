@@ -183,6 +183,23 @@ def callback():
             "danger",
         )
         return redirect(url_for("auth.login"))
+    elif user and user.is_deleted:
+        user.is_deleted = False
+        user.update()
+        flash(
+            "This user is deactivated. Contact Contact sales@emarvault.com to activate the account!",
+            "danger",
+        )
+        return redirect(url_for("auth.login"))
+    elif user and user.activated:
+        # Begin user session by logging the user in
+        login_user(user)
+        user.last_time_online = CFG.offset_to_est(
+            datetime.now().replace(microsecond=0), True
+        )
+        user.update()
+        flash("Login successful.", "success")
+        return redirect(url_for("main.index"))
 
 
 @auth_blueprint.route("/logout")
