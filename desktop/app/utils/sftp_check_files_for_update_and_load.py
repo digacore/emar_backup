@@ -190,10 +190,8 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
     download_directory = credentials["sftp_folder_path"] if credentials["sftp_folder_path"] else None
 
     with SSHClient() as ssh:
-        # TODO check for real key
-        ssh.load_host_keys(os.path.expanduser("~/.ssh/known_hosts"))
         ssh.set_missing_host_key_policy(AutoAddPolicy())
-        ssh.load_system_host_keys()
+        # ssh.load_system_host_keys()
         try:
             ssh.connect(
                 credentials["host"],
@@ -201,6 +199,7 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                 password=credentials["sftp_password"],
                 timeout=10,
                 auth_timeout=10,
+                look_for_keys=False,
                 # port=52222,
             )
         except Exception as e:
