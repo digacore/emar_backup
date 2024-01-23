@@ -175,25 +175,14 @@ def callback():
             username=f"{users_name}-{unique_id}",
             email=users_email,
             password=str(uuid4()),
+            activated=False,
         )
         user.save()
-    if not user.activated:
         flash(
             "This user is deactivated. Contact sales@emarvault.com to activate the account!",
             "danger",
         )
         return redirect(url_for("auth.login"))
-
-    # Begin user session by logging the user in
-    login_user(user)
-    user.last_time_online = CFG.offset_to_est(
-        datetime.now().replace(microsecond=0), True
-    )
-    user.update()
-
-    # Send user back to homepage
-    flash("SSO login successful.", "success")
-    return redirect(url_for("main.index"))
 
 
 @auth_blueprint.route("/logout")
