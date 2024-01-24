@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import Query
@@ -33,11 +33,11 @@ def send_critical_alert():
     CLI command for celery worker.
     Sends critical alerts to users when location is offline (all the computers in the location are offline).
     """
-    current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+    current_east_time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
 
     logger.info(
         "<---Start sending critical alerts. Time: {}--->",
-        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Select all the active locations (except connected to trial and deactivated companies)
@@ -182,11 +182,11 @@ def send_primary_computer_alert():
     CLI command for celery worker.
     Sends alerts to users when primary computer goes down.
     """
-    current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+    current_east_time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
 
     logger.info(
         "<---Start sending primary computer down alerts. Time: {}--->",
-        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Get all the active primary computers which downloaded last backup more than 2 hour ago
@@ -478,7 +478,7 @@ def send_daily_summary():
 
     logger.info(
         "<---Start sending daily summary. Time: {}--->",
-        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Select all the companies except global, trial and deactivated
@@ -489,7 +489,9 @@ def send_daily_summary():
     ).all()
 
     for company in companies:
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
 
         offline_company_computers_query: Query = m.Computer.query.filter(
             and_(
@@ -557,7 +559,7 @@ def send_weekly_summary():
 
     logger.info(
         "<---Start sending weekly summaries. Time: {}--->",
-        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Select all the companies except global and deactivated
@@ -695,7 +697,7 @@ def send_weekly_summary():
                 online_computers = activated_computers_query.filter(
                     m.Computer.last_download_time.is_not(None),
                     m.Computer.last_download_time
-                    >= CFG.offset_to_est(datetime.utcnow(), True)
+                    >= CFG.offset_to_est(datetime.now(timezone.utc), True)
                     - timedelta(hours=1, minutes=30),
                 ).count()
 

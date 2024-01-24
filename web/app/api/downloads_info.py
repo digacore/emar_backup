@@ -23,8 +23,8 @@ downloads_info_blueprint = BlueprintApi("/downloads_info", __name__)
 
 
 def check_msi_version(computer: Computer, body, time_type: str):
-    """Check for old or new msi version. If old - return datetime.utcnow() + 5
-    Else - return datetime.utcnow() + 4
+    """Check for old or new msi version. If old - return datetime.now(timezone.utc) + 5
+    Else - return datetime.now(timezone.utc) + 4
 
     Args:
         computer (Computer): sqla Computer obj
@@ -93,11 +93,13 @@ def last_time(body: LastTime):
             "X-Forwarded-For", request.remote_addr
         )
 
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
+        computer.last_time_online = CFG.offset_to_est(
+            datetime.datetime.now(datetime.UTC), True
+        )
         # field = "online"
         if body.last_download_time:
             computer.last_download_time = CFG.offset_to_est(
-                datetime.datetime.utcnow(), True
+                datetime.datetime.now(datetime.UTC), True
             )
             # field = "download/online"
         computer.update()
@@ -207,7 +209,9 @@ def get_credentials(body: GetCredentials):
         computer.computer_ip = request.headers.get(
             "X-Forwarded-For", request.remote_addr
         )
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
+        computer.last_time_online = CFG.offset_to_est(
+            datetime.datetime.now(datetime.UTC), True
+        )
         # TODO find out why some computers can't write identifier_key to creds.json
         # TODO disable till then
         # computer.identifier_key = str(uuid.uuid4())
@@ -279,7 +283,9 @@ def download_status(body: DownloadStatus):
     )
 
     if computer:
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
+        computer.last_time_online = CFG.offset_to_est(
+            datetime.datetime.now(datetime.UTC), True
+        )
         computer.download_status = body.download_status
         if body.last_downloaded:
             computer.last_downloaded = body.last_downloaded
@@ -331,7 +337,9 @@ def files_checksum(body: FilesChecksum):
 
     if computer:
         logger.info("Updating files checksum for computer: {}.", computer.computer_name)
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
+        computer.last_time_online = CFG.offset_to_est(
+            datetime.datetime.now(datetime.UTC), True
+        )
         computer.files_checksum = json.dumps(body.files_checksum)
         computer.update()
         # TODO enable if required
@@ -372,7 +380,7 @@ def printer_info(body: PrinterInfo):
         computer.printer_name = body.printer_info.Name
         computer.printer_status = print_status
         computer.printer_status_timestamp = CFG.offset_to_est(
-            datetime.datetime.utcnow(), True
+            datetime.datetime.now(datetime.UTC), True
         )
 
         computer.update()

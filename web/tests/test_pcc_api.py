@@ -1,5 +1,5 @@
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 from werkzeug.exceptions import HTTPException
@@ -51,7 +51,7 @@ def test_check_daily_requests_count(client, test_db):
 
     # Test case when current time is after the oldest reset time
     new_row = m.PCCDailyRequest(
-        reset_time=(datetime.utcnow() - timedelta(hours=3)),
+        reset_time=(datetime.now(timezone.utc) - timedelta(hours=3)),
         requests_count=current_app.config["PCC_DAILY_QUOTA_LIMIT"] - 100,
     )
     new_row.save()
@@ -60,7 +60,7 @@ def test_check_daily_requests_count(client, test_db):
 
     # Test case when requests number is less than limit
     new_row = m.PCCDailyRequest(
-        reset_time=(datetime.utcnow() + timedelta(hours=3)),
+        reset_time=(datetime.now(timezone.utc) + timedelta(hours=3)),
         requests_count=current_app.config["PCC_DAILY_QUOTA_LIMIT"] - 100,
     )
     new_row.save()
@@ -72,7 +72,7 @@ def test_check_daily_requests_count(client, test_db):
 
     # Test case when requests number is more than limit
     new_row = m.PCCDailyRequest(
-        reset_time=(datetime.utcnow() + timedelta(hours=3)),
+        reset_time=(datetime.now(timezone.utc) + timedelta(hours=3)),
         requests_count=current_app.config["PCC_DAILY_QUOTA_LIMIT"],
     )
     new_row.save()

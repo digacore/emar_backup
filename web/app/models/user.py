@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import func, Enum, select, and_
 from sqlalchemy.orm import relationship
@@ -139,7 +139,7 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         self.location_group = []
 
         self.is_deleted = True
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now(timezone.utc)
 
         if commit:
             db.session.commit()
@@ -153,7 +153,7 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         return self
 
     def deactivate(
-        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
+        self, deactivated_at: datetime = datetime.now(timezone.utc), commit: bool = True
     ):
         self.activated = False
         self.deactivated_at = deactivated_at
@@ -202,7 +202,9 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     @company_name.expression
     def company_name(cls):
-        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+        return (
+            select([Company.name]).where(cls.company_id == Company.id).scalar_subquery()
+        )
 
     def __repr__(self):
         return f"<User: {self.username}>"
@@ -430,7 +432,7 @@ class UserView(RowActionListMixin, MyModelView):
                 if form.activated.data:
                     model.deactivated_at = None
                 else:
-                    model.deactivated_at = datetime.utcnow()
+                    model.deactivated_at = datetime.now(timezone.utc)
 
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -442,7 +444,7 @@ class UserView(RowActionListMixin, MyModelView):
                 form.populate_obj(model)
 
                 if not form.activated.data:
-                    model.deactivated_at = datetime.utcnow()
+                    model.deactivated_at = datetime.now(timezone.utc)
 
                 self.session.add(model)
                 self._on_model_change(form, model, True)
@@ -507,7 +509,7 @@ class UserView(RowActionListMixin, MyModelView):
         try:
             # If user was deactivated
             if not form.activated.data and form.activated.data != model.activated:
-                model.deactivated_at = datetime.utcnow()
+                model.deactivated_at = datetime.now(timezone.utc)
 
             form.populate_obj(model)
             self._on_model_change(form, model, False)

@@ -4,7 +4,7 @@ import time
 import requests
 from requests.exceptions import HTTPError
 from urllib.parse import urljoin
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pydantic import ValidationError
 
 from flask import current_app, abort
@@ -31,7 +31,9 @@ def update_daily_requests_count(reset_time: int, remaining_requests: int) -> Non
         remaining_requests (int): remaining requests count
     """
     # Convert epoch time to datetime
-    reset_time_as_date: datetime = datetime.utcfromtimestamp(reset_time / 1000)
+    reset_time_as_date: datetime = datetime.fromtimestamp(
+        reset_time / 1000, timezone.utc
+    )
 
     used_requests = current_app.config["PCC_DAILY_QUOTA_LIMIT"] - remaining_requests
 
@@ -58,7 +60,7 @@ def check_daily_requests_count() -> None:
     """
     # Get the valid requests count for current time
     current_requests_number: m.PCCDailyRequest | None = m.PCCDailyRequest.query.filter(
-        m.PCCDailyRequest.reset_time > datetime.utcnow()
+        m.PCCDailyRequest.reset_time > datetime.now(timezone.utc)
     ).first()
 
     # If there is no suitable counter for current time - skip
@@ -76,7 +78,7 @@ def check_daily_requests_count() -> None:
     ):
         logger.error(
             "Daily requests limit exceeded [{}]. Current requests count: {}",
-            datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+            datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             current_requests_number.requests_count,
         )
         abort(
@@ -455,12 +457,12 @@ def scan_pcc_activations(scan_record_id: int):
     except Exception as e:
         logger.error("Can't generate new creation report. Reason: {}", e)
         scan_record.status = m.ScanStatus.FAILED
-        scan_record.finished_at = datetime.utcnow()
+        scan_record.finished_at = datetime.now(timezone.utc)
         scan_record.error = str(e)
         scan_record.save()
         raise e
 
     scan_record.status = m.ScanStatus.SUCCEED
-    scan_record.finished_at = datetime.utcnow()
+    scan_record.finished_at = datetime.now(timezone.utc)
     scan_record.save()
     logger.info("PCC approving report created successfully")

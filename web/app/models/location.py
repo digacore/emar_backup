@@ -1,6 +1,6 @@
 import enum
 from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, sql, select, or_, Enum
 from sqlalchemy.orm import relationship
@@ -117,7 +117,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
                 user.delete(commit=False)
 
         self.is_deleted = True
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now(timezone.utc)
 
         if commit:
             db.session.commit()
@@ -157,7 +157,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         return self
 
     def deactivate(
-        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
+        self, deactivated_at: datetime = datetime.now(timezone.utc), commit: bool = True
     ):
         # Deactivate all the location active computers
         for computer in self.computers:
@@ -182,7 +182,9 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     @company_name.expression
     def company_name(cls):
-        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+        return (
+            select([Company.name]).where(cls.company_id == Company.id).scalar_subquery()
+        )
 
     @company_name.setter
     def company_name(self, value):
@@ -228,7 +230,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         """
         from app.models.computer import Computer
 
-        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
 
         return Computer.query.filter(
             Computer.location_id == self.id,
@@ -249,7 +251,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         """
         from app.models.computer import Computer, DeviceRole
 
-        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
 
         return Computer.query.filter(
             Computer.location_id == self.id,
@@ -303,15 +305,15 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     @hybrid_method
     def total_alert_events(
         self,
-        start_time: datetime = datetime.utcnow() - timedelta(days=30),
-        end_time: datetime = datetime.utcnow(),
+        start_time: datetime = datetime.now(timezone.utc) - timedelta(days=30),
+        end_time: datetime = datetime.now(timezone.utc),
     ) -> int:
         """
         Total number of alert events for this location
 
         Args:
             start_time (datetime, optional): start time of the period.
-                Defaults to datetime.utcnow() - timedelta(days=30).
+                Defaults to datetime.now(timezone.utc) - timedelta(days=30).
             end_time (datetime, optional): end time of the period.
 
         Returns:
@@ -541,7 +543,7 @@ class LocationView(RowActionListMixin, MyModelView):
                 if form.activate.data:
                     model.deactivated_at = None
                 else:
-                    model.deactivated_at = datetime.utcnow()
+                    model.deactivated_at = datetime.now(timezone.utc)
 
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -554,7 +556,7 @@ class LocationView(RowActionListMixin, MyModelView):
                 model.group = [group_data] if group_data else []
 
                 if not form.activated.data:
-                    model.deactivated_at = datetime.utcnow()
+                    model.deactivated_at = datetime.now(timezone.utc)
 
                 self.session.add(model)
                 self._on_model_change(form, model, True)

@@ -139,7 +139,7 @@ class BaseConfig(object):
         """Offset to EST time
 
         Args:
-            dt_now (datetime.datetime): datetime.datetime.utcnow()
+            dt_now (datetime.datetime): datetime.datetime.now(timezone.utc)
             datetime_obj (bool): define what we need to return: str or datetime
 
         Returns:

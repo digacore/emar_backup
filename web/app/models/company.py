@@ -1,5 +1,5 @@
 from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import sql, func, and_, or_
 from sqlalchemy.orm import Query, relationship
@@ -127,7 +127,7 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
             computer.delete(commit)
 
         self.is_deleted = True
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now(timezone.utc)
 
         if commit:
             db.session.commit()
@@ -164,7 +164,7 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         Returns:
             Company: Company object
         """
-        deactivation_time: datetime = datetime.utcnow()
+        deactivation_time: datetime = datetime.now(timezone.utc)
 
         # Deactivate all active the users associated with this company
         for user in self.users:
@@ -299,7 +299,9 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         """
         from app.models.computer import Computer, DeviceRole
 
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
 
         computers_number: int = Computer.query.filter(
             and_(
@@ -326,7 +328,9 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         """
         from app.models.computer import Computer
 
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
 
         computers_number: int = Computer.query.filter(
             and_(
@@ -353,7 +357,9 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         from app.models.computer import Computer
         from app.models.location import Location
 
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
         offline_locations_counter: int = 0
 
         locations: list[Location] = self.locations
@@ -389,7 +395,9 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         from app.models.computer import Computer
         from app.models.location import Location
 
-        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+        current_east_time: datetime = CFG.offset_to_est(
+            datetime.now(timezone.utc), True
+        )
         online_locations_counter: int = 0
 
         locations: list[Location] = self.locations
@@ -456,15 +464,15 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     @hybrid_method
     def total_alert_events(
         self,
-        start_time: datetime = datetime.utcnow() - timedelta(days=30),
-        end_time: datetime = datetime.utcnow(),
+        start_time: datetime = datetime.now(timezone.utc) - timedelta(days=30),
+        end_time: datetime = datetime.now(timezone.utc),
     ) -> int:
         """
         Total number of alert events from locations of this company (including deleted ones)
 
         Args:
             start_time (datetime, optional): start time of the period.
-                Defaults to datetime.utcnow() - timedelta(days=30).
+                Defaults to datetime.now(timezone.utc) - timedelta(days=30).
             end_time (datetime, optional): end time of the period.
 
         Returns:
