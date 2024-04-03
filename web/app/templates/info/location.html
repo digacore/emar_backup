@@ -141,7 +141,11 @@
             {% for computer in computers %}
             <tr>
               <td class="p-2 text-gray align-middle">
-                <div>{{ computer.computer_name }}</div>
+                <a
+                  href="{{url_for('info.computer_info', computer_id=computer.id)}}"
+                >
+                  <div>{{ computer.computer_name }}</div></a
+                >
               </td>
               {% if computer.status.value == "ONLINE" %}
               <td
