@@ -38,7 +38,7 @@
       "program": "${workspaceFolder}/emar.py",
       "console": "integratedTerminal",
       "args": ["--server-connect"],
-      "justMyCode": true
+      "justMyCode": false
     },
     {
       "name": "Python: Current File",
