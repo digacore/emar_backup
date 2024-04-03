@@ -51,7 +51,7 @@ class DesktopClient(db.Model, ModelMixin, BlobMixin):
         return (
             select([ClientVersion.name])
             .where(cls.flag_id == ClientVersion.id)
-            .as_scalar()
+            .scalar_subquery()
         )
 
     @flag_name.setter

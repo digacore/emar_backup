@@ -70,12 +70,14 @@ def register_computer(body: ComputerRegInfo):
                 activated=False,
                 device_type=body.device_type,
                 device_role=body.device_role,
-                deactivated_at=datetime.utcnow(),
+                deactivated_at=datetime.now(timezone.utc),
                 logs_enabled=body.enable_logs,
                 last_time_logs_enabled=datetime.now(timezone.utc)
                 if body.enable_logs
                 else None,
-                last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
+                last_time_logs_disabled=None
+                if body.enable_logs
+                else datetime.now(timezone.utc),
             )
             new_computer.save()
 
@@ -272,8 +274,12 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 device_role=body.device_role,
                 logs_enabled=body.enable_logs,
                 activated=body.activate_device,
-                last_time_logs_enabled=datetime.utcnow() if body.enable_logs else None,
-                last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
+                last_time_logs_enabled=datetime.now(timezone.utc)
+                if body.enable_logs
+                else None,
+                last_time_logs_disabled=None
+                if body.enable_logs
+                else datetime.now(timezone.utc),
                 location_id=location.id,
                 company_id=location.company_id,
             )
