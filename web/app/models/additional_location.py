@@ -14,8 +14,8 @@ class AdditionalLocation(db.Model, ModelMixin):
     computer_id = db.Column(db.Integer, db.ForeignKey("computers.id"))
     location_id = db.Column(db.Integer, db.ForeignKey("locations.id"))
 
-    computer = relationship("Computer", back_populates="additional_locations")
-    location = relationship("Location", back_populates="additional_locations")
+    computer = relationship("Computer", backref="additional_locations")
+    location = relationship("Location", backref="additional_locations")
 
     def __repr__(self):
         return f"<{self.computer_id}: {self.location_id}>"

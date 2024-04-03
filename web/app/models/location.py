@@ -84,8 +84,6 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         primaryjoin="and_(Location.id == Computer.location_id, Computer.is_deleted.is_(False))",
     )
 
-    additional_locations = relationship("AdditionalLocation", back_populates="location")
-
     def __repr__(self):
         return self.name
 

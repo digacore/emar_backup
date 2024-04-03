@@ -19,3 +19,5 @@ class ConfigResponse(BaseModel):
     folder_password: str | None = None
     files_checksum: dict[str, str] | None = None
     use_pcc_backup: bool | None = None
+    additional_locations: list[str] | None = None
+    additional_sftp_folder_paths: list[str] | None = None
