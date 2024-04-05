@@ -115,6 +115,8 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     computer_ip = db.Column(db.String(128))
 
+    notes = db.Column(db.Text, default="")
+
     last_time_logs_enabled = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_logs_disabled = db.Column(db.DateTime)
 
