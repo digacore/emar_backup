@@ -124,7 +124,12 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         default=PrinterStatus.UNKNOWN,
         server_default=sql.text("'UNKNOWN'"),
     )
-    printer_status_timestamp = db.Column(db.DateTime, default=datetime.utcnow())
+    printer_status_timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    additional_locations = relationship(
+        "AdditionalLocation",
+        back_populates="computer",
+    )
 
     company = relationship(
         "Company",
@@ -259,6 +264,10 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     def company_name(self, value):
         new_company = Company.query.filter_by(name=value).first()
         self.company_id = new_company.id if new_company else None
+
+    @property
+    def get_additional_locations(self) -> list[Location]:
+        return [al.location for al in self.additional_locations]
 
     @hybrid_property
     def is_company_trial(self):

@@ -8,6 +8,7 @@ class LocationInfo(BaseModel):
     total_computers: int
     total_computers_offline: int
     primary_computers_offline: int
+    default_sftp_path: str
 
     class Config:
         orm_mode = True

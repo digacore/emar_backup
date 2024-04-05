@@ -7,7 +7,13 @@ from app.controllers.backup_log import backup_log_on_download_error_with_message
 
 from app.models import Computer, DesktopClient, LogType
 from app.models.computer import PrinterStatus
-from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
+from app.schema import (
+    GetCredentials,
+    LastTime,
+    DownloadStatus,
+    FilesChecksum,
+    ComputerCredentialsInfo,
+)
 from app.schema.printer_info import PrinterInfo
 from app.views.blueprint import BlueprintApi
 from app.controllers import (
@@ -223,33 +229,36 @@ def get_credentials(body: GetCredentials):
             if computer.msi_version == "stable" or computer.msi_version == "latest"
             else DesktopClient.query.filter_by(version=computer.msi_version).first()
         )
+        cred_info = ComputerCredentialsInfo(
+            status="success",
+            message="Supplying credentials",
+            host=computer.sftp_host,
+            company_name=computer.company_name,
+            location_name=computer.location_name,
+            additional_locations=computer.get_additional_locations,
+            sftp_username=computer.sftp_username,
+            sftp_password=computer.sftp_password,
+            sftp_folder_path=computer.sftp_folder_path,
+            additional_folder_paths=[],
+            identifier_key=computer.identifier_key,
+            computer_name=computer.computer_name,
+            folder_password=computer.folder_password,
+            manager_host=computer.manager_host,
+            files_checksum=json.loads(str(remote_files_checksum)),
+            msi_version=msi.version if msi else "undefined",
+            use_pcc_backup=computer.location.use_pcc_backup
+            if computer.location
+            else False,
+        )
 
         return (
             jsonify(
-                status="success",
-                message="Supplying credentials",
-                host=computer.sftp_host,
-                company_name=computer.company_name,
-                location_name=computer.location_name,
-                additional_locations=computer.additional_locations,
-                sftp_username=computer.sftp_username,
-                sftp_password=computer.sftp_password,
-                sftp_folder_path=computer.sftp_folder_path,
-                additional_folder_paths=[],
-                identifier_key=computer.identifier_key,
-                computer_name=computer.computer_name,
-                folder_password=computer.folder_password,
-                manager_host=computer.manager_host,
-                files_checksum=json.loads(str(remote_files_checksum)),
-                msi_version=msi.version if msi else "undefined",
-                use_pcc_backup=computer.location.use_pcc_backup
-                if computer.location
-                else False,
+                cred_info.dict(),
             ),
             200,
         )
 
-    elif computer_name:
+    if computer_name:
         message = "Wrong id."
         logger.info(
             "Supplying credentials failed. computer: {}, \
