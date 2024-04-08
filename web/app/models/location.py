@@ -65,6 +65,11 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         db.Boolean, default=False, server_default=sql.false(), nullable=False
     )
 
+    additional_locations = relationship(
+        "AdditionalLocation",
+        back_populates="location",
+    )
+
     company = relationship(
         "Company",
         back_populates="locations",

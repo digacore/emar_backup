@@ -1,38 +1,35 @@
 import enum
 from copy import copy
-from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta, timezone
 
-from sqlalchemy import JSON, or_, and_, sql, func, select, Enum, case
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-
-from flask_admin.babel import gettext
-from flask_admin.model.template import EditRowAction, DeleteRowAction
-from flask_admin.contrib.sqla import tools
-
 from flask import flash
+from flask_admin.babel import gettext
+from flask_admin.contrib.sqla import tools
+from flask_admin.model.template import DeleteRowAction, EditRowAction
 from flask_login import current_user
+from sqlalchemy import JSON, Enum, and_, case, func, or_, select, sql
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
+from sqlalchemy.orm import relationship
+from zoneinfo import ZoneInfo
 
 from app import db
+from app.logger import logger
 from app.models.utils import (
-    ModelMixin,
-    RowActionListMixin,
     ActivatedMixin,
-    SoftDeleteMixin,
+    ModelMixin,
     QueryWithSoftDelete,
+    RowActionListMixin,
+    SoftDeleteMixin,
 )
 from app.utils import MyModelView
-from app.logger import logger
-
-from .desktop_client import DesktopClient
-from .user import UserPermissionLevel, UserRole
-from .company import Company
-from .location import Location
-from .system_log import SystemLogType
-
 from config import BaseConfig as CFG
 
+from .additional_location import AdditionalLocation
+from .company import Company
+from .desktop_client import DesktopClient
+from .location import Location
+from .system_log import SystemLogType
+from .user import UserPermissionLevel, UserRole
 
 # TODO add to all models secure form? csrf
 # from flask_admin.form import SecureForm
@@ -86,6 +83,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     sftp_username = db.Column(db.String(64), default=CFG.DEFAULT_SFTP_USERNAME)
     sftp_password = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_PASSWORD)
     sftp_folder_path = db.Column(db.String(256))
+    additional_sftp_folder_paths = db.Column(db.String(256))
     folder_password = db.Column(db.String(128), default=CFG.DEFAULT_FOLDER_PASSWORD)
 
     type = db.Column(db.String(128))
@@ -127,8 +125,11 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         default=PrinterStatus.UNKNOWN,
         server_default=sql.text("'UNKNOWN'"),
     )
-    printer_status_timestamp = db.Column(
-        db.DateTime, default=datetime.now(timezone.utc)
+    printer_status_timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    additional_locations = relationship(
+        "AdditionalLocation",
+        back_populates="computer",
     )
 
     company = relationship(
@@ -270,6 +271,10 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     def company_name(self, value):
         new_company = Company.query.filter_by(name=value).first()
         self.company_id = new_company.id if new_company else None
+
+    @property
+    def get_additional_locations(self) -> list[Location]:
+        return [al.location for al in self.additional_locations]
 
     @hybrid_property
     def is_company_trial(self):
@@ -534,6 +539,7 @@ class ComputerView(RowActionListMixin, MyModelView):
     form_columns = (
         "company",
         "location",
+        "additional_locations",
         "computer_name",
         "activated",
         "logs_enabled",
@@ -542,6 +548,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "sftp_username",
         "sftp_password",
         "sftp_folder_path",
+        "additional_sftp_folder_paths",
         "folder_password",
         "type",
         "device_type",
@@ -608,11 +615,16 @@ class ComputerView(RowActionListMixin, MyModelView):
         "computer_name": {"label": "Computer name"},
         "company_id": {"label": "Company id", "id": "company_id"},
         "location_id": {"label": "Location id", "id": "location_id"},
+        "additional_locations_id": {
+            "label": "Additional Locations id",
+            "id": "additional_locations_id",
+        },
         "sftp_host": {"label": "SFTP host"},
         "sftp_port": {"label": "SFTP port"},
         "sftp_username": {"label": "SFTP username"},
         "sftp_password": {"label": "SFTP password"},
         "sftp_folder_path": {"label": "SFTP folder path"},
+        "additional_sftp_folder_paths": {"label": "Additional locations folder paths"},
         "type": {"label": "Type"},
         "device_type": {"label": "Device type"},
         "device_role": {"label": "Device role"},
@@ -696,8 +708,20 @@ class ComputerView(RowActionListMixin, MyModelView):
             form.location.query = Location.query.filter_by(
                 company_id=form.company.data.id
             ).all()
+        if (
+            current_user.permission == UserPermissionLevel.GLOBAL
+            and form.company.data
+            and form.location.data
+        ):
+            form.additional_locations.query = (
+                Location.query.filter(
+                    (Location.company_id == form.company.data.id)
+                    & (Location.id != form.location.data.id)
+                )
+            ).all()
         else:
             form.location.query_factory = self._available_locations
+            form.additional_locations.query_factory = self._available_locations
 
         return form
 
@@ -946,12 +970,91 @@ class ComputerView(RowActionListMixin, MyModelView):
 
                 return False
 
+        # check if there was additional_locations added
+        if form.additional_locations.data:
+            for location in form.additional_locations.data:
+                location = Location.query.filter_by(id=location.id).first()
+                location_activated_computers = Computer.query.filter_by(
+                    location_id=location.id, activated=True
+                ).count()
+
+                if not location:
+                    flash(
+                        gettext("Failed to update record. Location doesn't exist."),
+                        "error",
+                    )
+                    logger.error("Failed to update record. Location doesn't exist.")
+
+                    return False
+
+                if not location.activated:
+                    flash(
+                        gettext(
+                            "Failed to update record. Selected location is not activated."
+                        ),
+                        "error",
+                    )
+                    logger.error(
+                        "Failed to update record. Selected location is not activated."
+                    )
+
+                    return False
+
+                if (
+                    location.company.is_trial
+                    and location_activated_computers
+                    > CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
+                ):
+                    flash(
+                        gettext(
+                            "Could not activate the new computer.\
+                            Limit of 1 computer per location while using eMAR Vault Lite edition.\
+                            Contact sales@emarvault.com to upgrade!"
+                        ),
+                        "error",
+                    )
+                    logger.error(
+                        "Failed to update record. Locations of the trial company can have only one computer."
+                    )
+
+                    return False
+                elif (
+                    not location.company.is_trial
+                    and location_activated_computers
+                    >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
+                ):
+                    flash(
+                        gettext(
+                            "Could not activate the new computer. \
+                            Limit of 5 computers per location while using eMAR Vault Pro edition."
+                        ),
+                        "error",
+                    )
+                    logger.error(
+                        "Failed to update record. Locations can have only 5 computers."
+                    )
+
+                    return False
+
         try:
             model_copy = copy(model)
-
+            additional_locations_data = form.additional_locations.data
+            additional_locations_copy = list(model.additional_locations)
+            delattr(form, "additional_locations")
             form.populate_obj(model)
             self._on_model_change(form, model, False)
-
+            if additional_locations_data or additional_locations_data == []:
+                for loc in additional_locations_copy:
+                    model.additional_locations.remove(loc)
+                    db.session.delete(loc)
+                    db.session.commit()
+                for location in additional_locations_data:
+                    loc = AdditionalLocation(
+                        location_id=location.id, computer_id=model.id
+                    ).save()
+                    logger.info(
+                        f"Additional location {loc.location_id} added to computer {model.computer_name}"
+                    )
             if form.logs_enabled.data != model_copy.logs_enabled:
                 if form.logs_enabled.data:
                     model.last_time_logs_enabled = datetime.now(timezone.utc)
