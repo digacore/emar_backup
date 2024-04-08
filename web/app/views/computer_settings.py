@@ -104,3 +104,21 @@ def notes(computer_id: int):
         ),
         200,
     )
+
+
+@computer_settings_blueprint.route("/<int:computer_id>/save_notes", methods=["POST"])
+@login_required
+def save_notes(computer_id: int):
+    computer: m.Computer = m.Computer.query.filter_by(id=computer_id).first()
+    notes = request.form.get("notes")
+    if not computer:
+        logger.error("Computer with id [{}] not found", computer_id)
+        abort(404, "Computer not found.")
+    # Check if user has access to location information
+    if not has_access_to_computer(current_user, computer):
+        abort(403, "You don't have access to this computer information.")
+    computer.notes = notes
+    computer.save()
+
+    logger.info("Saving notes for computer {}", computer.computer_name)
+    return ("ok", 200)

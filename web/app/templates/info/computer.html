@@ -156,6 +156,26 @@
   </div>
   <!-- End computer info -->
 
+  <!-- Notes section -->
+  <div
+    class="d-flex w-100 p-4 justify-content-center flex-column align-items-center"
+  >
+    <textarea
+      class="form-control"
+      rows="3"
+      id="computer-notes-textarea"
+      data-computer-id="{{ computer.id }}"
+    ></textarea>
+    <button
+      id="save-computer-notes-button"
+      type="button"
+      class="btn btn-success mt-2 ml-auto"
+    >
+      Save notes
+    </button>
+  </div>
+  <!-- End of notes section -->
+
   <!-- Online / offline periods chart -->
   {% if labels %}
   <div class="d-flex flex-column w-100 justify-content-center mb-4">
@@ -200,7 +220,6 @@
         const greenDataArray = {{ chart_green_data | tojson }};
         const yellowDataArray = {{ chart_yellow_data | tojson }};
         const redDataArray = {{ chart_red_data | tojson }};
-        // console.log(notes);
 
         new Chart(ctx, {
           type: 'bar',
@@ -296,21 +315,7 @@
   </div>
   {% endif %}
   <!-- End online / offline periods chart -->
-  <!-- Notes section -->
-  <div
-    class="d-flex w-100 p-4 justify-content-center flex-column align-items-center"
-  >
-    <textarea
-      class="form-control"
-      rows="3"
-      id="computer-notes-textarea"
-      data-computer-id="{{ computer.id }}"
-    ></textarea>
-    <button type="button" class="btn btn-success mt-2 ml-auto">
-      Save notes
-    </button>
-  </div>
-  <!-- End of notes section -->
+
   <!-- Backup periods logs table -->
   <div
     class="d-flex w-100 p-4 justify-content-center flex-column align-items-center"
