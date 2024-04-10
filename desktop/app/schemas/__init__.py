@@ -10,3 +10,4 @@ from .download_status_data import DownloadStatusData
 from .msi_download_data import MsiDownloadData
 from .registration_with_lid import RegistrationDataWithLid, RegistrationDataWithOutLid
 from .location_info import LocationInfo
+from .special_status import SetSpecialStatus

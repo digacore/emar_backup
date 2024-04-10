@@ -1,23 +1,23 @@
 import datetime
 import os
-import re
 import pprint
-import requests
+import re
 import tempfile
-
-from urllib.parse import urljoin
-from pathlib import Path
-from subprocess import Popen, PIPE
-from paramiko import SSHClient, AutoAddPolicy
-
-from app.logger import logger
-from app.consts import IP_BLACKLISTED, STORAGE_PATH, MANAGER_HOST
-from stat import S_ISDIR, S_ISREG
-
 from collections import namedtuple
+from pathlib import Path
+from stat import S_ISDIR, S_ISREG
+from subprocess import PIPE, Popen
+from urllib.parse import urljoin
 
-from app.utils.send_activity import offset_to_est
+import requests
+from paramiko import AutoAddPolicy, SSHClient, SSHException, SFTPAttributes, SFTPClient
+
 from app import schemas as s
+from app.consts import IP_BLACKLISTED, MANAGER_HOST, STORAGE_PATH
+from app.logger import logger
+from app.utils.send_activity import offset_to_est
+
+EXCLUDE_DOWNLOAD_FILES = ("receipt.txt",)
 
 
 class AppError(Exception):
@@ -50,32 +50,35 @@ def update_download_status(status: str, creds: s.ConfigFile, last_downloaded="",
     logger.info(f"Download status: {status}.")
 
 
-def add_file_to_zip(credentials: dict, tempdir: str) -> str:
+def add_file_to_zip(credentials: s.ConfigResponse, tempdir: str) -> str:
     """
     Add new downloaded backup to the emar_backups.zip
     """
-    zip_name = os.path.join(STORAGE_PATH, "emar_backups.zip")
-    print("zip_name", zip_name)
+    ZIP_PATH = os.path.join(STORAGE_PATH, "emar_backups.zip")
+
+    sub_paths = []
+    for file in os.listdir(tempdir):
+        sub_paths.append(os.path.join(tempdir, file))
     # TODO: check if zip_name exists and 7z.exe exists
-    subprs = Popen(
+    process = Popen(
         [
             Path(".") / "7z.exe",
             "a",
-            zip_name,
-            tempdir,
-            f'-p{credentials["folder_password"]}',
-        ],
+            f"-p{credentials.folder_password}",
+            ZIP_PATH,
+        ]
+        + sub_paths,
         stdout=PIPE,
         stderr=PIPE,
     )
-    stdout_res, stderr_res = subprs.communicate()
+    stdout_res, stderr_res = process.communicate()
 
     # Check if archive can be changed by 7z and it is not corrupted
-    stdout_str = str(stdout_res)
-    if re.search("is not supported archive", stdout_str):
+    stdout_str = stdout_res.decode()
+    if "is not supported archive" in stdout_str:
         logger.info(
             "{} is not supported archive. Create new zip and delete the old one.",
-            zip_name,
+            ZIP_PATH,
         )
 
         # Create new zip archive and save pulled backup to it
@@ -86,7 +89,7 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
                 "a",
                 new_zip,
                 tempdir,
-                f'-p{credentials["folder_password"]}',
+                f"-p{credentials.folder_password}",
             ],
             stdout=PIPE,
             stderr=PIPE,
@@ -95,8 +98,8 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
         new_subprs.communicate()
 
         # Remove the original zip archive with backups and rename the new one
-        os.remove(zip_name)
-        os.rename(new_zip, zip_name)
+        os.remove(ZIP_PATH)
+        os.rename(new_zip, ZIP_PATH)
 
     # Log the situation something happened with 7z operation and throw error
     elif not re.search("Everything is Ok", stdout_str):
@@ -109,254 +112,217 @@ def add_file_to_zip(credentials: dict, tempdir: str) -> str:
 
     logger.info("Files zipped.")
 
-    proc = Popen(
-        [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
-        stdout=PIPE,
-    )
-    if proc.stdout:
-        raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
-    else:
-        raw_list_stdout = []
-    # NOTE f.split("Path = ")[1] is folder name
-    # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
-    files = {
-        f.split("Path = ")[1]: datetime.datetime.strptime(
-            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
-            "%Y-%m-%d %H:%M:%S",
-        )
-        for f in raw_list_stdout
-        if f.startswith("Path = ")
-    }
-    dirs = [i for i in files if "\\" not in i]
-    dirs.sort(key=lambda x: files[x])
-    pprint.pprint(f"dirs:\n{dirs}")
+    # proc = Popen(
+    #     [Path(".") / "7z.exe", "l", "-bd", "-slt", ZIP_PATH],
+    #     stdout=PIPE,
+    # )
+    # if proc.stdout:
+    #     raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
+    # else:
+    #     raw_list_stdout = []
+    # # NOTE f.split("Path = ")[1] is folder name
+    # # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
+    # files = {
+    #     f.split("Path = ")[1]: datetime.datetime.strptime(
+    #         raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
+    #         "%Y-%m-%d %H:%M:%S",
+    #     )
+    #     for f in raw_list_stdout
+    #     if f.startswith("Path = ")
+    # }
+    # dirs = [i for i in files if "\\" not in i]
+    # dirs.sort(key=lambda x: files[x])
+    # pprint.pprint(f"dirs:\n{dirs}")
 
-    # TODO should we make this configurable?
-    if len(dirs) > 12:
-        diff = len(dirs) - 12
-        for dir_index in range(diff):
-            subprs = Popen(
-                [
-                    Path(".") / "7z.exe",
-                    "d",
-                    zip_name,
-                    dirs[dir_index],
-                    "-r",
-                    f'-p{credentials["folder_password"]}',
-                ]
-            )
-            subprs.communicate()
+    # # TODO should we make this configurable?
+    # if len(dirs) > 12:
+    #     diff = len(dirs) - 12
+    #     for dir_index in range(diff):
+    #         process = Popen(
+    #             [
+    #                 Path(".") / "7z.exe",
+    #                 "d",
+    #                 ZIP_PATH,
+    #                 dirs[dir_index],
+    #                 "-r",
+    #                 f"-p{credentials.folder_password}",
+    #             ]
+    #         )
+    #         process.communicate()
 
-    proc = Popen(
-        [Path(".") / "7z.exe", "l", "-ba", "-slt", zip_name],
-        stdout=PIPE,
-    )
-    if proc.stdout:
-        raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
-    else:
-        raw_list_stdout = []
-    # NOTE f.split("Path = ")[1] is folder name
-    # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
-    files = {
-        f.split("Path = ")[1]: datetime.datetime.strptime(
-            raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
-            "%Y-%m-%d %H:%M:%S",
-        )
-        for f in raw_list_stdout
-        if f.startswith("Path = ")
-    }
-    ddirs = [i for i in files if "\\" not in i]
-    ddirs.sort(key=lambda x: files[x])
-    pprint.pprint(f"after delete dirs:\n{ddirs}")
+    # proc = Popen(
+    #     [Path(".") / "7z.exe", "l", "-ba", "-slt", ZIP_PATH],
+    #     stdout=PIPE,
+    # )
+    # if proc.stdout:
+    #     raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
+    # else:
+    #     raw_list_stdout = []
+    # # NOTE f.split("Path = ")[1] is folder name
+    # # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
+    # files = {
+    #     f.split("Path = ")[1]: datetime.datetime.strptime(
+    #         raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
+    #         "%Y-%m-%d %H:%M:%S",
+    #     )
+    #     for f in raw_list_stdout
+    #     if f.startswith("Path = ")
+    # }
+    # ddirs = [i for i in files if "\\" not in i]
+    # ddirs.sort(key=lambda x: files[x])
+    # pprint.pprint(f"after delete dirs:\n{ddirs}")
 
-    # Check if new downloaded backup is present in the emar_backups.zip
-    searching_result = re.search(r"(emarbackup_.*)$", tempdir)
-    new_backup_name = searching_result.group(0) if searching_result else ""
+    # # Check if new downloaded backup is present in the emar_backups.zip
+    # searching_result = re.search(r"(emarbackup_.*)$", tempdir)
+    # new_backup_name = searching_result.group(0) if searching_result else ""
 
-    if not new_backup_name in dirs:  # noqa: E713
-        logger.error(
-            "The new downloaded backup {} was not founded in the emar_backups.zip",
-            new_backup_name,
-        )
-        raise FileNotFoundError("The new downloaded backup was not found in the emar_backups.zip")
+    # if not new_backup_name in dirs:  # noqa: E713
+    #     logger.error(
+    #         "The new downloaded backup {} was not founded in the emar_backups.zip",
+    #         new_backup_name,
+    #     )
+    #     raise FileNotFoundError("The new downloaded backup was not found in the emar_backups.zip")
 
-    return os.path.join(zip_name, new_backup_name)
+    # return os.path.join(ZIP_PATH, new_backup_name)
+    return ZIP_PATH
 
 
-def create_location_dict(credentials: s.ConfigFile) -> list:
-    locations_dict = []
-    Location = namedtuple("Location", ["location_name", "sftp_folder_path"])
-    loc = Location(credentials["location_name"], credentials["sftp_folder_path"])
+Location = namedtuple("Location", ["location_name", "sftp_folder_path"])
+
+
+def create_location_list(credentials: s.ConfigFile) -> list[Location]:
+    loc = Location(credentials.location_name, credentials.sftp_folder_path)
     if loc.location_name == "":
         raise ValueError("Location name is empty.")
-    locations_dict.append(loc)
-    for location in credentials["additional_locations"]:
-        if location["name"] == "":
+    locations_list = [loc]
+    for location in credentials.additional_locations:
+        if location.name == "":
             continue
-        loc = Location(location["name"], location["default_sftp_path"])
-        locations_dict.append(loc)
-    return locations_dict
+        loc = Location(location.name, location.default_sftp_path)
+        locations_list.append(loc)
+    return locations_list
+
+
+def ssh_connect(ssh: SSHClient, credentials: s.ConfigResponse, port: int = 22):
+    ssh.set_missing_host_key_policy(AutoAddPolicy())
+    try:
+        ssh.connect(
+            hostname=credentials.host,
+            username=credentials.sftp_username,
+            password=credentials.sftp_password,
+            timeout=10,
+            auth_timeout=10,
+            look_for_keys=False,
+            port=port,
+        )
+    except TimeoutError:
+        SPECIAL_STATUS_URL = urljoin(MANAGER_HOST, "special_status")
+        data = s.SetSpecialStatus(
+            computer_name=credentials.computer_name,
+            identifier_key=credentials.identifier_key,
+            special_status=IP_BLACKLISTED,
+        )
+        res = requests.post(
+            SPECIAL_STATUS_URL,
+            json=data.model_dump(),
+        )
+        res.raise_for_status()
+        raise SSHConnectionError("Can't connect to sftp server")
+
+
+def create_checksum(item: SFTPAttributes) -> str:
+    return str(item.st_mtime)
+
+
+def is_dir(item: SFTPAttributes) -> bool:
+    return S_ISDIR(item.st_mode)
+
+
+def is_file(item: SFTPAttributes) -> bool:
+    return S_ISREG(item.st_mode)
+
+
+def get_files_checksum(sftp: SFTPClient, directory: str = "") -> dict[str, str]:
+    files_checksum = {}
+    if not directory:
+        directory = "."
+    items = sftp.listdir_attr(directory)
+    for item in items:
+        if is_file(item):
+            if item.filename not in EXCLUDE_DOWNLOAD_FILES:
+                files_checksum[f"{directory}/{item.filename}"] = create_checksum(item)
+        elif is_dir(item):
+            files_checksum.update(get_files_checksum(sftp, f"{directory}/{item.filename}"))
+    return files_checksum
+
+
+def is_need_to_download(file_path: str, check_sum: str, credentials: s.ConfigResponse) -> bool:
+    for file_path in credentials.files_checksum:
+        if check_sum == credentials.files_checksum[file_path]:
+            return False
+    return True
 
 
 def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
-    # key = path, value = checksum
-    files_checksum = {}
-    # TODO: logger.info("Checking files for update and load. With")
-    print('credentials["files_checksum"]', credentials)
-    pprint.pprint(credentials["files_checksum"])
-    # download_directory = credentials["sftp_folder_path"] if credentials["sftp_folder_path"] else None
-    # create a namedtuple with all locations and sftp folder paths
-    locations_dict = create_location_dict(credentials)
+    locations = create_location_list(credentials)
     with SSHClient() as ssh:
-        ssh.set_missing_host_key_policy(AutoAddPolicy())
-        # ssh.load_system_host_keys()
         try:
-            ssh.connect(
-                credentials["host"],
-                username=credentials["sftp_username"],
-                password=credentials["sftp_password"],
-                timeout=10,
-                auth_timeout=10,
-                look_for_keys=False,
+            ssh_connect(
+                ssh,
+                credentials=credentials,
                 port=52222,
             )
-        except Exception as e:
-            if isinstance(e, TimeoutError):
-                URL = urljoin(MANAGER_HOST, "special_status")
-                response = requests.post(
-                    URL,
-                    json={
-                        "computer_name": credentials["computer_name"],
-                        "identifier_key": credentials["identifier_key"],
-                        "special_status": IP_BLACKLISTED,
-                    },
-                )
-                logger.error(
-                    "Computer cannot connect to sftp: {}, computer:{}",
-                    e,
-                    credentials["computer_name"],
-                )
-                raise SSHConnectionError("Can't connect to sftp server")
-            else:
-                logger.error("Exception occurred while connecting to sftp: {}", e)
-                raise AppError("Can't connect to sftp server")
+        except SSHException as e:
+            logger.error("Exception occurred while connecting to sftp: {}", e)
+            raise AppError("Can't connect to sftp server")
 
         with ssh.open_sftp() as sftp:
             # get list of all files and folders on sftp server
-            for loc in locations_dict:
-                download_directory = loc.sftp_folder_path
-                if download_directory:
-                    list_dirs = sftp.listdir_attr(download_directory)
-                    dir_names = [f"./{download_directory}/{i.filename}" for i in list_dirs if S_ISDIR(i.st_mode)]
-                    file_paths = {
-                        f"./{download_directory}/{i.filename}": "-".join(i.longname.split()[4:8])
-                        for i in list_dirs
-                        if S_ISREG(i.st_mode)
-                    }
 
-                else:
-                    list_dirs = sftp.listdir_attr()
-                    dir_names = [i.filename for i in list_dirs if S_ISDIR(i.st_mode)]
-                    file_paths = {
-                        f"./{i.filename}": "-".join(i.longname.split()[4:8]) for i in list_dirs if S_ISREG(i.st_mode)
-                    }
+            update_download_status("downloading", credentials)
+            est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.utcnow()))
+            prefix = f"emarbackup_{est_datetime.strftime('%Y-%m-%d-%H-%M')}$$"
 
-                while dir_names:
-                    lvl_ins_dir_names = []
-                    lvl_ins_file_paths = {}
+            all_files_checksum = {}
 
-                    for remote_path in dir_names:
-                        sanitized_path = remote_path.lstrip("./")
-                        inside_dirs = sftp.listdir_attr(sanitized_path)
-                        ins_dir_names = [f"./{sanitized_path}/{i.filename}" for i in inside_dirs if S_ISDIR(i.st_mode)]
-                        ins_file_paths = {
-                            f"./{sanitized_path}/{i.filename}": "-".join(i.longname.split()[4:8])
-                            for i in inside_dirs
-                            if S_ISREG(i.st_mode)
-                        }
-                        lvl_ins_dir_names.extend(ins_dir_names)
-                        lvl_ins_file_paths.update(ins_file_paths)
+            with tempfile.TemporaryDirectory(prefix=prefix) as raw_tempdir:
+                # this split is required to remove temp string from dir name
+                # tempdir = raw_tempdir.split("$$")[0]
+                tempdir = raw_tempdir
+                last_saved_path = ""
 
-                    print("\nlvl_ins_dir_names: ")
-                    pprint.pprint(lvl_ins_dir_names)
-                    print("\nlvl_ins_file_paths: ")
-                    pprint.pprint(lvl_ins_file_paths)
-                    dir_names.clear()
-                    dir_names.extend(lvl_ins_dir_names)
-                    file_paths.update(lvl_ins_file_paths)
+                counter_downloaded_files = 0
 
-                print("\nfile_paths: ")
-                pprint.pprint(file_paths)
-                files_checksum.update(file_paths)
-                print("\ndir_names: ")
-                pprint.pprint(dir_names)
+                for loc in locations:
+                    download_directory = loc.sftp_folder_path
 
-                update_download_status("downloading", credentials)
-                est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.utcnow()))
-                prefix = f"emarbackup_{est_datetime.strftime('%H-%M_%b-%d-%Y')}_splitpoint"
-
-                with tempfile.TemporaryDirectory(prefix=prefix) as raw_tempdir:
-                    # this split is required to remove temp string from dir name
-                    tempdir = raw_tempdir.split("_splitpoint")[0]
-                    trigger_download = False
-                    last_saved_path = ""
+                    files_checksum = get_files_checksum(sftp, download_directory)
+                    all_files_checksum.update(files_checksum)
 
                     for filepath in files_checksum:
-                        if filepath not in credentials["files_checksum"]:
-                            trigger_download = True
-                        elif files_checksum[filepath] not in credentials["files_checksum"][filepath]:
-                            trigger_download = True
-                            print(
-                                'credentials["files_checksum"][filepath]',
-                                credentials["files_checksum"][filepath],
-                            )
-                    if not trigger_download:
-                        logger.debug("Files were NOT downloaded. Reason: no changes noticed.")
-                    else:
-                        for filepath in files_checksum:
-                            # NOTE avoid download of "receipt.txt". The file is empty
-                            if "receipt.txt" in filepath:
-                                continue
-                            # chdir to be on top dir level
-                            sftp.chdir(None)
-                            # if download_directory != ".":
-                            #     sftp.chdir(download_directory)
-                            print(f"filepath: {filepath}")
-                            dirpath: list = filepath.split("/")[1:-1]
-                            print(f"dirpath: {dirpath}")
-                            filename: str = filepath.split("/")[-1]
-                            print(f"filename: {filename}")
-                            dirname = "/".join(dirpath)
-                            print(f"checking: {dirname}/{filename}")
+                        if not is_need_to_download(filepath, files_checksum[filepath], credentials):
+                            continue
 
-                            # get and create local temp directory if not exists
-                            local_temp_emar_dir = (
-                                os.path.join(tempdir, loc.location_name, Path(dirname)) if dirname else tempdir
-                            )
-                            # # NOTE avoid creating directories inside main directory
-                            # local_temp_emar_dir = tempdir
+                        remote_dir = "/".join(filepath.split("/")[:-1])
 
-                            if not os.path.exists(local_temp_emar_dir):
-                                os.makedirs(local_temp_emar_dir, exist_ok=True)
-                            print("local_temp_emar_dir", local_temp_emar_dir)
+                        # get and create local temp directory if not exists
+                        local_temp_emar_dir = os.path.join(tempdir, loc.location_name, Path(remote_dir))
+                        local_file_path = os.path.join(local_temp_emar_dir, Path(filepath).name)
+                        # # NOTE avoid creating directories inside main directory
+                        # local_temp_emar_dir = tempdir
 
-                            # get file from sftp server if it was changed
-                            # TODO what if file in the root
-                            print("files_checksum[filepath]", files_checksum[filepath])
-                            sftp.chdir(dirname)
-                            local_filename = dirname.replace("/", "-") + ".zip" if len(dirname) > 0 else filename
-                            sftp.get(
-                                filename,
-                                os.path.join(local_temp_emar_dir, local_filename),
-                            )
-                            print(f"downloaded: {dirname}/{filename} -- {local_filename}\n")
+                        if not os.path.exists(local_temp_emar_dir):
+                            os.makedirs(local_temp_emar_dir, exist_ok=True)
 
-        sftp.close()
+                        # get file from sftp server if it was changed
+                        # TODO what if file in the root
+                        sftp.get(filepath, local_file_path)
+                        counter_downloaded_files += 1
 
-        if trigger_download:
-            last_saved_path = add_file_to_zip(credentials, tempdir)
-        else:
-            logger.info("Nothing to zip.")
+                if counter_downloaded_files:
+                    last_saved_path = add_file_to_zip(credentials, tempdir)
+
+        # sftp.close()
 
         update_download_status(
             "downloaded",
@@ -368,13 +334,13 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
         response = requests.post(
             URL,
             json={
-                "files_checksum": files_checksum,
-                "identifier_key": str(credentials["identifier_key"]),
+                "files_checksum": all_files_checksum,
+                "identifier_key": str(credentials.identifier_key),
                 "last_time_online": offset_to_est(datetime.datetime.utcnow()),
             },
         )
         logger.debug(
-            "files_cheksum sent to server. Response status code = {}",
+            "files_checksum sent to server. Response status code = {}",
             response.status_code,
         )
 

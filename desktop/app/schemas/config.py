@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from .location_info import LocationInfo
 
 
 class ConfigFile(BaseModel):
@@ -24,3 +25,5 @@ class ConfigFile(BaseModel):
     device_role: str = "PRIMARY"
     enable_logs: bool = True
     activate_device: bool = False
+    additional_locations: list[LocationInfo] | None = None
+    additional_sftp_folder_paths: list[str] | None = None
