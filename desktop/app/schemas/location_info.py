@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class LocationInfo(BaseModel):
@@ -10,5 +10,6 @@ class LocationInfo(BaseModel):
     primary_computers_offline: int
     default_sftp_path: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(
+        from_attributes=True,
+    )
