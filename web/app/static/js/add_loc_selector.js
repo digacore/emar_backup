@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
   const editCompanySelector = document.getElementById("company");
   const editLocationSelector = document.getElementById("location");
   const addLocationSelector = document.getElementById("additional_locations");
@@ -12,41 +12,46 @@ document.addEventListener("DOMContentLoaded", function () {
   } else if (addLocationSelector) {
     const urlParams = new URLSearchParams(window.location.search);
     const computerId = urlParams.get("id");
-    const res = $.ajax({
-      url: `/location/${computerId}/additional_locations`,
-      type: "GET",
-      contentType: "application/json; charset=utf-8",
-      success: function (data) {
-        if (data.additional_locations.length > 0) {
+    const res = await fetch(`/location/${computerId}/additional_locations`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.additional_locations) {
           addLocationSelector.querySelectorAll("option").forEach((option) => {
             if (data.additional_locations.includes(Number(option.value))) {
-              // console.log(
-              //   data.additional_locations,
-              //   Number(option.value),
-              //   option.textContent
-              // );
               additionalLocations.push(option.textContent);
             }
           });
+          return additionalLocations;
         }
-      },
-      error: (xhr) => {},
-    });
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
     addLocationSelector.querySelectorAll("option").forEach((option) => {
-      option.selected = true;
+      if (res.includes(option.textContent.trim())) {
+        option.selected = true;
+        const ul = document.querySelector(".select2-choices");
+        // add <li class="select2-search-choice"><div>option.textContent.trim()</div>    <a href="#" class="select2-search-choice-close" tabindex="-1"></a></li> element to ul as first child
+        const li = document.createElement("li");
+        li.className = "select2-search-choice";
+        li.innerHTML = `<div>${option.textContent.trim()}</div><a href="#" class="select2-search-choice-close" tabindex="-1"></a>`;
+        // Додаємо обробник події для кожного новоствореного крестика
+        const closeBtn = li.querySelector(".select2-search-choice-close");
+        closeBtn.addEventListener("click", function (event) {
+          // Запобігаємо переходу за посиланням
+          event.preventDefault();
+          // Видалення батьківського елемента (li)
+          li.remove();
+          // Скасування вибору опції
+          option.selected = false;
+        });
+        ul.insertBefore(li, ul.firstChild);
+      }
     });
-    const ul = document.querySelector("select2-choices");
-    // const lis = document.querySelectorAll(".select2-search-choice");
-    console.log(ul);
-
-    // lis.forEach((li) => {
-    //   console.log(li);
-    //   // const div = li.querySelector("div");
-    //   // const divText = div.textContent.trim();
-    //   // console.log(divText);
-    //   // if (!additionalLocations.includes(divText)) {
-    //   //   li.remove(); // Видалити поточний елемент li
-    //   // }
-    // });
   }
 });
