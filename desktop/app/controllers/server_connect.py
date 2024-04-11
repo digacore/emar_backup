@@ -43,7 +43,7 @@ def server_connect():
 
         # user = getpass.getuser()
         if Version().from_str(credentials.version) > Version().from_str(old_credentials.version):
-            self_update(credentials, old_credentials.model_dump())
+            self_update(credentials, old_credentials)
 
     elif credentials.status == "registered":
         logger.info("New computer registered. Download will start next time if credentials available in DB.")

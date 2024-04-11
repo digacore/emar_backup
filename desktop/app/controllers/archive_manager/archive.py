@@ -23,8 +23,6 @@ __TEMPLATE_STR = (
     r"Version\s=\s(?P<version>.+)\r\n"
 )
 
-# __TEMPLATE_STR = r"^Path\s=\s(?P<name>.+)\r\nFolder"
-
 
 RE_ZIP_ITEM_INFO = re.compile(__TEMPLATE_STR, re.MULTILINE | re.VERBOSE)
 

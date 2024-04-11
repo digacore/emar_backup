@@ -1,17 +1,15 @@
 import datetime
 import os
-import pprint
-import re
 import tempfile
 from collections import namedtuple
 from pathlib import Path
 from stat import S_ISDIR, S_ISREG
-from subprocess import PIPE, Popen
 from urllib.parse import urljoin
 
 import requests
-from paramiko import AutoAddPolicy, SSHClient, SSHException, SFTPAttributes, SFTPClient
+from paramiko import AutoAddPolicy, SFTPAttributes, SFTPClient, SSHClient, SSHException
 
+from app import controllers as c
 from app import schemas as s
 from app.consts import IP_BLACKLISTED, MANAGER_HOST, STORAGE_PATH
 from app.logger import logger
@@ -55,136 +53,36 @@ def add_file_to_zip(credentials: s.ConfigResponse, tempdir: str) -> str:
     Add new downloaded backup to the emar_backups.zip
     """
     ZIP_PATH = os.path.join(STORAGE_PATH, "emar_backups.zip")
+    archive = c.Archive(path=ZIP_PATH, password=credentials.folder_password)
+    # adding file for its folder by location
 
-    sub_paths = []
     for file in os.listdir(tempdir):
-        sub_paths.append(os.path.join(tempdir, file))
-    # TODO: check if zip_name exists and 7z.exe exists
-    process = Popen(
-        [
-            Path(".") / "7z.exe",
-            "a",
-            f"-p{credentials.folder_password}",
-            ZIP_PATH,
-        ]
-        + sub_paths,
-        stdout=PIPE,
-        stderr=PIPE,
-    )
-    stdout_res, stderr_res = process.communicate()
-
-    # Check if archive can be changed by 7z and it is not corrupted
-    stdout_str = stdout_res.decode()
-    if "is not supported archive" in stdout_str:
-        logger.info(
-            "{} is not supported archive. Create new zip and delete the old one.",
-            ZIP_PATH,
-        )
-
-        # Create new zip archive and save pulled backup to it
-        new_zip = os.path.join(STORAGE_PATH, "emar_backups_new.zip")
-        new_subprs = Popen(
-            [
-                Path(".") / "7z.exe",
-                "a",
-                new_zip,
-                tempdir,
-                f"-p{credentials.folder_password}",
-            ],
-            stdout=PIPE,
-            stderr=PIPE,
-        )
-
-        new_subprs.communicate()
-
-        # Remove the original zip archive with backups and rename the new one
-        os.remove(ZIP_PATH)
-        os.rename(new_zip, ZIP_PATH)
-
-    # Log the situation something happened with 7z operation and throw error
-    elif not re.search("Everything is Ok", stdout_str):
-        logger.error(
-            "7z can't add archive to emar_backups and delete tmp. Stdout: {}. Stderr: {}.",
-            stdout_res,
-            stderr_res,
-        )
-        raise AppError("7z can't add archive to emar_backups")
+        try:
+            archive.add_item(local_path=os.path.join(tempdir, file))
+        except c.ArchiveException as e:
+            if "is not supported archive" in str(e):
+                logger.error("Archive is not supported. Creating new one.")
+                # rename old archive
+                renamed_archive_name = ZIP_PATH + ".old"
+                if os.path.exists(renamed_archive_name):
+                    # delete old archive
+                    os.remove(renamed_archive_name)
+                os.rename(ZIP_PATH, renamed_archive_name)
+                archive = c.Archive(path=ZIP_PATH, password=credentials.folder_password)
+                archive.add_item(local_path=os.path.join(tempdir, file))
 
     logger.info("Files zipped.")
+    # Check if there are more than 12 backups in the emar_backups.zip
+    for dir in archive.dir():
+        dir_count = len(archive.dir(dir.name))
+        last_path = archive.dir(dir.name)[0].name
+        if dir_count > 12:
+            logger.info("More than 12 backups for location {}. Deleting the oldest ones.", dir.name)
+            diff = dir_count - 12
+            for _ in range(diff):
+                archive.delete(dir.name + "/" + archive.dir(dir.name)[0].name)
 
-    # proc = Popen(
-    #     [Path(".") / "7z.exe", "l", "-bd", "-slt", ZIP_PATH],
-    #     stdout=PIPE,
-    # )
-    # if proc.stdout:
-    #     raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
-    # else:
-    #     raw_list_stdout = []
-    # # NOTE f.split("Path = ")[1] is folder name
-    # # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
-    # files = {
-    #     f.split("Path = ")[1]: datetime.datetime.strptime(
-    #         raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
-    #         "%Y-%m-%d %H:%M:%S",
-    #     )
-    #     for f in raw_list_stdout
-    #     if f.startswith("Path = ")
-    # }
-    # dirs = [i for i in files if "\\" not in i]
-    # dirs.sort(key=lambda x: files[x])
-    # pprint.pprint(f"dirs:\n{dirs}")
-
-    # # TODO should we make this configurable?
-    # if len(dirs) > 12:
-    #     diff = len(dirs) - 12
-    #     for dir_index in range(diff):
-    #         process = Popen(
-    #             [
-    #                 Path(".") / "7z.exe",
-    #                 "d",
-    #                 ZIP_PATH,
-    #                 dirs[dir_index],
-    #                 "-r",
-    #                 f"-p{credentials.folder_password}",
-    #             ]
-    #         )
-    #         process.communicate()
-
-    # proc = Popen(
-    #     [Path(".") / "7z.exe", "l", "-ba", "-slt", ZIP_PATH],
-    #     stdout=PIPE,
-    # )
-    # if proc.stdout:
-    #     raw_list_stdout = [f for f in proc.stdout.read().decode().splitlines()]
-    # else:
-    #     raw_list_stdout = []
-    # # NOTE f.split("Path = ")[1] is folder name
-    # # NOTE datetime.datetime.strptime(raw_list_stdout[raw_list_stdout.index(f)+4].lstrip("Modified = ") , '%Y-%m-%d %H:%M:%S') is folder Modified parameter converted to datetime
-    # files = {
-    #     f.split("Path = ")[1]: datetime.datetime.strptime(
-    #         raw_list_stdout[raw_list_stdout.index(f) + 4].lstrip("Modified = "),
-    #         "%Y-%m-%d %H:%M:%S",
-    #     )
-    #     for f in raw_list_stdout
-    #     if f.startswith("Path = ")
-    # }
-    # ddirs = [i for i in files if "\\" not in i]
-    # ddirs.sort(key=lambda x: files[x])
-    # pprint.pprint(f"after delete dirs:\n{ddirs}")
-
-    # # Check if new downloaded backup is present in the emar_backups.zip
-    # searching_result = re.search(r"(emarbackup_.*)$", tempdir)
-    # new_backup_name = searching_result.group(0) if searching_result else ""
-
-    # if not new_backup_name in dirs:  # noqa: E713
-    #     logger.error(
-    #         "The new downloaded backup {} was not founded in the emar_backups.zip",
-    #         new_backup_name,
-    #     )
-    #     raise FileNotFoundError("The new downloaded backup was not found in the emar_backups.zip")
-
-    # return os.path.join(ZIP_PATH, new_backup_name)
-    return ZIP_PATH
+    return last_path
 
 
 Location = namedtuple("Location", ["location_name", "sftp_folder_path"])
@@ -287,7 +185,7 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
 
             with tempfile.TemporaryDirectory(prefix=prefix) as raw_tempdir:
                 # this split is required to remove temp string from dir name
-                # tempdir = raw_tempdir.split("$$")[0]
+                marked_dir = prefix.split("$$")[0]
                 tempdir = raw_tempdir
                 last_saved_path = ""
 
@@ -303,19 +201,14 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                         if not is_need_to_download(filepath, files_checksum[filepath], credentials):
                             continue
 
-                        remote_dir = "/".join(filepath.split("/")[:-1])
-
                         # get and create local temp directory if not exists
-                        local_temp_emar_dir = os.path.join(tempdir, loc.location_name, Path(remote_dir))
+                        local_temp_emar_dir = os.path.join(tempdir, loc.location_name, Path(marked_dir))
                         local_file_path = os.path.join(local_temp_emar_dir, Path(filepath).name)
-                        # # NOTE avoid creating directories inside main directory
-                        # local_temp_emar_dir = tempdir
 
                         if not os.path.exists(local_temp_emar_dir):
                             os.makedirs(local_temp_emar_dir, exist_ok=True)
 
-                        # get file from sftp server if it was changed
-                        # TODO what if file in the root
+                        # get file from sftp server
                         sftp.get(filepath, local_file_path)
                         counter_downloaded_files += 1
 

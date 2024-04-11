@@ -18,7 +18,7 @@ from app.consts import MANAGER_HOST, COMPUTER_NAME, IDENTIFIER_KEY
 from app import schemas as s
 
 
-def download_file_from_pcc(credentials):
+def download_file_from_pcc(credentials: s.ConfigFile):
     """
     Download backup file from PCC API
     """
@@ -27,7 +27,7 @@ def download_file_from_pcc(credentials):
     logger.info("<-------Start downloading backup file from PCC API------->")
     update_download_status("downloading", credentials)
     est_datetime = datetime.datetime.fromisoformat(offset_to_est(datetime.datetime.utcnow()))
-    download_dir = f"emarbackup_{est_datetime.strftime('%H-%M_%b-%d-%Y')}"
+    download_dir = f"emarbackup_{est_datetime.strftime('%Y-%m-%d-%H-%M')}"
 
     # Create temp directory to save downloaded backup and zip it
     with tempfile.TemporaryDirectory() as raw_tempdir:
