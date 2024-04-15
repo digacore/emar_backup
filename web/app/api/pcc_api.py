@@ -12,8 +12,8 @@ from config import BaseConfig as CFG
 pcc_api_blueprint = BlueprintApi("pcc_api", __name__, url_prefix="/pcc_api")
 
 
-@pcc_api_blueprint.post("/download_backup/<int:pcc_fac_id>")
-def download_backup_from_pcc(pcc_fac_id: int, body: s.GetCredentials) -> Response:
+@pcc_api_blueprint.post("/download_backup")
+def download_backup_from_pcc(body: s.GetPccDownloadData) -> Response:
     # Find computer in DB
     computer: m.Computer = (
         m.Computer.query.filter_by(
@@ -65,7 +65,7 @@ def download_backup_from_pcc(pcc_fac_id: int, body: s.GetCredentials) -> Respons
         "orgs",
         computer.company.pcc_org_id,
         "facs",
-        pcc_fac_id,
+        body.pcc_fac_id,
         "backup-files",
     )
     url = urljoin(CFG.PCC_BASE_URL, backup_route)

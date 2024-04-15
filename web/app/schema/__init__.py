@@ -1,5 +1,5 @@
 # ruff: noqa: F401
-from .get_credentials import GetCredentials
+from .get_credentials import GetCredentials, GetPccDownloadData
 from .last_time import LastTime
 from .download_status import DownloadStatus
 from .computer import (
