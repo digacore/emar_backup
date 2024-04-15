@@ -6,7 +6,7 @@
   {% set original_computers_params =
   computers_search_params.replace("computers_search",
   "search").replace("computers_page", "page") %}
-  <div class="d-flex w-100 mb-4">
+  <div class="d-flex w-100 mb-4 justify-content-between">
     <a
       class="text-decoration-none small"
       href="{{ url_for('computer.index_view')}}?{{ original_computers_params }}"
@@ -14,6 +14,12 @@
       <i class="fas fa-arrow-left"></i>
       Go back
     </a>
+    <a
+      type="button"
+      href="/admin/computer/edit/?id={{ computer.id }}"
+      class="btn btn-default btn-primary"
+      >Edit</a
+    >
   </div>
   <!-- End "Go back" button -->
 

@@ -9,6 +9,12 @@
   <div class="d-flex w-100 mb-4">
     <!-- prettier-ignore -->
     <a class="text-decoration-none small" href="{{ url_for('company.index_view')}}" > <i class="fas fa-arrow-left"></i> Go back </a>
+        <a
+      type="button"
+      href="/admin/company/edit/?id={{ company.id }}"
+      class="btn btn-default btn-primary ml-auto mr-2"
+      >Edit</a
+    >
   </div>
   <!-- End "Go back" button -->
 
