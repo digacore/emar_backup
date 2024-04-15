@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 
 from app import models as m
 from app.logger import logger
+import pytz
 
 
 class BackupLogError(enum.Enum):
@@ -385,6 +386,8 @@ def backup_log_on_request_to_view(computer: m.Computer):
     # If the last backup log has type WITH_DOWNLOADS_PERIOD
     if last_computer_log.backup_log_type == m.BackupLogType.WITH_DOWNLOADS_PERIOD:
         # If the last backup log end time + 30 minutes and 1 second is bigger than current time - ignore it
+        end_time = datetime.fromtimestamp(datetime.UTC, last_computer_log.end_time)
+        end_time = pytz.utc.localize(end_time)
         if last_computer_log.end_time + timedelta(minutes=30, seconds=1) > current_time:
             return
 
