@@ -20,3 +20,4 @@ from .telemetry_settings import TelemetrySettings
 from .computer_settings_link_table import ComputerSettingsLinkTable
 from .location_settings_link_table import LocationSettingsLinkTable
 from .company_settings_link_table import CompanySettingsLinkTable
+from .additional_location import AdditionalLocation

@@ -5,3 +5,7 @@
 {% block content %}
 {{edit_computer}}
 {% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/add_loc_selector.js') }}"></script>
+{% endblock %}

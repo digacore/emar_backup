@@ -9,6 +9,12 @@
   <div class="d-flex w-100 mb-4">
     <!-- prettier-ignore -->
     <a class="text-decoration-none small" href="{{ url_for('company.index_view')}}" > <i class="fas fa-arrow-left"></i> Go back </a>
+        <a
+      type="button"
+      href="/admin/company/edit/?id={{ company.id }}"
+      class="btn btn-default btn-primary ml-auto mr-2"
+      >Edit</a
+    >
   </div>
   <!-- End "Go back" button -->
 
@@ -192,7 +198,8 @@
             {% for computer in loc.computers %}
             <tr>
               <td class="p-2 text-gray align-middle">
-                <div>{{ computer.computer_name }}</div>
+               <a href="{{url_for('info.computer_info', computer_id=computer.id)}}">
+                <div>{{ computer.computer_name }}</div></a>
               </td>
               {% if computer.status.value == "ONLINE" %}
               <td
