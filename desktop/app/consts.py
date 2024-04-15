@@ -22,9 +22,7 @@ INPUT_LOG_FILE_PATH = Path("C://eMARVault") / "emar_log.txt"
 OUTPUT_LOG_FILE_PATH = Path(os.environ["AppData"]) / "Emar" / "application.txt"
 
 # get path to work directory
-BASE_DIR = Path(__file__).parent.parent
-SEVEN_ZIP = BASE_DIR / "7z.exe"
-
+SEVEN_ZIP = "7z.exe"
 G_MANAGER_HOST = "unknown"
 
 CONFIG_JSON = Path("config.json")

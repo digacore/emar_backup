@@ -52,13 +52,17 @@ def add_file_to_zip(credentials: s.ConfigResponse, tempdir: str) -> str:
     """
     Add new downloaded backup to the emar_backups.zip
     """
+    logger.info("Entering function add_file_to_zip.")
     ZIP_PATH = os.path.join(STORAGE_PATH, "emar_backups.zip")
     archive = c.Archive(path=ZIP_PATH, password=credentials.folder_password)
+    logger.info("Archive created. {}", ZIP_PATH)
     # adding file for its folder by location
 
     for file in os.listdir(tempdir):
         try:
+            logger.info("Adding file {} to zip. {}", file, tempdir)
             archive.add_item(local_path=os.path.join(tempdir, file))
+            logger.info("File {} added to zip.", file)
         except c.ArchiveException as e:
             if "is not supported archive" in str(e):
                 logger.error("Archive is not supported. Creating new one.")
@@ -70,6 +74,9 @@ def add_file_to_zip(credentials: s.ConfigResponse, tempdir: str) -> str:
                 os.rename(ZIP_PATH, renamed_archive_name)
                 archive = c.Archive(path=ZIP_PATH, password=credentials.folder_password)
                 archive.add_item(local_path=os.path.join(tempdir, file))
+        except Exception as e:
+            logger.error("Exception occurred while adding file to zip: {}", e)
+            raise AppError("Can't add file to zip")
 
     logger.info("Files zipped.")
     # Check if there are more than 12 backups in the emar_backups.zip
@@ -190,7 +197,7 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                 last_saved_path = ""
 
                 counter_downloaded_files = 0
-
+                logger.info("Start itterate by location.")
                 for loc in locations:
                     download_directory = loc.sftp_folder_path
 
@@ -198,8 +205,8 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                     all_files_checksum.update(files_checksum)
 
                     for filepath in files_checksum:
-                        if not is_need_to_download(filepath, files_checksum[filepath], credentials):
-                            continue
+                        # if not is_need_to_download(filepath, files_checksum[filepath], credentials):
+                        #     continue
 
                         # get and create local temp directory if not exists
                         local_temp_emar_dir = os.path.join(tempdir, loc.location_name, Path(marked_dir))
@@ -213,8 +220,9 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                         counter_downloaded_files += 1
 
                 if counter_downloaded_files:
+                    logger.info("Start adding tempdir to zip.")
                     last_saved_path = add_file_to_zip(credentials, tempdir)
-
+                    logger.info("Tempdir added to zip.")
         # sftp.close()
 
         update_download_status(

@@ -6,6 +6,8 @@ from app.consts import SEVEN_ZIP
 from .exception import ArchiveException
 from .archive_item import ArchiveItem, ItemType
 
+from app.logger import logger
+
 __TEMPLATE_STR = (
     r"^Path\s=\s(?P<name>.+)\r\n"
     r"Folder\s=\s(?P<folder>.+)\r\n"
@@ -47,7 +49,9 @@ class Archive:
         stdout_res, stderr_res = process.communicate()
         if "Everything is Ok" not in stdout_res.decode():
             if stderr_res:
+                logger.info("Error in archive. {}", stderr_res.decode())
                 raise ArchiveException(stderr_res.decode())
+            logger.info("Error in archive. {}", stderr_res.decode())
             raise ArchiveException(stdout_res.decode())
 
     def dir(self, archive_path: str = "") -> list[ArchiveItem]:
