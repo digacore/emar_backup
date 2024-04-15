@@ -36,18 +36,13 @@ document.addEventListener("DOMContentLoaded", async function () {
       if (res.includes(option.textContent.trim())) {
         option.selected = true;
         const ul = document.querySelector(".select2-choices");
-        // add <li class="select2-search-choice"><div>option.textContent.trim()</div>    <a href="#" class="select2-search-choice-close" tabindex="-1"></a></li> element to ul as first child
         const li = document.createElement("li");
         li.className = "select2-search-choice";
         li.innerHTML = `<div>${option.textContent.trim()}</div><a href="#" class="select2-search-choice-close" tabindex="-1"></a>`;
-        // Додаємо обробник події для кожного новоствореного крестика
         const closeBtn = li.querySelector(".select2-search-choice-close");
         closeBtn.addEventListener("click", function (event) {
-          // Запобігаємо переходу за посиланням
           event.preventDefault();
-          // Видалення батьківського елемента (li)
           li.remove();
-          // Скасування вибору опції
           option.selected = false;
         });
         ul.insertBefore(li, ul.firstChild);
