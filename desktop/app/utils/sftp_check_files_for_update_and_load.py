@@ -82,7 +82,7 @@ def add_file_to_zip(credentials: s.ConfigResponse, tempdir: str) -> str:
     # Check if there are more than 12 backups in the emar_backups.zip
     for dir in archive.dir():
         dir_count = len(archive.dir(dir.name))
-        last_path = archive.dir(dir.name)[0].name
+        last_path = archive.dir(dir.name)[0].name if dir_count > 0 else ""
         if dir_count > 12:
             logger.info("More than 12 backups for location {}. Deleting the oldest ones.", dir.name)
             diff = dir_count - 12
@@ -197,7 +197,7 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                 last_saved_path = ""
 
                 counter_downloaded_files = 0
-                logger.info("Start itterate by location.")
+                logger.info("Start iterate by location.")
                 for loc in locations:
                     download_directory = loc.sftp_folder_path
 
