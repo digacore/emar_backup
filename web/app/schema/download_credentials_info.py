@@ -21,3 +21,4 @@ class ComputerCredentialsInfo(BaseModel):
     files_checksum: dict[str, str]
     msi_version: str
     use_pcc_backup: bool
+    pcc_fac_id: str | None

@@ -9,7 +9,7 @@ class LocationInfo(BaseModel):
     total_computers_offline: int
     primary_computers_offline: int
     default_sftp_path: str | None
-    pcc_fac_id: int
+    pcc_fac_id: int | None
 
     class Config:
         orm_mode = True
