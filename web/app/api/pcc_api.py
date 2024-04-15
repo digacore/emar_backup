@@ -13,7 +13,7 @@ pcc_api_blueprint = BlueprintApi("pcc_api", __name__, url_prefix="/pcc_api")
 
 
 @pcc_api_blueprint.post("/download_backup/<int:pcc_fac_id>")
-def download_backup_from_pcc(body: s.GetCredentials, pcc_fac_id: int) -> Response:
+def download_backup_from_pcc(pcc_fac_id: int, body: s.GetCredentials) -> Response:
     # Find computer in DB
     computer: m.Computer = (
         m.Computer.query.filter_by(
