@@ -253,6 +253,7 @@ def get_credentials(body: GetCredentials):
             use_pcc_backup=computer.location.use_pcc_backup
             if computer.location
             else False,
+            pcc_fac_id=computer.location.pcc_fac_id if computer.location else None,
         )
 
         return (

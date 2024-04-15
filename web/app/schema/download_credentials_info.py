@@ -10,9 +10,9 @@ class ComputerCredentialsInfo(BaseModel):
     company_name: str
     location_name: str
     additional_locations: list[LocationInfo]
-    sftp_username: str
-    sftp_password: str
-    sftp_folder_path: str
+    sftp_username: str | None
+    sftp_password: str | None
+    sftp_folder_path: str | None
     additional_folder_paths: list[str]
     identifier_key: str
     computer_name: str
@@ -21,3 +21,4 @@ class ComputerCredentialsInfo(BaseModel):
     files_checksum: dict[str, str]
     msi_version: str
     use_pcc_backup: bool
+    pcc_fac_id: str | None

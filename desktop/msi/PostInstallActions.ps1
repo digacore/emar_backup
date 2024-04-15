@@ -9,22 +9,18 @@ Write-Log "User: [$env:UserName]"
 
 Write-Log "Creating desktop shortcut"
 $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
-$TargetPath = Join-Path $cfg.backups_path "emar_backups.zip"
 if (Test-Path -Path $cfg.backups_path) {
     Continue
 }
 else {
     New-Item -ItemType Directory -Path $cfg.backups_path
 }
-Push-Location $cfg.backups_path
-New-Item -ItemType File -Name "emar_backups.zip"
-Pop-Location
 $IconLocation = (Get-Item "eMARVault_256x256.ico").FullName
 $ShortcutPath = Join-Path $env:PUBLIC Desktop\eMARVault.lnk
 
 $shell = New-Object -comObject WScript.Shell
 $shortcut = $shell.CreateShortcut($ShortcutPath)
-$shortcut.TargetPath = $TargetPath
+$shortcut.TargetPath = $cfg.backups_path
 $shortcut.IconLocation = $IconLocation
 $shortcut.WorkingDirectory = $cfg.backups_path
 $shortcut.Save()

@@ -13,7 +13,7 @@ pcc_api_blueprint = BlueprintApi("pcc_api", __name__, url_prefix="/pcc_api")
 
 
 @pcc_api_blueprint.post("/download_backup")
-def download_backup_from_pcc(body: s.GetCredentials) -> Response:
+def download_backup_from_pcc(body: s.GetPccDownloadData) -> Response:
     # Find computer in DB
     computer: m.Computer = (
         m.Computer.query.filter_by(
@@ -65,7 +65,7 @@ def download_backup_from_pcc(body: s.GetCredentials) -> Response:
         "orgs",
         computer.company.pcc_org_id,
         "facs",
-        str(computer.location.pcc_fac_id),
+        body.pcc_fac_id,
         "backup-files",
     )
     url = urljoin(CFG.PCC_BASE_URL, backup_route)
