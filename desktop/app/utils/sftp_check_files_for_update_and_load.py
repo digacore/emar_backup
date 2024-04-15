@@ -175,7 +175,7 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
             ssh_connect(
                 ssh,
                 credentials=credentials,
-                port=52222,
+                # port=52222,
             )
         except SSHException as e:
             logger.error("Exception occurred while connecting to sftp: {}", e)
