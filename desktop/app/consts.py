@@ -8,6 +8,8 @@ from pathlib import Path
 
 from app import schemas as s
 
+BASE_DIR = Path(__file__).parent.parent
+
 STORAGE_PATH = Path("C:\\") / "eMARVault"
 if not STORAGE_PATH.exists():
     STORAGE_PATH.mkdir()

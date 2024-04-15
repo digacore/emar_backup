@@ -10,9 +10,9 @@ class ComputerCredentialsInfo(BaseModel):
     company_name: str
     location_name: str
     additional_locations: list[LocationInfo]
-    sftp_username: str
-    sftp_password: str
-    sftp_folder_path: str
+    sftp_username: str | None
+    sftp_password: str | None
+    sftp_folder_path: str | None
     additional_folder_paths: list[str]
     identifier_key: str
     computer_name: str
