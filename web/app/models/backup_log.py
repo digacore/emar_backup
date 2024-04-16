@@ -38,8 +38,8 @@ class BackupLog(db.Model, ModelMixin):
 
     @property
     def duration(self):
-        start_time = self.start_time.replace(tzinfo=timezone.utc)
-        return self.end_time - start_time
+        # start_time = self.start_time.replace(tzinfo=timezone.utc)
+        return self.end_time - self.start_time
 
     @property
     def duration_as_str(self):
