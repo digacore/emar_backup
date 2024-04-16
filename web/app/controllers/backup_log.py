@@ -192,10 +192,7 @@ def backup_log_on_download_success(
             # If all the time logs were enabled - computer was offline in that time
 
             if computer.last_time_logs_enabled <= last_computer_log.end_time:
-                if (
-                    last_computer_log.start_time.replace(tzinfo=timezone.utc)
-                    < rounded_current_time
-                ):
+                if last_computer_log.start_time < rounded_current_time:
                     last_computer_log.end_time = rounded_current_time - timedelta(
                         seconds=1
                     )
