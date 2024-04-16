@@ -193,7 +193,7 @@ def backup_log_on_download_success(
 
             if computer.last_time_logs_enabled <= last_computer_log.end_time:
                 if (
-                    last_computer_log.start_time.replace(timezone=pytz.utc)
+                    last_computer_log.start_time.replace(tzinfo=timezone.utc)
                     < rounded_current_time
                 ):
                     last_computer_log.end_time = rounded_current_time - timedelta(
