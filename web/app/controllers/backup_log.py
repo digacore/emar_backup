@@ -1,9 +1,10 @@
 import enum
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app import models as m
 from app.logger import logger
+import pytz
 
 
 class BackupLogError(enum.Enum):
@@ -13,14 +14,14 @@ class BackupLogError(enum.Enum):
 
 def backup_log_on_download_success(
     computer: m.Computer,
-    current_time: datetime = datetime.utcnow(),
+    current_time: datetime = datetime.now(timezone.utc),
 ):
     """Create or update backup log for computer
 
     Args:
         computer (m.Computer): Computer object
         current_time (datetime, optional): time when log should be updated or created.Should be in UTC not EST.
-        Defaults to datetime.utcnow().
+        Defaults to datetime.now(timezone.utc).
     """
     last_computer_log = (
         m.BackupLog.query.filter_by(computer_id=computer.id)
@@ -312,7 +313,7 @@ def gen_fake_backup_periods_logs(computer: m.Computer, time_period: timedelta):
         logger.info("Backup logs already exist for computer {}", computer)
         return
 
-    log_time = (datetime.utcnow() - time_period).replace(
+    log_time = (datetime.now(timezone.utc) - time_period).replace(
         minute=0, second=0, microsecond=0
     )
 
@@ -343,10 +344,12 @@ def backup_log_on_request_to_view(computer: m.Computer):
     )
 
     # Current time in UTC
-    current_time = datetime.utcnow()
+    current_time = datetime.now(timezone.utc)
 
     # Current time in UTC rounded to hours
-    rounded_current_time = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    rounded_current_time = datetime.now(timezone.utc).replace(
+        minute=0, second=0, microsecond=0
+    )
 
     # If there is no backup logs for this computer but computer activated - create new one with type NO_DOWNLOADS_PERIOD
     if not last_computer_log:
@@ -383,7 +386,8 @@ def backup_log_on_request_to_view(computer: m.Computer):
     # If the last backup log has type WITH_DOWNLOADS_PERIOD
     if last_computer_log.backup_log_type == m.BackupLogType.WITH_DOWNLOADS_PERIOD:
         # If the last backup log end time + 30 minutes and 1 second is bigger than current time - ignore it
-        if last_computer_log.end_time + timedelta(minutes=30, seconds=1) > current_time:
+        end_time = last_computer_log.end_time.astimezone(timezone.utc)
+        if end_time + timedelta(minutes=30, seconds=1) > current_time:
             return
 
         # If the last backup log end time + 30 minutes and 1 second is less than current_time
@@ -563,7 +567,9 @@ def backup_log_on_download_error(computer: m.Computer):
     )
 
     # Current time in UTC rounded to hours
-    rounded_current_time = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    rounded_current_time = datetime.now(timezone.utc).replace(
+        minute=0, second=0, microsecond=0
+    )
 
     # If there is no backup log for this computer - create new one with type NO_DOWNLOADS_PERIOD
     if not last_computer_log:
@@ -734,7 +740,9 @@ def backup_log_on_download_error(computer: m.Computer):
 
 def backup_log_on_download_error_with_message(computer: m.Computer, message: str):
     # Current time in UTC rounded to hours
-    rounded_current_time = datetime.utcnow().replace(minute=0, second=0, microsecond=0)
+    rounded_current_time = datetime.now(timezone.utc).replace(
+        minute=0, second=0, microsecond=0
+    )
     new_no_downloads_log = m.BackupLog(
         backup_log_type=m.BackupLogType.NO_DOWNLOADS_PERIOD,
         start_time=rounded_current_time,

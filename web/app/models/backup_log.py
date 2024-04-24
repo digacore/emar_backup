@@ -1,5 +1,5 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import Enum
 from sqlalchemy.orm import relationship
@@ -38,17 +38,20 @@ class BackupLog(db.Model, ModelMixin):
 
     @property
     def duration(self):
+        # start_time = self.start_time.replace(tzinfo=timezone.utc)
         return self.end_time - self.start_time
 
     @property
     def duration_as_str(self):
-        duration_period = self.end_time - self.start_time
+        end_time = self.end_time.replace(tzinfo=timezone.utc)
+        duration_period = end_time - self.start_time
         return f"{duration_period.days} days \
             {duration_period.seconds // 3600} \
             hours {(duration_period.seconds // 60) % 60} minutes"
 
     @property
     def est_start_time(self):
+        self.start_time = self.start_time.replace(tzinfo=timezone.utc)
         return CFG.offset_to_est(self.start_time, True)
 
     @property

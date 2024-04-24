@@ -1,5 +1,5 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.models import LogEvent, LogType, Computer
 from app.logger import logger
@@ -22,7 +22,7 @@ def create_log_event(
     new_log = LogEvent(
         log_type=log_type,
         computer_id=computer.id,
-        created_at=created_at if created_at else datetime.utcnow(),
+        created_at=created_at if created_at else datetime.now(timezone.utc),
         data=data if data else "",
     )
 
@@ -47,7 +47,7 @@ def gen_fake_backup_download_logs(computer: Computer, time_period: timedelta):
         logger.info("Logs already exist for computer {}", computer)
         return
 
-    log_time = datetime.utcnow() - time_period
+    log_time = datetime.now(timezone.utc) - time_period
     total_logs = 0
 
     for hour in range(time_period.days * 24 + time_period.seconds // 3600):

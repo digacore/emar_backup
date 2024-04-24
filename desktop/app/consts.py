@@ -8,6 +8,8 @@ from pathlib import Path
 
 from app import schemas as s
 
+BASE_DIR = Path(__file__).parent.parent
+
 STORAGE_PATH = Path("C:\\") / "eMARVault"
 if not STORAGE_PATH.exists():
     STORAGE_PATH.mkdir()
@@ -21,6 +23,8 @@ COMPUTER_NAME = platform.node()
 INPUT_LOG_FILE_PATH = Path("C://eMARVault") / "emar_log.txt"
 OUTPUT_LOG_FILE_PATH = Path(os.environ["AppData"]) / "Emar" / "application.txt"
 
+# get path to work directory
+SEVEN_ZIP = "7z.exe"
 G_MANAGER_HOST = "unknown"
 
 CONFIG_JSON = Path("config.json")

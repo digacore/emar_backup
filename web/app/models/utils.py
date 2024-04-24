@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from gettext import gettext
 
@@ -32,7 +32,7 @@ class SoftDeleteMixin(object):
     def delete(self):
         # Soft delete this model from the database.
         self.is_deleted = True
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now(timezone.utc)
         db.session.commit()
         return self
 
@@ -83,7 +83,7 @@ class BlobUploadField(fields.StringField):
         size_field=None,
         filename_field=None,
         mimetype_field=None,
-        **kwargs
+        **kwargs,
     ):
         self.allowed_extensions = allowed_extensions
         self.size_field = size_field

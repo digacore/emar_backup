@@ -11,6 +11,7 @@
     "consts",
     "creds",
     "dotenv",
+    "emarbackup",
     "fastapi",
     "flowbite",
     "jsonify",
