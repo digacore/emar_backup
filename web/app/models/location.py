@@ -1,35 +1,33 @@
 import enum
-from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta, timezone
-
-from sqlalchemy import func, sql, select, or_, Enum
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
+from datetime import datetime, timedelta
 
 from flask import flash
-from flask_login import current_user
 from flask_admin.babel import gettext
-from flask_admin.model.template import EditRowAction, DeleteRowAction
-from flask_admin.form import Select2Widget
-from flask_admin.contrib.sqla.fields import QuerySelectField
 from flask_admin.contrib.sqla import tools
-
+from flask_admin.contrib.sqla.fields import QuerySelectField
+from flask_admin.form import Select2Widget
+from flask_admin.model.template import DeleteRowAction, EditRowAction
+from flask_login import current_user
+from sqlalchemy import Enum, func, or_, select, sql
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
+from sqlalchemy.orm import relationship
 from wtforms import validators
+from zoneinfo import ZoneInfo
 
 from app import db
+from app.logger import logger
 from app.models.utils import (
+    ActivatedMixin,
     ModelMixin,
+    QueryWithSoftDelete,
     RowActionListMixin,
     SoftDeleteMixin,
-    QueryWithSoftDelete,
-    ActivatedMixin,
 )
 from app.utils import MyModelView
-from app.logger import logger
+from config import BaseConfig as CFG
+
 from .company import Company
 from .system_log import SystemLogType
-
-from config import BaseConfig as CFG
 
 
 class LocationStatus(enum.Enum):
@@ -122,7 +120,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
                 user.delete(commit=False)
 
         self.is_deleted = True
-        self.deleted_at = datetime.now(timezone.utc)
+        self.deleted_at = datetime.utcnow()
 
         if commit:
             db.session.commit()
@@ -162,7 +160,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         return self
 
     def deactivate(
-        self, deactivated_at: datetime = datetime.now(timezone.utc), commit: bool = True
+        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
     ):
         # Deactivate all the location active computers
         for computer in self.computers:
@@ -235,7 +233,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         """
         from app.models.computer import Computer
 
-        time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
         return Computer.query.filter(
             Computer.location_id == self.id,
@@ -256,7 +254,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         """
         from app.models.computer import Computer, DeviceRole
 
-        time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
+        time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
         return Computer.query.filter(
             Computer.location_id == self.id,
@@ -310,15 +308,15 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     @hybrid_method
     def total_alert_events(
         self,
-        start_time: datetime = datetime.now(timezone.utc) - timedelta(days=30),
-        end_time: datetime = datetime.now(timezone.utc),
+        start_time: datetime = datetime.utcnow() - timedelta(days=30),
+        end_time: datetime = datetime.utcnow(),
     ) -> int:
         """
         Total number of alert events for this location
 
         Args:
             start_time (datetime, optional): start time of the period.
-                Defaults to datetime.now(timezone.utc) - timedelta(days=30).
+                Defaults to datetime.utcnow() - timedelta(days=30).
             end_time (datetime, optional): end time of the period.
 
         Returns:
@@ -548,7 +546,7 @@ class LocationView(RowActionListMixin, MyModelView):
                 if form.activate.data:
                     model.deactivated_at = None
                 else:
-                    model.deactivated_at = datetime.now(timezone.utc)
+                    model.deactivated_at = datetime.utcnow()
 
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -561,7 +559,7 @@ class LocationView(RowActionListMixin, MyModelView):
                 model.group = [group_data] if group_data else []
 
                 if not form.activated.data:
-                    model.deactivated_at = datetime.now(timezone.utc)
+                    model.deactivated_at = datetime.utcnow()
 
                 self.session.add(model)
                 self._on_model_change(form, model, True)

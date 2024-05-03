@@ -165,8 +165,8 @@ def test_check_msi_version(client):
     ).first()
     body = LastTime(
         identifier_key="dummy",
-        last_download_time=CFG.offset_to_est(datetime.datetime.now(datetime.UTC), True),
-        last_time_online=CFG.offset_to_est(datetime.datetime.now(datetime.UTC), True),
+        last_download_time=CFG.offset_to_est(datetime.datetime.utcnow(), True),
+        last_time_online=CFG.offset_to_est(datetime.datetime.utcnow(), True),
     )
 
     last_download_old = check_msi_version(computer_old_msi, body, "download")

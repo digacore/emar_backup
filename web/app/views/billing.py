@@ -1,18 +1,17 @@
-import io
 import enum
-from zoneinfo import ZoneInfo
-from datetime import datetime, timedelta, timezone
+import io
+from datetime import datetime, timedelta
 
+from flask import Blueprint, abort, render_template, request, send_file
+from flask_login import current_user, login_required
 from sqlalchemy.orm import Query
-from flask import render_template, Blueprint, abort, request, send_file
-from flask_login import login_required, current_user
+from zoneinfo import ZoneInfo
 
-from app import models as m, db
-from app.controllers import create_pagination, create_general_billing_report
+from app import db
+from app import models as m
+from app.controllers import create_general_billing_report, create_pagination
 from app.logger import logger
-
 from config import BaseConfig as CFG
-
 
 billing_blueprint = Blueprint("billing", __name__, url_prefix="/billing")
 
@@ -38,9 +37,7 @@ def get_billing_page():
     per_page: int = request.args.get("per_page", 25, type=int)
 
     # Default start time is start of current month at 00:00 (EST timezone).
-    default_start_time: datetime = CFG.offset_to_est(
-        datetime.now(timezone.utc), True
-    ).replace(
+    default_start_time: datetime = CFG.offset_to_est(datetime.utcnow(), True).replace(
         day=1,
         hour=0,
         minute=0,
@@ -59,9 +56,7 @@ def get_billing_page():
     # Default end time is today at 00:00 (EST timezone).
     # This is because we don't want to include today's data in the report.
     # Default end time is also max date parameter for datepicker.
-    default_end_time: datetime = CFG.offset_to_est(
-        datetime.now(timezone.utc), True
-    ).replace(
+    default_end_time: datetime = CFG.offset_to_est(datetime.utcnow(), True).replace(
         hour=0, minute=0, second=0, microsecond=0, tzinfo=ZoneInfo("America/New_York")
     )
     to_date: datetime = request.args.get(

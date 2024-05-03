@@ -1,13 +1,12 @@
-from datetime import datetime, timezone
-
+from datetime import datetime
 from gettext import gettext
 
+import sqlalchemy as sa
+from flask_sqlalchemy import BaseQuery
 from werkzeug.datastructures import FileStorage
+from wtforms import ValidationError, fields
 from wtforms.validators import InputRequired
 from wtforms.widgets import FileInput
-from wtforms import ValidationError, fields
-from flask_sqlalchemy import BaseQuery
-import sqlalchemy as sa
 
 from app import db
 
@@ -32,7 +31,7 @@ class SoftDeleteMixin(object):
     def delete(self):
         # Soft delete this model from the database.
         self.is_deleted = True
-        self.deleted_at = datetime.now(timezone.utc)
+        self.deleted_at = datetime.utcnow()
         db.session.commit()
         return self
 

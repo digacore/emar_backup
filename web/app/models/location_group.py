@@ -1,23 +1,22 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from flask import flash
-from flask_login import current_user
-from flask_admin.model.template import EditRowAction, DeleteRowAction
-from flask_admin.contrib.sqla import tools
 from flask_admin.babel import gettext
-from sqlalchemy import select, func, and_, or_, sql
-from sqlalchemy.orm import relationship
+from flask_admin.contrib.sqla import tools
+from flask_admin.model.template import DeleteRowAction, EditRowAction
+from flask_login import current_user
+from sqlalchemy import and_, func, or_, select, sql
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
 
 from app import db
-from .company import Company
-from .location import Location
-from .utils import ModelMixin, RowActionListMixin, SoftDeleteMixin, QueryWithSoftDelete
-from app.utils import MyModelView
 from app.logger import logger
-
+from app.utils import MyModelView
 from config import BaseConfig as CFG
 
+from .company import Company
+from .location import Location
+from .utils import ModelMixin, QueryWithSoftDelete, RowActionListMixin, SoftDeleteMixin
 
 # The location column is unique to prevent situation when location is connected to several groups
 locations_to_group = db.Table(
@@ -95,7 +94,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
         self.locations = []
 
         self.is_deleted = True
-        self.deleted_at = datetime.now(timezone.utc)
+        self.deleted_at = datetime.utcnow()
 
         if commit:
             db.session.commit()
@@ -127,7 +126,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
     def primary_computers_offline(self):
         from app.models.computer import Computer, DeviceRole
 
-        current_east_time = CFG.offset_to_est(datetime.now(timezone.utc), True)
+        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
 
         location_ids: list[int] = [location.id for location in self.locations]
 
@@ -150,7 +149,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
     def total_offline_computers(self):
         from app.models.computer import Computer
 
-        current_east_time = CFG.offset_to_est(datetime.now(timezone.utc), True)
+        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
 
         location_ids: list[int] = [location.id for location in self.locations]
 
@@ -172,7 +171,7 @@ class LocationGroup(db.Model, ModelMixin, SoftDeleteMixin):
     def total_offline_locations(self):
         from app.models.computer import Computer
 
-        current_east_time = CFG.offset_to_est(datetime.now(timezone.utc), True)
+        current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
         offline_locations_counter = 0
 
         locations = self.locations

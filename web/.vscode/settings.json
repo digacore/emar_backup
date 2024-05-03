@@ -10,7 +10,14 @@
     "**/node_modules/*/**": true,
     "**/.venv/*/**": true
   },
-  "cSpell.words": ["backref", "pydantic", "sqlalchemy", "werkzeug"],
+  "cSpell.words": [
+    "backref",
+    "pydantic",
+    "sqla",
+    "sqlalchemy",
+    "werkzeug",
+    "wtforms"
+  ],
   "python.testing.pytestArgs": ["tests"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
