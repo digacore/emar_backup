@@ -1,10 +1,10 @@
 #!/user/bin/env python
+from datetime import datetime, timedelta
+
 import click
-from datetime import timedelta, datetime, timezone
 
-from app import create_app, db, models, forms
+from app import create_app, db, forms, models
 from app.logger import logger
-
 
 app = create_app()
 
@@ -135,10 +135,10 @@ def set_computer_user_deactivated_at():
     deactivated_users = models.User.query.filter(models.User.activated.is_(False)).all()
 
     for computer in deactivated_computers:
-        computer.deactivated_at = datetime.now(timezone.utc)
+        computer.deactivated_at = datetime.utcnow()
 
     for user in deactivated_users:
-        user.deactivated_at = datetime.now(timezone.utc)
+        user.deactivated_at = datetime.utcnow()
 
     db.session.commit()
     logger.info("<-----End script------>")

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from app import models as m, db
 from config import BaseConfig as CFG
@@ -12,7 +12,7 @@ def clean_old_logs():
     # Clean old system logs
     old_system_logs_query = db.session.query(m.SystemLog).filter(
         m.SystemLog.created_at
-        < datetime.now(timezone.utc) - timedelta(days=CFG.SYSTEM_LOGS_DELETION_PERIOD)
+        < datetime.utcnow() - timedelta(days=CFG.SYSTEM_LOGS_DELETION_PERIOD)
     )
     old_system_logs_amount = len(old_system_logs_query.all())
     old_system_logs_query.delete()
@@ -20,7 +20,7 @@ def clean_old_logs():
     # Clean old computer logs
     old_computer_logs_query = db.session.query(m.BackupLog).filter(
         m.BackupLog.end_time
-        < datetime.now(timezone.utc) - timedelta(days=CFG.COMPUTER_LOGS_DELETION_PERIOD)
+        < datetime.utcnow() - timedelta(days=CFG.COMPUTER_LOGS_DELETION_PERIOD)
     )
     old_computer_logs_amount = len(old_computer_logs_query.all())
     old_computer_logs_query.delete()
@@ -28,7 +28,7 @@ def clean_old_logs():
     # Clean old log events
     old_log_events_query = db.session.query(m.LogEvent).filter(
         m.LogEvent.created_at
-        < datetime.now(timezone.utc) - timedelta(days=CFG.LOG_EVENT_DELETION_PERIOD)
+        < datetime.utcnow() - timedelta(days=CFG.LOG_EVENT_DELETION_PERIOD)
     )
     old_log_events_amount = len(old_log_events_query.all())
     old_log_events_query.delete()

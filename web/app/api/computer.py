@@ -1,9 +1,11 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 from flask import jsonify, request
 
-from app.models import Computer, LogType, SystemLogType, TelemetrySettings, Location
+from app.controllers import create_log_event, create_system_log
+from app.logger import logger
+from app.models import Computer, Location, LogType, SystemLogType, TelemetrySettings
 from app.schema import (
     ComputerRegInfo,
     ComputerRegInfoLid,
@@ -11,12 +13,8 @@ from app.schema import (
     TelemetryRequestId,
 )
 from app.views.blueprint import BlueprintApi
-from app.controllers import create_log_event, create_system_log
-from app.logger import logger
 from app.views.utils import get_telemetry_settings_for_computer
-
 from config import BaseConfig as CFG
-
 
 computer_blueprint = BlueprintApi("/computer", __name__)
 
@@ -70,14 +68,9 @@ def register_computer(body: ComputerRegInfo):
                 activated=False,
                 device_type=body.device_type,
                 device_role=body.device_role,
-                deactivated_at=datetime.now(timezone.utc),
+                deactivated_at=datetime.utcnow(),
                 logs_enabled=body.enable_logs,
-                last_time_logs_enabled=datetime.now(timezone.utc)
-                if body.enable_logs
-                else None,
-                last_time_logs_disabled=None
-                if body.enable_logs
-                else datetime.now(timezone.utc),
+                last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
             )
             new_computer.save()
 
@@ -274,12 +267,8 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 device_role=body.device_role,
                 logs_enabled=body.enable_logs,
                 activated=body.activate_device,
-                last_time_logs_enabled=datetime.now(timezone.utc)
-                if body.enable_logs
-                else None,
-                last_time_logs_disabled=None
-                if body.enable_logs
-                else datetime.now(timezone.utc),
+                last_time_logs_enabled=datetime.utcnow() if body.enable_logs else None,
+                last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
                 location_id=location.id,
                 company_id=location.company_id,
             )
