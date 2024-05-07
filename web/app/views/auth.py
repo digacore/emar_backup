@@ -71,8 +71,12 @@ def login():
                 "danger",
             )
             return render_template("auth/login.html", form=form)
-
-        flash("Wrong user ID or password.", "danger")
+        else:
+            flash("Invalid user ID or password.", "danger")
+            logger.warning("Invalid user ID or password. {}", form.errors)
+            return render_template("auth/login.html", form=form)
+    logger.warning("Login error: {}", form.errors)
+    flash("Login error", "danger")
     return render_template("auth/login.html", form=form)
 
 
