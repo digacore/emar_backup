@@ -97,7 +97,7 @@ Location = namedtuple("Location", ["location_name", "sftp_folder_path"])
 
 def create_location_list(credentials: s.ConfigFile) -> list[Location]:
     loc = Location(credentials.location_name, credentials.sftp_folder_path)
-    if loc.location_name == "":
+    if loc.location_name.strip() == "":
         raise ValueError("Location name is empty.")
     locations_list = [loc]
     for location in credentials.additional_locations:
@@ -209,7 +209,7 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                         #     continue
 
                         # get and create local temp directory if not exists
-                        local_temp_emar_dir = os.path.join(tempdir, loc.location_name, Path(marked_dir))
+                        local_temp_emar_dir = os.path.join(tempdir, loc.location_name.strip(), Path(marked_dir))
                         local_file_path = os.path.join(local_temp_emar_dir, Path(filepath).name)
 
                         if not os.path.exists(local_temp_emar_dir):

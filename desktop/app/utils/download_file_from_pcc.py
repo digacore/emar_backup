@@ -23,7 +23,7 @@ Location = namedtuple("Location", ["location_name", "pcc_fac_id"])
 
 def create_location_list_for_pcc(credentials: s.ConfigFile):
     loc = Location(credentials.location_name, credentials.pcc_fac_id)
-    if loc.location_name == "":
+    if loc.location_name.strip() == "":
         raise ValueError("Location name is empty.")
     locations_list = [loc]
     for location in credentials.additional_locations:
@@ -49,7 +49,7 @@ def download_file_from_pcc(credentials: s.ConfigFile):
     with tempfile.TemporaryDirectory() as raw_tempdir:
         for loc in locations:
             # this split is required to remove temp string from dir name
-            download_dir_path = os.path.join(raw_tempdir, loc.location_name, download_dir)
+            download_dir_path = os.path.join(raw_tempdir, loc.location_name.strip(), download_dir)
             if not os.path.exists(download_dir_path):
                 os.makedirs(download_dir_path, exist_ok=True)
             last_saved_path = ""
