@@ -24,8 +24,8 @@ class BackupLog(db.Model, ModelMixin):
     backup_log_type = db.Column(Enum(BackupLogType), nullable=False)
     start_time = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
-    error = db.Column(db.String(128), server_default="", default="")
-    notes = db.Column(db.String(128), server_default="", default="")
+    error = db.Column(db.String(1024), server_default="", default="")
+    notes = db.Column(db.String(1024), server_default="", default="")
 
     computer = relationship(
         "Computer",
