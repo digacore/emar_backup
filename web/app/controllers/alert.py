@@ -153,12 +153,12 @@ def send_critical_alert():
         )
 
         try:
-            send_email(
-                subject=f"ALERT! Location {location.name} is offline",
-                sender=CFG.MAIL_DEFAULT_SENDER,
-                recipients=recipients,
-                html=alert_html,
-            )
+            # send_email(
+            #     subject=f"ALERT! Location {location.name} is offline",
+            #     sender=CFG.MAIL_DEFAULT_SENDER,
+            #     recipients=recipients,
+            #     html=alert_html,
+            # )
 
             # Create record about new alert event
             new_alert_event = m.AlertEvent(
@@ -233,16 +233,16 @@ def send_primary_computer_alert():
         recipients = [user.email for user in connected_users]
 
         try:
-            send_email(
-                subject=f"ALERT! Primary computer {computer.computer_name} is down",
-                sender=CFG.MAIL_DEFAULT_SENDER,
-                recipients=recipients,
-                html=render_template(
-                    "email/primary-computer-alert-email.html",
-                    location=computer.location,
-                    computer=computer,
-                ),
-            )
+            # send_email(
+            #     subject=f"ALERT! Primary computer {computer.computer_name} is down",
+            #     sender=CFG.MAIL_DEFAULT_SENDER,
+            #     recipients=recipients,
+            #     html=render_template(
+            #         "email/primary-computer-alert-email.html",
+            #         location=computer.location,
+            #         computer=computer,
+            #     ),
+            # )
 
             # Create record about new alert event
             new_alert_event = m.AlertEvent(

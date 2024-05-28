@@ -77,22 +77,22 @@ def setup_periodic_tasks(sender, **kwargs):
     logger.debug("Tasks added to Redis")
 
 
-@app.task
-def critical_alert_email():
-    flask_proc = subprocess.Popen(["flask", "critical-alert-email"])
-    flask_proc.communicate()
+# @app.task
+# def critical_alert_email():
+#     flask_proc = subprocess.Popen(["flask", "critical-alert-email"])
+#     flask_proc.communicate()
 
 
-@app.task
-def primary_computer_alert_email():
-    flask_proc = subprocess.Popen(["flask", "primary-computer-alert-email"])
-    flask_proc.communicate()
+# @app.task
+# def primary_computer_alert_email():
+#     flask_proc = subprocess.Popen(["flask", "primary-computer-alert-email"])
+#     flask_proc.communicate()
 
 
-@app.task
-def daily_summary_email():
-    flask_proc = subprocess.Popen(["flask", "daily-summary-email"])
-    flask_proc.communicate()
+# @app.task
+# def daily_summary_email():
+#     flask_proc = subprocess.Popen(["flask", "daily-summary-email"])
+#     flask_proc.communicate()
 
 
 @app.task
