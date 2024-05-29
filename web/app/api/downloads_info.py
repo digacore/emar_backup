@@ -167,14 +167,14 @@ def last_time(body: LastTime):
         )
         return jsonify(status="fail", message=message), 400
 
-    # message = "Wrong request data. Computer not found."
-    # logger.info(
-    #     "Last download/online time update failed. computer: {}, id {}. \
-    #     Reason: {}. Removing local credentials.",
-    #     body.computer_name,
-    #     body.identifier_key,
-    #     message,
-    # )
+    message = "Wrong request data. Computer not found."
+    logger.info(
+        "Last download/online time update failed. computer: {}, id {}. \
+        Reason: {}. Removing local credentials.",
+        body.computer_name,
+        body.identifier_key,
+        message,
+    )
     return jsonify(status="fail", message=message, rmcreds="rmcreds"), 400
 
 
