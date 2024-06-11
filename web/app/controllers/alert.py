@@ -153,12 +153,12 @@ def send_critical_alert():
         )
 
         try:
-            # send_email(
-            #     subject=f"ALERT! Location {location.name} is offline",
-            #     sender=CFG.MAIL_DEFAULT_SENDER,
-            #     recipients=recipients,
-            #     html=alert_html,
-            # )
+            send_email(
+                subject=f"ALERT! Location {location.name} is offline",
+                sender=CFG.MAIL_DEFAULT_SENDER,
+                recipients=recipients,
+                html=alert_html,
+            )
 
             # Create record about new alert event
             new_alert_event = m.AlertEvent(
@@ -233,16 +233,16 @@ def send_primary_computer_alert():
         recipients = [user.email for user in connected_users]
 
         try:
-            # send_email(
-            #     subject=f"ALERT! Primary computer {computer.computer_name} is down",
-            #     sender=CFG.MAIL_DEFAULT_SENDER,
-            #     recipients=recipients,
-            #     html=render_template(
-            #         "email/primary-computer-alert-email.html",
-            #         location=computer.location,
-            #         computer=computer,
-            #     ),
-            # )
+            send_email(
+                subject=f"ALERT! Primary computer {computer.computer_name} is down",
+                sender=CFG.MAIL_DEFAULT_SENDER,
+                recipients=recipients,
+                html=render_template(
+                    "email/primary-computer-alert-email.html",
+                    location=computer.location,
+                    computer=computer,
+                ),
+            )
 
             # Create record about new alert event
             new_alert_event = m.AlertEvent(
@@ -519,9 +519,9 @@ def send_daily_summary():
 
         # TODO: divide with usage of locations (smaller loop)
         # Create dictionary with locations as keys and list of computers as values
-        computers_by_location: dict[
-            str, s.ComputersByLocation
-        ] = divide_computers_by_location(offline_company_computers_query.all())
+        computers_by_location: dict[str, s.ComputersByLocation] = (
+            divide_computers_by_location(offline_company_computers_query.all())
+        )
 
         # Send company level summary
         if company_level_users:
@@ -587,9 +587,9 @@ def send_weekly_summary():
         ) = company_users_by_permission(company)
 
         # Create dictionary with locations as keys and list of computers as values
-        company_computers_by_location: dict[
-            str, s.ComputersByLocation
-        ] = divide_computers_by_location(company_computers_query.all())
+        company_computers_by_location: dict[str, s.ComputersByLocation] = (
+            divide_computers_by_location(company_computers_query.all())
+        )
 
         # Send company level summary
         if company_level_users:
@@ -647,9 +647,9 @@ def send_weekly_summary():
                     continue
 
                 # Create dictionary with locations as keys and list of computers as values
-                group_computers_by_location: dict[
-                    str, s.ComputersByLocation
-                ] = divide_computers_by_location(group_computers_query.all())
+                group_computers_by_location: dict[str, s.ComputersByLocation] = (
+                    divide_computers_by_location(group_computers_query.all())
+                )
 
                 try:
                     send_email(

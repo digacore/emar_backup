@@ -30,28 +30,28 @@ app.config_from_object(celery_config)
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
     # Critical alert when location offline - run every hour
-    # interval = crontab(minute=0)
-    # entry = RedBeatSchedulerEntry(
-    #     "critical_alert_email", "worker.critical_alert_email", interval, app=app
-    # )
-    # entry.save()
+    interval = crontab(minute=0)
+    entry = RedBeatSchedulerEntry(
+        "critical_alert_email", "worker.critical_alert_email", interval, app=app
+    )
+    entry.save()
 
     # Alert when primary computer is down - run every hour
-    # interval = crontab(minute=0)
-    # entry = RedBeatSchedulerEntry(
-    #     "primary_computer_alert_email",
-    #     "worker.primary_computer_alert_email",
-    #     interval,
-    #     app=app,
-    # )
-    # entry.save()
+    interval = crontab(minute=0)
+    entry = RedBeatSchedulerEntry(
+        "primary_computer_alert_email",
+        "worker.primary_computer_alert_email",
+        interval,
+        app=app,
+    )
+    entry.save()
 
     # Send daily summary - run every day at 11:00 AM (EST)
-    # interval = crontab(hour=11, minute=0)
-    # entry = RedBeatSchedulerEntry(
-    #     "daily_summary_email", "worker.daily_summary_email", interval, app=app
-    # )
-    # entry.save()
+    interval = crontab(hour=11, minute=0)
+    entry = RedBeatSchedulerEntry(
+        "daily_summary_email", "worker.daily_summary_email", interval, app=app
+    )
+    entry.save()
 
     # Send weekly summary - run every Monday at 11:00 AM (EST)
     interval = crontab(hour=11, minute=0, day_of_week="mon")
@@ -77,22 +77,22 @@ def setup_periodic_tasks(sender, **kwargs):
     logger.debug("Tasks added to Redis")
 
 
-# @app.task
-# def critical_alert_email():
-#     flask_proc = subprocess.Popen(["flask", "critical-alert-email"])
-#     flask_proc.communicate()
+@app.task
+def critical_alert_email():
+    flask_proc = subprocess.Popen(["flask", "critical-alert-email"])
+    flask_proc.communicate()
 
 
-# @app.task
-# def primary_computer_alert_email():
-#     flask_proc = subprocess.Popen(["flask", "primary-computer-alert-email"])
-#     flask_proc.communicate()
+@app.task
+def primary_computer_alert_email():
+    flask_proc = subprocess.Popen(["flask", "primary-computer-alert-email"])
+    flask_proc.communicate()
 
 
-# @app.task
-# def daily_summary_email():
-#     flask_proc = subprocess.Popen(["flask", "daily-summary-email"])
-#     flask_proc.communicate()
+@app.task
+def daily_summary_email():
+    flask_proc = subprocess.Popen(["flask", "daily-summary-email"])
+    flask_proc.communicate()
 
 
 @app.task
