@@ -79,15 +79,15 @@ def add_file_to_zip(credentials: s.ConfigResponse, tempdir: str) -> str:
             raise AppError("Can't add file to zip")
 
     logger.info("Files zipped.")
-    # Check if there are more than 12 backups in the emar_backups.zip
+    # Check if there are more than 6 backups in the emar_backups.zip
     for dir in archive.dir():
         dir_count = len(archive.dir(dir.name))
         last_path = archive.dir(dir.name)[0].name if dir_count > 0 else ""
-        if dir_count > 12:
-            logger.info("More than 12 backups for location {}. Deleting the oldest ones.", dir.name)
-            diff = dir_count - 12
+        if dir_count > 6:
+            logger.info("More than 6 backups for location {}. Deleting the oldest ones.", dir.name)
+            diff = dir_count - 6
             for _ in range(diff):
-                archive.delete(dir.name + "/" + archive.dir(dir.name)[0].name)
+                archive.delete(archive.dir(dir.name)[0].name)
 
     return last_path
 
