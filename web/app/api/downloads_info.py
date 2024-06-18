@@ -1,30 +1,35 @@
-import json
-import zoneinfo
 import datetime
+import json
 
+import zoneinfo
 from flask import jsonify, request
-from app.controllers.backup_log import backup_log_on_download_error_with_message
 
+from app.controllers import (
+    backup_log_on_download_error,
+    backup_log_on_download_success,
+    create_log_event,
+)
+from app.controllers.backup_log import backup_log_on_download_error_with_message
+from app.logger import logger
 from app.models import Computer, DesktopClient, LogType
 from app.models.computer import PrinterStatus
-from app.schema import GetCredentials, LastTime, DownloadStatus, FilesChecksum
+from app.schema import (
+    ComputerCredentialsInfo,
+    DownloadStatus,
+    FilesChecksum,
+    GetCredentials,
+    LastTime,
+)
 from app.schema.printer_info import PrinterInfo
 from app.views.blueprint import BlueprintApi
-from app.controllers import (
-    create_log_event,
-    backup_log_on_download_success,
-    backup_log_on_download_error,
-)
-from app.logger import logger
 from config import BaseConfig as CFG
-
 
 downloads_info_blueprint = BlueprintApi("/downloads_info", __name__)
 
 
 def check_msi_version(computer: Computer, body, time_type: str):
-    """Check for old or new msi version. If old - return datetime.utcnow() + 5
-    Else - return datetime.utcnow() + 4
+    """Check for old or new msi version. If old - return datetime.now(timezone.utc) + 5
+    Else - return datetime.now(timezone.utc) + 4
 
     Args:
         computer (Computer): sqla Computer obj
@@ -207,7 +212,9 @@ def get_credentials(body: GetCredentials):
         computer.computer_ip = request.headers.get(
             "X-Forwarded-For", request.remote_addr
         )
-        computer.last_time_online = CFG.offset_to_est(datetime.datetime.utcnow(), True)
+        computer.last_time_online = CFG.offset_to_est(
+            datetime.datetime.now(datetime.UTC), True
+        )
         # TODO find out why some computers can't write identifier_key to creds.json
         # TODO disable till then
         # computer.identifier_key = str(uuid.uuid4())
@@ -223,31 +230,37 @@ def get_credentials(body: GetCredentials):
             if computer.msi_version == "stable" or computer.msi_version == "latest"
             else DesktopClient.query.filter_by(version=computer.msi_version).first()
         )
+        cred_info = ComputerCredentialsInfo(
+            status="success",
+            message="Supplying credentials",
+            host=computer.sftp_host,
+            company_name=computer.company_name,
+            location_name=computer.location_name,
+            additional_locations=computer.get_additional_locations,
+            sftp_username=computer.sftp_username,
+            sftp_password=computer.sftp_password,
+            sftp_folder_path=computer.sftp_folder_path,
+            additional_folder_paths=[],
+            identifier_key=computer.identifier_key,
+            computer_name=computer.computer_name,
+            folder_password=computer.folder_password,
+            manager_host=computer.manager_host,
+            files_checksum=json.loads(str(remote_files_checksum)),
+            msi_version=msi.version if msi else "undefined",
+            use_pcc_backup=computer.location.use_pcc_backup
+            if computer.location
+            else False,
+            pcc_fac_id=computer.location.pcc_fac_id if computer.location else None,
+        )
 
         return (
             jsonify(
-                status="success",
-                message="Supplying credentials",
-                host=computer.sftp_host,
-                company_name=computer.company_name,
-                location_name=computer.location_name,
-                sftp_username=computer.sftp_username,
-                sftp_password=computer.sftp_password,
-                sftp_folder_path=computer.sftp_folder_path,
-                identifier_key=computer.identifier_key,
-                computer_name=computer.computer_name,
-                folder_password=computer.folder_password,
-                manager_host=computer.manager_host,
-                files_checksum=json.loads(str(remote_files_checksum)),
-                msi_version=msi.version if msi else "undefined",
-                use_pcc_backup=computer.location.use_pcc_backup
-                if computer.location
-                else False,
+                cred_info.dict(),
             ),
             200,
         )
 
-    elif computer_name:
+    if computer_name:
         message = "Wrong id."
         logger.info(
             "Supplying credentials failed. computer: {}, \

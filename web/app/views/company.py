@@ -273,3 +273,50 @@ def company_activation(company_id: int):
         flash(f"Company {company.name} was deactivated successfully.", "success")
 
     return redirect(url_for("company.edit_view", id=company_id))
+
+
+@company_blueprint.route("/<int:company_id>/<int:location_id>", methods=["GET"])
+@login_required
+def company_locations_list_exclude_selected_location(company_id: int, location_id: int):
+    """Returns company locations (id and name) as JSON
+
+    Args:
+        company_id (int): company id
+        location_id (int): location id
+
+    Returns:
+        JSON: company locations
+    """
+    company: m.Company = m.Company.query.filter_by(id=company_id).first()
+
+    if not company:
+        logger.error("Company with id [{}] not found", company_id)
+        abort(404, "Company not found.")
+
+    # Check if user has access to company information
+    if not has_access_to_company(current_user, company):
+        abort(403, "You don't have access to this company locations information.")
+
+    # If user has global access or associated with company, return all locations
+    match current_user.permission:
+        case m.UserPermissionLevel.GLOBAL | m.UserPermissionLevel.COMPANY:
+            locations = (
+                m.Location.query.filter(
+                    (m.Location.company_id == company.id)
+                    & (
+                        m.Location.id != location_id
+                    )  # Виключити локацію за її ідентифікатором
+                )
+                .order_by(m.Location.name)
+                .all()
+            )
+        case m.UserPermissionLevel.LOCATION_GROUP:
+            locations = current_user.location_group[0].locations
+        case m.UserPermissionLevel.LOCATION:
+            locations = current_user.location
+        case _:
+            locations = []
+
+    res = [(location.id, location.name) for location in locations]
+
+    return jsonify(locations=res), 200

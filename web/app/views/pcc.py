@@ -2,25 +2,24 @@ import json
 from datetime import datetime
 
 from flask import (
-    render_template,
     Blueprint,
-    request,
+    Response,
     abort,
     redirect,
+    render_template,
+    request,
     url_for,
-    Response,
 )
-from flask_login import login_required, current_user
-from sqlalchemy import cast, String
+from flask_login import current_user, login_required
+from sqlalchemy import String, cast
 
-from app import db, models as m, schema as s
-from app.forms import CreationReportForm
+from app import db
+from app import models as m
+from app import schema as s
 from app.controllers import create_pagination, create_system_log
-
-from worker import scan_pcc_activations
-
+from app.forms import CreationReportForm
 from app.logger import logger
-
+from worker import scan_pcc_activations
 
 pcc_blueprint = Blueprint("pcc", __name__, url_prefix="/pcc")
 

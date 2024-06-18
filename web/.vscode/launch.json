@@ -6,7 +6,7 @@
   "configurations": [
     {
       "name": "Python: Flask",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "flask",
       "justMyCode": false,
@@ -20,7 +20,7 @@
     },
     {
       "name": "worker",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "celery",
       "args": ["-A", "worker.app", "worker", "-B"],
@@ -44,7 +44,7 @@
     },
     {
       "name": "get-pcc-access-key",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "flask",
       "justMyCode": false,
@@ -52,7 +52,7 @@
     },
     {
       "name": "critical-alert-email",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "flask",
       "env": {
@@ -65,7 +65,7 @@
     },
     {
       "name": "primary-computer-alert-email",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "flask",
       "env": {
@@ -78,7 +78,7 @@
     },
     {
       "name": "daily-summary-email",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "flask",
       "env": {
@@ -91,7 +91,7 @@
     },
     {
       "name": "weekly-summary-email",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "flask",
       "env": {
@@ -104,7 +104,7 @@
     },
     {
       "name": "update-cl-stat",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "module": "flask",
       "env": {
@@ -114,6 +114,6 @@
       },
       "jinja": true,
       "args": ["update-cl-stat"]
-    },
+    }
   ]
 }

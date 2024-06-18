@@ -1,7 +1,9 @@
-import pytest
 from datetime import datetime, timedelta
 
-from app import db, create_app, models as m
+import pytest
+
+from app import create_app, db
+from app import models as m
 from app.controllers import init_db
 from config import BaseConfig as CFG
 

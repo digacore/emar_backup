@@ -1,35 +1,33 @@
 import enum
-from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
-from sqlalchemy import func, sql, select, or_, Enum
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
-
 from flask import flash
-from flask_login import current_user
 from flask_admin.babel import gettext
-from flask_admin.model.template import EditRowAction, DeleteRowAction
-from flask_admin.form import Select2Widget
-from flask_admin.contrib.sqla.fields import QuerySelectField
 from flask_admin.contrib.sqla import tools
-
+from flask_admin.contrib.sqla.fields import QuerySelectField
+from flask_admin.form import Select2Widget
+from flask_admin.model.template import DeleteRowAction, EditRowAction
+from flask_login import current_user
+from sqlalchemy import Enum, func, or_, select, sql
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
+from sqlalchemy.orm import relationship
 from wtforms import validators
+from zoneinfo import ZoneInfo
 
 from app import db
+from app.logger import logger
 from app.models.utils import (
+    ActivatedMixin,
     ModelMixin,
+    QueryWithSoftDelete,
     RowActionListMixin,
     SoftDeleteMixin,
-    QueryWithSoftDelete,
-    ActivatedMixin,
 )
 from app.utils import MyModelView
-from app.logger import logger
+from config import BaseConfig as CFG
+
 from .company import Company
 from .system_log import SystemLogType
-
-from config import BaseConfig as CFG
 
 
 class LocationStatus(enum.Enum):
@@ -63,6 +61,11 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     )
     created_from_pcc = db.Column(
         db.Boolean, default=False, server_default=sql.false(), nullable=False
+    )
+
+    additional_locations = relationship(
+        "AdditionalLocation",
+        back_populates="location",
     )
 
     company = relationship(
@@ -182,7 +185,9 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     @company_name.expression
     def company_name(cls):
-        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+        return (
+            select([Company.name]).where(cls.company_id == Company.id).scalar_subquery()
+        )
 
     @company_name.setter
     def company_name(self, value):

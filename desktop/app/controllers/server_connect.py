@@ -27,10 +27,10 @@ def server_connect():
     if not credentials:
         raise ValueError("Credentials not supplied. Can't continue.")
 
-    if credentials["status"] == "success":
+    if credentials.status == "success":
         # Handle errors in files downloading and zip
         try:
-            if not credentials.get("use_pcc_backup"):
+            if not credentials.use_pcc_backup:
                 last_download_time = sftp_check_files_for_update_and_load(credentials)
             else:
                 download_file_from_pcc(credentials)
@@ -42,10 +42,10 @@ def server_connect():
             logger.info("Downloading process interrupted")
 
         # user = getpass.getuser()
-        if Version().from_str(credentials["version"]) > Version().from_str(old_credentials.version):
-            self_update(credentials, old_credentials.model_dump())
+        if Version().from_str(credentials.version) > Version().from_str(old_credentials.version):
+            self_update(credentials, old_credentials)
 
-    elif credentials["status"] == "registered":
+    elif credentials.status == "registered":
         logger.info("New computer registered. Download will start next time if credentials available in DB.")
 
     else:

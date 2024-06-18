@@ -519,9 +519,9 @@ def send_daily_summary():
 
         # TODO: divide with usage of locations (smaller loop)
         # Create dictionary with locations as keys and list of computers as values
-        computers_by_location: dict[
-            str, s.ComputersByLocation
-        ] = divide_computers_by_location(offline_company_computers_query.all())
+        computers_by_location: dict[str, s.ComputersByLocation] = (
+            divide_computers_by_location(offline_company_computers_query.all())
+        )
 
         # Send company level summary
         if company_level_users:
@@ -587,9 +587,9 @@ def send_weekly_summary():
         ) = company_users_by_permission(company)
 
         # Create dictionary with locations as keys and list of computers as values
-        company_computers_by_location: dict[
-            str, s.ComputersByLocation
-        ] = divide_computers_by_location(company_computers_query.all())
+        company_computers_by_location: dict[str, s.ComputersByLocation] = (
+            divide_computers_by_location(company_computers_query.all())
+        )
 
         # Send company level summary
         if company_level_users:
@@ -648,9 +648,9 @@ def send_weekly_summary():
                     continue
 
                 # Create dictionary with locations as keys and list of computers as values
-                group_computers_by_location: dict[
-                    str, s.ComputersByLocation
-                ] = divide_computers_by_location(group_computers_query.all())
+                group_computers_by_location: dict[str, s.ComputersByLocation] = (
+                    divide_computers_by_location(group_computers_query.all())
+                )
 
                 try:
                     send_email(

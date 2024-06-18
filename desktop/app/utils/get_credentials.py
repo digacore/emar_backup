@@ -66,7 +66,7 @@ def register_computer():
     return response
 
 
-def get_credentials() -> tuple[s.ConfigFile, s.ConfigFile]:  # return new and old values
+def get_credentials() -> tuple[s.ConfigFile | None, s.ConfigFile | None]:  # return new and old values
     logger.info("Receiving credentials.")
     creds_json = CONFIG
 
@@ -120,6 +120,6 @@ def get_credentials() -> tuple[s.ConfigFile, s.ConfigFile]:  # return new and ol
             json.dump(config, f, indent=2)
             logger.info(f"Full credentials received from server and {LOCAL_CREDS_JSON} updated.")
 
-        return config, creds_json
+        return s.ConfigFile.model_validate(config), creds_json
 
     raise ValueError("Wrong response data. Can't proceed without correct credentials.")

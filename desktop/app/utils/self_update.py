@@ -14,29 +14,29 @@ from app.consts import MANAGER_HOST, STORAGE_PATH
 def self_update(credentials: s.ConfigFile, old_credentials: s.ConfigFile) -> None:
     logger.debug(
         "Compare version in self_update. {} ?= {}",
-        credentials["msi_version"],
-        old_credentials["msi_version"],
+        credentials.msi_version,
+        old_credentials.version,
     )
 
     # check if new or old version is None. If yes - convert to stable
-    if not credentials["msi_version"]:
-        credentials["msi_version"] = "stable"
-    if not old_credentials["msi_version"]:
-        old_credentials["msi_version"] = "stable"
+    if not credentials.msi_version:
+        credentials.msi_version = "stable"
+    if not old_credentials.version:
+        old_credentials.version = "stable"
 
-    if credentials["msi_version"] != old_credentials["msi_version"]:
+    if credentials.msi_version != old_credentials.version:
         logger.info(
             "Updating EmarVault client to new version. From {} to {}",
-            old_credentials["msi_version"],
-            credentials["msi_version"],
+            old_credentials.version,
+            credentials.msi_version,
         )
         URL = urljoin(MANAGER_HOST, "msi_download_to_local")
         data = s.MsiDownloadData(
             name="custompass",
-            version=credentials["msi_version"],
-            flag=credentials["msi_version"],
-            identifier_key=credentials["identifier_key"],
-            current_msi_version=old_credentials["msi_version"],
+            version=credentials.msi_version,
+            flag=credentials.msi_version,
+            identifier_key=credentials.identifier_key,
+            current_msi_version=old_credentials.version,
         )
         response = requests.post(
             URL,
@@ -54,8 +54,8 @@ def self_update(credentials: s.ConfigFile, old_credentials: s.ConfigFile) -> Non
         Popen(["msiexec", "/i", filepath])
         logger.debug(
             "New msi version installed. From {} to {}",
-            old_credentials["msi_version"],
-            credentials["msi_version"],
+            old_credentials.version,
+            credentials.msi_version,
         )
         # NOTE rerun PostInstallActions.ps1 after installation as Admin
         posha_path = os.path.join(Path("C:\\") / "Program Files" / "eMARVault" / "PostInstallActions.ps1")
@@ -68,8 +68,8 @@ def self_update(credentials: s.ConfigFile, old_credentials: s.ConfigFile) -> Non
         update_response = requests.post(
             URL,
             json={
-                "identifier_key": credentials["identifier_key"],
-                "current_msi_version": credentials["msi_version"],
+                "identifier_key": credentials.identifier_key,
+                "current_msi_version": credentials.msi_version,
             },
         )
 

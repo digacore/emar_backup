@@ -1,8 +1,8 @@
 import random
 from datetime import datetime, timedelta
 
-from app.models import LogEvent, LogType, Computer
 from app.logger import logger
+from app.models import Computer, LogEvent, LogType
 
 
 def create_log_event(

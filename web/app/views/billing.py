@@ -1,18 +1,17 @@
-import io
 import enum
-from zoneinfo import ZoneInfo
+import io
 from datetime import datetime, timedelta
 
+from flask import Blueprint, abort, render_template, request, send_file
+from flask_login import current_user, login_required
 from sqlalchemy.orm import Query
-from flask import render_template, Blueprint, abort, request, send_file
-from flask_login import login_required, current_user
+from zoneinfo import ZoneInfo
 
-from app import models as m, db
-from app.controllers import create_pagination, create_general_billing_report
+from app import db
+from app import models as m
+from app.controllers import create_general_billing_report, create_pagination
 from app.logger import logger
-
 from config import BaseConfig as CFG
-
 
 billing_blueprint = Blueprint("billing", __name__, url_prefix="/billing")
 

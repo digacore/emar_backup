@@ -1,18 +1,18 @@
-import pytest
 from datetime import datetime, timedelta
 
+import pytest
 from flask import current_app
 from werkzeug.exceptions import HTTPException
 
-from app import models as m, schema as s
+from app import models as m
+from app import schema as s
 from app.controllers import (
-    get_pcc_2_legged_token,
+    check_daily_requests_count,
     get_activations,
     get_org_facilities_list,
+    get_pcc_2_legged_token,
     update_daily_requests_count,
-    check_daily_requests_count,
 )
-
 
 # NOTE: These tests are skipped by default because they require next things:
 # 1. The machine should be under the USA VPN or in the USA localization

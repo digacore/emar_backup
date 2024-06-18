@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from .location_info import LocationInfo
 
 
 class ConfigResponse(BaseModel):
@@ -19,3 +20,6 @@ class ConfigResponse(BaseModel):
     folder_password: str | None = None
     files_checksum: dict[str, str] | None = None
     use_pcc_backup: bool | None = None
+    pcc_fac_id: str | None = None
+    additional_locations: list[LocationInfo] | None = None
+    additional_sftp_folder_paths: list[str] | None = None
