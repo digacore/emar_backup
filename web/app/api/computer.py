@@ -266,6 +266,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
             deleted_computer_query.sftp_password = company.default_sftp_password
             deleted_computer_query.sftp_folder_path = location.default_sftp_path
             deleted_computer_query.sftp_host = CFG.DEFAULT_SFTP_HOST
+            deleted_computer_query.folder_password = CFG.DEFAULT_FOLDER_PASSWORD
             deleted_computer_query.update()
 
             new_computer = deleted_computer_query
@@ -287,6 +288,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 sftp_password=company.default_sftp_password,
                 sftp_folder_path=location.default_sftp_path,
                 sftp_host=CFG.DEFAULT_SFTP_HOST,
+                folder_password=CFG.DEFAULT_FOLDER_PASSWORD,
             )
             new_computer.save()
 
