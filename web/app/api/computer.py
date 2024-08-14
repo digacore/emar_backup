@@ -1,9 +1,18 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 from flask import jsonify, request
 
-from app.models import Computer, LogType, SystemLogType, TelemetrySettings, Location
+from app.controllers import create_log_event, create_system_log
+from app.logger import logger
+from app.models import (
+    Computer,
+    Location,
+    LogType,
+    SystemLogType,
+    TelemetrySettings,
+    Company,
+)
 from app.schema import (
     ComputerRegInfo,
     ComputerRegInfoLid,
@@ -11,17 +20,13 @@ from app.schema import (
     TelemetryRequestId,
 )
 from app.views.blueprint import BlueprintApi
-from app.controllers import create_log_event, create_system_log
-from app.logger import logger
 from app.views.utils import get_telemetry_settings_for_computer
-
 from config import BaseConfig as CFG
-
 
 computer_blueprint = BlueprintApi("/computer", __name__)
 
 
-@computer_blueprint.post("/register_computer")
+@computer_blueprint.post("/")
 @logger.catch
 def register_computer(body: ComputerRegInfo):
     # TODO use some token to secure api routes
@@ -70,14 +75,9 @@ def register_computer(body: ComputerRegInfo):
                 activated=False,
                 device_type=body.device_type,
                 device_role=body.device_role,
-                deactivated_at=datetime.now(timezone.utc),
+                deactivated_at=datetime.utcnow(),
                 logs_enabled=body.enable_logs,
-                last_time_logs_enabled=datetime.now(timezone.utc)
-                if body.enable_logs
-                else None,
-                last_time_logs_disabled=None
-                if body.enable_logs
-                else datetime.now(timezone.utc),
+                last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
             )
             new_computer.save()
 
@@ -231,6 +231,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
         identifier_key=body.identifier_key, computer_name=body.computer_name
     ).first()
     location: Location = Location.query.filter_by(id=body.lid).first()
+    company: Company = Company.query.filter_by(id=location.company_id).first()
     computer_name: Computer = Computer.query.filter_by(
         computer_name=body.computer_name
     ).first()
@@ -261,6 +262,11 @@ def register_computer_lid(body: ComputerRegInfoLid):
             deleted_computer_query.device_role = body.device_role
             deleted_computer_query.logs_enabled = body.enable_logs
             deleted_computer_query.activated = body.activate_device
+            deleted_computer_query.sftp_username = company.default_sftp_username
+            deleted_computer_query.sftp_password = company.default_sftp_password
+            deleted_computer_query.sftp_folder_path = location.default_sftp_path
+            deleted_computer_query.sftp_host = CFG.DEFAULT_SFTP_HOST
+            deleted_computer_query.folder_password = CFG.DEFAULT_FOLDER_PASSWORD
             deleted_computer_query.update()
 
             new_computer = deleted_computer_query
@@ -274,14 +280,15 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 device_role=body.device_role,
                 logs_enabled=body.enable_logs,
                 activated=body.activate_device,
-                last_time_logs_enabled=datetime.now(timezone.utc)
-                if body.enable_logs
-                else None,
-                last_time_logs_disabled=None
-                if body.enable_logs
-                else datetime.now(timezone.utc),
+                last_time_logs_enabled=datetime.utcnow() if body.enable_logs else None,
+                last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
                 location_id=location.id,
                 company_id=location.company_id,
+                sftp_username=company.default_sftp_username,
+                sftp_password=company.default_sftp_password,
+                sftp_folder_path=location.default_sftp_path,
+                sftp_host=CFG.DEFAULT_SFTP_HOST,
+                folder_password=CFG.DEFAULT_FOLDER_PASSWORD,
             )
             new_computer.save()
 
@@ -294,7 +301,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
             jsonify(
                 status="success",
                 message="Supplying credentials",
-                host=new_computer.sftp_host,
+                host=new_computer.manager_host,
                 company_name=new_computer.company_name,
                 location_name=new_computer.location_name,
                 sftp_username=new_computer.sftp_username,
@@ -330,7 +337,6 @@ def register_computer_lid(body: ComputerRegInfoLid):
             ),
             200,
         )
-
     else:
         message = "Wrong request data."
         logger.info("Computer registration failed. Reason: {}", message)

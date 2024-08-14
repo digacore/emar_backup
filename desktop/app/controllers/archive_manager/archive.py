@@ -102,6 +102,7 @@ class Archive:
         return items
 
     def delete(self, item: str):
+        logger.info("Deleting item {}", item)
         args = [self.seven_zip, "d", "-r", self.path, item]
         if self.password:
             args += [f"-p{self.password}"]
@@ -116,3 +117,5 @@ class Archive:
             if stderr_res:
                 raise ArchiveException(stderr_res.decode())
             raise ArchiveException(stdout_res.decode())
+        logger.info("Output for stdout {}", stdout_res.decode())
+        logger.info("Output for stderr {}", stderr_res.decode())

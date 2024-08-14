@@ -1,22 +1,21 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
+from app.logger import logger
 from app.models import (
     Company,
-    Location,
     Computer,
     ComputerStatus,
     DeviceRole,
+    Location,
     LocationStatus,
 )
-from app.logger import logger
-
 from config import BaseConfig as CFG
 
 
 def update_companies_locations_statistic():
     logger.info("<-----Start Updating Companies and Locations statistics----->")
 
-    current_east_time = CFG.offset_to_est(datetime.now(timezone.utc), True)
+    current_east_time = CFG.offset_to_est(datetime.utcnow(), True)
 
     # NOTE Update number of Locations and Computers in Companies
     companies = Company.query.all()

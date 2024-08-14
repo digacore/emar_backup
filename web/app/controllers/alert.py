@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import Query
@@ -33,11 +33,11 @@ def send_critical_alert():
     CLI command for celery worker.
     Sends critical alerts to users when location is offline (all the computers in the location are offline).
     """
-    current_east_time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
+    current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
     logger.info(
         "<---Start sending critical alerts. Time: {}--->",
-        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Select all the active locations (except connected to trial and deactivated companies)
@@ -182,11 +182,11 @@ def send_primary_computer_alert():
     CLI command for celery worker.
     Sends alerts to users when primary computer goes down.
     """
-    current_east_time: datetime = CFG.offset_to_est(datetime.now(timezone.utc), True)
+    current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
     logger.info(
         "<---Start sending primary computer down alerts. Time: {}--->",
-        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Get all the active primary computers which downloaded last backup more than 2 hour ago
@@ -478,7 +478,7 @@ def send_daily_summary():
 
     logger.info(
         "<---Start sending daily summary. Time: {}--->",
-        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Select all the companies except global, trial and deactivated
@@ -489,9 +489,7 @@ def send_daily_summary():
     ).all()
 
     for company in companies:
-        current_east_time: datetime = CFG.offset_to_est(
-            datetime.now(timezone.utc), True
-        )
+        current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
         offline_company_computers_query: Query = m.Computer.query.filter(
             and_(
@@ -521,9 +519,9 @@ def send_daily_summary():
 
         # TODO: divide with usage of locations (smaller loop)
         # Create dictionary with locations as keys and list of computers as values
-        computers_by_location: dict[
-            str, s.ComputersByLocation
-        ] = divide_computers_by_location(offline_company_computers_query.all())
+        computers_by_location: dict[str, s.ComputersByLocation] = (
+            divide_computers_by_location(offline_company_computers_query.all())
+        )
 
         # Send company level summary
         if company_level_users:
@@ -559,7 +557,7 @@ def send_weekly_summary():
 
     logger.info(
         "<---Start sending weekly summaries. Time: {}--->",
-        datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
     # Select all the companies except global and deactivated
@@ -589,9 +587,9 @@ def send_weekly_summary():
         ) = company_users_by_permission(company)
 
         # Create dictionary with locations as keys and list of computers as values
-        company_computers_by_location: dict[
-            str, s.ComputersByLocation
-        ] = divide_computers_by_location(company_computers_query.all())
+        company_computers_by_location: dict[str, s.ComputersByLocation] = (
+            divide_computers_by_location(company_computers_query.all())
+        )
 
         # Send company level summary
         if company_level_users:
@@ -608,6 +606,7 @@ def send_weekly_summary():
                         primary_computers_offline=company.primary_computers_offline,
                         total_offline_computers=company.total_offline_computers,
                         total_offline_locations=company.total_offline_locations,
+                        total_locations=company.locations_per_company,
                         computers_by_location=company_computers_by_location,
                         is_company_trial=company.is_trial,
                     ),
@@ -649,9 +648,9 @@ def send_weekly_summary():
                     continue
 
                 # Create dictionary with locations as keys and list of computers as values
-                group_computers_by_location: dict[
-                    str, s.ComputersByLocation
-                ] = divide_computers_by_location(group_computers_query.all())
+                group_computers_by_location: dict[str, s.ComputersByLocation] = (
+                    divide_computers_by_location(group_computers_query.all())
+                )
 
                 try:
                     send_email(
@@ -697,7 +696,7 @@ def send_weekly_summary():
                 online_computers = activated_computers_query.filter(
                     m.Computer.last_download_time.is_not(None),
                     m.Computer.last_download_time
-                    >= CFG.offset_to_est(datetime.now(timezone.utc), True)
+                    >= CFG.offset_to_est(datetime.utcnow(), True)
                     - timedelta(hours=1, minutes=30),
                 ).count()
 

@@ -71,8 +71,12 @@ def login():
                 "danger",
             )
             return render_template("auth/login.html", form=form)
-
-        flash("Wrong user ID or password.", "danger")
+        else:
+            flash("Invalid user ID or password.", "danger")
+            logger.warning("Invalid user ID or password. {}", form.errors)
+            return render_template("auth/login.html", form=form)
+    logger.warning("Login error: {}", form.errors)
+    flash("Login error", "danger")
     return render_template("auth/login.html", form=form)
 
 
@@ -183,6 +187,23 @@ def callback():
             "danger",
         )
         return redirect(url_for("auth.login"))
+    elif user and user.is_deleted:
+        user.is_deleted = False
+        user.update()
+        flash(
+            "This user is deactivated. Contact Contact sales@emarvault.com to activate the account!",
+            "danger",
+        )
+        return redirect(url_for("auth.login"))
+    elif user and user.activated:
+        # Begin user session by logging the user in
+        login_user(user)
+        user.last_time_online = CFG.offset_to_est(
+            datetime.now().replace(microsecond=0), True
+        )
+        user.update()
+        flash("Login successful.", "success")
+        return redirect(url_for("main.index"))
 
 
 @auth_blueprint.route("/logout")

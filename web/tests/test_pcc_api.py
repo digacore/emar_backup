@@ -1,18 +1,18 @@
-import pytest
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
+import pytest
 from flask import current_app
 from werkzeug.exceptions import HTTPException
 
-from app import models as m, schema as s
+from app import models as m
+from app import schema as s
 from app.controllers import (
-    get_pcc_2_legged_token,
+    check_daily_requests_count,
     get_activations,
     get_org_facilities_list,
+    get_pcc_2_legged_token,
     update_daily_requests_count,
-    check_daily_requests_count,
 )
-
 
 # NOTE: These tests are skipped by default because they require next things:
 # 1. The machine should be under the USA VPN or in the USA localization
@@ -51,7 +51,7 @@ def test_check_daily_requests_count(client, test_db):
 
     # Test case when current time is after the oldest reset time
     new_row = m.PCCDailyRequest(
-        reset_time=(datetime.now(timezone.utc) - timedelta(hours=3)),
+        reset_time=(datetime.utcnow() - timedelta(hours=3)),
         requests_count=current_app.config["PCC_DAILY_QUOTA_LIMIT"] - 100,
     )
     new_row.save()
@@ -60,7 +60,7 @@ def test_check_daily_requests_count(client, test_db):
 
     # Test case when requests number is less than limit
     new_row = m.PCCDailyRequest(
-        reset_time=(datetime.now(timezone.utc) + timedelta(hours=3)),
+        reset_time=(datetime.utcnow() + timedelta(hours=3)),
         requests_count=current_app.config["PCC_DAILY_QUOTA_LIMIT"] - 100,
     )
     new_row.save()
@@ -72,7 +72,7 @@ def test_check_daily_requests_count(client, test_db):
 
     # Test case when requests number is more than limit
     new_row = m.PCCDailyRequest(
-        reset_time=(datetime.now(timezone.utc) + timedelta(hours=3)),
+        reset_time=(datetime.utcnow() + timedelta(hours=3)),
         requests_count=current_app.config["PCC_DAILY_QUOTA_LIMIT"],
     )
     new_row.save()

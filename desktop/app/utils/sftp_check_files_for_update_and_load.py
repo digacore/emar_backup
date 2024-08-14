@@ -79,15 +79,15 @@ def add_file_to_zip(credentials: s.ConfigResponse, tempdir: str) -> str:
             raise AppError("Can't add file to zip")
 
     logger.info("Files zipped.")
-    # Check if there are more than 12 backups in the emar_backups.zip
+    # Check if there are more than 6 backups in the emar_backups.zip
     for dir in archive.dir():
         dir_count = len(archive.dir(dir.name))
         last_path = archive.dir(dir.name)[0].name if dir_count > 0 else ""
-        if dir_count > 12:
-            logger.info("More than 12 backups for location {}. Deleting the oldest ones.", dir.name)
-            diff = dir_count - 12
+        if dir_count > 6:
+            logger.info("More than 6 backups for location {}. Deleting the oldest ones.", dir.name)
+            diff = dir_count - 6
             for _ in range(diff):
-                archive.delete(dir.name + "/" + archive.dir(dir.name)[0].name)
+                archive.delete(archive.dir(dir.name)[0].name)
 
     return last_path
 
@@ -97,7 +97,7 @@ Location = namedtuple("Location", ["location_name", "sftp_folder_path"])
 
 def create_location_list(credentials: s.ConfigFile) -> list[Location]:
     loc = Location(credentials.location_name, credentials.sftp_folder_path)
-    if loc.location_name == "":
+    if loc.location_name.strip() == "":
         raise ValueError("Location name is empty.")
     locations_list = [loc]
     for location in credentials.additional_locations:
@@ -209,7 +209,7 @@ def sftp_check_files_for_update_and_load(credentials: s.ConfigResponse):
                         #     continue
 
                         # get and create local temp directory if not exists
-                        local_temp_emar_dir = os.path.join(tempdir, loc.location_name, Path(marked_dir))
+                        local_temp_emar_dir = os.path.join(tempdir, loc.location_name.strip(), Path(marked_dir))
                         local_file_path = os.path.join(local_temp_emar_dir, Path(filepath).name)
 
                         if not os.path.exists(local_temp_emar_dir):

@@ -1,14 +1,14 @@
-from datetime import datetime, timedelta, timezone
-from flask import render_template, Blueprint, request, abort, current_app
-from flask_login import login_required, current_user
+from datetime import datetime, timedelta
 
-from app import models as m, db
-from app.controllers import create_pagination, backup_log_on_request_to_view
+from flask import Blueprint, abort, current_app, render_template, request
+from flask_login import current_user, login_required
 
-from .utils import has_access_to_company, has_access_to_computer, has_access_to_location
-
+from app import db
+from app import models as m
+from app.controllers import backup_log_on_request_to_view, create_pagination
 from config import BaseConfig as CFG
 
+from .utils import has_access_to_company, has_access_to_computer, has_access_to_location
 
 info_blueprint = Blueprint("info", __name__, url_prefix="/info")
 
@@ -38,7 +38,7 @@ def computer_info(computer_id):
     # Paginated logs for table
     computer_logs_query = m.BackupLog.query.filter(
         m.BackupLog.computer_id == computer_id,
-        m.BackupLog.end_time >= datetime.now(timezone.utc) - timedelta(days=90),
+        m.BackupLog.end_time >= datetime.utcnow() - timedelta(days=90),
     )
 
     last_log = computer_logs_query.order_by(m.BackupLog.start_time.desc()).first()
@@ -65,8 +65,7 @@ def computer_info(computer_id):
     logs_for_chart = (
         m.BackupLog.query.filter(
             m.BackupLog.computer_id == computer_id,
-            m.BackupLog.end_time
-            >= datetime.now(timezone.utc) - timedelta(days=chart_days),
+            m.BackupLog.end_time >= datetime.utcnow() - timedelta(days=chart_days),
         )
         .order_by(m.BackupLog.start_time.asc())
         .all()
@@ -82,14 +81,14 @@ def computer_info(computer_id):
     if logs_for_chart:
         # Set the start time for the chart (eastern time - chart_days)
         log_time = CFG.offset_to_est(
-            datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0), True
+            datetime.utcnow().replace(minute=0, second=0, microsecond=0), True
         ) - timedelta(days=chart_days)
         log_to_use_index = 0
 
         current_log_type = None
 
         # Fill all the list objects with data for every hour
-        while log_time < CFG.offset_to_est(datetime.now(timezone.utc), True):
+        while log_time < CFG.offset_to_est(datetime.utcnow(), True):
             labels.append(log_time)
             notes.append(logs_for_chart[log_to_use_index].notes)
 
@@ -155,7 +154,7 @@ def system_log_info():
     q = request.args.get("q", type=str, default=None)
 
     system_logs_query = m.SystemLog.query.filter(
-        m.SystemLog.created_at >= datetime.now(timezone.utc) - timedelta(days=days),
+        m.SystemLog.created_at >= datetime.utcnow() - timedelta(days=days),
     )
 
     if logs_type not in LOGS_TYPES:
@@ -212,7 +211,7 @@ def system_log_info():
 
     pcc_daily_requests_limit: int = int(current_app.config["PCC_DAILY_QUOTA_LIMIT"])
     pcc_daily_requests_count: m.PCCDailyRequest | None = m.PCCDailyRequest.query.filter(
-        m.PCCDailyRequest.reset_time >= datetime.now(timezone.utc)
+        m.PCCDailyRequest.reset_time >= datetime.utcnow()
     ).first()
     usage_percent = (
         int(pcc_daily_requests_count.requests_count / pcc_daily_requests_limit * 100)

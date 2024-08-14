@@ -1,36 +1,32 @@
 import enum
-from datetime import datetime, timezone
-
-from sqlalchemy import func, Enum, select, and_
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.hybrid import hybrid_property
-from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 from flask import flash
-from flask_login import current_user, UserMixin, AnonymousUserMixin
-from flask_admin.model.template import EditRowAction, DeleteRowAction
-from flask_admin.contrib.sqla import tools
 from flask_admin.babel import gettext
-from config import BaseConfig as CFG
+from flask_admin.contrib.sqla import tools
+from flask_admin.model.template import DeleteRowAction, EditRowAction
+from flask_login import AnonymousUserMixin, UserMixin, current_user
+from sqlalchemy import Enum, and_, func, select
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
+from app.logger import logger
 from app.models.utils import (
+    ActivatedMixin,
     ModelMixin,
+    QueryWithSoftDelete,
     RowActionListMixin,
     SoftDeleteMixin,
-    QueryWithSoftDelete,
-    ActivatedMixin,
 )
-
 from app.utils import MyModelView
-from app.logger import logger
+from config import BaseConfig as CFG
 
 from .company import Company
 from .location import Location
 from .location_group import LocationGroup
-
 from .system_log import SystemLogType
-
 
 users_to_group = db.Table(
     "users_to_group",
@@ -139,7 +135,7 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         self.location_group = []
 
         self.is_deleted = True
-        self.deleted_at = datetime.now(timezone.utc)
+        self.deleted_at = datetime.utcnow()
 
         if commit:
             db.session.commit()
@@ -153,7 +149,7 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         return self
 
     def deactivate(
-        self, deactivated_at: datetime = datetime.now(timezone.utc), commit: bool = True
+        self, deactivated_at: datetime = datetime.utcnow(), commit: bool = True
     ):
         self.activated = False
         self.deactivated_at = deactivated_at
@@ -432,7 +428,7 @@ class UserView(RowActionListMixin, MyModelView):
                 if form.activated.data:
                     model.deactivated_at = None
                 else:
-                    model.deactivated_at = datetime.now(timezone.utc)
+                    model.deactivated_at = datetime.utcnow()
 
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -444,7 +440,7 @@ class UserView(RowActionListMixin, MyModelView):
                 form.populate_obj(model)
 
                 if not form.activated.data:
-                    model.deactivated_at = datetime.now(timezone.utc)
+                    model.deactivated_at = datetime.utcnow()
 
                 self.session.add(model)
                 self._on_model_change(form, model, True)
@@ -509,7 +505,7 @@ class UserView(RowActionListMixin, MyModelView):
         try:
             # If user was deactivated
             if not form.activated.data and form.activated.data != model.activated:
-                model.deactivated_at = datetime.now(timezone.utc)
+                model.deactivated_at = datetime.utcnow()
 
             form.populate_obj(model)
             self._on_model_change(form, model, False)

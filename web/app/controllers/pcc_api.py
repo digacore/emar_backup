@@ -1,16 +1,17 @@
-import os
 import json
+import os
 import time
-import requests
-from requests.exceptions import HTTPError
+from datetime import datetime, timedelta
 from urllib.parse import urljoin
-from datetime import datetime, timedelta, timezone
+
+import requests
+from flask import abort, current_app
 from pydantic import ValidationError
+from requests.exceptions import HTTPError
 
-from flask import current_app, abort
-
+from app import models as m
+from app import schema as s
 from app.logger import logger
-from app import models as m, schema as s
 from app.utils import get_base64_string
 from config import BaseConfig as CFG
 
@@ -31,9 +32,7 @@ def update_daily_requests_count(reset_time: int, remaining_requests: int) -> Non
         remaining_requests (int): remaining requests count
     """
     # Convert epoch time to datetime
-    reset_time_as_date: datetime = datetime.fromtimestamp(
-        reset_time / 1000, timezone.utc
-    )
+    reset_time_as_date: datetime = datetime.utcfromtimestamp(reset_time / 1000)
 
     used_requests = current_app.config["PCC_DAILY_QUOTA_LIMIT"] - remaining_requests
 
@@ -60,7 +59,7 @@ def check_daily_requests_count() -> None:
     """
     # Get the valid requests count for current time
     current_requests_number: m.PCCDailyRequest | None = m.PCCDailyRequest.query.filter(
-        m.PCCDailyRequest.reset_time > datetime.now(timezone.utc)
+        m.PCCDailyRequest.reset_time > datetime.utcnow()
     ).first()
 
     # If there is no suitable counter for current time - skip
@@ -78,7 +77,7 @@ def check_daily_requests_count() -> None:
     ):
         logger.error(
             "Daily requests limit exceeded [{}]. Current requests count: {}",
-            datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
+            datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
             current_requests_number.requests_count,
         )
         abort(
@@ -457,12 +456,12 @@ def scan_pcc_activations(scan_record_id: int):
     except Exception as e:
         logger.error("Can't generate new creation report. Reason: {}", e)
         scan_record.status = m.ScanStatus.FAILED
-        scan_record.finished_at = datetime.now(timezone.utc)
+        scan_record.finished_at = datetime.utcnow()
         scan_record.error = str(e)
         scan_record.save()
         raise e
 
     scan_record.status = m.ScanStatus.SUCCEED
-    scan_record.finished_at = datetime.now(timezone.utc)
+    scan_record.finished_at = datetime.utcnow()
     scan_record.save()
     logger.info("PCC approving report created successfully")
