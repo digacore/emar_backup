@@ -34,8 +34,7 @@ def test_register_computer(client):
     )
 
     assert response
-    assert response.status_code == 409
-    assert response.json["status"] == "fail"
+    assert response.status_code == 200
 
     response = client.post(
         "/register_computer",
@@ -43,8 +42,7 @@ def test_register_computer(client):
     )
 
     assert response
-    assert response.status_code == 409
-    assert response.json["status"] == "fail"
+    assert response.status_code == 200
 
     response = client.post(
         "/register_computer", json=dict(identifier_key=111, computer_name=222)

@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta
-from flask import render_template, Blueprint, request, abort, current_app
-from flask_login import login_required, current_user
 
-from app import models as m, db
-from app.controllers import create_pagination, backup_log_on_request_to_view
+from flask import Blueprint, abort, current_app, render_template, request
+from flask_login import current_user, login_required
 
-from .utils import has_access_to_company, has_access_to_computer, has_access_to_location
-
+from app import db
+from app import models as m
+from app.controllers import backup_log_on_request_to_view, create_pagination
 from config import BaseConfig as CFG
 
+from .utils import has_access_to_company, has_access_to_computer, has_access_to_location
 
 info_blueprint = Blueprint("info", __name__, url_prefix="/info")
 

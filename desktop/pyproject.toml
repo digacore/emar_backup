@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "emar"
-version = "1.0.117.329626"
+version = "1.0.148.461771"
 description = "Emar runner"
 authors = ["Kostia <saintkos117@gmail.com>"]
 readme = "README.md"
@@ -16,10 +16,10 @@ pyinstaller = "^6.3.0"
 pydantic = "^2.5.2"
 
 [tool.poetry.group.dev.dependencies]
-ruff = "^0.1.7"
 mypy = "^1.7.1"
 pytest = "^7.4.3"
 ipython = "^8.18.1"
+ruff = "^0.3.5"
 
 [build-system]
 requires = ["poetry-core"]

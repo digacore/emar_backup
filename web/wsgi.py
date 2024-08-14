@@ -1,10 +1,10 @@
 #!/user/bin/env python
+from datetime import datetime, timedelta
+
 import click
-from datetime import timedelta, datetime
 
-from app import create_app, db, models, forms
+from app import create_app, db, forms, models
 from app.logger import logger
-
 
 app = create_app()
 

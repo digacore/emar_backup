@@ -80,3 +80,29 @@ def all_locations_list():
     res = [(location.id, location.name) for location in locations]
 
     return jsonify(locations=res), 200
+
+
+@location_blueprint.route("/<int:computer_id>/additional_locations", methods=["GET"])
+@login_required
+def computer_additional_locations(computer_id: int):
+    """Returns if computer has additional locations
+
+    Args:
+        computer_id (int): computer id
+
+    """
+    computer: m.Computer = m.Computer.query.filter_by(id=computer_id).first()
+
+    if not computer:
+        logger.error("Computer with id [{}] not found", computer_id)
+        abort(404, "Computer not found.")
+
+    logger.info("Sending data of compiter {}", computer.computer_name)
+    return (
+        jsonify(
+            additional_locations=[
+                loc.location_id for loc in computer.additional_locations
+            ],
+        ),
+        200,
+    )

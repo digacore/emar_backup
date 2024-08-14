@@ -1,16 +1,17 @@
-import os
 import json
+import os
 import time
-import requests
-from requests.exceptions import HTTPError
-from urllib.parse import urljoin
 from datetime import datetime, timedelta
+from urllib.parse import urljoin
+
+import requests
+from flask import abort, current_app
 from pydantic import ValidationError
+from requests.exceptions import HTTPError
 
-from flask import current_app, abort
-
+from app import models as m
+from app import schema as s
 from app.logger import logger
-from app import models as m, schema as s
 from app.utils import get_base64_string
 from config import BaseConfig as CFG
 

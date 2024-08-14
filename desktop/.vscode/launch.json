@@ -15,7 +15,7 @@
     },
     {
       "name": "computer-delete",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/emar.py",
       "console": "integratedTerminal",
@@ -24,7 +24,7 @@
     },
     {
       "name": "log-convertor",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/emar.py",
       "console": "integratedTerminal",
@@ -33,7 +33,7 @@
     },
     {
       "name": "server-connect",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/emar.py",
       "console": "integratedTerminal",
@@ -41,8 +41,18 @@
       "justMyCode": false
     },
     {
+      "name": "server-connect-local",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--server-connect"],
+      "cwd": "C:\\Program Files\\eMARVault",
+      "justMyCode": false
+    },
+    {
       "name": "Python: Current File",
-      "type": "python",
+      "type": "debugpy",
       "request": "launch",
       "program": "${file}",
       "console": "integratedTerminal",

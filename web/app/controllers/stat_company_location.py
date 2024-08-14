@@ -1,15 +1,14 @@
 from datetime import datetime, timedelta
 
+from app.logger import logger
 from app.models import (
     Company,
-    Location,
     Computer,
     ComputerStatus,
     DeviceRole,
+    Location,
     LocationStatus,
 )
-from app.logger import logger
-
 from config import BaseConfig as CFG
 
 

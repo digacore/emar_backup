@@ -1,36 +1,32 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import func, Enum, select, and_
-from sqlalchemy.orm import relationship
-from sqlalchemy.ext.hybrid import hybrid_property
-from werkzeug.security import generate_password_hash, check_password_hash
-
 from flask import flash
-from flask_login import current_user, UserMixin, AnonymousUserMixin
-from flask_admin.model.template import EditRowAction, DeleteRowAction
-from flask_admin.contrib.sqla import tools
 from flask_admin.babel import gettext
-from config import BaseConfig as CFG
+from flask_admin.contrib.sqla import tools
+from flask_admin.model.template import DeleteRowAction, EditRowAction
+from flask_login import AnonymousUserMixin, UserMixin, current_user
+from sqlalchemy import Enum, and_, func, select
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import relationship
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
+from app.logger import logger
 from app.models.utils import (
+    ActivatedMixin,
     ModelMixin,
+    QueryWithSoftDelete,
     RowActionListMixin,
     SoftDeleteMixin,
-    QueryWithSoftDelete,
-    ActivatedMixin,
 )
-
 from app.utils import MyModelView
-from app.logger import logger
+from config import BaseConfig as CFG
 
 from .company import Company
 from .location import Location
 from .location_group import LocationGroup
-
 from .system_log import SystemLogType
-
 
 users_to_group = db.Table(
     "users_to_group",
@@ -202,7 +198,9 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     @company_name.expression
     def company_name(cls):
-        return select([Company.name]).where(cls.company_id == Company.id).as_scalar()
+        return (
+            select([Company.name]).where(cls.company_id == Company.id).scalar_subquery()
+        )
 
     def __repr__(self):
         return f"<User: {self.username}>"

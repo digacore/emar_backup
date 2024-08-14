@@ -1,5 +1,5 @@
 # ruff: noqa: F401
-from .get_credentials import GetCredentials
+from .get_credentials import GetCredentials, GetPccDownloadData
 from .last_time import LastTime
 from .download_status import DownloadStatus
 from .computer import (
@@ -26,3 +26,4 @@ from .alert import ComputersByLocation
 from .location import LocationInfo
 from .printer_info import PrinterInfoDict, PrinterInfo
 from .agent_telemetry import AgentTelemetry, TelemetryRequestId
+from .download_credentials_info import ComputerCredentialsInfo

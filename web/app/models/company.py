@@ -1,28 +1,28 @@
-from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 
-from sqlalchemy import sql, func, and_, or_
-from sqlalchemy.orm import Query, relationship
-from sqlalchemy.ext.hybrid import hybrid_property, hybrid_method
 from flask import flash
-from flask_login import current_user
-from flask_admin.model.template import EditRowAction, DeleteRowAction
-from flask_admin.contrib.sqla import tools
 from flask_admin.babel import gettext
+from flask_admin.contrib.sqla import tools
+from flask_admin.model.template import DeleteRowAction, EditRowAction
+from flask_login import current_user
+from sqlalchemy import and_, func, or_, sql
+from sqlalchemy.ext.hybrid import hybrid_method, hybrid_property
+from sqlalchemy.orm import Query, relationship
+from zoneinfo import ZoneInfo
 
 from app import db
+from app.logger import logger
 from app.models.utils import (
+    ActivatedMixin,
     ModelMixin,
+    QueryWithSoftDelete,
     RowActionListMixin,
     SoftDeleteMixin,
-    QueryWithSoftDelete,
-    ActivatedMixin,
 )
 from app.utils import MyModelView
-from app.logger import logger
-from .system_log import SystemLogType
-
 from config import BaseConfig as CFG
+
+from .system_log import SystemLogType
 
 
 class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
@@ -470,8 +470,8 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         Returns:
             int: total number of alert events
         """
-        from app.models.location import Location
         from app.models.alert_event import AlertEvent
+        from app.models.location import Location
 
         # If the start_time and end_time has not UTC timezone, then convert it
         if start_time.tzinfo and start_time.tzinfo != ZoneInfo("UTC"):

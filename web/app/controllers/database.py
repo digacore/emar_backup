@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
 
 from app import db
-from app.logger import logger
 from app import models as m
+from app.logger import logger
 from config import BaseConfig as CFG
 
 
