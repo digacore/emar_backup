@@ -89,7 +89,8 @@
       <div class="d-flex flex-column justify-content-start">
         <span class="text-grey mb-1 small text-center">Location Status</span>
         <span class="mb-3 small text-dark text-center"
-          >{{ location.status.value.capitalize()}}</span
+          >{{ location.status.value.capitalize() if location.status else
+          "_"}}</span
         >
       </div>
     </div>

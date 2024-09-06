@@ -566,6 +566,11 @@ class LocationView(RowActionListMixin, MyModelView):
                 if not form.activated.data:
                     model.deactivated_at = datetime.utcnow()
 
+                if not form.computers_max_count and form.company.data.is_trial:
+                    model.computers_max_count = 1
+                elif not form.computers_max_count and not form.company.data.is_trial:
+                    model.computers_max_count = 5
+
                 self.session.add(model)
                 self._on_model_change(form, model, True)
                 self.session.commit()
