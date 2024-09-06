@@ -52,7 +52,7 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     name = db.Column(db.String(64), nullable=False)
     status = db.Column(Enum(LocationStatus), nullable=True)
-    computers__max_count = db.Column(db.Integer, server_default="1", nullable=False)
+    computers_max_count = db.Column(db.Integer, server_default="1", nullable=False)
     default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
@@ -357,7 +357,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_per_location",
         "computers_online",
         "computers_offline",
-        "computers__max_count",
+        "computers_max_count",
         "default_sftp_path",
         "pcc_fac_id",
         "use_pcc_backup",
@@ -392,7 +392,7 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_per_location",
         "computers_online",
         "computers_offline",
-        "computers__max_count",
+        "computers_max_count",
         "created_at",
         "pcc_fac_id",
         "use_pcc_backup",
@@ -620,7 +620,9 @@ class LocationView(RowActionListMixin, MyModelView):
             company.is_trial
             and model.total_computers >= 1
             or company.is_trial is False
-            and model.total_computers >= model.computers__max_count
+            and model.total_computers >= model.computers_max_count
+            or company.is_trial
+            and form.computers_max_count.data > 1
         ):
             inform_alert = render_template(
                 "email/exceeded_limit_email.html",
