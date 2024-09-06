@@ -630,7 +630,7 @@ class LocationView(RowActionListMixin, MyModelView):
 
             send_email(
                 subject=f"{company.name} - {model.name} Has Exceeded the Maximum Computer Limit",
-                recipients=[CFG.SUPPORT_SALES_EMAIL],  # sales@emarvault.com
+                recipients=[CFG.SUPPORT_SALES_EMAIL],
                 html=inform_alert,
             )
         try:

@@ -942,7 +942,7 @@ class ComputerView(RowActionListMixin, MyModelView):
 
                 send_email(
                     subject=f"{location.company_name} - {location.name} Has Exceeded the Maximum Computer Limit",
-                    recipients=[CFG.SUPPORT_SALES_EMAIL],  # sales@emarvault.com
+                    recipients=[CFG.SUPPORT_SALES_EMAIL],
                     html=inform_alert,
                 )
             elif (
@@ -958,7 +958,7 @@ class ComputerView(RowActionListMixin, MyModelView):
 
                 send_email(
                     subject=f"{location.company_name} - {location.name} Has Exceeded the Maximum Computer Limit",
-                    recipients=[CFG.SUPPORT_SALES_EMAIL],  # sales@emarvault.com
+                    recipients=[CFG.SUPPORT_SALES_EMAIL],
                     html=inform_alert,
                 )
 
