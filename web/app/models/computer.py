@@ -2,7 +2,7 @@ import enum
 from copy import copy
 from datetime import datetime, timedelta
 
-from flask import flash
+from flask import flash, render_template
 from flask_admin.babel import gettext
 from flask_admin.contrib.sqla import tools
 from flask_admin.model.template import DeleteRowAction, EditRowAction
@@ -22,6 +22,7 @@ from app.models.utils import (
     SoftDeleteMixin,
 )
 from app.utils import MyModelView
+from app.utils.send_email import send_email
 from config import BaseConfig as CFG
 
 from .additional_location import AdditionalLocation
@@ -933,36 +934,33 @@ class ComputerView(RowActionListMixin, MyModelView):
                 and location_activated_computers
                 > CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
             ):
-                flash(
-                    gettext(
-                        "Could not activate the new computer.\
-                        Limit of 1 computer per location while using eMAR Vault Lite edition.\
-                        Contact sales@emarvault.com to upgrade!"
-                    ),
-                    "error",
-                )
-                logger.error(
-                    "Failed to update record. Locations of the trial company can have only one computer."
+                inform_alert = render_template(
+                    "email/exceeded_limit_email.html",
+                    location=location,
+                    computers=location.computers,
                 )
 
-                return False
+                send_email(
+                    subject=f"{location.company_name} - {location.name} Has Exceeded the Maximum Computer Limit",
+                    recipients=[CFG.SUPPORT_SALES_EMAIL],
+                    html=inform_alert,
+                )
             elif (
                 not location.company.is_trial
                 and location_activated_computers
                 >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
             ):
-                flash(
-                    gettext(
-                        "Could not activate the new computer. \
-                        Limit of 5 computers per location while using eMAR Vault Pro edition."
-                    ),
-                    "error",
-                )
-                logger.error(
-                    "Failed to update record. Locations can have only 5 computers."
+                inform_alert = render_template(
+                    "email/exceeded_limit_email.html",
+                    location=location,
+                    computers=location.computers,
                 )
 
-                return False
+                send_email(
+                    subject=f"{location.company_name} - {location.name} Has Exceeded the Maximum Computer Limit",
+                    recipients=[CFG.SUPPORT_SALES_EMAIL],
+                    html=inform_alert,
+                )
 
         # check if there was additional_locations added
         if form.additional_locations.data:

@@ -1,6 +1,6 @@
 def test_delete_computer(client):
     response = client.post(
-        "/register_computer",
+        "/",
         json=dict(identifier_key="new_computer", computer_name="new_test_computer"),
     )
 
