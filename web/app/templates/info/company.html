@@ -40,14 +40,25 @@
                 <div class="col">
                   <div class="col">
                     <div class="progress progress-sm mr-2">
+                      {% if company.total_online_locations > 0 %}
                       <div
                         class="progress-bar bg-danger"
                         role="progressbar"
-                        style="width: {{ (company.total_offline_locations/(company.locations|length))*100 }}%"
+                            style="width: {{ (company.total_offline_locations / (company.locations|length)) * 100 }}%"
                         aria-valuenow="50"
                         aria-valuemin="0"
                         aria-valuemax="100"
                       ></div>
+                      {% else %}
+                      <div
+                        class="progress-bar bg-danger"
+                        role="progressbar"
+                        style="width: 0%"
+                        aria-valuenow="50"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      ></div>
+                      {% endif %}
                     </div>
                   </div>
                 </div>
@@ -91,14 +102,25 @@
                 <div class="col">
                   <div class="col">
                     <div class="progress progress-sm mr-2">
+                       {% if company.total_online_locations > 0 %}
                       <div
-                        class="progress-bar bg-success"
+                        class="progress-bar bg-danger"
                         role="progressbar"
-                        style="width: {{ (company.total_online_locations/(company.locations|length))*100 }}%"
+                            style="width: {{ (company.total_offline_locations / (company.locations|length)) * 100 }}%"
                         aria-valuenow="50"
                         aria-valuemin="0"
                         aria-valuemax="100"
                       ></div>
+                      {% else %}
+                      <div
+                        class="progress-bar bg-danger"
+                        role="progressbar"
+                        style="width: 0%"
+                        aria-valuenow="50"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      ></div>
+                      {% endif %}
                     </div>
                   </div>
                 </div>

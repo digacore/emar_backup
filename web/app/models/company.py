@@ -652,7 +652,15 @@ class CompanyView(RowActionListMixin, MyModelView):
 
                 form.populate_obj(model)
                 self.session.add(model)
-                if form.is_trial.data and form.computers_max_count.data > 1:
+                if not form.computers_max_count.data and form.is_trial.data:
+                    model.computers_max_count = 1
+                elif not form.computers_max_count.data and not form.is_trial.data:
+                    model.computers_max_count = 5
+                if (
+                    form.is_trial.data
+                    and form.computers_max_count.data
+                    and form.computers_max_count.data > 1
+                ):
                     inform_alert = render_template(
                         "email/exceeded_limit_email.html",
                         company=model,
