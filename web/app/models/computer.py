@@ -775,42 +775,22 @@ class ComputerView(RowActionListMixin, MyModelView):
 
                 return False
 
-            if (
-                location.company.is_trial
-                and location_activated_computers
-                > CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
-            ):
-                flash(
-                    gettext(
-                        "Could not activate the new computer.\
-                        Limit of 1 computer per location while using eMAR Vault Lite edition.\
-                        Contact sales@emarvault.com to upgrade!"
-                    ),
-                    "error",
-                )
-                logger.error(
-                    "Failed to create record. Locations of the trial company can have only one computer."
+            if location_activated_computers > company.computers_max_count:
+                inform_alert = render_template(
+                    "email/exceeded_limit_email.html",
+                    company=company,
+                    location=location,
+                    max_count=company.computers_max_count,
+                    company_name=company.name,
+                    location_name=location.name,
+                    computers=location.computers,
                 )
 
-                return False
-            elif (
-                not location.company.is_trial
-                and location_activated_computers
-                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
-            ):
-                flash(
-                    gettext(
-                        "Could not activate the new computer. \
-                        Limit of 5 computers per location while using eMAR Vault Pro edition."
-                    ),
-                    "error",
+                send_email(
+                    subject=f"{company.name} - {location.name} Has Exceeded the Maximum Computer Limit",
+                    recipients=[CFG.SUPPORT_SALES_EMAIL],
+                    html=inform_alert,
                 )
-                logger.error(
-                    "Failed to create record. Locations can have only 5 computers."
-                )
-
-                return False
-
         try:
             # Check if there is deleted computer with such name
             deleted_computer = (
@@ -929,35 +909,19 @@ class ComputerView(RowActionListMixin, MyModelView):
 
                 return False
 
-            if (
-                location.company.is_trial
-                and location_activated_computers
-                > CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
-            ):
+            if location_activated_computers > company.computers_max_count:
                 inform_alert = render_template(
                     "email/exceeded_limit_email.html",
+                    company=company,
                     location=location,
+                    max_count=company.computers_max_count,
+                    company_name=company.name,
+                    location_name=location.name,
                     computers=location.computers,
                 )
 
                 send_email(
-                    subject=f"{location.company_name} - {location.name} Has Exceeded the Maximum Computer Limit",
-                    recipients=[CFG.SUPPORT_SALES_EMAIL],
-                    html=inform_alert,
-                )
-            elif (
-                not location.company.is_trial
-                and location_activated_computers
-                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
-            ):
-                inform_alert = render_template(
-                    "email/exceeded_limit_email.html",
-                    location=location,
-                    computers=location.computers,
-                )
-
-                send_email(
-                    subject=f"{location.company_name} - {location.name} Has Exceeded the Maximum Computer Limit",
+                    subject=f"{company.name} - {location.name} Has Exceeded the Maximum Computer Limit",
                     recipients=[CFG.SUPPORT_SALES_EMAIL],
                     html=inform_alert,
                 )

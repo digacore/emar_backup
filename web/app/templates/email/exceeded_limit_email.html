@@ -19,18 +19,21 @@ Total Location Computers: ##
     text-align: left;
   "
 >
-  {{location.company_name}} - Location: {{ location.name }} Has Exceeded the
+  {{company_name}} -{%if location %} Location: {{ location.name }}{% endif %} Has Exceeded the
   Maximum Computer Limit
 </p>
 
 <p style="font-size: 1rem; margin: 20px 0 0 0; text-align: left">
-  Company Max: {{ location.max_computers }}
+  Company Max: {{ max_count }}
 </p>
 
+{% if location %}
 <p style="font-size: 1rem; margin: 20px 0 0 0; text-align: left">
   Total Location Computers: {{ location.computers|length }}
 </p>
+{% endif %}
 
+{% if computers %}
 <div style="width: 100%; margin-bottom: 20px; margin-top: 20px">
 <table style="width: 100%">
 <thead class="text-sm text-center" style="color: #4e73df">
@@ -69,6 +72,7 @@ Total Location Computers: ##
     </tbody>
 </table>
 </div>
+{% endif %}
 
 <hr style="margin: 20px 0; border: 1px solid #dcdee4" />
 

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from flask import flash
+from flask import flash, render_template
 from flask_admin.babel import gettext
 from flask_admin.contrib.sqla import tools
 from flask_admin.model.template import DeleteRowAction, EditRowAction
@@ -20,6 +20,7 @@ from app.models.utils import (
     SoftDeleteMixin,
 )
 from app.utils import MyModelView
+from app.utils.send_email import send_email
 from config import BaseConfig as CFG
 
 from .system_log import SystemLogType
@@ -39,6 +40,7 @@ class Company(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     total_computers = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
     computers_offline = db.Column(db.Integer)
+    computers_max_count = db.Column(db.Integer, server_default="1")
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     pcc_org_id = db.Column(db.String(128), nullable=True)
     created_from_pcc = db.Column(
@@ -507,6 +509,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "total_computers",
         "computers_online",
         "computers_offline",
+        "computers_max_count",
         "pcc_org_id",
         "created_from_pcc",
     ]
@@ -514,6 +517,7 @@ class CompanyView(RowActionListMixin, MyModelView):
     column_labels = dict(
         pcc_org_id="PointClickCare Org ID",
         created_from_pcc="Created from PointClickCare",
+        computers_max_count="Max Computers",
     )
 
     column_filters = column_list
@@ -532,6 +536,7 @@ class CompanyView(RowActionListMixin, MyModelView):
         "total_computers",
         "computers_online",
         "computers_offline",
+        "computers_max_count",
         "created_at",
         "pcc_org_id",
     )
@@ -647,6 +652,22 @@ class CompanyView(RowActionListMixin, MyModelView):
 
                 form.populate_obj(model)
                 self.session.add(model)
+                if form.is_trial.data and form.computers_max_count.data > 1:
+                    inform_alert = render_template(
+                        "email/exceeded_limit_email.html",
+                        company=model,
+                        location=None,
+                        max_count=form.computers_max_count.data,
+                        company_name=form.name.data,
+                        location_name="",
+                        computers=None,
+                    )
+
+                    send_email(
+                        subject=f"{form.name.data} Has Exceeded the Maximum Computer Limit",
+                        recipients=[CFG.SUPPORT_SALES_EMAIL],
+                        html=inform_alert,
+                    )
                 self._on_model_change(form, model, True)
                 self.session.commit()
         except Exception as ex:
@@ -677,6 +698,22 @@ class CompanyView(RowActionListMixin, MyModelView):
         from app.models.computer import Computer, DeviceRole
 
         try:
+            if model.is_trial and form.computers_max_count.data > 1:
+                inform_alert = render_template(
+                    "email/exceeded_limit_email.html",
+                    company=model,
+                    location=None,
+                    max_count=form.computers_max_count.data,
+                    company_name=form.name.data,
+                    location_name="",
+                    computers=None,
+                )
+
+                send_email(
+                    subject=f"{form.name.data} Has Exceeded the Maximum Computer Limit",
+                    recipients=[CFG.SUPPORT_SALES_EMAIL],
+                    html=inform_alert,
+                )
             # If company changed to trial - deactivate computers in its locations
             if form.is_trial.data and not model.is_trial:
                 for location in model.locations:
