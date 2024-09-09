@@ -26,7 +26,7 @@ from config import BaseConfig as CFG
 computer_blueprint = BlueprintApi("/computer", __name__)
 
 
-@computer_blueprint.post("/")
+@computer_blueprint.post("/register_computer")
 @logger.catch
 def register_computer(body: ComputerRegInfo):
     # TODO use some token to secure api routes
