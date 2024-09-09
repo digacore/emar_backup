@@ -11,7 +11,7 @@ def test_get_computers(client):
 
 def test_register_computer(client):
     response = client.post(
-        "/",
+        "/register_computer",
         json=dict(
             identifier_key="new_computer",
             computer_name="new_test_computer",
@@ -29,7 +29,7 @@ def test_register_computer(client):
     assert computer
 
     response = client.post(
-        "/",
+        "/register_computer",
         json=dict(identifier_key="new_computer", computer_name="new_test_computer"),
     )
 
@@ -37,14 +37,16 @@ def test_register_computer(client):
     assert response.status_code == 200
 
     response = client.post(
-        "/",
+        "/register_computer",
         json=dict(identifier_key="fbsfvdsbsbgrbfb", computer_name="new_test_computer"),
     )
 
     assert response
     assert response.status_code == 200
 
-    response = client.post("/", json=dict(identifier_key=111, computer_name=222))
+    response = client.post(
+        "/register_computer", json=dict(identifier_key=111, computer_name=222)
+    )
 
     assert response
     assert response.status_code == 400
