@@ -7,7 +7,7 @@ from flask import render_template
 from app import models as m, schema as s
 from app.logger import logger
 
-from app.utils import send_email
+from app.utils.send_email import send_email
 from config import BaseConfig as CFG
 
 

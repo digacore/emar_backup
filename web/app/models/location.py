@@ -52,7 +52,6 @@ class Location(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
 
     name = db.Column(db.String(64), nullable=False)
     status = db.Column(Enum(LocationStatus), nullable=True)
-    computers_max_count = db.Column(db.Integer, server_default="1", nullable=False)
     default_sftp_path = db.Column(db.String(256))
     computers_per_location = db.Column(db.Integer)
     computers_online = db.Column(db.Integer)
@@ -357,7 +356,6 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_per_location",
         "computers_online",
         "computers_offline",
-        "computers_max_count",
         "default_sftp_path",
         "pcc_fac_id",
         "use_pcc_backup",
@@ -392,7 +390,6 @@ class LocationView(RowActionListMixin, MyModelView):
         "computers_per_location",
         "computers_online",
         "computers_offline",
-        "computers_max_count",
         "created_at",
         "pcc_fac_id",
         "use_pcc_backup",
@@ -566,11 +563,6 @@ class LocationView(RowActionListMixin, MyModelView):
                 if not form.activated.data:
                     model.deactivated_at = datetime.utcnow()
 
-                if not form.computers_max_count and form.company.data.is_trial:
-                    model.computers_max_count = 1
-                elif not form.computers_max_count and not form.company.data.is_trial:
-                    model.computers_max_count = 5
-
                 self.session.add(model)
                 self._on_model_change(form, model, True)
                 self.session.commit()
@@ -622,16 +614,16 @@ class LocationView(RowActionListMixin, MyModelView):
 
             # Check that location can be connected to selected company
         if (
-            company.is_trial
-            and model.total_computers >= 1
-            or company.is_trial is False
-            and model.total_computers >= model.computers_max_count
-            or company.is_trial
-            and form.computers_max_count.data > 1
+            company.computers_max_count < model.total_computers
+            or company.computers_max_count < model.computers_per_location
         ):
             inform_alert = render_template(
                 "email/exceeded_limit_email.html",
+                company=company,
                 location=model,
+                max_count=company.computers_max_count,
+                company_name=company.name,
+                location_name=model.name,
                 computers=model.computers,
             )
 
