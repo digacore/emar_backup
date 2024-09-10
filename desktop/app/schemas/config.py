@@ -28,3 +28,4 @@ class ConfigFile(BaseModel):
     additional_locations: list[LocationInfo] | None = None
     additional_sftp_folder_paths: list[str] | None = None
     pcc_fac_id: int | None = None
+    device_location: str | None = None

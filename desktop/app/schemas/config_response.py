@@ -23,3 +23,4 @@ class ConfigResponse(BaseModel):
     pcc_fac_id: str | None = None
     additional_locations: list[LocationInfo] | None = None
     additional_sftp_folder_paths: list[str] | None = None
+    device_location: str | None = None

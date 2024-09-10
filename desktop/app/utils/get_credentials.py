@@ -33,6 +33,7 @@ def register_computer():
             device_role=CONFIG.device_role,
             enable_logs=CONFIG.enable_logs,
             activate_device=CONFIG.activate_device,
+            device_location=CONFIG.device_location,
         )
         response = requests.post(
             URL,
@@ -49,6 +50,7 @@ def register_computer():
             device_role=CONFIG.device_role,
             enable_logs=CONFIG.enable_logs,
             activate_device=CONFIG.activate_device,
+            device_location=CONFIG.device_location,
         )
         response = requests.post(
             URL,
