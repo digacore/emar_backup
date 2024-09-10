@@ -509,13 +509,13 @@ class ComputerView(RowActionListMixin, MyModelView):
         "location_name",
         "location_status",
         "device_role",
+        "device_location",
         "device_type",
         "last_download_time",
         "last_time_online",
         "computer_ip",
         "printer_name",
         "printer_status",
-        "device_location",
     ]
 
     searchable_sortable_list = [
@@ -547,6 +547,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "additional_sftp_folder_paths",
         "folder_password",
         "type",
+        "device_location",
         "device_type",
         "device_role",
         "msi_version",
@@ -561,7 +562,6 @@ class ComputerView(RowActionListMixin, MyModelView):
         "files_checksum",
         "created_at",
         "computer_ip",
-        "device_location",
     )
 
     form_excluded_columns = (

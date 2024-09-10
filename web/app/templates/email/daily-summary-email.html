@@ -22,6 +22,9 @@
               <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
                 Error
               </th>
+              <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;"></th>
+                Device Location
+              </th>
               <th style="border: 1px solid black; padding: 10px 0; background-color: #345fee; color: white;">
                 Last Backup Time
               </th>
@@ -60,6 +63,9 @@
                   </td>
                   <td style="border: 1px solid black; padding: 10px 0; background-color: red; color: white; font-weight: 600;">
                     {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }}
+                  </td>
+                  <td style="border: 1px solid; padding: 10px 0;">
+                    {{ computer.device_location }}
                   </td>
                   <td style="border: 1px solid; padding: 10px 0;">
                     {{ computer.last_download_time.strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
