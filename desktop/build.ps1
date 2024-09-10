@@ -17,5 +17,6 @@ pyinstaller --noconfirm --onefile --console `
 
 copy .\config.json .\msi\dist\
 copy .\eMARVault_256x256.ico .\msi\dist\
+copy .\eMARVault_How_to_Use.pdf .\msi\dist\
 
 .\msi\BuildInstaller.ps1

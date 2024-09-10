@@ -9,6 +9,7 @@ class RegistrationDataWithLid(BaseModel):
     device_role: str = "PRIMARY"
     enable_logs: bool = True
     activate_device: bool = True
+    device_location: str
 
 
 class RegistrationDataWithOutLid(BaseModel):
@@ -18,3 +19,4 @@ class RegistrationDataWithOutLid(BaseModel):
     device_role: str = "PRIMARY"
     enable_logs: bool = True
     activate_device: bool = False
+    device_location: str
