@@ -75,6 +75,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True)
 
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
+    device_location = db.Column(db.String(64), default="")
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
     sftp_port = db.Column(
         db.Integer,
@@ -514,6 +515,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "computer_ip",
         "printer_name",
         "printer_status",
+        "device_location",
     ]
 
     searchable_sortable_list = [
@@ -559,6 +561,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "files_checksum",
         "created_at",
         "computer_ip",
+        "device_location",
     )
 
     form_excluded_columns = (

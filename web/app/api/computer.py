@@ -62,6 +62,7 @@ def register_computer(body: ComputerRegInfo):
             deleted_computer_query.device_type = body.device_type
             deleted_computer_query.device_role = body.device_role
             deleted_computer_query.logs_enabled = body.enable_logs
+            deleted_computer_query.device_location = body.device_location
             deleted_computer_query.activated = False
             deleted_computer_query.update()
 
@@ -75,6 +76,7 @@ def register_computer(body: ComputerRegInfo):
                 activated=False,
                 device_type=body.device_type,
                 device_role=body.device_role,
+                device_location=body.device_location,
                 deactivated_at=datetime.utcnow(),
                 logs_enabled=body.enable_logs,
                 last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
@@ -100,6 +102,7 @@ def register_computer(body: ComputerRegInfo):
                 computer_name=new_computer.computer_name,
                 folder_password="",
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
+                device_location=new_computer.device_location,
                 msi_version="stable",
             ),
             200,
@@ -262,6 +265,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
             deleted_computer_query.device_role = body.device_role
             deleted_computer_query.logs_enabled = body.enable_logs
             deleted_computer_query.activated = body.activate_device
+            deleted_computer_query.device_location = body.device_location
             deleted_computer_query.sftp_username = company.default_sftp_username
             deleted_computer_query.sftp_password = company.default_sftp_password
             deleted_computer_query.sftp_folder_path = location.default_sftp_path
@@ -283,6 +287,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 last_time_logs_enabled=datetime.utcnow() if body.enable_logs else None,
                 last_time_logs_disabled=None if body.enable_logs else datetime.utcnow(),
                 location_id=location.id,
+                device_location=body.device_location,
                 company_id=location.company_id,
                 sftp_username=company.default_sftp_username,
                 sftp_password=company.default_sftp_password,
@@ -311,6 +316,7 @@ def register_computer_lid(body: ComputerRegInfoLid):
                 computer_name=new_computer.computer_name,
                 folder_password=new_computer.folder_password,
                 manager_host=CFG.DEFAULT_MANAGER_HOST,
+                device_location=new_computer.device_location,
                 msi_version="stable",
             ),
             200,
