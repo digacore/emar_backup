@@ -52,6 +52,11 @@ Unregister-ScheduledTask -TaskName "eMARVaultHeartbeat" -Confirm:$false -ErrorAc
 if (! $?) {
   Write-Log "Unregister-ScheduledTask eMARVaultHeartbeat failed"
 }
+Write-Log "Unregister-ScheduledTask eMARVaultUpgrade"
+Unregister-ScheduledTask -TaskName "eMARVaultUpgrade" -Confirm:$false -ErrorAction SilentlyContinue
+if (! $?) {
+  Write-Log "Unregister-ScheduledTask eMARVaultUpgrade failed"
+}
 
 # -- wait for scheduled tasks to stop after delete tasks --
 

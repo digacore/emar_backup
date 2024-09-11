@@ -253,6 +253,25 @@ Write-Log "Register-ScheduledTask - [$task]"
 Start-ScheduledTask -TaskName "eMARVaultHourlyCheck"
 
 
+Unregister-ScheduledTask -TaskName "eMARVaultUpgrade" -Confirm:$false -ErrorAction Continue
+Write-Log "Unregister-ScheduledTask eMARVaultUpgrade"
+
+$scriptDir = Join-Path "." "." -Resolve
+Write-Log "scriptDir - [$scriptDir]"
+
+$action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
+    -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy ByPass -Command .\Upgrade.ps1" `
+    -WorkingDirectory $scriptDir
+Write-Log "action - [$action]"
+
+$trigger = New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Days 7) -At 0am #need to be changed
+Write-Log "trigger - [$trigger]"
+
+$task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "eMARVaultUpgrade" `
+    -Settings $(New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit $executionTimeLimit) `
+    -Principal $principal -Description "Periodically check for updates and upgrade the program"
+Write-Log "Register-ScheduledTask - [$task]"
+
 
 
 Write-Log finish
