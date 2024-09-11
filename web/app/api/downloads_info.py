@@ -245,6 +245,7 @@ def get_credentials(body: GetCredentials):
             computer_name=computer.computer_name,
             folder_password=computer.folder_password,
             manager_host=computer.manager_host,
+            device_location=computer.device_location,
             files_checksum=json.loads(str(remote_files_checksum)),
             msi_version=msi.version if msi else "undefined",
             version=msi.version if msi else "undefined",
