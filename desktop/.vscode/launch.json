@@ -41,6 +41,15 @@
       "justMyCode": false
     },
     {
+      "name": "upgrade-program",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/emar.py",
+      "console": "integratedTerminal",
+      "args": ["--upgrade-program"],
+      "justMyCode": false
+    },
+    {
       "name": "server-connect-local",
       "type": "debugpy",
       "request": "launch",
