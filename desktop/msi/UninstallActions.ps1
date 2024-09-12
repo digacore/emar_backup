@@ -91,7 +91,13 @@ $pathToShortcut = Join-Path $ENV:Public\Desktop "eMARVault.lnk"
 Write-Log "Remove-Item $pathToShortcut"
 Remove-Item $pathToShortcut -ErrorAction SilentlyContinue | Out-Null
 
-
+# -- delete pdf from desktop --
+$pathToPdf = Join-Path $ENV:Public\Desktop "eMARVault_How_to_Use.pdf"
+$pathToPdfOneDrive = Join-Path "$env:USERPROFILE\OneDrive\Desktop" "eMARVault_How_to_Use.pdf"
+Write-Log "Remove-Item $pathToPdf"
+Remove-Item $pathToPdf -ErrorAction SilentlyContinue | Out-Null
+Write-Log "Remove-Item $pathToPdfOneDrive"
+Remove-Item $pathToPdfOneDrive -ErrorAction SilentlyContinue | Out-Null
 
 
 Pop-Location
