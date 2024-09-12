@@ -35,8 +35,19 @@ if (-not (Test-Path -Path $HowToUsePath)) {
     exit 1
 }
 
+$DesktopDir = [Environment]::GetFolderPath("Desktop")
+$OneDriveDesktop = "$env:USERPROFILE\OneDrive\Desktop"
+if (-not (Test-Path -Path $OneDriveDesktop)) {
+    Write-Log "Warning: OneDrive Desktop not found"
+}
+if (-not (Test-Path -Path $DesktopDir)) {
+    Write-Log "Warning: Desktop not found"
+}
+
+
 try {
-    Copy-Item -Path $HowToUsePath -Destination $cfg.backups_path -Force
+    Copy-Item -Path $HowToUsePath -Destination $DesktopDir -Force
+    Copy-Item -Path $HowToUsePath -Destination $OneDriveDesktop -Force
     Write-Log "How to use pdf copied to desktop $HowToUsePath $cfg.backups_path"
 }
 catch {
@@ -194,6 +205,8 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         Write-Host "Disabling sleep mode for PRIMARY device"
         powercfg /change standby-timeout-ac 0
         powercfg /change standby-timeout-dc 0
+        powercfg /change monitor-timeout-ac 0
+        powercfg /change monitor-timeout-dc 0
     }
     else {
         Write-Host "No changes to sleep settings"
