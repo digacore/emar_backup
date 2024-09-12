@@ -718,3 +718,94 @@ def send_weekly_summary():
                     )
 
     logger.info("<---Finish sending weekly summaries--->")
+
+
+def send_monthly_email():
+    """
+    CLI command for celery worker.
+    Sends monthly email for all primary computers.
+    """
+
+    logger.info(
+        "<---Start sending monthly emails. Time: {}--->",
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+    # Select all the companies except global and deactivated
+    companies: list[m.Company] = m.Company.query.filter(
+        m.Company.is_global.is_(False),
+        m.Company.activated.is_(True),
+        m.Company.is_trial.is_(False),
+    ).all()
+
+    for company in companies:
+        company_computers_query = m.Computer.query.filter(
+            m.Computer.company_id == company.id,
+            m.Computer.activated.is_(True),
+            m.Computer.device_role == m.DeviceRole.PRIMARY,
+        ).order_by(
+            m.Computer.location_name,
+            m.Computer.device_role,
+            m.Computer.computer_name,
+        )
+
+        # If there are no users connected to the company or computers - skip it
+        if not company.users or not company_computers_query.all():
+            continue
+
+        (
+            _,
+            _,
+            location_level_users,
+        ) = company_users_by_permission(company)
+
+        # Create dictionary with locations as keys and list of computers as values
+        company_computers_by_location: dict[
+            str, s.ComputersByLocation
+        ] = divide_computers_by_location(company_computers_query.all())
+        # Send location level summary
+        if location_level_users:
+            for location_name, users in location_level_users.items():
+                recipients: list[str] = [user.email for user in users]
+
+                location: m.Location = m.Location.query.filter(
+                    m.Location.company_id == company.id,
+                    m.Location.name == location_name,
+                ).first()
+
+                activated_primary_computers_query = m.Computer.query.filter(
+                    m.Computer.location_id == location.id,
+                    m.Computer.device_role == m.DeviceRole.PRIMARY,
+                    m.Computer.activated.is_(True),
+                )
+
+                # Check that location has activated computers and users otherwise skip it
+                if not users or not activated_primary_computers_query.all():
+                    continue
+
+                try:
+                    send_email(
+                        subject="eMAR Vault - Access to Backup Files Test",
+                        sender=CFG.MAIL_DEFAULT_SENDER,
+                        recipients=recipients,
+                        html=render_template(
+                            "email/monthly-email.html",
+                            computers_by_location={
+                                location_name: company_computers_by_location[
+                                    location_name
+                                ]
+                            },
+                        ),
+                    )
+                    logger.info(
+                        "Monthly email sent for location users of {}",
+                        location_name,
+                    )
+                except Exception as err:
+                    logger.error(
+                        "Monthly email was not sent for location users of {}. Error: {}",
+                        location_name,
+                        err,
+                    )
+
+    logger.info("<---Finish sending Monthly emails--->")

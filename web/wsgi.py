@@ -127,6 +127,13 @@ def weekly_summary_email():
 
 
 @app.cli.command()
+def monthly_email():
+    from app.controllers import send_monthly_email
+
+    send_monthly_email()
+
+
+@app.cli.command()
 def set_computer_user_deactivated_at():
     logger.info("<-----Start script------>")
     deactivated_computers = models.Computer.query.filter(

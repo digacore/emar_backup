@@ -1,0 +1,59 @@
+<!-- prettier-ignore -->
+{% import "email/base-email-macros.html" as macros%}
+<!-- prettier-ignore -->
+{% block content_tag %}
+<!-- prettier-ignore -->
+{% endblock %} {% block content %}
+
+
+<p style="font-size: 1rem; margin: 20px 0 0 0; text-align: left">
+  Please login to the computer below and verify that you are able to access the eMAR backup files. Please verify that you are able to print backup files, and that the backup computer and printer are connected to a backup power source.
+</p>
+
+
+
+{% for location_name, computers_by_location_obj in computers_by_location.items() %}
+{% if computers_by_location_obj.computers %}
+<div style="width: 100%; margin-bottom: 20px; margin-top: 20px">
+<table style="width: 100%">
+<thead class="text-sm text-center" style="color: #4e73df">
+    <tr>
+      <th scope="col" style="width: 120px; border: 1px solid;">Device Name</th>
+      <th scope="col" style="width: 120px; border: 1px solid;">Status</th>
+      <th scope="col" style="width: 120px; border: 1px solid;">Role</th>
+    </tr>
+  </thead>
+<tbody>
+    {% for computer in computers_by_location_obj.computers %}
+    <tr>
+        <td style="width: 120px; border: 1px solid;">
+            <p style="font-size: 0.75rem; line-height: 1rem">
+            <div>{{ computer.computer_name }}</div>
+            </p>
+        </td>
+        <td style="width: 120px; border: 1px solid">
+            <p style="font-size: 0.75rem; line-height: 1rem">
+                {{computer.status.value}}
+            </p>
+        </td>
+        <td style="width: 120px; border: 1px solid;">
+            <p style="font-size: 0.75rem; line-height: 1rem">
+                {{ computer.device_role.value }}
+            </p>
+        </td>
+    </tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endif %}
+{% endfor %}
+
+<hr style="margin: 20px 0; border: 1px solid #dcdee4" />
+
+{{ macros.button("eMAR Vault", url_for("main.index")) }}
+
+<p style="font-size: 0.75rem; line-height: 1rem">
+  Login to the eMAR Vault to check the status of your computers.
+</p>
+{% endblock %}

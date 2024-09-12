@@ -103,6 +103,19 @@
       "args": ["weekly-summary-email"]
     },
     {
+      "name": "monthly-email",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "flask",
+      "env": {
+        "FLASK_APP": "wsgi:app",
+        "FLASK_ENV": "development",
+        "FLASK_DEBUG": "1"
+      },
+      "jinja": true,
+      "args": ["monthly-email"]
+    },
+    {
       "name": "update-cl-stat",
       "type": "debugpy",
       "request": "launch",
