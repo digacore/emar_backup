@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, IntegerField
+from wtforms import StringField, PasswordField, SubmitField, IntegerField, BooleanField
 from wtforms.validators import DataRequired, EqualTo
 
 
@@ -21,3 +21,12 @@ class ChangePasswordForm(FlaskForm):
         ],
     )
     confirm_new_password = PasswordField("Confirm New Password", [DataRequired()])
+
+
+class ChangeNotificationSettings(FlaskForm):
+    user_id = IntegerField("User ID", [DataRequired()])
+    user_email = StringField("Email", [DataRequired()])
+    receive_alert_emails = BooleanField("receive_alert_emails")
+    receive_summaries_emails = BooleanField("receive_summaries_emails")
+    receive_device_test_emails = BooleanField("receive_device_test_emails")
+    submit = SubmitField("Update")

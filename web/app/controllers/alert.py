@@ -105,7 +105,9 @@ def send_critical_alert():
         if not connected_users:
             continue
 
-        recipients = [user.email for user in connected_users]
+        recipients = [
+            user.email for user in connected_users if user.receive_alert_emails
+        ]
 
         primary_computers = (
             location_computers_query.filter(
@@ -213,7 +215,9 @@ def send_primary_computer_alert():
         if not connected_users:
             continue
 
-        recipients = [user.email for user in connected_users]
+        recipients = [
+            user.email for user in connected_users if user.receive_alert_emails
+        ]
 
         try:
             send_email(
@@ -337,7 +341,9 @@ def send_company_daily_summary(
         computers_by_location (dict[str, m.Computer]): dictionary with locations as keys
             and list of computers as values
     """
-    recipients: list[str] = [user.email for user in target_users]
+    recipients: list[str] = [
+        user.email for user in target_users if user.receive_summaries_emails
+    ]
 
     try:
         send_email(
@@ -374,7 +380,9 @@ def send_location_group_daily_summary(
             and list of computers as values
     """
     for location_group, users in location_group_level_users.items():
-        recipients: list[str] = [user.email for user in users]
+        recipients: list[str] = [
+            user.email for user in users if user.receive_summaries_emails
+        ]
 
         location_group: m.LocationGroup = m.LocationGroup.query.filter(
             m.LocationGroup.company_id == company.id,
@@ -429,7 +437,9 @@ def send_location_daily_summary(
             and list of computers as values
     """
     for location, users in location_level_users.items():
-        recipients: list[str] = [user.email for user in users]
+        recipients: list[str] = [
+            user.email for user in users if user.receive_summaries_emails
+        ]
 
         if not users or not computers_by_location.get(location):
             continue
@@ -576,7 +586,11 @@ def send_weekly_summary():
 
         # Send company level summary
         if company_level_users:
-            recipients: list[str] = [user.email for user in company_level_users]
+            recipients: list[str] = [
+                user.email
+                for user in company_level_users
+                if user.receive_summaries_emails
+            ]
 
             try:
                 send_email(
@@ -607,7 +621,9 @@ def send_weekly_summary():
         # Send location group level summary
         if location_group_level_users:
             for location_group_name, users in location_group_level_users.items():
-                recipients: list[str] = [user.email for user in users]
+                recipients: list[str] = [
+                    user.email for user in users if user.receive_summaries_emails
+                ]
 
                 location_group: m.LocationGroup = m.LocationGroup.query.filter(
                     m.LocationGroup.company_id == company.id,
@@ -664,7 +680,9 @@ def send_weekly_summary():
         # Send location level summary
         if location_level_users:
             for location_name, users in location_level_users.items():
-                recipients: list[str] = [user.email for user in users]
+                recipients: list[str] = [
+                    user.email for user in users if user.receive_summaries_emails
+                ]
 
                 location: m.Location = m.Location.query.filter(
                     m.Location.company_id == company.id,
