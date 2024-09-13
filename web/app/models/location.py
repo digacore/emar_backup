@@ -545,7 +545,7 @@ class LocationView(RowActionListMixin, MyModelView):
                 model.created_from_pcc = False
                 model.group = [group_data] if group_data else []
 
-                if form.activate.data:
+                if form.activated.data:
                     model.deactivated_at = None
                 else:
                     model.deactivated_at = datetime.utcnow()
