@@ -784,7 +784,9 @@ def send_monthly_email():
         # Send location level summary
         if location_level_users:
             for location_name, users in location_level_users.items():
-                recipients: list[str] = [user.email for user in users]
+                recipients: list[str] = [
+                    user.email for user in users if user.receive_device_test_emails
+                ]
 
                 location: m.Location = m.Location.query.filter(
                     m.Location.company_id == company.id,
