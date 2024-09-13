@@ -99,6 +99,9 @@ class User(db.Model, UserMixin, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_time_online = db.Column(db.DateTime)
+    receive_alert_emails = db.Column(db.Boolean, default=True)
+    receive_summaries_emails = db.Column(db.Boolean, default=True)
+    receive_device_test_emails = db.Column(db.Boolean, default=True)
 
     role = db.Column(
         Enum(UserRole),
