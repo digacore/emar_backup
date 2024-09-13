@@ -9,3 +9,4 @@ flask_session/
 .env
 *.pyc
 /*.sqlite3
+*.dump

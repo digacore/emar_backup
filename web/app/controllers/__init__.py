@@ -4,6 +4,7 @@ from .alert import (
     send_primary_computer_alert,
     send_daily_summary,
     send_weekly_summary,
+    send_monthly_email,
 )
 from .database import (
     create_superuser,

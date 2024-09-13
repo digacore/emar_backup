@@ -74,6 +74,12 @@ def setup_periodic_tasks(sender, **kwargs):
     )
     entry.save()
 
+    # Send monthly test primary computer email
+    interval = crontab(minute=0, hour=0, day_of_month=1)
+    entry = RedBeatSchedulerEntry(
+        "send_monthly_email", "worker.send_monthly_email", interval, app=app
+    )
+
     logger.debug("Tasks added to Redis")
 
 
@@ -118,4 +124,10 @@ def scan_pcc_activations(scan_record_id: int):
     flask_proc = subprocess.Popen(
         ["flask", "scan-pcc-activations", str(scan_record_id)]
     )
+    flask_proc.communicate()
+
+
+@app.task
+def send_monthly_email():
+    flask_proc = subprocess.Popen(["flask", "send-monthly-email"])
     flask_proc.communicate()
