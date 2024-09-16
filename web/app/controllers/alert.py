@@ -108,7 +108,12 @@ def send_critical_alert():
         recipients = [
             user.email for user in connected_users if user.receive_alert_emails
         ]
-
+        if not recipients:
+            logger.debug(
+                "Critical alert email was not sent for location users of {}. Reason: no users for receive emails was found",
+                location.name,
+            )
+            continue
         primary_computers = (
             location_computers_query.filter(
                 m.Computer.device_role == m.DeviceRole.PRIMARY
@@ -218,7 +223,12 @@ def send_primary_computer_alert():
         recipients = [
             user.email for user in connected_users if user.receive_alert_emails
         ]
-
+        if not recipients:
+            logger.debug(
+                "Critical alert email for primary computer {} was not sent. Reason: no users for receive emails was found",
+                computer.computer_name,
+            )
+            continue
         try:
             send_email(
                 subject=f"ALERT! Primary computer {computer.computer_name} is down",
@@ -344,7 +354,12 @@ def send_company_daily_summary(
     recipients: list[str] = [
         user.email for user in target_users if user.receive_summaries_emails
     ]
-
+    if not recipients:
+        logger.debug(
+            "Daily summary email was not sent for company users of {}. Reason: no users for receive emails was found",
+            company.name,
+        )
+        return
     try:
         send_email(
             subject="eMAR Vault Daily Summary",
@@ -383,6 +398,12 @@ def send_location_group_daily_summary(
         recipients: list[str] = [
             user.email for user in users if user.receive_summaries_emails
         ]
+        if not recipients:
+            logger.debug(
+                "Daily summary email for location_group {} was not sent. Reason: no users for receive emails was found",
+                location_group.name,
+            )
+            continue
 
         location_group: m.LocationGroup = m.LocationGroup.query.filter(
             m.LocationGroup.company_id == company.id,
@@ -440,6 +461,12 @@ def send_location_daily_summary(
         recipients: list[str] = [
             user.email for user in users if user.receive_summaries_emails
         ]
+        if not recipients:
+            logger.debug(
+                "Daily summary email for location {} was not sent. Reason: no users for receive emails was found",
+                location.name,
+            )
+            continue
 
         if not users or not computers_by_location.get(location):
             continue
@@ -591,6 +618,12 @@ def send_weekly_summary():
                 for user in company_level_users
                 if user.receive_summaries_emails
             ]
+            if not recipients:
+                logger.debug(
+                    "Weekly summary email for company {} was not sent. Reason: no users for receive emails was found",
+                    company.name,
+                )
+                continue
 
             try:
                 send_email(
@@ -624,6 +657,12 @@ def send_weekly_summary():
                 recipients: list[str] = [
                     user.email for user in users if user.receive_summaries_emails
                 ]
+                if not recipients:
+                    logger.debug(
+                        "Weekly summary email for location_group {} was not sent. Reason: no users for receive emails was found",
+                        location_group_name,
+                    )
+                    continue
 
                 location_group: m.LocationGroup = m.LocationGroup.query.filter(
                     m.LocationGroup.company_id == company.id,
@@ -683,6 +722,12 @@ def send_weekly_summary():
                 recipients: list[str] = [
                     user.email for user in users if user.receive_summaries_emails
                 ]
+                if not recipients:
+                    logger.debug(
+                        "Weekly summary email for location {} was not sent. Reason: no users for receive emails was found",
+                        location_name,
+                    )
+                    continue
 
                 location: m.Location = m.Location.query.filter(
                     m.Location.company_id == company.id,
@@ -787,6 +832,12 @@ def send_monthly_email():
                 recipients: list[str] = [
                     user.email for user in users if user.receive_device_test_emails
                 ]
+                if not recipients:
+                    logger.debug(
+                        "Monthly test device email for location {} was not sent. Reason: no users for receive emails was found",
+                        location_name,
+                    )
+                    continue
 
                 location: m.Location = m.Location.query.filter(
                     m.Location.company_id == company.id,
