@@ -706,7 +706,12 @@ class CompanyView(RowActionListMixin, MyModelView):
         from app.models.computer import Computer, DeviceRole
 
         try:
-            if model.is_trial and form.computers_max_count.data > 1:
+            if (
+                model.is_trial
+                and form.computers_max_count.data > 1
+                or not model.is_trial
+                and form.computers_max_count.data > 5
+            ):
                 inform_alert = render_template(
                     "email/exceeded_limit_email.html",
                     company=model,
