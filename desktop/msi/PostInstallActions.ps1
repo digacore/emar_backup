@@ -35,13 +35,28 @@ if (-not (Test-Path -Path $HowToUsePath)) {
     exit 1
 }
 
-$DesktopDir = [Environment]::GetFolderPath("Desktop")
-$OneDriveDesktop = "$env:USERPROFILE\OneDrive\Desktop"
-if (-not (Test-Path -Path $OneDriveDesktop)) {
-    Write-Log "Warning: OneDrive Desktop not found"
-}
-if (-not (Test-Path -Path $DesktopDir)) {
-    Write-Log "Warning: Desktop not found"
+$UserProfilesPath = "C:\Users"
+$UserDirs = Get-ChildItem -Path $UserProfilesPath | Where-Object { $_.PSIsContainer -and (Test-Path "$($_.FullName)\Desktop") }
+
+# Копіювати файл для кожного користувача
+foreach ($UserDir in $UserDirs) {
+    $DesktopDir = "$($UserDir.FullName)\Desktop"
+    $OneDriveDesktop = "$($UserDir.FullName)\OneDrive\Desktop"
+
+    if (Test-Path -Path $OneDriveDesktop) {
+        Copy-Item -Path $HowToUsePath -Destination $OneDriveDesktop -Force
+        Write-Log "Copied to OneDrive desktop: $OneDriveDesktop"
+    }
+
+    if (Test-Path -Path $cfg.backups_path) {
+        Copy-Item -Path $HowToUsePath -Destination $cfg.backups_path -Force
+        Write-Log "Copied to backup folder: $DesktopDir"
+    }
+
+    if (Test-Path -Path $DesktopDir) {
+        Copy-Item -Path $HowToUsePath -Destination $DesktopDir -Force
+        Write-Log "Copied to desktop: $DesktopDir"
+    }
 }
 
 
@@ -277,7 +292,7 @@ $action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
     -WorkingDirectory $scriptDir
 Write-Log "action - [$action]"
 
-$trigger = New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Days 7) -At 0am #need to be changed
+$trigger = New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Days 1) -At 0am #need to be changed
 Write-Log "trigger - [$trigger]"
 
 $task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "eMARVaultUpgrade" `
@@ -291,5 +306,16 @@ Write-Log finish
 
 $wshell = New-Object -ComObject Wscript.Shell
 $wshell.Popup("Program is successfully installed!")
+
+# Run python Heartbeat
+Write-Log "Run heartbeat script by user: $env:UserName"
+.\emar.exe -hb
+Write-Log "Run heartbeat script by user: $env:UserName - done"
+
+# Run python Heartbeat
+Write-Log "Run server connect script by user: $env:UserName"
+.\emar.exe -sc
+Write-Log "Run server connect script by user: $env:UserName - done"
+
 
 Pop-Location
