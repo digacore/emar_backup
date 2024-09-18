@@ -60,15 +60,6 @@ foreach ($UserDir in $UserDirs) {
 }
 
 
-try {
-    Copy-Item -Path $HowToUsePath -Destination $DesktopDir -Force
-    Copy-Item -Path $HowToUsePath -Destination $OneDriveDesktop -Force
-    Write-Log "How to use pdf copied to desktop $HowToUsePath $cfg.backups_path"
-}
-catch {
-    Write-Log "Error copying PDF: $_"
-}
-
 # Get location is from msi CommandLine
 Get-WmiObject Win32_Process -Filter "name = 'msiexec.exe'" | Select-Object CommandLine | ForEach-Object { $_.CommandLine -match '^.+lid_(\d+)\.msi.*$' }
 if ($Matches) {
