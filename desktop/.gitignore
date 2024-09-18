@@ -29,3 +29,5 @@ sftp_files_old/
 *.dll
 /*.spec
 
+# PDF
+*.pdf

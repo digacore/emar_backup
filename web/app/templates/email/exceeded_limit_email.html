@@ -1,0 +1,84 @@
+<!-- prettier-ignore -->
+{% import "email/base-email-macros.html" as macros%}
+<!-- prettier-ignore -->
+{% block content_tag %}
+<!-- prettier-ignore -->
+{% endblock %} {% block content %}
+<!-- <Company> - <Location> Has Exceeded the Maximum Computer Limit
+
+Company Max: ##
+
+Total Location Computers: ##
+
+<Table of location computers> -->
+<p
+  style="
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 20px 0 0 0;
+    text-align: left;
+  "
+>
+  {{company_name}} -{%if location %} Location: {{ location.name }}{% endif %} Has Exceeded the
+  Maximum Computer Limit
+</p>
+
+<p style="font-size: 1rem; margin: 20px 0 0 0; text-align: left">
+  Company Max: {{ max_count }}
+</p>
+
+{% if location %}
+<p style="font-size: 1rem; margin: 20px 0 0 0; text-align: left">
+  Total Location Computers: {{ location.computers|length }}
+</p>
+{% endif %}
+
+{% if computers %}
+<div style="width: 100%; margin-bottom: 20px; margin-top: 20px">
+<table style="width: 100%">
+<thead class="text-sm text-center" style="color: #4e73df">
+    <tr>
+      <th scope="col" style="width: 120px; border: 1px solid;">Device Name</th>
+      <th scope="col" style="width: 120px; border: 1px solid;">Status</th>
+      <th scope="col" style="width: 120px; border: 1px solid;">Role</th>
+      <th scope="col" style="width: 120px; border: 1px solid;">Type</th>
+    </tr>
+  </thead>
+<tbody>
+{% for computer in computers %}
+    <tr>
+        <td style="width: 120px; border: 1px solid;">
+            <p style="font-size: 0.75rem; line-height: 1rem">
+            <div>{{ computer.computer_name }}</div>
+            </p>
+        </td>
+        <td style="width: 120px; border: 1px solid">
+            <p style="font-size: 0.75rem; line-height: 1rem">
+                {{computer.status.value}}
+            </p>
+        </td>
+        <td style="width: 120px; border: 1px solid;">
+            <p style="font-size: 0.75rem; line-height: 1rem">
+                {{ computer.device_role.value }}
+            </p>
+        </td>
+        <td style="width: 120px; border: 1px solid;">
+            <p style="font-size: 0.75rem; line-height: 1rem">
+                {{ computer.device_type.value }}
+            </p>
+        </td>
+    </tr>
+{% endfor %}
+    </tbody>
+</table>
+</div>
+{% endif %}
+
+<hr style="margin: 20px 0; border: 1px solid #dcdee4" />
+
+{{ macros.button("eMAR Vault", url_for("main.index")) }}
+
+<p style="font-size: 0.75rem; line-height: 1rem">
+  Login to the eMAR Vault to check the status of your computers.
+</p>
+{% endblock %}

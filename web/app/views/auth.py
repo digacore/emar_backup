@@ -25,6 +25,7 @@ from flask_jwt_extended import (
     get_jwt_identity,
 )
 
+from app.forms.auth import ChangeNotificationSettings
 from app.models import User, UserPermissionLevel, UserRole
 from app.forms import LoginForm, ChangePasswordForm
 from app import google_client
@@ -301,3 +302,32 @@ def auth_response():
     # Send user back to homepage
     flash("SSO login successful.", "success")
     return redirect(url_for("main.index"))
+
+
+@auth_blueprint.route("/notification-settings", methods=["POST"])
+@login_required
+def notification_settings():
+    if (
+        current_user.permission
+        not in [UserPermissionLevel.GLOBAL, UserPermissionLevel.COMPANY]
+        or current_user.role != UserRole.ADMIN
+    ):
+        abort(403, "You don't have permission to access this route.")
+
+    form = ChangeNotificationSettings(request.form)
+    if form.validate_on_submit():
+        user: User = User.query.filter_by(id=form.user_id.data).first()
+
+        if not user:
+            flash("User not found.", "danger")
+            return redirect(url_for("user.edit_view", id=form.user_id.data))
+
+        user.receive_alert_emails = form.receive_alert_emails.data
+        user.receive_summaries_emails = form.receive_summaries_emails.data
+        user.receive_device_test_emails = form.receive_device_test_emails.data
+        user.update()
+        flash("Notification settings changed successfully.", "success")
+        return redirect(url_for("user.edit_view", id=form.user_id.data))
+
+    flash(f"Notification settings was not changed. Reason: <{form.errors}>", "danger")
+    return redirect(url_for("user.edit_view", id=form.user_id.data))

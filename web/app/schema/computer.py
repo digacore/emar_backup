@@ -31,6 +31,7 @@ class ComputerRegInfo(BaseModel):
     device_role: str = "PRIMARY"
     enable_logs: bool = True
     activate_device: bool = False
+    device_location: str = ""
 
 
 class ComputerRegInfoLid(BaseModel):
@@ -41,6 +42,7 @@ class ComputerRegInfoLid(BaseModel):
     device_role: str = "PRIMARY"
     enable_logs: bool = True
     activate_device: bool = True
+    device_location: str = ""
 
 
 class ComputerSpecialStatus(BaseModel):

@@ -102,6 +102,16 @@
                   color: white;
                 "
               >
+                Device Location
+              </th>
+              <th
+                style="
+                  border: 1px solid black;
+                  padding: 10px 0;
+                  background-color: #345fee;
+                  color: white;
+                "
+              >
                 Occurrences Offline
               </th>
               <th
@@ -206,6 +216,9 @@
                 DOWN
               </td>
               {% endif %}
+              <td style="border: 1px solid; padding: 10px 0">
+                {{ computer.device_location }}
+              </td>
               <td style="border: 1px solid; padding: 10px 0">
                 {{ "-" if not computer.last_week_offline_occurrences else
                 computer.last_week_offline_occurrences }}

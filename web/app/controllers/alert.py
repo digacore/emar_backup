@@ -3,29 +3,12 @@ from datetime import datetime, timedelta
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import Query
 from flask import render_template
-from flask_mail import Message
 
-from app import models as m, mail, schema as s
+from app import models as m, schema as s
 from app.logger import logger
 
+from app.utils.send_email import send_email
 from config import BaseConfig as CFG
-
-
-def send_email(
-    subject: str,
-    recipients: list[str],
-    html: str,
-    sender: str = CFG.MAIL_DEFAULT_SENDER,
-):
-    msg = Message(
-        subject=subject,
-        sender=sender,
-        recipients=recipients,
-        html=html,
-    )
-
-    mail.send(msg)
-    logger.info("Email with subject {} was successfully sent", subject)
 
 
 def send_critical_alert():
@@ -122,8 +105,15 @@ def send_critical_alert():
         if not connected_users:
             continue
 
-        recipients = [user.email for user in connected_users]
-
+        recipients = [
+            user.email for user in connected_users if user.receive_alert_emails
+        ]
+        if not recipients:
+            logger.debug(
+                "Critical alert email was not sent for location users of {}. Reason: no users for receive emails was found",
+                location.name,
+            )
+            continue
         primary_computers = (
             location_computers_query.filter(
                 m.Computer.device_role == m.DeviceRole.PRIMARY
@@ -230,8 +220,15 @@ def send_primary_computer_alert():
         if not connected_users:
             continue
 
-        recipients = [user.email for user in connected_users]
-
+        recipients = [
+            user.email for user in connected_users if user.receive_alert_emails
+        ]
+        if not recipients:
+            logger.debug(
+                "Critical alert email for primary computer {} was not sent. Reason: no users for receive emails was found",
+                computer.computer_name,
+            )
+            continue
         try:
             send_email(
                 subject=f"ALERT! Primary computer {computer.computer_name} is down",
@@ -354,8 +351,15 @@ def send_company_daily_summary(
         computers_by_location (dict[str, m.Computer]): dictionary with locations as keys
             and list of computers as values
     """
-    recipients: list[str] = [user.email for user in target_users]
-
+    recipients: list[str] = [
+        user.email for user in target_users if user.receive_summaries_emails
+    ]
+    if not recipients:
+        logger.debug(
+            "Daily summary email was not sent for company users of {}. Reason: no users for receive emails was found",
+            company.name,
+        )
+        return
     try:
         send_email(
             subject="eMAR Vault Daily Summary",
@@ -391,7 +395,15 @@ def send_location_group_daily_summary(
             and list of computers as values
     """
     for location_group, users in location_group_level_users.items():
-        recipients: list[str] = [user.email for user in users]
+        recipients: list[str] = [
+            user.email for user in users if user.receive_summaries_emails
+        ]
+        if not recipients:
+            logger.debug(
+                "Daily summary email for location_group {} was not sent. Reason: no users for receive emails was found",
+                location_group.name,
+            )
+            continue
 
         location_group: m.LocationGroup = m.LocationGroup.query.filter(
             m.LocationGroup.company_id == company.id,
@@ -446,7 +458,15 @@ def send_location_daily_summary(
             and list of computers as values
     """
     for location, users in location_level_users.items():
-        recipients: list[str] = [user.email for user in users]
+        recipients: list[str] = [
+            user.email for user in users if user.receive_summaries_emails
+        ]
+        if not recipients:
+            logger.debug(
+                "Daily summary email for location {} was not sent. Reason: no users for receive emails was found",
+                location.name,
+            )
+            continue
 
         if not users or not computers_by_location.get(location):
             continue
@@ -519,9 +539,9 @@ def send_daily_summary():
 
         # TODO: divide with usage of locations (smaller loop)
         # Create dictionary with locations as keys and list of computers as values
-        computers_by_location: dict[str, s.ComputersByLocation] = (
-            divide_computers_by_location(offline_company_computers_query.all())
-        )
+        computers_by_location: dict[
+            str, s.ComputersByLocation
+        ] = divide_computers_by_location(offline_company_computers_query.all())
 
         # Send company level summary
         if company_level_users:
@@ -587,13 +607,23 @@ def send_weekly_summary():
         ) = company_users_by_permission(company)
 
         # Create dictionary with locations as keys and list of computers as values
-        company_computers_by_location: dict[str, s.ComputersByLocation] = (
-            divide_computers_by_location(company_computers_query.all())
-        )
+        company_computers_by_location: dict[
+            str, s.ComputersByLocation
+        ] = divide_computers_by_location(company_computers_query.all())
 
         # Send company level summary
         if company_level_users:
-            recipients: list[str] = [user.email for user in company_level_users]
+            recipients: list[str] = [
+                user.email
+                for user in company_level_users
+                if user.receive_summaries_emails
+            ]
+            if not recipients:
+                logger.debug(
+                    "Weekly summary email for company {} was not sent. Reason: no users for receive emails was found",
+                    company.name,
+                )
+                continue
 
             try:
                 send_email(
@@ -624,7 +654,15 @@ def send_weekly_summary():
         # Send location group level summary
         if location_group_level_users:
             for location_group_name, users in location_group_level_users.items():
-                recipients: list[str] = [user.email for user in users]
+                recipients: list[str] = [
+                    user.email for user in users if user.receive_summaries_emails
+                ]
+                if not recipients:
+                    logger.debug(
+                        "Weekly summary email for location_group {} was not sent. Reason: no users for receive emails was found",
+                        location_group_name,
+                    )
+                    continue
 
                 location_group: m.LocationGroup = m.LocationGroup.query.filter(
                     m.LocationGroup.company_id == company.id,
@@ -648,9 +686,9 @@ def send_weekly_summary():
                     continue
 
                 # Create dictionary with locations as keys and list of computers as values
-                group_computers_by_location: dict[str, s.ComputersByLocation] = (
-                    divide_computers_by_location(group_computers_query.all())
-                )
+                group_computers_by_location: dict[
+                    str, s.ComputersByLocation
+                ] = divide_computers_by_location(group_computers_query.all())
 
                 try:
                     send_email(
@@ -681,7 +719,15 @@ def send_weekly_summary():
         # Send location level summary
         if location_level_users:
             for location_name, users in location_level_users.items():
-                recipients: list[str] = [user.email for user in users]
+                recipients: list[str] = [
+                    user.email for user in users if user.receive_summaries_emails
+                ]
+                if not recipients:
+                    logger.debug(
+                        "Weekly summary email for location {} was not sent. Reason: no users for receive emails was found",
+                        location_name,
+                    )
+                    continue
 
                 location: m.Location = m.Location.query.filter(
                     m.Location.company_id == company.id,
@@ -735,3 +781,102 @@ def send_weekly_summary():
                     )
 
     logger.info("<---Finish sending weekly summaries--->")
+
+
+def send_monthly_email():
+    """
+    CLI command for celery worker.
+    Sends monthly email for all primary computers.
+    """
+
+    logger.info(
+        "<---Start sending monthly emails. Time: {}--->",
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+    # Select all the companies except global and deactivated
+    companies: list[m.Company] = m.Company.query.filter(
+        m.Company.is_global.is_(False),
+        m.Company.activated.is_(True),
+        m.Company.is_trial.is_(False),
+    ).all()
+
+    for company in companies:
+        company_computers_query = m.Computer.query.filter(
+            m.Computer.company_id == company.id,
+            m.Computer.activated.is_(True),
+            m.Computer.device_role == m.DeviceRole.PRIMARY,
+        ).order_by(
+            m.Computer.location_name,
+            m.Computer.device_role,
+            m.Computer.computer_name,
+        )
+
+        # If there are no users connected to the company or computers - skip it
+        if not company.users or not company_computers_query.all():
+            continue
+
+        (
+            _,
+            _,
+            location_level_users,
+        ) = company_users_by_permission(company)
+
+        # Create dictionary with locations as keys and list of computers as values
+        company_computers_by_location: dict[
+            str, s.ComputersByLocation
+        ] = divide_computers_by_location(company_computers_query.all())
+        # Send location level summary
+        if location_level_users:
+            for location_name, users in location_level_users.items():
+                recipients: list[str] = [
+                    user.email for user in users if user.receive_device_test_emails
+                ]
+                if not recipients:
+                    logger.debug(
+                        "Monthly test device email for location {} was not sent. Reason: no users for receive emails was found",
+                        location_name,
+                    )
+                    continue
+
+                location: m.Location = m.Location.query.filter(
+                    m.Location.company_id == company.id,
+                    m.Location.name == location_name,
+                ).first()
+
+                activated_primary_computers_query = m.Computer.query.filter(
+                    m.Computer.location_id == location.id,
+                    m.Computer.device_role == m.DeviceRole.PRIMARY,
+                    m.Computer.activated.is_(True),
+                )
+
+                # Check that location has activated computers and users otherwise skip it
+                if not users or not activated_primary_computers_query.all():
+                    continue
+
+                try:
+                    send_email(
+                        subject="eMAR Vault - Access to Backup Files Test",
+                        sender=CFG.MAIL_DEFAULT_SENDER,
+                        recipients=recipients,
+                        html=render_template(
+                            "email/monthly-email.html",
+                            computers_by_location={
+                                location_name: company_computers_by_location[
+                                    location_name
+                                ]
+                            },
+                        ),
+                    )
+                    logger.info(
+                        "Monthly email sent for location users of {}",
+                        location_name,
+                    )
+                except Exception as err:
+                    logger.error(
+                        "Monthly email was not sent for location users of {}. Error: {}",
+                        location_name,
+                        err,
+                    )
+
+    logger.info("<---Finish sending Monthly emails--->")

@@ -34,6 +34,7 @@ class BaseConfig(object):
 
     MAIL_ALERTS = os.environ.get("MAIL_ALERTS", "/api_email_alert")
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
+    SUPPORT_SALES_EMAIL = os.environ.get("SUPPORT_SALES_EMAIL")
     TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
 
     # set optional bootswatch theme

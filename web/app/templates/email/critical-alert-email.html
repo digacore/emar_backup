@@ -1,54 +1,62 @@
-{% extends "email/base-email.html" %}
-{% import "email/base-email-macros.html" as macros%}
+{% extends "email/base-email.html" %} {% import "email/base-email-macros.html"
+as macros%} {% block content_tag %} {{ macros.tag("white", "red", "Location
+Offline") }} {% endblock %} {% block content %}
+<p
+  style="
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 20px 0 0 0;
+    text-align: left;
+  "
+>
+  Location: {{ location.name }}
+</p>
 
-{% block content_tag %}
-  {{ macros.tag("white", "red", "Location Offline") }}
-{% endblock %}
+<p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left">
+  Last Backup Time: {{ last_backup_time.strftime("%Y-%m-%d %H:%M:%S") if
+  last_backup_time else "-" }}
+</p>
 
-{% block content %}
-  <p style="font-size: 1rem; font-weight: 600; margin: 20px 0 0 0; text-align: left;">Location: {{ location.name }}</p>
+<p style="font-size: 1rem; line-height: 1.5rem; text-align: left">
+  All of the eMAR backup computers at <b>{{ location.name }}</b> are offline and
+  did not download the latest eMAR backup file.
+</p>
 
-  <p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left;">
-    Last Backup Time: {{ last_backup_time.strftime("%Y-%m-%d %H:%M:%S") if last_backup_time else "-" }}
-  </p>
+<p style="font-size: 1rem; line-height: 1.5rem; text-align: left">
+  PRIMARY
+  <br />
+  {% for computer in primary_computers %} {{ computer.computer_name }} | {{
+  "Unsuccessful backup" if computer.download_status == "error" else "Device is
+  offline" }} |{{computer.device_location}}| {{
+  computer.last_download_time.strftime("%Y-%m-%d %H:%M:%S") if
+  computer.last_download_time else "-" }}
+  <br />
+  {% endfor %}
+</p>
 
-  <p
-    style="font-size: 1rem; line-height: 1.5rem; text-align: left;"
-  >
-    All of the eMAR backup computers at <b>{{ location.name }}</b> are offline and did not download the latest eMAR backup file.
-  </p>
+<p style="font-size: 1rem; line-height: 1.5rem; text-align: left">
+  Alternate
+  <br />
+  {% for computer in alternate_computers %} {{ computer.computer_name }} | {{
+  "Unsuccessful backup" if computer.download_status == "error" else "Device is
+  offline" }} |{{computer.device_location}}| {{
+  computer.last_download_time.strftime("%Y-%m-%d %H:%M:%S") if
+  computer.last_download_time else "-" }}
+  <br />
+  {% endfor %}
+</p>
 
-  <p
-    style="font-size: 1rem; line-height: 1.5rem; text-align: left;"
-  >
-    PRIMARY
-    <br>
-    {% for computer in primary_computers %}
-      {{ computer.computer_name }} | {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }} | {{ computer.last_download_time.strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
-      <br>
-    {% endfor %}
-  </p>
+<hr style="margin: 20px 0; border: 1px solid #dcdee4" />
 
-  <p
-    style="font-size: 1rem; line-height: 1.5rem; text-align: left;"
-  >
-    Alternate
-    <br>
-    {% for computer in alternate_computers %}
-      {{ computer.computer_name }} | {{ "Unsuccessful backup" if computer.download_status == "error" else "Device is offline" }} | {{ computer.last_download_time.strftime("%Y-%m-%d %H:%M:%S") if computer.last_download_time else "-" }}
-      <br>
-    {% endfor %}
-  </p>
-
-  <hr style="margin: 20px 0; border: 1px solid #DCDEE4;" />
-
-  <!--  macros.button("Submit Support Ticket", url_for("main.index"))
+<!--  macros.button("Submit Support Ticket", url_for("main.index"))
 
   <p style="font-size: 0.75rem; line-height: 1rem;">Send a support ticket to your IT department to resolve the error.</p>
 
   <hr style="margin: 20px 0; border: 1px solid #DCDEE4;" /> -->
 
-  {{ macros.button("eMAR Vault", url_for("main.index")) }}
+{{ macros.button("eMAR Vault", url_for("main.index")) }}
 
-  <p style="font-size: 0.75rem; line-height: 1rem;">Login to the eMAR Vault to check the status of your computers.</p>
+<p style="font-size: 0.75rem; line-height: 1rem">
+  Login to the eMAR Vault to check the status of your computers.
+</p>
 {% endblock %}

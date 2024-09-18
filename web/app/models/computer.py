@@ -2,7 +2,7 @@ import enum
 from copy import copy
 from datetime import datetime, timedelta
 
-from flask import flash
+from flask import flash, render_template
 from flask_admin.babel import gettext
 from flask_admin.contrib.sqla import tools
 from flask_admin.model.template import DeleteRowAction, EditRowAction
@@ -22,6 +22,7 @@ from app.models.utils import (
     SoftDeleteMixin,
 )
 from app.utils import MyModelView
+from app.utils.send_email import send_email
 from config import BaseConfig as CFG
 
 from .additional_location import AdditionalLocation
@@ -74,6 +75,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     company_id = db.Column(db.Integer, db.ForeignKey("companies.id"), nullable=True)
 
     computer_name = db.Column(db.String(64), unique=True, nullable=False)
+    device_location = db.Column(db.String(64), default="")
     sftp_host = db.Column(db.String(128), default=CFG.DEFAULT_SFTP_HOST)
     sftp_port = db.Column(
         db.Integer,
@@ -507,6 +509,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "location_name",
         "location_status",
         "device_role",
+        "device_location",
         "device_type",
         "last_download_time",
         "last_time_online",
@@ -544,6 +547,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "additional_sftp_folder_paths",
         "folder_password",
         "type",
+        "device_location",
         "device_type",
         "device_role",
         "msi_version",
@@ -774,42 +778,22 @@ class ComputerView(RowActionListMixin, MyModelView):
 
                 return False
 
-            if (
-                location.company.is_trial
-                and location_activated_computers
-                > CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
-            ):
-                flash(
-                    gettext(
-                        "Could not activate the new computer.\
-                        Limit of 1 computer per location while using eMAR Vault Lite edition.\
-                        Contact sales@emarvault.com to upgrade!"
-                    ),
-                    "error",
-                )
-                logger.error(
-                    "Failed to create record. Locations of the trial company can have only one computer."
+            if location_activated_computers > company.computers_max_count:
+                inform_alert = render_template(
+                    "email/exceeded_limit_email.html",
+                    company=company,
+                    location=location,
+                    max_count=company.computers_max_count,
+                    company_name=company.name,
+                    location_name=location.name,
+                    computers=location.computers,
                 )
 
-                return False
-            elif (
-                not location.company.is_trial
-                and location_activated_computers
-                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
-            ):
-                flash(
-                    gettext(
-                        "Could not activate the new computer. \
-                        Limit of 5 computers per location while using eMAR Vault Pro edition."
-                    ),
-                    "error",
+                send_email(
+                    subject=f"{company.name} - {location.name} Has Exceeded the Maximum Computer Limit",
+                    recipients=[CFG.SUPPORT_SALES_EMAIL],
+                    html=inform_alert,
                 )
-                logger.error(
-                    "Failed to create record. Locations can have only 5 computers."
-                )
-
-                return False
-
         try:
             # Check if there is deleted computer with such name
             deleted_computer = (
@@ -928,41 +912,22 @@ class ComputerView(RowActionListMixin, MyModelView):
 
                 return False
 
-            if (
-                location.company.is_trial
-                and location_activated_computers
-                > CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
-            ):
-                flash(
-                    gettext(
-                        "Could not activate the new computer.\
-                        Limit of 1 computer per location while using eMAR Vault Lite edition.\
-                        Contact sales@emarvault.com to upgrade!"
-                    ),
-                    "error",
-                )
-                logger.error(
-                    "Failed to update record. Locations of the trial company can have only one computer."
+            if location_activated_computers > company.computers_max_count:
+                inform_alert = render_template(
+                    "email/exceeded_limit_email.html",
+                    company=company,
+                    location=location,
+                    max_count=company.computers_max_count,
+                    company_name=company.name,
+                    location_name=location.name,
+                    computers=location.computers,
                 )
 
-                return False
-            elif (
-                not location.company.is_trial
-                and location_activated_computers
-                >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
-            ):
-                flash(
-                    gettext(
-                        "Could not activate the new computer. \
-                        Limit of 5 computers per location while using eMAR Vault Pro edition."
-                    ),
-                    "error",
+                send_email(
+                    subject=f"{company.name} - {location.name} Has Exceeded the Maximum Computer Limit",
+                    recipients=[CFG.SUPPORT_SALES_EMAIL],
+                    html=inform_alert,
                 )
-                logger.error(
-                    "Failed to update record. Locations can have only 5 computers."
-                )
-
-                return False
 
         # check if there was additional_locations added
         if form.additional_locations.data:
@@ -994,41 +959,22 @@ class ComputerView(RowActionListMixin, MyModelView):
 
                     return False
 
-                if (
-                    location.company.is_trial
-                    and location_activated_computers
-                    > CFG.MAX_LOCATION_ACTIVE_COMPUTERS_LITE
-                ):
-                    flash(
-                        gettext(
-                            "Could not activate the new computer.\
-                            Limit of 1 computer per location while using eMAR Vault Lite edition.\
-                            Contact sales@emarvault.com to upgrade!"
-                        ),
-                        "error",
-                    )
-                    logger.error(
-                        "Failed to update record. Locations of the trial company can have only one computer."
+                if location_activated_computers > location.company.computers_max_count:
+                    inform_alert = render_template(
+                        "email/exceeded_limit_email.html",
+                        company=company,
+                        location=location,
+                        max_count=company.computers_max_count,
+                        company_name=company.name,
+                        location_name=location.name,
+                        computers=location.computers,
                     )
 
-                    return False
-                elif (
-                    not location.company.is_trial
-                    and location_activated_computers
-                    >= CFG.MAX_LOCATION_ACTIVE_COMPUTERS_PRO
-                ):
-                    flash(
-                        gettext(
-                            "Could not activate the new computer. \
-                            Limit of 5 computers per location while using eMAR Vault Pro edition."
-                        ),
-                        "error",
+                    send_email(
+                        subject=f"{company.name} - {location.name} Has Exceeded the Maximum Computer Limit",
+                        recipients=[CFG.SUPPORT_SALES_EMAIL],
+                        html=inform_alert,
                     )
-                    logger.error(
-                        "Failed to update record. Locations can have only 5 computers."
-                    )
-
-                    return False
 
         try:
             model_copy = copy(model)

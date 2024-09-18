@@ -22,3 +22,5 @@ class ComputerCredentialsInfo(BaseModel):
     msi_version: str
     use_pcc_backup: bool
     pcc_fac_id: str | None
+    version: str
+    device_location: str

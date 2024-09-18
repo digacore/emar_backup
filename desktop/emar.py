@@ -9,6 +9,7 @@ def main():
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-sc", "--server-connect", action="store_true")
     group.add_argument("-hb", "--heartbeat", action="store_true")
+    group.add_argument("-up", "--upgrade-program", action="store_true")
     group.add_argument("-del", "--computer-delete", action="store_true")
     group.add_argument("-l", "--log-convertor", action="store_true")
 
@@ -23,6 +24,9 @@ def main():
     elif args.computer_delete:
         logger.info("Computer delete")
         c.computer_delete()
+    elif args.upgrade_program:
+        logger.info("Upgrade program")
+        c.upgrade_program()
     elif args.log_convertor:
         print("Log convertor started.")
         c.log_convertor()

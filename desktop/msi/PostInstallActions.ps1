@@ -26,6 +26,40 @@ $shortcut.WorkingDirectory = $cfg.backups_path
 $shortcut.Save()
 Write-Log "Desktop shortcut created"
 
+
+# Copy pdf to desktop
+$HowToUsePath = (Get-Item "eMARVault_How_to_Use.pdf").FullName
+# check if file exists
+if (-not (Test-Path -Path $HowToUsePath)) {
+    Write-Log "Warning: How to use pdf not found"
+    exit 1
+}
+
+$UserProfilesPath = "C:\Users"
+$UserDirs = Get-ChildItem -Path $UserProfilesPath | Where-Object { $_.PSIsContainer -and (Test-Path "$($_.FullName)\Desktop") }
+
+# Копіювати файл для кожного користувача
+foreach ($UserDir in $UserDirs) {
+    $DesktopDir = "$($UserDir.FullName)\Desktop"
+    $OneDriveDesktop = "$($UserDir.FullName)\OneDrive\Desktop"
+
+    if (Test-Path -Path $OneDriveDesktop) {
+        Copy-Item -Path $HowToUsePath -Destination $OneDriveDesktop -Force
+        Write-Log "Copied to OneDrive desktop: $OneDriveDesktop"
+    }
+
+    if (Test-Path -Path $cfg.backups_path) {
+        Copy-Item -Path $HowToUsePath -Destination $cfg.backups_path -Force
+        Write-Log "Copied to backup folder: $DesktopDir"
+    }
+
+    if (Test-Path -Path $DesktopDir) {
+        Copy-Item -Path $HowToUsePath -Destination $DesktopDir -Force
+        Write-Log "Copied to desktop: $DesktopDir"
+    }
+}
+
+
 # Get location is from msi CommandLine
 Get-WmiObject Win32_Process -Filter "name = 'msiexec.exe'" | Select-Object CommandLine | ForEach-Object { $_.CommandLine -match '^.+lid_(\d+)\.msi.*$' }
 if ($Matches) {
@@ -99,6 +133,19 @@ $comboBox2.DropDownStyle = [System.Windows.Forms.ComboBoxStyle]::DropDownList
 
 $form.Controls.Add($comboBox2)
 
+# Add label for Device location
+$label3 = New-Object System.Windows.Forms.Label
+$label3.Location = New-Object System.Drawing.Point(10, 200)
+$label3.Size = New-Object System.Drawing.Size(280, 20)
+$label3.Text = 'Device location (optional):'
+$form.Controls.Add($label3)
+
+# Add TextBox for Device location
+$textBox = New-Object System.Windows.Forms.TextBox
+$textBox.Location = New-Object System.Drawing.Point(10, 220)
+$textBox.Size = New-Object System.Drawing.Size(260, 20)
+$form.Controls.Add($textBox)
+
 $checkBox1 = New-Object System.Windows.Forms.CheckBox
 $checkBox1.Location = New-Object System.Drawing.Point(20, 120)
 $checkBox1.Size = New-Object System.Drawing.Size(200, 40)
@@ -120,11 +167,13 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
     $selectedDeviceRole = $comboBox2.SelectedItem
     $enableLogs = $checkBox1.Checked
     $activateDevice = $checkBox2.Checked
+    $deviceLocation = $textBox.Text
 
     $message = "Selected Device Type: $selectedDeviceType`n"
     $message += "Selected Device Role: $selectedDeviceRole`n"
     $message += "Enable Logs: $enableLogs`n"
-    $message += "Activate Device: $activateDevice"
+    $message += "Activate Device: $activateDevice`n"
+    $message += "Device Location: $deviceLocation"
 
     # write collected data to config.json
     $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
@@ -144,9 +193,30 @@ if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
         $cfg | Add-Member -MemberType NoteProperty -Name "activate_device" -Value $null
     }
     $cfg.activate_device = $activateDevice
+    if (-not $cfg.PSObject.Properties["device_location"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "device_location" -Value $null
+    }
+    $cfg.device_location = $deviceLocation
     $cfg | ConvertTo-Json | Set-Content config.json
 
     [System.Windows.Forms.MessageBox]::Show($message, "Results", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+}
+
+# Add logic after the form is submitted
+if ($result -eq [System.Windows.Forms.DialogResult]::OK) {
+    $selectedRole = $comboBox2.SelectedItem
+
+    if ($selectedRole -eq 'PRIMARY') {
+        # Disable sleep mode
+        Write-Host "Disabling sleep mode for PRIMARY device"
+        powercfg /change standby-timeout-ac 0
+        powercfg /change standby-timeout-dc 0
+        powercfg /change monitor-timeout-ac 0
+        powercfg /change monitor-timeout-dc 0
+    }
+    else {
+        Write-Host "No changes to sleep settings"
+    }
 }
 
 Unregister-ScheduledTask -TaskName "eMARVaultHourlyCheck" -Confirm:$false -ErrorAction Continue
@@ -169,7 +239,7 @@ Write-Log "principal - [$principal]"
 $executionTimeLimit = New-TimeSpan -Hours 2
 Write-Log "executionTimeLimit - [$executionTimeLimit]"
 
-$taskSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit $executionTimeLimit
+$taskSettings = New-ScheduledTaskSettingsSet -WakeToRun -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit $executionTimeLimit
 Write-Log "taskSettings - [$taskSettings]"
 
 $task = Register-ScheduledTask  -TaskName "eMARVaultHourlyCheck" -Description "Periodically check remote sftp and update backups" `
@@ -202,10 +272,41 @@ Write-Log "Register-ScheduledTask - [$task]"
 Start-ScheduledTask -TaskName "eMARVaultHourlyCheck"
 
 
+Unregister-ScheduledTask -TaskName "eMARVaultUpgrade" -Confirm:$false -ErrorAction Continue
+Write-Log "Unregister-ScheduledTask eMARVaultUpgrade"
+
+$scriptDir = Join-Path "." "." -Resolve
+Write-Log "scriptDir - [$scriptDir]"
+
+$action = New-ScheduledTaskAction -Execute 'Powershell.exe' `
+    -Argument "-NonInteractive -WindowStyle Hidden -ExecutionPolicy ByPass -Command .\Upgrade.ps1" `
+    -WorkingDirectory $scriptDir
+Write-Log "action - [$action]"
+
+$trigger = New-ScheduledTaskTrigger -Once -RepetitionInterval (New-TimeSpan -Days 1) -At 0am #need to be changed
+Write-Log "trigger - [$trigger]"
+
+$task = Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "eMARVaultUpgrade" `
+    -Settings $(New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit $executionTimeLimit) `
+    -Principal $principal -Description "Periodically check for updates and upgrade the program"
+Write-Log "Register-ScheduledTask - [$task]"
+
+
 
 Write-Log finish
 
 $wshell = New-Object -ComObject Wscript.Shell
 $wshell.Popup("Program is successfully installed!")
+
+# Run python Heartbeat
+Write-Log "Run heartbeat script by user: $env:UserName"
+.\emar.exe -hb
+Write-Log "Run heartbeat script by user: $env:UserName - done"
+
+# Run python Heartbeat
+Write-Log "Run server connect script by user: $env:UserName"
+.\emar.exe -sc
+Write-Log "Run server connect script by user: $env:UserName - done"
+
 
 Pop-Location

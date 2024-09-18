@@ -17,8 +17,6 @@ from app.utils.sftp_check_files_for_update_and_load import (
     update_download_status,
 )
 
-from app.utils.version import Version
-
 
 @logger.catch
 def server_connect():
@@ -40,10 +38,6 @@ def server_connect():
         except (AppError, FileNotFoundError) as e:
             update_download_status("error", credentials, error_message=str(e))
             logger.info("Downloading process interrupted")
-
-        # user = getpass.getuser()
-        if Version().from_str(credentials.version) > Version().from_str(old_credentials.version):
-            self_update(credentials, old_credentials)
 
     elif credentials.status == "registered":
         logger.info("New computer registered. Download will start next time if credentials available in DB.")

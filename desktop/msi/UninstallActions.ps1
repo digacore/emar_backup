@@ -52,6 +52,11 @@ Unregister-ScheduledTask -TaskName "eMARVaultHeartbeat" -Confirm:$false -ErrorAc
 if (! $?) {
   Write-Log "Unregister-ScheduledTask eMARVaultHeartbeat failed"
 }
+Write-Log "Unregister-ScheduledTask eMARVaultUpgrade"
+Unregister-ScheduledTask -TaskName "eMARVaultUpgrade" -Confirm:$false -ErrorAction SilentlyContinue
+if (! $?) {
+  Write-Log "Unregister-ScheduledTask eMARVaultUpgrade failed"
+}
 
 # -- wait for scheduled tasks to stop after delete tasks --
 
@@ -86,7 +91,13 @@ $pathToShortcut = Join-Path $ENV:Public\Desktop "eMARVault.lnk"
 Write-Log "Remove-Item $pathToShortcut"
 Remove-Item $pathToShortcut -ErrorAction SilentlyContinue | Out-Null
 
-
+# -- delete pdf from desktop --
+$pathToPdf = Join-Path $ENV:Public\Desktop "eMARVault_How_to_Use.pdf"
+$pathToPdfOneDrive = Join-Path "$env:USERPROFILE\OneDrive\Desktop" "eMARVault_How_to_Use.pdf"
+Write-Log "Remove-Item $pathToPdf"
+Remove-Item $pathToPdf -ErrorAction SilentlyContinue | Out-Null
+Write-Log "Remove-Item $pathToPdfOneDrive"
+Remove-Item $pathToPdfOneDrive -ErrorAction SilentlyContinue | Out-Null
 
 
 Pop-Location

@@ -1,98 +1,301 @@
-{% import '/admin/model/edit.html' as admin_edit with context %}
-{% extends 'base.html' %}
+{% import '/admin/model/edit.html' as admin_edit with context %} {% extends
+'base.html' %} {% block content %} {% if "/admin/user/" in return_url %}
+<!-- Change emails receiving -->
+<div class="d-flex justify-content-end w-100 mb-3">
+  <button
+    type="button"
+    class="btn btn-primary mr-2"
+    data-toggle="modal"
+    data-target="#notification-settings-modal"
+  >
+    Notifications settings
+  </button>
 
-{% block content %}
-  {% if "/admin/user/" in return_url %}
-    <div class="d-flex justify-content-end w-100 mb-3">
-      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#change-password-modal">
-        Change password
-      </button>
-
-      <!-- Modal -->
-      <div class="modal fade" id="change-password-modal" tabindex="-1" role="dialog" aria-labelledby="change-password-modal-label" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="change-password-modal-label">Change Password</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+  <!-- Modal -->
+  <div
+    class="modal fade"
+    id="notification-settings-modal"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="notification-settings-modal-label"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="notification-settings-modal-label">
+            Notifications settings
+          </h5>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form
+            id="notification-settings-form"
+            action="/notification-settings"
+            method="post"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="user_id" value="{{ model.id }}" />
+            <input type="hidden" name="user_email" value="{{ model.email }}" />
+            <div class="form-group">
+              <label class="text-gray-900" for="user-email-input"
+                >{{model.email}}</label
+              >
             </div>
-            <div class="modal-body">
-              <form id="change-password-form" action="/change-password" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <input type="hidden" name="user_id" value="{{ model.id }}">
-                <div class="form-group">
-                  <label class="text-gray-900" for="new-password-input">New password:</label>
-                  <div class="d-flex align-items-center">
-                    <input id="new-password-input" name="new_password" type="password" class="form-control mr-2" placeholder="Enter new password">
-                    <a id="show-new-password" type="button" class="fas fa-eye" onclick="showPassword(event, 'hide-new-password')"></a>
-                    <a hidden id="hide-new-password" type="button" onclick="hidePassword(event, 'show-new-password')" class="fas fa-eye-slash"></a>
-                  </div>
+            <div class="form-group">
+              <div class="col-lg-10">
+                <div class="input-group">
+                  <span class="input-group-addon">
+                    <!-- prettier-ignore -->
+                    <input
+                      type="checkbox"
+                      name="receive_alert_emails"
+                      aria-label="Receive Alerts emails"
+                      {% if model.receive_alert_emails %}checked{% endif %}
+                    />
+                  </span>
+                  <label class="text-gray-900 ml-3" for="receive-alert-emails"
+                    >Receive Alerts emails</label
+                  >
                 </div>
-
-                <div class="form-group">
-                  <label class="text-gray-900" for="confirm-new-password-input">Confirm password:</label>
-                  <div class="d-flex align-items-center">
-                    <input id="confirm-new-password-input" name="confirm_new_password" type="password" class="form-control mr-2" placeholder="Confirm password">
-                    <a id="show-confirm-password" type="button" class="fas fa-eye" onclick="showPassword(event, 'hide-confirm-password')"></a>
-                    <a hidden id="hide-confirm-password" type="button" onclick="hidePassword(event, 'show-confirm-password')" class="fas fa-eye-slash"></a>
-                  </div>
-                  <p hidden id="passwords-not-equal-hint" class="text-danger text-xs"></p>
+              </div>
+            </div>
+            <!-- Summaries emails -->
+            <div class="form-group">
+              <div class="col-lg-10">
+                <div class="input-group">
+                  <span class="input-group-addon">
+                    <!-- prettier-ignore -->
+                    <input
+                      type="checkbox"
+                      name="receive_summaries_emails"
+                      aria-label="Receive Summaries emails"
+                      {% if model.receive_summaries_emails %}checked{% endif %}
+                    />
+                  </span>
+                  <!-- prettier-ignore -->
+                  <label class="text-gray-900 ml-3" for="receive-summaries-emails">Receive Summaries emails</label>
                 </div>
-              </form>
+              </div>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-              <button type="submit" form="change-password-form" class="btn btn-primary">Save</button>
+            <!-- Device test emails -->
+            <div class="form-group">
+              <div class="col-lg-10">
+                <div class="input-group">
+                  <span class="input-group-addon">
+                    <!-- prettier-ignore -->
+                    <input
+                      type="checkbox"
+                      name="receive_device_test_emails"
+                      aria-label="Receive Device Test emails"
+                      {% if model.receive_device_test_emails %}checked{% endif %}
+                    />
+                  </span>
+                  <!-- prettier-ignore -->
+                  <label class="text-gray-900 ml-3" for="receive-device-test-emails">Receive Device Test emails</label>
+                </div>
+              </div>
             </div>
-          </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            Close
+          </button>
+          <button
+            type="submit"
+            form="notification-settings-form"
+            class="btn btn-primary"
+          >
+            Save
+          </button>
         </div>
       </div>
     </div>
-  {% elif "/admin/company/" in return_url %}
-    <div class="d-flex justify-content-end w-100 mb-3">
-      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#activation-company-modal">
-        {% if model.activated %}
-          Deactivate
-        {% else %}
-          Activate
-        {% endif %}
-      </button>
+  </div>
+  <button
+    type="button"
+    class="btn btn-primary"
+    data-toggle="modal"
+    data-target="#change-password-modal"
+  >
+    Change password
+  </button>
 
-      <!-- Modal -->
-      <div class="modal fade" id="activation-company-modal" tabindex="-1" role="dialog" aria-labelledby="activation-company-modal-label" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="activation-company-modal-label">
-                {% if model.activated %}
-                  Deactivate
-                {% else %}
-                  Activate
-                {% endif %}
-                company {{ model.name }}
-              </h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+  <!-- Modal -->
+  <div
+    class="modal fade"
+    id="change-password-modal"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="change-password-modal-label"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="change-password-modal-label">
+            Change Password
+          </h5>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form
+            id="change-password-form"
+            action="/change-password"
+            method="post"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <input type="hidden" name="user_id" value="{{ model.id }}" />
+            <div class="form-group">
+              <label class="text-gray-900" for="new-password-input"
+                >New password:</label
+              >
+              <div class="d-flex align-items-center">
+                <input
+                  id="new-password-input"
+                  name="new_password"
+                  type="password"
+                  class="form-control mr-2"
+                  placeholder="Enter new password"
+                />
+                <a
+                  id="show-new-password"
+                  type="button"
+                  class="fas fa-eye"
+                  onclick="showPassword(event, 'hide-new-password')"
+                ></a>
+                <a
+                  hidden
+                  id="hide-new-password"
+                  type="button"
+                  onclick="hidePassword(event, 'show-new-password')"
+                  class="fas fa-eye-slash"
+                ></a>
+              </div>
             </div>
-            <div class="modal-body">
-              <span>Are you sure that you want to {{ "deactivate" if model.activated else "activate" }} company {{ model.name }}?</span>
+
+            <div class="form-group">
+              <label class="text-gray-900" for="confirm-new-password-input"
+                >Confirm password:</label
+              >
+              <div class="d-flex align-items-center">
+                <input
+                  id="confirm-new-password-input"
+                  name="confirm_new_password"
+                  type="password"
+                  class="form-control mr-2"
+                  placeholder="Confirm password"
+                />
+                <a
+                  id="show-confirm-password"
+                  type="button"
+                  class="fas fa-eye"
+                  onclick="showPassword(event, 'hide-confirm-password')"
+                ></a>
+                <a
+                  hidden
+                  id="hide-confirm-password"
+                  type="button"
+                  onclick="hidePassword(event, 'show-confirm-password')"
+                  class="fas fa-eye-slash"
+                ></a>
+              </div>
+              <p
+                hidden
+                id="passwords-not-equal-hint"
+                class="text-danger text-xs"
+              ></p>
             </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-              <a type="button" href="{{ url_for('company_blueprint.company_activation', company_id=model.id) }}?activate={{ False if model.activated else True }}" class="btn btn-primary">Confirm</a>
-            </div>
-          </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            Close
+          </button>
+          <button
+            type="submit"
+            form="change-password-form"
+            class="btn btn-primary"
+          >
+            Save
+          </button>
         </div>
       </div>
     </div>
-  {% endif %}
+  </div>
+</div>
+{% elif "/admin/company/" in return_url %}
+<div class="d-flex justify-content-end w-100 mb-3">
+  <button
+    type="button"
+    class="btn btn-primary"
+    data-toggle="modal"
+    data-target="#activation-company-modal"
+  >
+    {% if model.activated %} Deactivate {% else %} Activate {% endif %}
+  </button>
 
-  {{admin_edit}}
-{% endblock %}
-
-{% block scripts %}
-  <script src="{{ url_for('static', filename='js/user.js')}}"></script>
+  <!-- Modal -->
+  <div
+    class="modal fade"
+    id="activation-company-modal"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="activation-company-modal-label"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="activation-company-modal-label">
+            {% if model.activated %} Deactivate {% else %} Activate {% endif %}
+            company {{ model.name }}
+          </h5>
+          <button
+            type="button"
+            class="close"
+            data-dismiss="modal"
+            aria-label="Close"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <span
+            >Are you sure that you want to {{ "deactivate" if model.activated
+            else "activate" }} company {{ model.name }}?</span
+          >
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">
+            Close
+          </button>
+          <a
+            type="button"
+            href="{{ url_for('company_blueprint.company_activation', company_id=model.id) }}?activate={{ False if model.activated else True }}"
+            class="btn btn-primary"
+            >Confirm</a
+          >
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {{admin_edit}} {% endblock %} {% block scripts %}
+<script src="{{ url_for('static', filename='js/user.js')}}"></script>
 {% endblock %}

@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime, timedelta
 
-from flask import flash
+from flask import flash, render_template
 from flask_admin.babel import gettext
 from flask_admin.contrib.sqla import tools
 from flask_admin.contrib.sqla.fields import QuerySelectField
@@ -15,6 +15,7 @@ from wtforms import validators
 from zoneinfo import ZoneInfo
 
 from app import db
+
 from app.logger import logger
 from app.models.utils import (
     ActivatedMixin,
@@ -24,6 +25,7 @@ from app.models.utils import (
     SoftDeleteMixin,
 )
 from app.utils import MyModelView
+from app.utils.send_email import send_email
 from config import BaseConfig as CFG
 
 from .company import Company
@@ -543,7 +545,7 @@ class LocationView(RowActionListMixin, MyModelView):
                 model.created_from_pcc = False
                 model.group = [group_data] if group_data else []
 
-                if form.activate.data:
+                if form.activated.data:
                     model.deactivated_at = None
                 else:
                     model.deactivated_at = datetime.utcnow()
@@ -610,21 +612,26 @@ class LocationView(RowActionListMixin, MyModelView):
             )
             return False
 
-        # Check that location can be connected to selected company
-        if company.is_trial and model.total_computers >= 1:
-            flash(
-                gettext(
-                    "Could not connect location to this company.\
-                    eMAR Vault Lite edition does not allow more than 1 active computer for location.\
-                    Contact sales@emarvault.com to upgrade!"
-                ),
-                "error",
+            # Check that location can be connected to selected company
+        if (
+            company.computers_max_count < model.total_computers
+            or company.computers_max_count < model.computers_per_location
+        ):
+            inform_alert = render_template(
+                "email/exceeded_limit_email.html",
+                company=company,
+                location=model,
+                max_count=company.computers_max_count,
+                company_name=company.name,
+                location_name=model.name,
+                computers=model.computers,
             )
-            logger.error(
-                "Location can't be connected to this company because company is trial (more that 1 comp in location)."
-            )
-            return False
 
+            send_email(
+                subject=f"{company.name} - {model.name} Has Exceeded the Maximum Computer Limit",
+                recipients=[CFG.SUPPORT_SALES_EMAIL],
+                html=inform_alert,
+            )
         try:
             if form.activated.data and form.activated.data != model.activated:
                 model.activate(commit=False)
