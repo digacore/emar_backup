@@ -1073,6 +1073,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         OBLIGATORY_VERSIONS = [
             ("stable", "stable"),
             ("latest", "latest"),
+            ("unprompt", "unprompt"),
         ]
 
         versions = [
