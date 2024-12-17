@@ -26,7 +26,9 @@ class ClientVersionView(RowActionListMixin, MyModelView):
     def __repr__(self):
         return "ClientVersionView"
 
-    form_choices = {"name": [("stable", "stable"), ("latest", "latest")]}
+    form_choices = {
+        "name": [("stable", "stable"), ("latest", "latest"), ("unprompt", "unprompt")]
+    }
 
     action_disallowed_list = ["delete"]
 
