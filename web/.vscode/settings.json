@@ -37,6 +37,7 @@
     "sqla",
     "sqlalchemy",
     "SUPERPASS",
+    "unprompt",
     "valuelist",
     "werkzeug",
     "WRON",

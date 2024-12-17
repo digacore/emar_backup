@@ -129,3 +129,14 @@ def download_lid_msi(lid: int):
         )
     else:
         return jsonify(status="fail", message="Wrong request data."), 400
+
+
+@download_msi_fblueprint.route("/download_unprompt_msi", methods=["GET"])
+@logger.catch
+def download_unprompt_msi():
+    msi = DesktopClient.query.filter_by(flag_name="unprompt").first()
+    if not msi:
+        return jsonify(status="fail", message="No unprompt MSI found."), 400
+    return send_file(
+        io.BytesIO(msi.blob), download_name=msi.filename, mimetype=msi.mimetype
+    )
