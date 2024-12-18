@@ -32,6 +32,26 @@ services:
     depends_on:
       - db
 
+  backup:
+    image: simple2b/pg-backup:1.0
+
+    links:
+      - db
+    restart: always
+    volumes:
+      - ./backup:/backup
+    environment:
+      # scheduler
+      SCHEDULE_HOUR: ${SCHEDULE_HOUR:-0}
+      SCHEDULE_MINUTE: ${SCHEDULE_MINUTE:-0}
+      SCHEDULE_SECOND: ${SCHEDULE_SECOND:-0}
+      POSTGRES_HOST: db
+      POSTGRES_DATABASE: db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-passwd}
+      POSTGRES_EXTRA_OPTS: "--schema=public --blobs"
+      DAYS_HISTORY: 7
+
   celery_worker:
     container_name: "celery_worker"
     restart: unless-stopped

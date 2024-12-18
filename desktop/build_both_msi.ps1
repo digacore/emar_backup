@@ -1,9 +1,9 @@
-
 if (Test-Path '.\msi\dist') {
     Remove-Item .\msi\dist -Recurse
 }
 
 .\Inc-Version.ps1
+.\Inc-VersionUn.ps1
 
 pyinstaller --noconfirm --onefile --console `
     --distpath "msi/dist"    `
@@ -14,9 +14,8 @@ pyinstaller --noconfirm --onefile --console `
     --collect-all "pydantic" `
     emar.py
 
-
 copy .\config.json .\msi\dist\
 copy .\eMARVault_256x256.ico .\msi\dist\
 copy .\eMARVault_How_to_Use.pdf .\msi\dist\
 
-.\msi\BuildInstaller.ps1
+.\msi\BuildInstallers.ps1

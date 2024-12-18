@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from flask import url_for
 from sqlalchemy import select, func
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -175,3 +176,11 @@ class DesktopClientView(RowActionListMixin, MyModelView):
             return actual_query.with_entities(func.count()).select_from(self.model)
 
         return actual_query.with_entities(func.count())
+
+    def render(self, template, **kwargs):
+        kwargs["custom_button"] = Markup(
+            "<a href='{url}' class='btn btn-primary mt-3'>Download UnPrompt Msi</a>".format(
+                url=url_for("download_msi.download_unprompt_msi")
+            )
+        )
+        return super().render(template, **kwargs)
