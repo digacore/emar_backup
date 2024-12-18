@@ -19,4 +19,4 @@ class RegistrationDataWithOutLid(BaseModel):
     device_role: str = "PRIMARY"
     enable_logs: bool = True
     activate_device: bool = False
-    device_location: str
+    device_location: str = "unknown"
