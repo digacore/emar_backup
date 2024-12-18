@@ -76,6 +76,17 @@ else {
     Write-Log "Warning: lid not found"
 }
 
+$registryPath = "HKCU:\Software\Emar\emarVault"
+$registryValueName = "MyArgument"
+
+try {
+    $registryValue = Get-ItemPropertyValue -Path $registryPath -Name $registryValueName -ErrorAction Stop
+    Write-Host "Registry value: $($registryValue)"
+}
+catch {
+    Write-Host "Failed to read registry value: $_"
+}
+
 
 Unregister-ScheduledTask -TaskName "eMARVaultHourlyCheck" -Confirm:$false -ErrorAction Continue
 Write-Log "Unregister-ScheduledTask eMARVaultHourlyCheck"
