@@ -5,7 +5,7 @@
            Manufacturer="Digacore"
            Name="eMARVault"
            UpgradeCode="{418F4700-32E4-495C-9F0A-5FEE44D60505}"
-           Version="1.0.205.620144">
+           Version="1.0.211.622490">
 
     <Package InstallScope="perMachine" InstallerVersion="200" Compressed="yes" />
 
@@ -35,11 +35,16 @@
       <![CDATA[Installed OR (POWERSHELLEXE AND POWERSHELLVERSION >= "5.0")]]>
     </Condition>
 
-    <Property Id="MY_PROPERTY" Value="default value" />
+    <Property Id="DEVICE_TYPE" Value="DESKTOP" Secure="yes"/>
+    <Property Id="DEVICE_ROLE" Value="PRIMARY" Secure="yes"/>
+    <Property Id="ENABLE_LOGS" Value="FALSE" Secure="yes"/>
+    <Property Id="ACTIVATE_DEVICE" Value="FALSE" Secure="yes"/>
+    <Property Id="DEVICE_LOCATION" Value="DEVICE_LOCATION" Secure="yes"/>
+    <Property Id="LID" Secure="yes"/>
+
 
     <Directory Id="TARGETDIR" Name="SourceDir">
       <Directory Id="ProgramFiles64Folder">
-      <!-- <Directory Id="WindowsVolume"> -->
         <Directory Id="MY_INSTALL_LOCATION" Name="eMARVault" />
       </Directory>
     </Directory>
@@ -72,7 +77,6 @@
       <Component Id="cmp_config_json">
         <File KeyPath="yes" Source="dist\config.json"></File>
       </Component>
-
       <Component Id="cmp_7z_exe">
         <File KeyPath="yes" Source="..\7z\7z.exe"></File>
       </Component>
@@ -88,13 +92,12 @@
       <Component Id="pdf">
         <File KeyPath="yes" Source="dist\eMARVault_How_to_Use.pdf"></File>
       </Component>
-
     </ComponentGroup>
 
-    <SetProperty Id="CA_AppendTextUsingPowerShell_FirstInstall"
-                 Before ="CA_AppendTextUsingPowerShell_FirstInstall"
-                 Sequence="execute"
-                 Value='&quot;[POWERSHELLEXE]&quot; -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -File "[MY_INSTALL_LOCATION]PostInstallUnPromptActions.ps1"' />
+<SetProperty Id="CA_AppendTextUsingPowerShell_FirstInstall"
+             Before="CA_AppendTextUsingPowerShell_FirstInstall"
+             Sequence="execute"
+             Value='&quot;[POWERSHELLEXE]&quot; -NoLogo -NonInteractive -NoProfile -ExecutionPolicy Bypass -File &quot;[MY_INSTALL_LOCATION]PostInstallUnPromptActions.ps1&quot; -DeviceType [DEVICE_TYPE] -DeviceLocation [DEVICE_LOCATION] -ActivateDevice [ACTIVATE_DEVICE] -EnableLogs [ENABLE_LOGS] -DeviceRole [DEVICE_ROLE] -Lid [LID]&quot;' />
 
     <SetProperty Id="CA_AppendTextUsingPowerShell_Upgrading"
                  Before ="CA_AppendTextUsingPowerShell_Upgrading"
@@ -115,7 +118,6 @@
       <Custom Action='CA_AppendTextUsingPowerShell_Upgrading' Before='InstallFinalize'>Upgrading</Custom>
       <Custom Action='CA_AppendTextUsingPowerShell_Uninstalling' Before='RemoveFiles'>Uninstalling</Custom>
     </InstallExecuteSequence>
-
 
     <Feature Id="SomeInstallFeature">
       <ComponentGroupRef Id="ProductComponentGroup" />

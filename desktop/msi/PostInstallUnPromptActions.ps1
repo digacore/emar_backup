@@ -1,8 +1,26 @@
+param (
+    [Parameter(Mandatory, ParameterSetName = 'DeviceType')]
+    [string]$DeviceType,
+    [Parameter(Mandatory)]
+    [string]$DeviceLocation,
+    [Parameter(Mandatory)]
+    [string]$ActivateDevice,
+    [Parameter(Mandatory)]
+    [string]$EnableLogs,
+    [Parameter(Mandatory)]
+    [string]$DeviceRole,
+    [string]$Lid
+)
+
+
+
 Push-Location $PSScriptRoot
 
 $LOG_FILE = "InstallLog.txt"
 
 . .\Common.ps1
+
+
 
 Write-Log start
 Write-Log "User: [$env:UserName]"
@@ -75,6 +93,53 @@ if ($Matches) {
 else {
     Write-Log "Warning: lid not found"
 }
+
+
+try {
+    Write-Log "DeviceType = [$DeviceType]"
+    Write-Log "DeviceLocation = [$DeviceLocation]"
+    Write-Log "ActivateDevice = [$ActivateDevice]"
+    Write-Log "EnableLogs = [$EnableLogs]"
+    Write-Log "DeviceRole = [$DeviceRole]"
+    Write-Log "Lid = [$Lid]"
+
+
+    # write collected data to config.json
+    $cfg = Get-Content config.json | Out-String | ConvertFrom-Json
+    if (-not $cfg.PSObject.Properties["device_type"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "device_type" -Value $null
+    }
+    $cfg.device_type = $DeviceType
+    if (-not $cfg.PSObject.Properties["device_role"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "device_role" -Value $null
+    }
+    $cfg.device_role = $DeviceRole
+    if (-not $cfg.PSObject.Properties["enable_logs"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "enable_logs" -Value $null
+    }
+    $cfg.enable_logs = $EnableLogs
+    if (-not $cfg.PSObject.Properties["activate_device"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "activate_device" -Value $null
+    }
+    $cfg.activate_device = $ActivateDevice
+    if (-not $cfg.PSObject.Properties["device_location"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "device_location" -Value $null
+    }
+    $cfg.device_location = $DeviceLocation
+
+    if (-not $cfg.PSObject.Properties["lid"]) {
+        $cfg | Add-Member -MemberType NoteProperty -Name "lid" -Value $null
+    }
+    $cfg.lid = $Lid
+
+
+    $cfg | ConvertTo-Json | Set-Content config.json
+}
+catch {
+    Write-Log "Failed to read registry value: $_"
+}
+
+
 
 
 Unregister-ScheduledTask -TaskName "eMARVaultHourlyCheck" -Confirm:$false -ErrorAction Continue
