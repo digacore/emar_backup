@@ -242,21 +242,25 @@ def get_google_provider_cfg():
 
 @auth_blueprint.route("/mlogin")
 def mlogin():
+    redirect_url = url_for("auth.auth_response", _external=True)
+    logger.info("Redirect URL: {}", redirect_url)
     auth_uri = auth.log_in(
         scopes=CFG.MICRO_SCOPE,  # Have user consent to scopes during log-in
-        redirect_uri=url_for(
-            "auth.auth_response", _external=True
-        ),  # Optional. If present, this absolute URL must match your app's redirect_uri registered in Azure Portal
+        redirect_uri=redirect_url,  # Optional. If present, this absolute URL must match your app's redirect_uri registered in Azure Portal
     )
+    logger.info("Auth URI: {}", auth_uri)
     return redirect(auth_uri["auth_uri"])
 
 
 @auth_blueprint.route(CFG.MICRO_REDIRECT_PATH)
 def auth_response():
+    logger.info("Auth response received")
     result = auth.complete_log_in(request.args)
+    form = LoginForm()
+    logger.debug("Auth result: {}", result)
     if "error" in result:
         flash("Can't complete_log_in for current request", "danger")
-        return render_template("auth/login.html", result=result)
+        return render_template("auth/login.html", result=result, form=form)
 
     # check if result["preferred_username"] has email inside
     if "@" not in result["preferred_username"]:
