@@ -254,6 +254,7 @@ def mlogin():
 
 @auth_blueprint.route(CFG.MICRO_REDIRECT_PATH)
 def auth_response():
+    logger.info("Auth response received")
     result = auth.complete_log_in(request.args)
     form = LoginForm()
     if "error" in result:
