@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 
 from app.models import DeviceRole, ComputerStatus
 
@@ -43,6 +43,16 @@ class ComputerRegInfoLid(BaseModel):
     enable_logs: bool = True
     activate_device: bool = True
     device_location: str = ""
+
+    @validator("device_type", pre=True)
+    def normalize_device_type(cls, v):
+        if isinstance(v, str):
+            v = v.upper()
+            if v == "LAPTOP":
+                return "LAPTOP"
+            if v == "DESKTOP":
+                return "DESKTOP"
+        return v
 
 
 class ComputerSpecialStatus(BaseModel):
