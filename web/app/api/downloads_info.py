@@ -181,6 +181,11 @@ def last_time(body: LastTime):
 @downloads_info_blueprint.post("/get_credentials")
 @logger.catch
 def get_credentials(body: GetCredentials):
+    logger.info(
+        "Request for credentials. computer: {}, id: {}",
+        body.computer_name,
+        body.identifier_key,
+    )
     # TODO add unique guid to headers in server_connect.py for api
     computer: Computer = (
         Computer.query.filter_by(
@@ -235,7 +240,7 @@ def get_credentials(body: GetCredentials):
             message="Supplying credentials",
             host=computer.sftp_host,
             company_name=computer.company_name,
-            location_name=computer.location_name,
+            location_name=computer.location_name if computer.location_name else "",
             additional_locations=computer.get_additional_locations,
             sftp_username=computer.sftp_username,
             sftp_password=computer.sftp_password,
