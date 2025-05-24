@@ -254,9 +254,10 @@ def mlogin():
 @auth_blueprint.route(CFG.MICRO_REDIRECT_PATH)
 def auth_response():
     result = auth.complete_log_in(request.args)
+    form = LoginForm()
     if "error" in result:
         flash("Can't complete_log_in for current request", "danger")
-        return render_template("auth/login.html", result=result)
+        return render_template("auth/login.html", result=result, form=form)
 
     # check if result["preferred_username"] has email inside
     if "@" not in result["preferred_username"]:
