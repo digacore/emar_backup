@@ -3,7 +3,6 @@ name = "emarweb"
 version = "1.0.0"
 description = "Emar Web App"
 authors = ["petro <xavrais312@gmail.com>"]
-readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
