@@ -54,6 +54,18 @@ class ComputerRegInfoLid(BaseModel):
                 return "DESKTOP"
         return v
 
+    @validator("device_role", pre=True)
+    def normalize_device_role(cls, v):
+        if isinstance(v, str):
+            v = v.upper()
+            if v == "PRIMARY":
+                return "PRIMARY"
+            if v == "ALTERNATE":
+                return "ALTERNATE"
+            if v == "ALTERNATIVE":
+                return "ALTERNATE"
+        return v
+
 
 class ComputerSpecialStatus(BaseModel):
     identifier_key: str
