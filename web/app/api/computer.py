@@ -229,7 +229,11 @@ def delete_computer():
 @computer_blueprint.post("/register_computer_lid")
 @logger.catch
 def register_computer_lid(body: ComputerRegInfoLid):
-    logger.info("register_computer_lid. {} in body.", body.activate_device)
+    logger.info(
+        "register_computer_lid. {} in body. Computer name {}",
+        body.activate_device,
+        body.computer_name,
+    )
     computer: Computer = Computer.query.filter_by(
         identifier_key=body.identifier_key, computer_name=body.computer_name
     ).first()
