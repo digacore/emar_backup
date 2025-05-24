@@ -257,6 +257,7 @@ def auth_response():
     logger.info("Auth response received")
     result = auth.complete_log_in(request.args)
     form = LoginForm()
+    logger.debug("Auth result: {}", result)
     if "error" in result:
         flash("Can't complete_log_in for current request", "danger")
         return render_template("auth/login.html", result=result, form=form)
