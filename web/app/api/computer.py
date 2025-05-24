@@ -230,8 +230,7 @@ def delete_computer():
 @logger.catch
 def register_computer_lid(body: ComputerRegInfoLid):
     logger.info(
-        "register_computer_lid. {} in body. Computer name {}",
-        body.activate_device,
+        "register_computer_lid. Computer name {}",
         body.computer_name,
     )
     computer: Computer = Computer.query.filter_by(
