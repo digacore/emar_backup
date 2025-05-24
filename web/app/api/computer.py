@@ -237,12 +237,20 @@ def register_computer_lid(body: ComputerRegInfoLid):
         identifier_key=body.identifier_key, computer_name=body.computer_name
     ).first()
     location: Location = Location.query.filter_by(id=body.lid).first()
+    if not location:
+        message = f"Location with id {body.lid} does not exist"
+        logger.info("Computer registration failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 404
     company: Company = Company.query.filter_by(id=location.company_id).first()
+    if not company:
+        message = f"Company with id {location.company_id} does not exist"
+        logger.info("Computer registration failed. Reason: {}", message)
+        return jsonify(status="fail", message=message), 404
     computer_name: Computer = Computer.query.filter_by(
         computer_name=body.computer_name
     ).first()
 
-    if computer:
+    if computer or computer_name:
         message = "Wrong request data. Such computer already exists"
         logger.info("Computer registration failed. Reason: {}", message)
         return jsonify(status="fail", message=message), 409
