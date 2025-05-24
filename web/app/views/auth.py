@@ -242,12 +242,13 @@ def get_google_provider_cfg():
 
 @auth_blueprint.route("/mlogin")
 def mlogin():
+    redirect_url = url_for("auth.auth_response", _external=True)
+    logger.info("Redirect URL: {}", redirect_url)
     auth_uri = auth.log_in(
         scopes=CFG.MICRO_SCOPE,  # Have user consent to scopes during log-in
-        redirect_uri=url_for(
-            "auth.auth_response", _external=True
-        ),  # Optional. If present, this absolute URL must match your app's redirect_uri registered in Azure Portal
+        redirect_uri=redirect_url,  # Optional. If present, this absolute URL must match your app's redirect_uri registered in Azure Portal
     )
+    logger.info("Auth URI: {}", auth_uri)
     return redirect(auth_uri["auth_uri"])
 
 
