@@ -23,7 +23,10 @@ def test_register_computer_lid(client):
     response = client.post(
         "/register_computer_lid",
         json=dict(
-            identifier_key="new_computer", computer_name="new_test_computer", lid=1
+            identifier_key="new_computer",
+            computer_name="new_test_computer",
+            lid=1,
+            device_type="Desktop",
         ),
     )
 
