@@ -1,0 +1,93 @@
+import { db } from "../database/db";
+import { computers, downloadBackupCalls } from "../drizzle/schema";
+import { eq, and } from "drizzle-orm";
+import { PCCDownloadSchema } from "../validation_schemas/pcc";
+import { getPcc2LeggedToken } from "../utils/get-pcc-2-legged-token";
+import { executePccRequest } from "../utils/execute-pcc-request";
+
+export const downloadFromPCC = async (req: Bun.BunRequest) => {
+  const bodyRaw = await req.json();
+  const body = PCCDownloadSchema.parse(bodyRaw);
+
+  const computer = await db.query.computers.findFirst({
+    with: { company: true, location: true },
+    where: and(
+      eq(computers.identifierKey, body.identifier_key),
+      eq(computers.computerName, body.computer_name)
+    ),
+  });
+  console.log("🚀 ~ downloadFromPCC ~ computer:", computer);
+
+  if (!computer) {
+    return new Response(
+      `Computer with such credentials not found. Computer_name: ${body.computer_name}, identifier_key: ${body.identifier_key}`,
+      { status: 404 }
+    );
+  }
+
+  if (!computer.company || !computer.location) {
+    console.error(
+      `Can't download backup for computer ${computer.id}. Company or location is not set`
+    );
+    return new Response("Company or location is not set", { status: 409 });
+  }
+
+  if (computer.company.isTrial || !computer.activated) {
+    console.error(
+      `Can't download backup for computer ${computer.id}. Company is trial or computer is not activated`
+    );
+    return new Response("Company is trial or computer is not activated", {
+      status: 403,
+    });
+  }
+
+  if (!computer.company.pccOrgId || !computer.location.pccFacId) {
+    console.error(
+      `Can't download backup for computer ${computer.id}. PCC_ORG_ID or PCC_FAC_ID is not set`
+    );
+    return new Response("PCC_ORG_ID or PCC_FAC_ID is not set", { status: 409 });
+  }
+
+  const token = await getPcc2LeggedToken();
+
+  // Download backup file
+  const backupRoute = `api/public/preview1/orgs/${computer.company.pccOrgId}/facs/${body.pcc_fac_id}/backup-files`;
+  const url = new URL(backupRoute, process.env.PCC_BASE_URL).toString();
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  };
+
+  const res = await executePccRequest(url, headers, "GET");
+  console.log("🚀 ~ downloadFromPCC ~ res:", res);
+
+  if (!res.ok) {
+    console.error(
+      `Error downloading backup from PCC for computer ${computer.id}. Status: ${res.status}`
+    );
+    return new Response(`Error downloading backup from PCC`, {
+      status: res.status,
+    });
+  }
+
+  //     # Create a record about new backup call
+  await db.insert(downloadBackupCalls).values({
+    computerId: computer.id,
+    createdAt: new Date().toISOString(),
+  });
+
+  // Return the response as a stream with chunked transfer
+  // This is equivalent to Python's res.iter_content(chunk_size=10 * 1024)
+  // Bun automatically handles chunked streaming when you pass a ReadableStream
+  return new Response(res.body, {
+    status: res.status,
+    headers: {
+      "Content-Type":
+        res.headers.get("Content-Type") || "application/octet-stream",
+      "Content-Disposition": "attachment; filename=emar_backup.zip",
+      // Copy other important headers from the original response
+      "Content-Length": res.headers.get("Content-Length") || undefined,
+      "Transfer-Encoding": "chunked", // Enable chunked transfer like Python's streaming
+    },
+  });
+};

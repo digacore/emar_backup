@@ -2,7 +2,7 @@ import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 
 import { users } from "./drizzle/schema.ts";
-import { downloadFromPCC } from "./routes/download_from_pcc";
+import { downloadFromPCC } from "./routes/download-from-pcc.ts";
 
 const db = drizzle(process.env.DATABASE_URL!);
 
