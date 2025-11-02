@@ -140,6 +140,8 @@ class BaseConfig(object):
         os.environ.get("MAX_LOCATION_ACTIVE_COMPUTERS_PRO", 5)
     )
 
+    IS_API = os.environ.get("IS_API", "False").lower() in ("true", "1", "t")
+
     def offset_to_est(dt_now: datetime.datetime, datetime_obj: bool = False):
         """Offset to EST time
 

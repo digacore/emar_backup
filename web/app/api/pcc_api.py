@@ -1,6 +1,7 @@
 import os
 from urllib.parse import urljoin
 from flask import Response, abort
+import requests
 
 from app import schema as s, models as m
 from app.views.blueprint import BlueprintApi
@@ -75,10 +76,17 @@ def download_backup_from_pcc(body: s.GetPccDownloadData) -> Response:
     }
 
     res = execute_pcc_request(url, headers=headers, stream=True)
+    res = requests.get(
+        "https://www.sampledocs.in/DownloadFiles/SampleFile?filename=sampledocs-50mb-xlsx-file&ext=xlsx",
+        headers={
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        stream=True,
+    )
 
     # Create a record about new backup call
-    new_backup_call = m.DownloadBackupCall(computer_id=computer.id)
-    new_backup_call.save()
+    # new_backup_call = m.DownloadBackupCall(computer_id=computer.id)
+    # new_backup_call.save()
 
     return Response(
         res.iter_content(chunk_size=10 * 1024),

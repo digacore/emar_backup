@@ -127,6 +127,18 @@
       },
       "jinja": true,
       "args": ["update-cl-stat"]
+    },
+    {
+      "name": "API",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": ["api:app", "--reload", "--port", "5002"],
+      "justMyCode": true,
+      "env": {
+        "IS_API": "true",
+        "FLASK_ENV": "development"
+      }
     }
   ]
 }

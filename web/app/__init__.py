@@ -1,26 +1,24 @@
-import os
 import json
+import os
 import warnings
-# from datetime import datetime, timedelta
 
 from flask import render_template, url_for
-from flask_openapi3 import OpenAPI
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_wtf.csrf import generate_csrf
-from werkzeug.exceptions import HTTPException
-from werkzeug.middleware.proxy_fix import ProxyFix
-from flask_migrate import Migrate
 from flask_admin import Admin
 from flask_admin.menu import MenuLink
-from flask_mail import Mail
 from flask_jwt_extended import JWTManager
+from flask_login import LoginManager
+from flask_mail import Mail
+from flask_migrate import Migrate
+from flask_openapi3 import OpenAPI
+from flask_wtf.csrf import generate_csrf
 from oauthlib.oauth2 import WebApplicationClient
-from flask_session import Session
+from werkzeug.exceptions import HTTPException
+from werkzeug.middleware.proxy_fix import ProxyFix
 
+from app.database import get_db
 from app.utils import update_report_data
-
 from config import BaseConfig as CFG
+from flask_session import Session
 
 
 class MainIndexLink(MenuLink):
@@ -32,7 +30,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # instantiate extensions
 login_manager = LoginManager()
-db = SQLAlchemy()
+db = get_db()
 migration = Migrate()
 mail = Mail()
 admin = Admin(template_mode="bootstrap4")
@@ -42,43 +40,43 @@ flask_session = Session()
 
 
 def create_app(environment="development"):
-    from config import config
-    from app.views import (
-        main_blueprint,
-        auth_blueprint,
-        info_blueprint,
-        company_blueprint,
-        location_blueprint,
-        pcc_blueprint,
-        search_blueprint,
-        merge_blueprint,
-        billing_blueprint,
-        computer_settings_blueprint,
-    )
     from app.api import (
-        downloads_info_blueprint,
         computer_blueprint,
         download_msi_blueprint,
         download_msi_fblueprint,
+        downloads_info_blueprint,
         pcc_api_blueprint,
     )
     from app.models import (
-        User,
-        UserView,
         AnonymousUser,
+        ClientVersion,
+        ClientVersionView,
         Company,
         CompanyView,
         Computer,
         ComputerView,
-        Location,
-        LocationView,
-        LocationGroup,
-        LocationGroupView,
         DesktopClient,
         DesktopClientView,
-        ClientVersion,
-        ClientVersionView,
+        Location,
+        LocationGroup,
+        LocationGroupView,
+        LocationView,
+        User,
+        UserView,
     )
+    from app.views import (
+        auth_blueprint,
+        billing_blueprint,
+        company_blueprint,
+        computer_settings_blueprint,
+        info_blueprint,
+        location_blueprint,
+        main_blueprint,
+        merge_blueprint,
+        pcc_blueprint,
+        search_blueprint,
+    )
+    from config import config
 
     # Instantiate app.
     app = OpenAPI(__name__)
