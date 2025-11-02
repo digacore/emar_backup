@@ -1,17 +1,6 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-
-import { users } from "./drizzle/schema.ts";
 import { downloadFromPCC } from "./routes/download-from-pcc.ts";
 
-const db = drizzle(process.env.DATABASE_URL!);
-
-async function main() {
-  const allUsers = await db.select().from(users);
-  console.log("Getting all users from the database: ", allUsers);
-}
-
-main();
 const server = Bun.serve({
   // `routes` requires Bun v1.2.3+
   routes: {
