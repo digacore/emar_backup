@@ -13,3 +13,4 @@ flask_session/
 
 # backup folder
 backup/
+file_api/

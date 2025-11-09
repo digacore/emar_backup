@@ -1,4 +1,6 @@
 from app import models as m
+from datetime import datetime
+from app import db
 
 
 def get_companies_merged_locations(
@@ -122,11 +124,17 @@ def has_access_to_company(user: m.User, company: m.Company):
 
 def get_telemetry_settings_for_computer(computer: m.Computer) -> m.TelemetrySettings:
     """Get telemetry settings for computer"""
-    linked_table = m.ComputerSettingsLinkTable.query.filter_by(computer_id=computer.id).first()
+    linked_table = m.ComputerSettingsLinkTable.query.filter_by(
+        computer_id=computer.id
+    ).first()
     if not linked_table:
-        linked_table = m.LocationSettingsLinkTable.query.filter_by(location_id=computer.location_id).first()
+        linked_table = m.LocationSettingsLinkTable.query.filter_by(
+            location_id=computer.location_id
+        ).first()
         if not linked_table:
-            linked_table = m.CompanySettingsLinkTable.query.filter_by(company_id=computer.company_id).first()
+            linked_table = m.CompanySettingsLinkTable.query.filter_by(
+                company_id=computer.company_id
+            ).first()
             if not linked_table:
                 linked_table = m.TelemetrySettings.query.get(1)
                 if not linked_table:
@@ -134,5 +142,46 @@ def get_telemetry_settings_for_computer(computer: m.Computer) -> m.TelemetrySett
                     linked_table.save()
                     return linked_table
                 return linked_table
-    telemetry_settings = m.TelemetrySettings.query.filter_by(id=linked_table.telemetry_settings_id).first()
+    telemetry_settings = m.TelemetrySettings.query.filter_by(
+        id=linked_table.telemetry_settings_id
+    ).first()
     return telemetry_settings
+
+
+def parse_search_params(search_string):
+    """Parse parameters from search query in Flask-Admin format"""
+    filters = {}
+
+    if not search_string:
+        return filters
+
+    # Examples of Flask-Admin formats:
+    # "<<computer_name>>:emar" -> filter by computer_name
+    # "<<location_name>>:Location_25" -> filter by location_name
+
+    parts = search_string.split("<<")
+    for part in parts:
+        if ">>:" in part:
+            field_and_value = part.split(">>:")
+            if len(field_and_value) == 2:
+                field_name = field_and_value[0]
+                field_value = field_and_value[1]
+                filters[field_name] = field_value
+
+    return filters
+
+
+def apply_text_filter(query, field, value):
+    return query.filter(field.ilike(f"%{value}%"))
+
+
+def apply_join_filter(query, join_model, field, value):
+    return query.join(join_model).filter(field.ilike(f"%{value}%"))
+
+
+def apply_date_filter(query, field, value):
+    try:
+        search_date = datetime.strptime(value, "%Y-%m-%d").date()
+        return query.filter(db.func.date(field) == search_date)
+    except ValueError:
+        return query.filter(field.cast(db.String).ilike(f"%{value}%"))
