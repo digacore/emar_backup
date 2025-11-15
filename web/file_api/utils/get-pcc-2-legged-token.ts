@@ -18,13 +18,17 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
   }
 
   const serverPath = "auth/token";
-  const url = new URL(serverPath, process.env.PCC_BASE_URL).toString();
+  const baseUrl = process.env.PCC_BASE_URL!;
+  const url = `${
+    baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl
+  }/${serverPath}`;
 
   //     base64_secret = get_base64_string(f"{CFG.PCC_CLIENT_ID}:{CFG.PCC_CLIENT_SECRET}")
   const base64Secret = btoa(
     `${process.env.PCC_CLIENT_ID}:${process.env.PCC_CLIENT_SECRET}`
   );
 
+  console.log("🚀 ~ getPcc2LeggedToken ~ url:", url);
   try {
     const response = await fetch(url, {
       method: "POST",

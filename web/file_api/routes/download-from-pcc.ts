@@ -52,7 +52,10 @@ export const downloadFromPCC = async (req: Bun.BunRequest) => {
 
   // Download backup file
   const backupRoute = `api/public/preview1/orgs/${computer.company.pccOrgId}/facs/${body.pcc_fac_id}/backup-files`;
-  const url = new URL(backupRoute, process.env.PCC_BASE_URL).toString();
+  const baseUrl = process.env.PCC_BASE_URL!;
+  const url = `${
+    baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl
+  }/${backupRoute}`;
   const headers = {
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
