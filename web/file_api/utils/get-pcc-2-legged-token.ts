@@ -1,6 +1,7 @@
 import { db } from "../database/db";
 import { pccAccessTokens } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { logger } from "./logger";
 
 export const getPcc2LeggedToken = async (): Promise<string> => {
   const token = await db.query.pccAccessTokens.findFirst();
@@ -10,10 +11,10 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
     new Date(new Date(token.createdAt!).getTime() + token.expiresIn * 1000) >
       new Date(now.getTime() + 60 * 1000)
   ) {
-    console.debug(
-      "Existing token is valid till: ",
-      new Date(new Date(token.createdAt!).getTime() + token.expiresIn * 1000)
+    const validTill = new Date(
+      new Date(token.createdAt!).getTime() + token.expiresIn * 1000
     );
+    logger.debug({ validTill }, "Existing token is valid");
     return token.token;
   }
 
@@ -28,7 +29,7 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
     `${process.env.PCC_CLIENT_ID}:${process.env.PCC_CLIENT_SECRET}`
   );
 
-  console.log("🚀 ~ getPcc2LeggedToken ~ url:", url);
+  logger.info({ url }, "Requesting PCC 2-legged token");
   try {
     const response = await fetch(url, {
       method: "POST",
@@ -47,7 +48,14 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorText = await response.text();
+      logger.error(
+        { status: response.status, errorText },
+        "HTTP error when fetching PCC token"
+      );
+      throw new Error(
+        `HTTP error! status: ${response.status}, body: ${errorText}`
+      );
     }
 
     const responseData = (await response.json()) as {
@@ -84,7 +92,7 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
 
     return newToken;
   } catch (error) {
-    console.error("Error fetching PCC API token:", error);
+    logger.error({ error }, "Error fetching PCC API token");
     throw error;
   }
 };

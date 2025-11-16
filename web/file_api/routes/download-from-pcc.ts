@@ -4,6 +4,7 @@ import { eq, and } from "drizzle-orm";
 import { PCCDownloadSchema } from "../validation_schemas/pcc";
 import { getPcc2LeggedToken } from "../utils/get-pcc-2-legged-token";
 import { executePccRequest } from "../utils/execute-pcc-request";
+import { logger } from "../utils/logger";
 
 export const downloadFromPCC = async (req: Bun.BunRequest) => {
   const bodyRaw = await req.json();
@@ -16,7 +17,7 @@ export const downloadFromPCC = async (req: Bun.BunRequest) => {
       eq(computers.computerName, body.computer_name)
     ),
   });
-  console.log("🚀 ~ downloadFromPCC ~ computer:", computer);
+  logger.info({ computer }, "downloadFromPCC - computer found");
 
   if (!computer) {
     return new Response(
@@ -26,15 +27,21 @@ export const downloadFromPCC = async (req: Bun.BunRequest) => {
   }
 
   if (!computer.company || !computer.location) {
-    console.error(
-      `Can't download backup for computer ${computer.id}. Company or location is not set`
+    logger.error(
+      { computerId: computer.id },
+      "Can't download backup for computer. Company or location is not set"
     );
     return new Response("Company or location is not set", { status: 409 });
   }
 
   if (computer.company.isTrial || !computer.activated) {
-    console.error(
-      `Can't download backup for computer ${computer.id}. Company is trial or computer is not activated`
+    logger.error(
+      {
+        computerId: computer.id,
+        isTrial: computer.company.isTrial,
+        activated: computer.activated,
+      },
+      "Can't download backup for computer. Company is trial or computer is not activated"
     );
     return new Response("Company is trial or computer is not activated", {
       status: 403,
@@ -42,8 +49,13 @@ export const downloadFromPCC = async (req: Bun.BunRequest) => {
   }
 
   if (!computer.company.pccOrgId || !computer.location.pccFacId) {
-    console.error(
-      `Can't download backup for computer ${computer.id}. PCC_ORG_ID or PCC_FAC_ID is not set`
+    logger.error(
+      {
+        computerId: computer.id,
+        pccOrgId: computer.company.pccOrgId,
+        pccFacId: computer.location.pccFacId,
+      },
+      "Can't download backup for computer. PCC_ORG_ID or PCC_FAC_ID is not set"
     );
     return new Response("PCC_ORG_ID or PCC_FAC_ID is not set", { status: 409 });
   }
@@ -62,11 +74,15 @@ export const downloadFromPCC = async (req: Bun.BunRequest) => {
   };
 
   const res = await executePccRequest(url, headers, "GET");
-  console.log("🚀 ~ downloadFromPCC ~ res:", res);
+  logger.info(
+    { status: res.status, ok: res.ok },
+    "downloadFromPCC - PCC response received"
+  );
 
   if (!res.ok) {
-    console.error(
-      `Error downloading backup from PCC for computer ${computer.id}. Status: ${res.status}`
+    logger.error(
+      { computerId: computer.id, status: res.status },
+      "Error downloading backup from PCC for computer"
     );
     return new Response(`Error downloading backup from PCC`, {
       status: res.status,
