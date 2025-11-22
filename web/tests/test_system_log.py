@@ -4,7 +4,7 @@ from app import models as m
 from app.controllers import create_system_log
 
 
-def test_create_log_event(test_db):
+def test_create_log_event(client, test_db):
     test_computer = (
         test_db.session.query(m.Computer).filter_by(computer_name="comp3_test").first()
     )
