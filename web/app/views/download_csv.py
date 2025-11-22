@@ -3,10 +3,14 @@ import io
 from urllib.parse import unquote
 
 from flask import Blueprint, Response, request
-from flask_login import login_required
+from flask_login import current_user, login_required
 
+from app import db
 from app import models as m
 from app.logger import logger
+
+
+from app.models import ComputerView
 from app.views.utils import (
     apply_date_filter,
     apply_join_filter,
@@ -115,11 +119,6 @@ def download_csv():
     logger.info("Generating CSV download for computers")
     search_param = unquote(request.args.get("search", ""))
     filters = parse_search_params(search_param)
-
-    # Use ComputerView to get the base query with permission filtering
-    from app.models import ComputerView
-    from app import db
-    from flask_login import current_user
 
     computer_view = ComputerView(m.Computer, db.session)
     computers_query = computer_view.get_query()
