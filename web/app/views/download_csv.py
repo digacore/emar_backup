@@ -38,6 +38,72 @@ text_mappings = [
 download_csv_blueprint = Blueprint("download_csv", __name__, url_prefix="/download_csv")
 
 
+def apply_flask_admin_filters(query, request_args):
+    """Apply Flask-Admin filters from URL parameters
+
+    Flask-Admin filter format: flt{filter_num}_{field_index}=value
+    Each field has 7 filter operations (contains, not contains, equals, not equals, empty, not empty, in list)
+    Field indices: computer_name(0-6), status(7-13), company_name(14-20), location_name(21-27), etc.
+
+    Args:
+        query: SQLAlchemy query object
+        request_args: Flask request.args
+
+    Returns:
+        Modified query with filters applied
+    """
+    # Field mapping from ComputerView.searchable_sortable_list
+    # Each field has 7 filter slots (0-6 for first field, 7-13 for second, etc.)
+    # Note: company_name and location_name are hybrid properties, no JOIN needed
+    field_mapping = {
+        0: ("computer_name", m.Computer.computer_name),
+        7: ("status", m.Computer.status),
+        14: ("company_name", m.Computer.company_name),  # Hybrid property
+        21: ("location_name", m.Computer.location_name),  # Hybrid property
+        28: ("device_type", m.Computer.device_type),
+        35: ("device_role", m.Computer.device_role),
+        42: ("last_download_time", m.Computer.last_download_time),
+        49: ("last_time_online", m.Computer.last_time_online),
+        56: ("computer_ip", m.Computer.computer_ip),
+    }
+
+    # Parse Flask-Admin filter parameters
+    for key, value in request_args.items():
+        if not key.startswith("flt"):
+            continue
+
+        # Parse filter key: flt{filter_num}_{field_index}
+        parts = key.split("_")
+        if len(parts) < 2:
+            continue
+
+        try:
+            field_index = int(parts[1])
+        except ValueError:
+            continue
+
+        # Find the field this filter applies to
+        # Field index uses 7-slot blocks per field
+        field_position = (field_index // 7) * 7
+
+        if field_position not in field_mapping:
+            logger.warning(
+                f"Unknown field index: {field_index} (position {field_position})"
+            )
+            continue
+
+        field_name, field = field_mapping[field_position]
+
+        # Note: field_index % 7 gives operation type (0=contains, 1=not contains, etc.)
+        # For now, we'll treat all operations as "contains"
+
+        # Apply contains filter (works for text, ENUM, and hybrid property fields)
+        query = query.filter(field.ilike(f"%{value}%"))
+        logger.info(f"Applied filter: {field_name} contains '{value}'")
+
+    return query
+
+
 @download_csv_blueprint.route("", methods=["GET"])
 @login_required
 def download_csv():
@@ -50,7 +116,26 @@ def download_csv():
     search_param = unquote(request.args.get("search", ""))
     filters = parse_search_params(search_param)
 
-    computers_query = m.Computer.query
+    # Use ComputerView to get the base query with permission filtering
+    from app.models import ComputerView
+    from app import db
+    from flask_login import current_user
+
+    computer_view = ComputerView(m.Computer, db.session)
+    computers_query = computer_view.get_query()
+
+    # Log initial count after permission filtering
+    initial_count = computers_query.count()
+    logger.info(
+        f"After permission filtering: {initial_count} computers (user: {current_user.username}, permission: {current_user.permission})"
+    )
+
+    # Apply Flask-Admin filters if present
+    computers_query = apply_flask_admin_filters(computers_query, request.args)
+
+    # Log count after Flask-Admin filters
+    after_admin_filters_count = computers_query.count()
+    logger.info(f"After Flask-Admin filters: {after_admin_filters_count} computers")
 
     for filter_key, field in text_mappings:
         if filter_key in filters:
