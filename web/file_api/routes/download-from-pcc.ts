@@ -78,7 +78,7 @@ export const downloadFromPCC = async (req: Bun.BunRequest) => {
 
   const res = await executePccRequest(url, headers, "GET");
   logger.info(
-    { status: res.status, ok: res.ok },
+    { status: res.status, ok: res.ok, computer: computer.computerName },
     "downloadFromPCC - PCC response received"
   );
 
