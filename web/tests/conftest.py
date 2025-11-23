@@ -9,6 +9,7 @@ from config import BaseConfig as CFG
 
 app = create_app(environment="testing")
 app.config["TESTING"] = True
+app.config["SERVER_NAME"] = "localhost:5000"
 
 
 @pytest.fixture

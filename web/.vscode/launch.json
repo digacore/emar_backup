@@ -127,6 +127,17 @@
       },
       "jinja": true,
       "args": ["update-cl-stat"]
+    },
+    {
+      "name": "Bun: Test Current File",
+      "type": "bun",
+      "request": "launch",
+      "cwd": "${workspaceFolder}/file_api",
+      "program": "${file}",
+      "args": [],
+      "env": {},
+      "stopOnEntry": false,
+      "watchMode": false
     }
   ]
 }
