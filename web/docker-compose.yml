@@ -89,6 +89,8 @@ services:
       - "127.0.0.1:${FILE_API_PORT:-33000}:3000"
     environment:
       DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
 
 volumes:
   db-data0:
