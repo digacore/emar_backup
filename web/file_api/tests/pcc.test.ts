@@ -28,9 +28,9 @@ describe("PCC Download Tests", () => {
   describe("downloadFromPCC", () => {
     it("should return correct response", async () => {
       const req = createMockBunRequest({
-        identifier_key: "cc0f751f-056f-42d3-a73f-02ed02b4eaa9",
-        computer_name: "DTC-AM-C6NC264",
-        pcc_fac_id: "44",
+        identifier_key: "pass identifier here",
+        computer_name: "pass computer name here",
+        pcc_fac_id: "pass pcc fac id here",
       });
       const res = await downloadFromPCC(req);
       expect(res.status).toBe(200);
