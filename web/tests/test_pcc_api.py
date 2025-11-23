@@ -24,27 +24,55 @@ from app.controllers import (
 SANDBOX_ORG_UUID = "11848592-809A-42F4-82E3-5CE14964A007"
 
 
-def test_update_daily_requests_count(client, test_db):
+def test_update_daily_requests_count(test_db):
+    from datetime import datetime
+
     TEST_EPOCH_TIME_FIRST = 1695988800000
     TEST_EPOCH_TIME_SECOND = 1696075200000
     TEST_REQUESTS_NUMBER_SMALL = 1000
     TEST_REQUESTS_NUMBER_BIG = 5000
 
+    # Convert to datetime for filtering
+    reset_time_first = datetime.utcfromtimestamp(TEST_EPOCH_TIME_FIRST / 1000)
+    reset_time_second = datetime.utcfromtimestamp(TEST_EPOCH_TIME_SECOND / 1000)
+
+    # Clear existing PCCDailyRequest records for these specific times
+    m.PCCDailyRequest.query.filter_by(reset_time=reset_time_first).delete()
+    m.PCCDailyRequest.query.filter_by(reset_time=reset_time_second).delete()
+    test_db.session.commit()
+
     # Create test report for the first time
     update_daily_requests_count(TEST_EPOCH_TIME_FIRST, TEST_REQUESTS_NUMBER_SMALL)
-    assert m.PCCDailyRequest.query.count() == 1
+    record_count = m.PCCDailyRequest.query.filter_by(
+        reset_time=reset_time_first
+    ).count()
+    assert record_count == 1
 
     # Update test report with bigger requests number
     update_daily_requests_count(TEST_EPOCH_TIME_FIRST, TEST_REQUESTS_NUMBER_BIG)
-    assert m.PCCDailyRequest.query.count() == 1
-    assert m.PCCDailyRequest.query.first().requests_count == TEST_REQUESTS_NUMBER_BIG
+    record_count = m.PCCDailyRequest.query.filter_by(
+        reset_time=reset_time_first
+    ).count()
+    assert record_count == 1
+
+    first_record = m.PCCDailyRequest.query.filter_by(
+        reset_time=reset_time_first
+    ).first()
+    # Test should use used_requests (QUOTA - remaining), not remaining directly
+    EXPECTED_VALUE = (
+        current_app.config["PCC_DAILY_QUOTA_LIMIT"] - TEST_REQUESTS_NUMBER_BIG
+    )
+    assert first_record.requests_count == EXPECTED_VALUE
 
     # Create test report for the second time
     update_daily_requests_count(TEST_EPOCH_TIME_SECOND, TEST_REQUESTS_NUMBER_SMALL)
-    assert m.PCCDailyRequest.query.count() == 2
+    total_test_records = m.PCCDailyRequest.query.filter(
+        m.PCCDailyRequest.reset_time.in_([reset_time_first, reset_time_second])
+    ).count()
+    assert total_test_records == 2
 
 
-def test_check_daily_requests_count(client, test_db):
+def test_check_daily_requests_count(test_db):
     # Test case when this is the first request
     check_result = check_daily_requests_count()
     assert check_result is True
