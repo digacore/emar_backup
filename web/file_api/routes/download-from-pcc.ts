@@ -17,7 +17,10 @@ export const downloadFromPCC = async (req: Bun.BunRequest) => {
       eq(computers.computerName, body.computer_name)
     ),
   });
-  logger.info({ computer }, "downloadFromPCC - computer found");
+  logger.info(
+    { computer: computer?.computerName },
+    "downloadFromPCC - computer found"
+  );
 
   if (!computer) {
     return new Response(
