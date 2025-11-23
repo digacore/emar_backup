@@ -81,5 +81,14 @@ services:
     command: >
       --requirepass ${REDIS_PASSWORD}
 
+  file_api:
+    build:
+      context: ./file_api
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:${FILE_API_PORT:-33000}:3000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+
 volumes:
   db-data0:
