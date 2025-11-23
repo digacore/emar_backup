@@ -6,6 +6,5 @@ COPY . .
 RUN bun install --production
 
 # run the app
-USER bun
 EXPOSE 3000/tcp
 ENTRYPOINT [ "bun", "run", "index.ts" ]
