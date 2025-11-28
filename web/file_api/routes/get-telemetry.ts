@@ -75,8 +75,28 @@ async function getTelemetrySettingsForComputer(
 }
 
 export const getTelemetryInfo = async (req: Request) => {
-  const bodyRaw = await req.json();
-  const body = TelemetryRequestIdSchema.parse(bodyRaw);
+  // GET request with JSON body (Python requests.get(url, json={...}))
+  // Body is now readable because index.ts converts GET to POST internally
+  let body;
+  try {
+    const bodyRaw = await req.json();
+    body = TelemetryRequestIdSchema.parse(bodyRaw);
+  } catch (err) {
+    // If no body or invalid JSON, return error
+    const message = "identifier_key is required in request body";
+    logger.info(
+      { reason: message, error: String(err) },
+      "Computer telemetry info failed"
+    );
+
+    return new Response(
+      JSON.stringify({ status: "fail", message } as TelemetryInfoResponse),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   logger.info(
     { identifier_key: body.identifier_key },

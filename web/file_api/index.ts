@@ -28,13 +28,7 @@ const server = Bun.serve({
         return new Response("Method Not Allowed", { status: 405 });
       }
     },
-    "/get_telemetry_info": (req) => {
-      if (req.method === "GET") {
-        return getTelemetryInfo(req);
-      } else {
-        return new Response("Method Not Allowed", { status: 405 });
-      }
-    },
+    // /get_telemetry_info handled in fallback fetch() due to GET+body workaround
     "/printer_info": (req) => {
       if (req.method === "POST") {
         return printerInfo(req);
@@ -46,7 +40,31 @@ const server = Bun.serve({
 
   // (optional) fallback for unmatched routes:
   // Required if Bun's version < 1.2.3
-  fetch(req) {
+  async fetch(req) {
+    const url = new URL(req.url);
+
+    // Special handling for /get_telemetry_info
+    // Nginx will convert GET (with body) → POST before sending to Bun
+    // So we accept POST here
+    if (url.pathname === "/get_telemetry_info") {
+      if (req.method === "POST") {
+        return getTelemetryInfo(req);
+      } else if (req.method === "GET") {
+        // GET without body support - return error with instructions
+        return new Response(
+          JSON.stringify({
+            status: "fail",
+            message:
+              "GET with body not supported. Use POST or configure Nginx proxy.",
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+    }
+
     return new Response("Not Found", { status: 404 });
   },
 });
