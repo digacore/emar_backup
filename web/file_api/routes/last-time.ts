@@ -4,6 +4,7 @@ import { db } from "../database/db";
 import { computers, desktopClients, clientVersions } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../utils/logger";
+import { getCurrentTimestamp } from "../utils/timestamp";
 
 export const lastTime = async (req: Request) => {
   const bodyRaw = await req.json();
@@ -75,7 +76,7 @@ export const lastTime = async (req: Request) => {
     "unknown";
 
   // Format timestamp to match Flask format (YYYY-MM-DD HH:MM:SS without milliseconds)
-  const now = new Date().toISOString().replace("T", " ").substring(0, 19);
+  const now = getCurrentTimestamp();
 
   // Update computer timestamps (fire-and-forget for speed)
   const updateData: {

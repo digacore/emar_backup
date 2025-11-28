@@ -16,6 +16,7 @@ import {
 } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "../utils/logger";
+import { getCurrentTimestamp } from "../utils/timestamp";
 
 // Helper function to get telemetry settings with fallback chain
 async function getTelemetrySettingsForComputer(
@@ -190,7 +191,7 @@ export const printerInfo = async (req: Request) => {
   }
 
   // Format timestamp without milliseconds
-  const now = new Date().toISOString().replace("T", " ").substring(0, 19);
+  const now = getCurrentTimestamp();
 
   logger.info(
     {

@@ -9,6 +9,7 @@ import {
 } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { logger } from "../utils/logger";
+import { getCurrentTimestamp } from "../utils/timestamp";
 
 export const getCredentials = async (req: Request) => {
   const bodyRaw = await req.json();
@@ -87,7 +88,7 @@ export const getCredentials = async (req: Request) => {
     req.headers.get("X-Real-IP") ||
     "unknown";
 
-  const timestamp = new Date().toISOString();
+  const timestamp = getCurrentTimestamp();
   logger.info(
     { computerIp: clientIp, lastTimeOnline: timestamp },
     "Updating computer IP and last_time_online in DB"
