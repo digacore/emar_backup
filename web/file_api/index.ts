@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { downloadFromPCC } from "./routes/download-from-pcc.ts";
+import { getCredentials } from "./routes/get-credentials.ts";
 
 const server = Bun.serve({
   // `routes` requires Bun v1.2.3+
@@ -7,6 +8,13 @@ const server = Bun.serve({
     "/download_from_pcc": (req) => {
       if (req.method === "POST") {
         return downloadFromPCC(req);
+      } else {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+    },
+    "/get_credentials": (req) => {
+      if (req.method === "POST") {
+        return getCredentials(req);
       } else {
         return new Response("Method Not Allowed", { status: 405 });
       }
