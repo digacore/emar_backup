@@ -3,7 +3,11 @@ import { z } from "zod";
 export const LastTimeSchema = z.object({
   identifier_key: z.string().optional(),
   computer_name: z.string(),
-  last_download_time: z.boolean().optional(),
+  // Accept boolean (true/false) or string (timestamp) and convert to boolean
+  last_download_time: z
+    .union([z.boolean(), z.string()])
+    .transform((val) => (typeof val === "boolean" ? val : val.length > 0))
+    .optional(),
 });
 
 export type LastTimeRequest = z.infer<typeof LastTimeSchema>;
