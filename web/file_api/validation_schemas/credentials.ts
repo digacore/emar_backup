@@ -27,7 +27,7 @@ export interface ComputerCredentialsInfo {
   msi_version: string;
   version: string;
   use_pcc_backup: boolean;
-  pcc_fac_id: number | null;
+  pcc_fac_id: string | null; // Changed from number | null to string | null
 }
 
 export interface CredentialsErrorResponse {

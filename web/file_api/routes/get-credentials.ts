@@ -170,7 +170,9 @@ export const getCredentials = async (req: Request) => {
     msi_version: msi?.version || "undefined",
     version: msi?.version || "undefined",
     use_pcc_backup: computer.location?.usePccBackup || false,
-    pcc_fac_id: computer.location?.pccFacId || null,
+    pcc_fac_id: computer.location?.pccFacId
+      ? String(computer.location.pccFacId)
+      : null,
   };
 
   return new Response(JSON.stringify(credInfo), {
