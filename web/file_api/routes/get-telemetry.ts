@@ -193,16 +193,6 @@ export const printerInfo = async (req: Request) => {
   // Format timestamp without milliseconds
   const now = getCurrentTimestamp();
 
-  logger.info(
-    {
-      printerName: body.printer_info.Name,
-      printerStatus: printerStatus,
-      printerStatusTimestamp: now,
-      computerId: computer.id,
-    },
-    "Updating printer info with timestamp in DB"
-  );
-
   // Fire-and-forget update for speed
   db.update(computers)
     .set({

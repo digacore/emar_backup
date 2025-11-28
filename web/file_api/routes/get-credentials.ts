@@ -89,10 +89,6 @@ export const getCredentials = async (req: Request) => {
     "unknown";
 
   const timestamp = getCurrentTimestamp();
-  logger.info(
-    { computerIp: clientIp, lastTimeOnline: timestamp },
-    "Updating computer IP and last_time_online in DB"
-  );
 
   db.update(computers)
     .set({
