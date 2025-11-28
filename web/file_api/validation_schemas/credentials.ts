@@ -29,3 +29,13 @@ export interface ComputerCredentialsInfo {
   use_pcc_backup: boolean;
   pcc_fac_id: number | null;
 }
+
+export interface CredentialsErrorResponse {
+  status: "fail";
+  message: string;
+  rmcreds?: string;
+}
+
+export type GetCredentialsResponse =
+  | ComputerCredentialsInfo
+  | CredentialsErrorResponse;

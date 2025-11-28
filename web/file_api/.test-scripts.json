@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "test": "bun test",
+    "test:routes": "bun test ./tests/get-credentials.test.ts ./tests/last-time.test.ts ./tests/telemetry.test.ts",
+    "test:load": "bun test ./tests/get-creds-load.test.ts --timeout 120000",
+    "test:quick": "bun test ./tests/get-creds-quick.test.ts",
+    "test:all": "bun test ./tests/get-credentials.test.ts ./tests/last-time.test.ts ./tests/telemetry.test.ts ./tests/get-creds-load.test.ts --timeout 120000"
+  }
+}
