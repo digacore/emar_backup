@@ -87,10 +87,16 @@ export const getCredentials = async (req: Request) => {
     req.headers.get("X-Real-IP") ||
     "unknown";
 
+  const timestamp = new Date().toISOString();
+  logger.info(
+    { computerIp: clientIp, lastTimeOnline: timestamp },
+    "Updating computer IP and last_time_online in DB"
+  );
+
   db.update(computers)
     .set({
       computerIp: clientIp,
-      lastTimeOnline: new Date().toISOString(),
+      lastTimeOnline: timestamp,
     })
     .where(eq(computers.id, computer.id))
     .catch((err) =>

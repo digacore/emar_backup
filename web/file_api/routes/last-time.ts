@@ -91,6 +91,11 @@ export const lastTime = async (req: Request) => {
     updateData.lastDownloadTime = now;
   }
 
+  logger.info(
+    { updateData, computerId: computer.id },
+    "Updating computer timestamps in DB"
+  );
+
   db.update(computers)
     .set(updateData)
     .where(eq(computers.id, computer.id))
