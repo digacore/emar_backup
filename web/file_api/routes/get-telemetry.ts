@@ -98,11 +98,6 @@ export const getTelemetryInfo = async (req: Request) => {
     );
   }
 
-  logger.info(
-    { identifier_key: body.identifier_key },
-    "Request for telemetry info"
-  );
-
   if (!body.identifier_key) {
     const message = "identifier_key is required";
     logger.info({ reason: message }, "Computer telemetry info failed");
