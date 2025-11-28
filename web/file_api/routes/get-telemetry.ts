@@ -138,6 +138,8 @@ export const getTelemetryInfo = async (req: Request) => {
     );
   }
 
+  logger.info("Request for telemetry info");
+
   const telemetrySettingsData = await getTelemetrySettingsForComputer(
     computer.id,
     computer.locationId,
@@ -159,10 +161,7 @@ export const printerInfo = async (req: Request) => {
   const bodyRaw = await req.json();
   const body = PrinterInfoSchema.parse(bodyRaw);
 
-  logger.info(
-    { identifier_key: body.identifier_key },
-    "Printer info update request"
-  );
+  logger.info("Printer info update request");
 
   const computer = await db.query.computers.findFirst({
     where: eq(computers.identifierKey, body.identifier_key),
@@ -213,7 +212,7 @@ export const printerInfo = async (req: Request) => {
       )
     );
 
-  logger.info({ computer: computer.id }, "Printer info updated successfully");
+  logger.info("Printer info updated successfully");
 
   const response: PrinterInfoResponse = {
     status: "success",
