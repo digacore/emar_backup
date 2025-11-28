@@ -75,15 +75,26 @@ async function getTelemetrySettingsForComputer(
 }
 
 export const getTelemetryInfo = async (req: Request) => {
-  const url = new URL(req.url);
-  const identifier_key = url.searchParams.get("identifier_key");
-
-  const body = TelemetryRequestIdSchema.parse({ identifier_key });
+  const bodyRaw = await req.json();
+  const body = TelemetryRequestIdSchema.parse(bodyRaw);
 
   logger.info(
     { identifier_key: body.identifier_key },
     "Request for telemetry info"
   );
+
+  if (!body.identifier_key) {
+    const message = "identifier_key is required";
+    logger.info({ reason: message }, "Computer telemetry info failed");
+
+    return new Response(
+      JSON.stringify({ status: "fail", message } as TelemetryInfoResponse),
+      {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   const computer = await db.query.computers.findFirst({
     where: eq(computers.identifierKey, body.identifier_key),

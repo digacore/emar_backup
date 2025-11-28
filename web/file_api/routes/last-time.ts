@@ -135,7 +135,7 @@ export const lastTime = async (req: Request) => {
     message: "Writing time to db",
     sftp_host: computer.sftpHost || undefined,
     sftp_username: computer.sftpUsername || undefined,
-    sftp_folder_path: computer.sftpFolderPath || undefined,
+    sftp_folder_path: computer.sftpFolderPath || "", // Always return, even if empty
     manager_host: computer.managerHost || undefined,
     msi_version: msi || "undefined",
   };

@@ -13,7 +13,7 @@ export interface LastTimeResponse {
   message: string;
   sftp_host?: string;
   sftp_username?: string;
-  sftp_folder_path?: string;
+  sftp_folder_path: string; // Required by Flask Pydantic
   manager_host?: string;
   msi_version?: string;
   rmcreds?: string;

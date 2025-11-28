@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const TelemetryRequestIdSchema = z.object({
-  identifier_key: z.string(),
+  identifier_key: z.string().nullable(),
 });
 
 export type TelemetryRequestId = z.infer<typeof TelemetryRequestIdSchema>;
