@@ -2,20 +2,22 @@ import { db } from "../database/db";
 import { pccAccessTokens } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "./logger";
+import { getCurrentTimestamp } from "./timestamp";
 
 export const getPcc2LeggedToken = async (): Promise<string> => {
   const token = await db.query.pccAccessTokens.findFirst();
-  const now = new Date();
-  if (
-    token &&
-    new Date(new Date(token.createdAt!).getTime() + token.expiresIn * 1000) >
-      new Date(now.getTime() + 60 * 1000)
-  ) {
-    const validTill = new Date(
-      new Date(token.createdAt!).getTime() + token.expiresIn * 1000
-    );
-    logger.debug({ validTill }, "Existing token is valid");
-    return token.token;
+
+  if (token) {
+    // Parse token.createdAt as Eastern Time and check if still valid
+    const createdAt = new Date(token.createdAt! + " GMT-0500"); // Parse as EST
+    const expiresAt = new Date(createdAt.getTime() + token.expiresIn * 1000);
+    const now = new Date();
+
+    // Check if token expires more than 60 seconds from now
+    if (expiresAt > new Date(now.getTime() + 60 * 1000)) {
+      logger.debug({ validTill: expiresAt }, "Existing token is valid");
+      return token.token;
+    }
   }
 
   const serverPath = "auth/token";
@@ -72,12 +74,13 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
     // Save new token to DB
     const newToken = accessTokenInfo.access_token;
     const expiresIn = accessTokenInfo.expires_in;
+    const timestamp = getCurrentTimestamp();
 
     if (!token) {
       await db.insert(pccAccessTokens).values({
         token: newToken,
         expiresIn: expiresIn,
-        createdAt: new Date().toISOString(),
+        createdAt: timestamp,
       });
     } else {
       await db
@@ -85,7 +88,7 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
         .set({
           token: newToken,
           expiresIn: expiresIn,
-          createdAt: new Date().toISOString(),
+          createdAt: timestamp,
         })
         .where(eq(pccAccessTokens.id, token.id));
     }
