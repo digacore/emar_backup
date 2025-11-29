@@ -17,22 +17,19 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
   );
 
   if (token) {
-    // Parse token.createdAt as Eastern Time string (format: "2025-11-28 16:36:13")
-    // Convert to UTC by adding 5 hours (EST offset)
-    const [datePart, timePart] = token.createdAt!.split(" ");
-    const createdAtLocal = new Date(`${datePart}T${timePart}`);
-    const createdAtUTC = new Date(
-      createdAtLocal.getTime() + 5 * 60 * 60 * 1000
-    ); // Add 5 hours for EST
-    const expiresAt = new Date(createdAtUTC.getTime() + token.expiresIn * 1000);
+    // Parse token.createdAt as Eastern Time string (format: "2025-11-29 04:00:07.576")
+    // This is local Eastern time, need to convert to UTC by appending timezone
+    const createdAtEastern = new Date(token.createdAt! + " GMT-0500");
+    const expiresAt = new Date(
+      createdAtEastern.getTime() + token.expiresIn * 1000
+    );
     const now = new Date();
     const expiresInFuture = expiresAt > new Date(now.getTime() + 60 * 1000);
 
     logger.info(
       {
         createdAt: token.createdAt,
-        createdAtLocal: createdAtLocal.toISOString(),
-        createdAtUTC: createdAtUTC.toISOString(),
+        createdAtEastern: createdAtEastern.toISOString(),
         expiresAt: expiresAt.toISOString(),
         now: now.toISOString(),
         expiresInSeconds: Math.floor(
