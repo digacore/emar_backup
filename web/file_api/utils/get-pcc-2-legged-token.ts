@@ -7,17 +7,48 @@ import { getCurrentTimestamp } from "./timestamp";
 export const getPcc2LeggedToken = async (): Promise<string> => {
   const token = await db.query.pccAccessTokens.findFirst();
 
+  logger.info(
+    {
+      tokenExists: !!token,
+      tokenCreatedAt: token?.createdAt,
+      tokenExpiresIn: token?.expiresIn,
+    },
+    "Checking PCC token"
+  );
+
   if (token) {
-    // Parse token.createdAt as Eastern Time and check if still valid
-    const createdAt = new Date(token.createdAt! + " GMT-0500"); // Parse as EST
-    const expiresAt = new Date(createdAt.getTime() + token.expiresIn * 1000);
+    // Parse token.createdAt as Eastern Time string (format: "2025-11-28 16:36:13")
+    // Convert to UTC by adding 5 hours (EST offset)
+    const [datePart, timePart] = token.createdAt!.split(" ");
+    const createdAtLocal = new Date(`${datePart}T${timePart}`);
+    const createdAtUTC = new Date(
+      createdAtLocal.getTime() + 5 * 60 * 60 * 1000
+    ); // Add 5 hours for EST
+    const expiresAt = new Date(createdAtUTC.getTime() + token.expiresIn * 1000);
     const now = new Date();
+    const expiresInFuture = expiresAt > new Date(now.getTime() + 60 * 1000);
+
+    logger.info(
+      {
+        createdAt: token.createdAt,
+        createdAtLocal: createdAtLocal.toISOString(),
+        createdAtUTC: createdAtUTC.toISOString(),
+        expiresAt: expiresAt.toISOString(),
+        now: now.toISOString(),
+        expiresInSeconds: Math.floor(
+          (expiresAt.getTime() - now.getTime()) / 1000
+        ),
+        isValid: expiresInFuture,
+      },
+      "Token validation check"
+    );
 
     // Check if token expires more than 60 seconds from now
-    if (expiresAt > new Date(now.getTime() + 60 * 1000)) {
-      logger.debug({ validTill: expiresAt }, "Existing token is valid");
+    if (expiresInFuture) {
+      logger.info("Existing token is valid, reusing");
       return token.token;
     }
+    logger.info("Token expired, fetching new one");
   }
 
   const serverPath = "auth/token";
