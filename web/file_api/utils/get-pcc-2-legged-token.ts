@@ -7,15 +7,6 @@ import { getCurrentTimestamp } from "./timestamp";
 export const getPcc2LeggedToken = async (): Promise<string> => {
   const token = await db.query.pccAccessTokens.findFirst();
 
-  logger.info(
-    {
-      tokenExists: !!token,
-      tokenCreatedAt: token?.createdAt,
-      tokenExpiresIn: token?.expiresIn,
-    },
-    "Checking PCC token"
-  );
-
   if (token) {
     // Parse token.createdAt as Eastern Time string (format: "2025-11-29 04:00:07.576")
     // This is local Eastern time, need to convert to UTC by appending timezone
@@ -25,20 +16,6 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
     );
     const now = new Date();
     const expiresInFuture = expiresAt > new Date(now.getTime() + 60 * 1000);
-
-    logger.info(
-      {
-        createdAt: token.createdAt,
-        createdAtEastern: createdAtEastern.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        now: now.toISOString(),
-        expiresInSeconds: Math.floor(
-          (expiresAt.getTime() - now.getTime()) / 1000
-        ),
-        isValid: expiresInFuture,
-      },
-      "Token validation check"
-    );
 
     // Check if token expires more than 60 seconds from now
     if (expiresInFuture) {
@@ -59,7 +36,7 @@ export const getPcc2LeggedToken = async (): Promise<string> => {
     `${process.env.PCC_CLIENT_ID}:${process.env.PCC_CLIENT_SECRET}`
   );
 
-  logger.info({ url }, "Requesting PCC 2-legged token");
+  logger.info("Requesting PCC 2-legged token");
   try {
     const response = await fetch(url, {
       method: "POST",
