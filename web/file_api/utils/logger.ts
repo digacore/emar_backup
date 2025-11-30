@@ -8,7 +8,7 @@ export const logger = pino({
     target: "pino-pretty",
     options: {
       colorize: true,
-      translateTime: "SYS:standard",
+      translateTime: "UTC:yyyy-mm-dd HH:MM:ss.l +0000", // Force UTC like Flask
       ignore: "pid,hostname",
     },
   },
