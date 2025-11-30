@@ -3,6 +3,7 @@ import { downloadFromPCC } from "./routes/download-from-pcc.ts";
 import { getCredentials } from "./routes/get-credentials.ts";
 import { lastTime } from "./routes/last-time.ts";
 import { getTelemetryInfo, printerInfo } from "./routes/get-telemetry.ts";
+import { downloadStatus } from "./routes/download-status.ts";
 
 const server = Bun.serve({
   // `routes` requires Bun v1.2.3+
@@ -32,6 +33,13 @@ const server = Bun.serve({
     "/printer_info": (req) => {
       if (req.method === "POST") {
         return printerInfo(req);
+      } else {
+        return new Response("Method Not Allowed", { status: 405 });
+      }
+    },
+    "/download_status": (req) => {
+      if (req.method === "POST") {
+        return downloadStatus(req);
       } else {
         return new Response("Method Not Allowed", { status: 405 });
       }
