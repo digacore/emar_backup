@@ -7,6 +7,7 @@ import { downloadStatus } from "./routes/download-status.ts";
 
 const server = Bun.serve({
   // `routes` requires Bun v1.2.3+
+  // TODO: add downloads_info:files_checksum route
   routes: {
     "/download_from_pcc": (req) => {
       if (req.method === "POST") {
