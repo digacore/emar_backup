@@ -1,5 +1,8 @@
 import { GetCredentialsSchema } from "../validation_schemas/credentials";
-import type { ComputerCredentialsInfo } from "../validation_schemas/credentials";
+import type {
+  ComputerCredentialsInfo,
+  LocationInfo,
+} from "../validation_schemas/credentials";
 import { db } from "../database/db";
 import {
   computers,
@@ -105,9 +108,23 @@ export const getCredentials = async (req: Request) => {
 
   // Run all queries in parallel
   const [additionalLocationsList, msi] = await Promise.all([
-    // Get additional locations
+    // Get additional locations with full location info
     db.query.additionalLocations.findMany({
-      with: { location: true },
+      with: {
+        location: {
+          with: {
+            computers: {
+              columns: {
+                id: true,
+                activated: true,
+                lastTimeOnline: true,
+                deviceRole: true,
+                isDeleted: true,
+              },
+            },
+          },
+        },
+      },
       where: eq(additionalLocations.computerId, computer.id),
     }),
     // Get MSI version
@@ -141,9 +158,38 @@ export const getCredentials = async (req: Request) => {
     })(),
   ]);
 
-  const additionalLocationNames = additionalLocationsList
-    .map((al) => al.location?.name)
-    .filter((name): name is string => name !== null && name !== undefined);
+  const additionalLocationNames: LocationInfo[] = additionalLocationsList
+    .filter((al) => al.location !== null)
+    .map((al) => {
+      const loc = al.location!;
+      const allComputers = loc.computers || [];
+      const activeComputers = allComputers.filter(
+        (c) => !c.isDeleted && c.activated
+      );
+
+      // Check if computer was online in last 10 minutes (10 * 60 * 1000 ms)
+      const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
+      const offlineComputers = activeComputers.filter((c) => {
+        if (!c.lastTimeOnline) return true;
+        const lastOnline = new Date(c.lastTimeOnline + " GMT-0500");
+        return lastOnline < tenMinutesAgo;
+      });
+
+      const primaryOffline = offlineComputers.filter(
+        (c) => c.deviceRole === "PRIMARY"
+      );
+
+      return {
+        name: loc.name || "",
+        company_name: computer.company?.name || null,
+        total_computers: activeComputers.length,
+        total_computers_offline: offlineComputers.length,
+        primary_computers_offline: primaryOffline.length,
+        default_sftp_path: loc.defaultSftpPath || null,
+        pcc_fac_id: loc.pccFacId || null,
+      };
+    })
+    .filter((loc) => loc.name !== "");
 
   // Parse files checksum
   const filesChecksum = computer.filesChecksum
