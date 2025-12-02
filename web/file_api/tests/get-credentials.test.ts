@@ -71,6 +71,82 @@ describe("Get Credentials Route", () => {
     expect(Array.isArray(data.additional_folder_paths)).toBe(true);
   });
 
+  test("should return valid LocationInfo objects in additional_locations", async () => {
+    // Find a computer with additional locations
+    const computerWithLocations = await db.query.computers.findFirst({
+      with: {
+        additionalLocations: {
+          with: { location: true },
+        },
+      },
+      where: eq(computers.activated, true),
+    });
+
+    if (!computerWithLocations?.additionalLocations?.length) {
+      // Skip test if no computers with additional locations
+      expect(true).toBe(true);
+      return;
+    }
+
+    const response = await fetch(`${BASE_URL}/get_credentials`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        identifier_key: computerWithLocations.identifierKey,
+        computer_name: computerWithLocations.computerName,
+      }),
+    });
+
+    expect(response.status).toBe(200);
+
+    const data = (await response.json()) as ComputerCredentialsInfo;
+
+    // Verify additional_locations structure
+    expect(Array.isArray(data.additional_locations)).toBe(true);
+
+    if (data.additional_locations.length > 0) {
+      const loc = data.additional_locations[0];
+
+      // Verify LocationInfo fields
+      expect(typeof loc.name).toBe("string");
+      expect(loc.name.length).toBeGreaterThan(0);
+
+      // company_name can be string or null
+      expect(
+        loc.company_name === null || typeof loc.company_name === "string"
+      ).toBe(true);
+
+      // Statistics fields should be numbers
+      expect(typeof loc.total_computers).toBe("number");
+      expect(typeof loc.total_computers_offline).toBe("number");
+      expect(typeof loc.primary_computers_offline).toBe("number");
+
+      // Ensure statistics are non-negative
+      expect(loc.total_computers).toBeGreaterThanOrEqual(0);
+      expect(loc.total_computers_offline).toBeGreaterThanOrEqual(0);
+      expect(loc.primary_computers_offline).toBeGreaterThanOrEqual(0);
+
+      // Offline counts should not exceed total
+      expect(loc.total_computers_offline).toBeLessThanOrEqual(
+        loc.total_computers
+      );
+      expect(loc.primary_computers_offline).toBeLessThanOrEqual(
+        loc.total_computers_offline
+      );
+
+      // default_sftp_path can be string or null
+      expect(
+        loc.default_sftp_path === null ||
+          typeof loc.default_sftp_path === "string"
+      ).toBe(true);
+
+      // pcc_fac_id can be number or null
+      expect(
+        loc.pcc_fac_id === null || typeof loc.pcc_fac_id === "number"
+      ).toBe(true);
+    }
+  });
+
   test("should return 400 with wrong identifier_key but correct computer_name", async () => {
     const response = await fetch(`${BASE_URL}/get_credentials`, {
       method: "POST",

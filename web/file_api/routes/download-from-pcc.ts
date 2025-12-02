@@ -1,5 +1,9 @@
 import { db } from "../database/db";
-import { computers, downloadBackupCalls } from "../drizzle/schema";
+import {
+  computers,
+  downloadBackupCalls,
+  pccAccessTokens,
+} from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { PCCDownloadSchema } from "../validation_schemas/pcc";
 import { getPcc2LeggedToken } from "../utils/get-pcc-2-legged-token";
@@ -76,12 +80,39 @@ export const downloadFromPCC = async (req: Bun.BunRequest) => {
     "Content-Type": "application/json",
   };
 
-  const res = await executePccRequest(url, headers, "GET");
+  let res = await executePccRequest(url, headers, "GET");
   logger.info(
     { status: res.status, ok: res.ok, computer: computer.computerName },
     "downloadFromPCC - PCC response received"
   );
 
+  // Retry logic for 401 Unauthorized - token might be expired (max 1 retry)
+  if (res.status === 401) {
+    logger.warn(
+      { computerId: computer.id },
+      "Got 401 from PCC, deleting old token and retrying with new one (attempt 1/1)"
+    );
+
+    // Delete old token from database
+    await db.delete(pccAccessTokens);
+
+    // Get new token
+    const newToken = await getPcc2LeggedToken();
+
+    // Retry request with new token (only once)
+    headers.Authorization = `Bearer ${newToken}`;
+    res = await executePccRequest(url, headers, "GET");
+
+    logger.info(
+      {
+        status: res.status,
+        ok: res.ok,
+        computer: computer.computerName,
+        retryAttempt: 1,
+      },
+      "downloadFromPCC - PCC response after retry"
+    );
+  }
   if (!res.ok) {
     logger.error(
       { computerId: computer.id, status: res.status },

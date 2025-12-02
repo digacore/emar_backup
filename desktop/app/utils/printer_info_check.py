@@ -9,6 +9,7 @@ from app.utils import get_printer_info_by_posh, send_printer_info
 
 def printer_info_check():
     url = urljoin(MANAGER_HOST, "get_telemetry_info")
+    # TODO: Change get->post for more proper handling
     response = requests.get(
         url,
         json=CREDENTIALS.model_dump(include={"identifier_key"}),
