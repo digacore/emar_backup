@@ -3,3 +3,4 @@ from .downloads_info import downloads_info_blueprint, check_msi_version
 from .computer import computer_blueprint
 from .load_msi import download_msi_blueprint, download_msi_fblueprint
 from .pcc_api import pcc_api_blueprint
+from .companies import companies_blueprint
