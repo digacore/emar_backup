@@ -46,6 +46,16 @@ def setup_periodic_tasks(sender, **kwargs):
     )
     entry.save()
 
+    # Alert when alternate computer has been offline > 3 hrs - run every hour
+    interval = crontab(minute=0)
+    entry = RedBeatSchedulerEntry(
+        "alternate_computer_alert_email",
+        "worker.alternate_computer_alert_email",
+        interval,
+        app=app,
+    )
+    entry.save()
+
     # Send daily summary - run every day at 11:00 AM (EST)
     interval = crontab(hour=11, minute=0)
     entry = RedBeatSchedulerEntry(
@@ -92,6 +102,12 @@ def critical_alert_email():
 @app.task
 def primary_computer_alert_email():
     flask_proc = subprocess.Popen(["flask", "primary-computer-alert-email"])
+    flask_proc.communicate()
+
+
+@app.task
+def alternate_computer_alert_email():
+    flask_proc = subprocess.Popen(["flask", "alternate-computer-alert-email"])
     flask_proc.communicate()
 
 

@@ -113,6 +113,13 @@ def primary_computer_alert_email():
 
 
 @app.cli.command()
+def alternate_computer_alert_email():
+    from app.controllers import send_alternate_computer_alert
+
+    send_alternate_computer_alert()
+
+
+@app.cli.command()
 def daily_summary_email():
     from app.controllers import send_daily_summary
 
