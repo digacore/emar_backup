@@ -10,6 +10,7 @@ from app.models.utils import ModelMixin
 
 class AlertEventType(enum.Enum):
     PRIMARY_COMPUTER_DOWN = "PRIMARY_COMPUTER_DOWN"
+    ALTERNATE_COMPUTER_DOWN = "ALTERNATE_COMPUTER_DOWN"
     CRITICAL_ALERT = "CRITICAL_ALERT"
 
 

@@ -36,6 +36,7 @@ class BaseConfig(object):
     SUPPORT_EMAIL = os.environ.get("SUPPORT_EMAIL")
     SUPPORT_SALES_EMAIL = os.environ.get("SUPPORT_SALES_EMAIL")
     TO_ADDRESSES = os.environ.get("TO_ADDRESSES")
+    ALERT_SUPPORT_EMAILS = os.environ.get("ALERT_SUPPORT_EMAILS", "")
 
     # set optional bootswatch theme
     FLASK_ADMIN_SWATCH = "cerulean"

@@ -24,6 +24,7 @@ services:
     environment:
       - FLASK_ENV=production
       - FLASK_APP=wsgi:app
+      - ALERT_SUPPORT_EMAILS=${ALERT_SUPPORT_EMAILS}
     ports:
       - 127.0.0.1:${APP_PORT}:5000
     entrypoint: "bash start_server.sh"
@@ -64,6 +65,7 @@ services:
       - FLASK_ENV=production
       - FLASK_APP=wsgi:app
       - FLASK_DEBUG=1
+      - ALERT_SUPPORT_EMAILS=${ALERT_SUPPORT_EMAILS}
     depends_on:
       - db
     volumes:

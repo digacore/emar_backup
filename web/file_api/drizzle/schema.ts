@@ -24,6 +24,7 @@ const bytea = customType<{ data: Buffer; notNull: false; default: false }>({
 
 export const alerteventtype = pgEnum("alerteventtype", [
   "PRIMARY_COMPUTER_DOWN",
+  "ALTERNATE_COMPUTER_DOWN",
   "CRITICAL_ALERT",
 ]);
 export const backuplogtype = pgEnum("backuplogtype", [

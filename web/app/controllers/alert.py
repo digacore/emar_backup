@@ -11,6 +11,12 @@ from app.utils.send_email import send_email
 from config import BaseConfig as CFG
 
 
+def _support_alert_recipients():
+    """Emails that receive all offline alerts (e.g. support@digacore.com)."""
+    raw = getattr(CFG, "ALERT_SUPPORT_EMAILS", None) or ""
+    return [e.strip() for e in raw.split(",") if e.strip()]
+
+
 def send_critical_alert():
     """
     CLI command for celery worker.
@@ -23,12 +29,11 @@ def send_critical_alert():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Select all the active locations (except connected to trial and deactivated companies)
+    # Select all the active locations (except deactivated companies; includes both Pro and Lite)
     locations: list[m.Location] = (
         m.Location.query.join(m.Company)
         .filter(
             m.Location.activated.is_(True),
-            m.Company.is_trial.is_(False),
             m.Company.activated.is_(True),
         )
         .all()
@@ -179,18 +184,16 @@ def send_primary_computer_alert():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Get all the active primary computers which downloaded last backup more than 2 hour ago
-    # and not more than 3 hours ago
+    # Get all active Pro primary computers offline for more than 3 hours
     all_primary_computers: list[m.Computer] = m.Computer.query.filter(
         m.Computer.activated.is_(True),
         m.Computer.device_role == m.DeviceRole.PRIMARY,
-        m.Computer.last_download_time.between(
-            current_east_time - timedelta(hours=3),
-            current_east_time - timedelta(hours=2),
-        ),
+        m.Computer.last_download_time.is_not(None),
+        m.Computer.last_download_time < current_east_time - timedelta(hours=3),
     ).all()
 
     for computer in all_primary_computers:
+        # Skip Lite primaries - they are handled by alternate_computer_alert (Lite has 1 computer/location)
         if not computer.location or not computer.company or computer.company.is_trial:
             continue
 
@@ -260,6 +263,127 @@ def send_primary_computer_alert():
             )
 
     logger.info("<---Finish sending primary computer down alerts--->")
+
+
+def send_alternate_computer_alert():
+    """
+    CLI command for celery worker.
+    Sends alerts to users when alternate computer (or Lite primary) has been offline for more than 3 hours.
+    Includes: (1) all alternate computers, (2) primary computers from Lite companies (Lite has 1 computer/location).
+    Sends for all devices offline > 3 hours (runs hourly).
+    """
+    current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
+
+    logger.info(
+        "<---Start sending alternate computer down alerts. Time: {}--->",
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+    )
+
+    # Get all active alternate computers offline > 3 hrs
+    all_alternate_computers: list[m.Computer] = m.Computer.query.filter(
+        m.Computer.activated.is_(True),
+        m.Computer.device_role == m.DeviceRole.ALTERNATE,
+        m.Computer.last_download_time.is_not(None),
+        m.Computer.last_download_time < current_east_time - timedelta(hours=3),
+    ).all()
+
+    # Lite companies have 1 computer/location (primary only) - include their primaries so Lite gets alerts
+    lite_primary_computers: list[m.Computer] = (
+        m.Computer.query.join(m.Company)
+        .filter(
+            m.Computer.activated.is_(True),
+            m.Computer.device_role == m.DeviceRole.PRIMARY,
+            m.Company.is_trial.is_(True),
+            m.Computer.last_download_time.is_not(None),
+            m.Computer.last_download_time < current_east_time - timedelta(hours=3),
+        )
+        .all()
+    )
+
+    # Combine and dedupe by computer id (primary alert handles Pro primaries separately)
+    seen_ids: set[int] = set()
+    all_computers_to_alert: list[m.Computer] = []
+    for comp in all_alternate_computers + lite_primary_computers:
+        if comp.id not in seen_ids:
+            seen_ids.add(comp.id)
+            all_computers_to_alert.append(comp)
+
+    for computer in all_computers_to_alert:
+        if not computer.location or not computer.company:
+            continue
+
+        # Get all the active users connected to the computer
+        connected_users: list[m.User] = []
+        all_company_users: list[m.User] = m.User.query.filter(
+            m.User.activated.is_(True), m.User.company_id == computer.company_id
+        ).all()
+
+        for user in all_company_users:
+            if user.permission == m.UserPermissionLevel.COMPANY:
+                connected_users.append(user)
+            elif (
+                computer.location.group
+                and user.permission == m.UserPermissionLevel.LOCATION_GROUP
+                and user.location_group[0].id == computer.location.group[0].id
+            ):
+                connected_users.append(user)
+            elif (
+                user.permission == m.UserPermissionLevel.LOCATION
+                and user.location[0].id == computer.location.id
+            ):
+                connected_users.append(user)
+            else:
+                continue
+
+        if not connected_users:
+            continue
+
+        recipients = [
+            user.email for user in connected_users if user.receive_alert_emails
+        ]
+        # Add support emails to receive all alternate computer alerts
+        recipients = list(set(recipients + _support_alert_recipients()))
+        if not recipients:
+            logger.debug(
+                "Alternate computer alert for {} was not sent. Reason: no users for receive emails was found",
+                computer.computer_name,
+            )
+            continue
+        try:
+            is_lite_primary = (
+                computer.company.is_trial and computer.device_role == m.DeviceRole.PRIMARY
+            )
+            send_email(
+                subject=f"ALERT! {'Computer' if is_lite_primary else 'Alternate computer'} {computer.computer_name} is down",
+                sender=CFG.MAIL_DEFAULT_SENDER,
+                recipients=recipients,
+                html=render_template(
+                    "email/alternate-computer-alert-email.html",
+                    location=computer.location,
+                    computer=computer,
+                    is_lite_primary=is_lite_primary,
+                ),
+            )
+
+            # Create record about new alert event
+            new_alert_event = m.AlertEvent(
+                location_id=computer.location.id,
+                alert_type=m.AlertEventType.ALTERNATE_COMPUTER_DOWN,
+            )
+            new_alert_event.save()
+
+            logger.info(
+                "Alternate computer down alert email sent for computer {}",
+                computer.computer_name,
+            )
+        except Exception as err:
+            logger.error(
+                "Alternate computer down alert email was not sent for computer {}. Error: {}",
+                computer.computer_name,
+                err,
+            )
+
+    logger.info("<---Finish sending alternate computer down alerts--->")
 
 
 def company_users_by_permission(
@@ -501,10 +625,9 @@ def send_daily_summary():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Select all the companies except global, trial and deactivated
+    # Select all the companies except global and deactivated (includes both Pro and Lite)
     companies: list[m.Company] = m.Company.query.filter(
         m.Company.is_global.is_(False),
-        m.Company.is_trial.is_(False),
         m.Company.activated.is_(True),
     ).all()
 
@@ -794,11 +917,10 @@ def send_monthly_email():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Select all the companies except global and deactivated
+    # Select all the companies except global and deactivated (includes both Pro and Lite)
     companies: list[m.Company] = m.Company.query.filter(
         m.Company.is_global.is_(False),
         m.Company.activated.is_(True),
-        m.Company.is_trial.is_(False),
     ).all()
 
     for company in companies:
