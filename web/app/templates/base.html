@@ -224,6 +224,11 @@
               <a class="collapse-item" href="/admin/desktopclient/"
                 >Download MSI</a
               >
+              {% if current_user.permission.value == "GLOBAL" and current_user.role.value == "ADMIN" %}
+              <a class="collapse-item" href="{{ url_for('alert_setup.index') }}"
+                >Alert setup</a
+              >
+              {% endif %}
               {% if current_user.permission.value == "GLOBAL" %}
               <a class="collapse-item" href="/admin/clientversion/"
                 >Client Version</a

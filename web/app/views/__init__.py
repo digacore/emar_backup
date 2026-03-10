@@ -10,3 +10,4 @@ from .merge import merge_blueprint
 from .billing import billing_blueprint
 from .computer_settings import computer_settings_blueprint
 from .download_csv import download_csv_blueprint
+from .alert_setup import alert_setup_blueprint

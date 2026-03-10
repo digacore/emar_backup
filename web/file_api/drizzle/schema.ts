@@ -542,6 +542,7 @@ export const computers = pgTable(
     }),
     notes: text(),
     deviceLocation: varchar("device_location", { length: 64 }),
+    alertsPaused: boolean("alerts_paused").default(false),
   },
   (table) => [
     foreignKey({

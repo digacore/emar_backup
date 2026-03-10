@@ -92,15 +92,27 @@ export const lastTime = async (req: Request) => {
     updateData.lastDownloadTime = now;
   }
 
-  db.update(computers)
-    .set(updateData)
-    .where(eq(computers.id, computer.id))
-    .catch((err) =>
-      logger.error(
-        { err, computer: computer.id },
-        "Failed to update computer timestamps"
-      )
+  try {
+    await db
+      .update(computers)
+      .set(updateData)
+      .where(eq(computers.id, computer.id));
+  } catch (err) {
+    logger.error(
+      { err, computer: computer.id },
+      "Failed to update computer timestamps"
     );
+    return new Response(
+      JSON.stringify({
+        status: "fail",
+        message: "Failed to save timestamps",
+      } as LastTimeResponse),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
 
   // Get MSI version - optimized to avoid loading blob
   const msi = await (async () => {
