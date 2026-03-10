@@ -3,22 +3,26 @@ import datetime
 import json
 
 from urllib.parse import urljoin
+from zoneinfo import ZoneInfo
+
 from app.consts import COMPSTAT_FILE
 from app.logger import logger
 from app import schemas as s
 
 
 def offset_to_est(dt_now: datetime.datetime) -> str:
-    """Offset to EST time
+    """Return current time in Eastern (EST/EDT) as string.
 
     Args:
         dt_now (datetime.datetime): datetime.datetime.utcnow()
 
     Returns:
-        datetime.datetime: EST datetime
+        str: Eastern time as "YYYY-MM-DD HH:MM:SS"
     """
-    est_norm_datetime = dt_now - datetime.timedelta(hours=5)
-    return est_norm_datetime.strftime("%Y-%m-%d %H:%M:%S")
+    if dt_now.tzinfo is None:
+        dt_now = dt_now.replace(tzinfo=ZoneInfo("UTC"))
+    eastern = dt_now.astimezone(ZoneInfo("America/New_York"))
+    return eastern.strftime("%Y-%m-%d %H:%M:%S")
 
 
 @logger.catch
