@@ -9,6 +9,10 @@ Offline") }} {% endblock %} {% block content %}
     text-align: left;
   "
 >
+  Company: {{ company.name if company else "-" }}
+</p>
+
+<p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left">
   Location: {{ location.name }}
 </p>
 
@@ -29,7 +33,7 @@ Offline") }} {% endblock %} {% block content %}
 </p>
 
 <p style="font-size: 1rem; line-height: 1.5rem; text-align: left">
-  The {{ "computer" if is_lite_primary else "alternate computer" }} <b>{{ computer.computer_name }}</b> at
+  The alternate computer <b>{{ computer.computer_name }}</b> at
   <b>{{ location.name }}</b> has been offline for over 3 hours and did not download the
   latest eMAR backup file.
 </p>

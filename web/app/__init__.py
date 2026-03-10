@@ -55,6 +55,7 @@ def create_app(environment="development"):
         billing_blueprint,
         computer_settings_blueprint,
         download_csv_blueprint,
+        alert_setup_blueprint,
     )
     from app.api import (
         downloads_info_blueprint,
@@ -124,6 +125,7 @@ def create_app(environment="development"):
     app.register_blueprint(billing_blueprint)
     app.register_blueprint(computer_settings_blueprint)
     app.register_blueprint(download_csv_blueprint)
+    app.register_blueprint(alert_setup_blueprint)
 
     # Register api.
     app.register_api(downloads_info_blueprint)

@@ -112,6 +112,9 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
     files_checksum = db.Column(JSON)
 
     logs_enabled = db.Column(db.Boolean, server_default=sql.true(), default=True)
+    alerts_paused = db.Column(
+        db.Boolean, server_default=sql.text("false"), default=False, nullable=False
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     computer_ip = db.Column(db.String(128))
 
@@ -289,7 +292,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
         # Not activated status
         if not self.activated:
             return ComputerStatus.NOT_ACTIVATED
-        # If computer downloaded backup less than 1 hour ago - it is ONLINE
+        # If computer downloaded backup within the recent-backup window (1.5h) - it is ONLINE
         elif (
             db.session.query(Computer)
             .filter(
@@ -301,7 +304,7 @@ class Computer(db.Model, ModelMixin, SoftDeleteMixin, ActivatedMixin):
             .first()
         ):
             return ComputerStatus.ONLINE
-        # If computer downloaded backup more than 1 hour ago but was online less than 10 minutes ago - ONLINE_NO_BACKUP
+        # If computer downloaded backup longer ago but was online less than 10 minutes ago - ONLINE_NO_BACKUP
         elif (
             db.session.query(Computer)
             .filter(
@@ -511,6 +514,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "device_role",
         "device_location",
         "device_type",
+        "alerts_paused",
         "last_download_time",
         "last_time_online",
         "computer_ip",
@@ -538,6 +542,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "notes",
         "computer_name",
         "activated",
+        "alerts_paused",
         "logs_enabled",
         "sftp_host",
         "sftp_port",
@@ -578,6 +583,8 @@ class ComputerView(RowActionListMixin, MyModelView):
     column_searchable_list = searchable_sortable_list
     column_sortable_list = searchable_sortable_list
     column_filters = searchable_sortable_list
+
+    column_editable_list = ["alerts_paused"]
 
     # NOTE allows edit in list view, but has troubles with permissions
     # column_editable_list = [
@@ -630,6 +637,7 @@ class ComputerView(RowActionListMixin, MyModelView):
         "current_msi_version": {"label": "Current msi version"},
         "manager_host": {"label": "Manager host"},
         "activated": {"label": "Activated"},
+        "alerts_paused": {"label": "Pause alerts"},
         "logs_enabled:": {"label": "Logs enabled"},
         "download_status": {"label": "Download status"},
         "last_download_time": {"label": "Last download time"},

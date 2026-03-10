@@ -46,6 +46,30 @@ def get_pcc_access_key():
 
 
 @app.cli.command()
+def list_online_devices():
+    """List all activated computers that are currently online."""
+    from app.models import Computer
+    from app.models.computer import ComputerStatus
+
+    computers = (
+        models.Computer.query.filter(models.Computer.activated.is_(True))
+        .order_by(models.Computer.computer_name)
+        .all()
+    )
+    online = [c for c in computers if c.status in (ComputerStatus.ONLINE, ComputerStatus.ONLINE_NO_BACKUP)]
+
+    if not online:
+        print("No online devices.")
+        return
+
+    print(f"Online devices ({len(online)}):")
+    for c in online:
+        location = c.location_name or "-"
+        company = c.company_name or "-"
+        print(f"  {c.computer_name} | {location} | {company} | {c.status.value}")
+
+
+@app.cli.command()
 def clean_old_logs():
     from app.controllers import clean_old_logs
 

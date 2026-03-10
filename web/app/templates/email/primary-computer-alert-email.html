@@ -9,6 +9,10 @@ Offline") }} {% endblock %} {% block content %}
     text-align: left;
   "
 >
+  Company: {{ company.name if company else "-" }}
+</p>
+
+<p style="font-size: 1rem; font-weight: 600; margin: 0; text-align: left">
   Location: {{ location.name }}
 </p>
 

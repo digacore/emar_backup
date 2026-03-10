@@ -12,8 +12,17 @@ from config import BaseConfig as CFG
 
 
 def _support_alert_recipients():
-    """Emails that receive all offline alerts (e.g. support@digacore.com)."""
-    raw = getattr(CFG, "ALERT_SUPPORT_EMAILS", None) or ""
+    """Emails that receive all offline alerts (e.g. support@digacore.com).
+    Reads from AlertSettings in DB first; falls back to ALERT_SUPPORT_EMAILS env.
+    """
+    try:
+        settings = m.AlertSettings.query.get(1)
+        if settings and settings.support_emails:
+            raw = settings.support_emails
+        else:
+            raw = getattr(CFG, "ALERT_SUPPORT_EMAILS", None) or ""
+    except Exception:
+        raw = getattr(CFG, "ALERT_SUPPORT_EMAILS", None) or ""
     return [e.strip() for e in raw.split(",") if e.strip()]
 
 
@@ -184,17 +193,17 @@ def send_primary_computer_alert():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Get all active Pro primary computers offline for more than 3 hours
+    # Get all active Pro primary computers offline for more than 3 hours (exclude paused)
     all_primary_computers: list[m.Computer] = m.Computer.query.filter(
         m.Computer.activated.is_(True),
         m.Computer.device_role == m.DeviceRole.PRIMARY,
+        m.Computer.alerts_paused.is_(False),
         m.Computer.last_download_time.is_not(None),
         m.Computer.last_download_time < current_east_time - timedelta(hours=3),
     ).all()
 
     for computer in all_primary_computers:
-        # Skip Lite primaries - they are handled by alternate_computer_alert (Lite has 1 computer/location)
-        if not computer.location or not computer.company or computer.company.is_trial:
+        if not computer.location or not computer.company:
             continue
 
         # Get all the active users connected to the computer
@@ -226,6 +235,8 @@ def send_primary_computer_alert():
         recipients = [
             user.email for user in connected_users if user.receive_alert_emails
         ]
+        # Add support emails to receive all primary computer alerts
+        recipients = list(set(recipients + _support_alert_recipients()))
         if not recipients:
             logger.debug(
                 "Critical alert email for primary computer {} was not sent. Reason: no users for receive emails was found",
@@ -241,6 +252,7 @@ def send_primary_computer_alert():
                     "email/primary-computer-alert-email.html",
                     location=computer.location,
                     computer=computer,
+                    company=computer.company,
                 ),
             )
 
@@ -268,9 +280,9 @@ def send_primary_computer_alert():
 def send_alternate_computer_alert():
     """
     CLI command for celery worker.
-    Sends alerts to users when alternate computer (or Lite primary) has been offline for more than 3 hours.
-    Includes: (1) all alternate computers, (2) primary computers from Lite companies (Lite has 1 computer/location).
-    Sends for all devices offline > 3 hours (runs hourly).
+    Sends alerts to users when alternate computer (Pro only) has been offline for more than 3 hours.
+    Lite companies are excluded - they only have primary computers, handled by primary_computer_alert.
+    Sends for all Pro alternate devices offline > 3 hours (runs hourly).
     """
     current_east_time: datetime = CFG.offset_to_est(datetime.utcnow(), True)
 
@@ -279,36 +291,21 @@ def send_alternate_computer_alert():
         datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
     )
 
-    # Get all active alternate computers offline > 3 hrs
-    all_alternate_computers: list[m.Computer] = m.Computer.query.filter(
-        m.Computer.activated.is_(True),
-        m.Computer.device_role == m.DeviceRole.ALTERNATE,
-        m.Computer.last_download_time.is_not(None),
-        m.Computer.last_download_time < current_east_time - timedelta(hours=3),
-    ).all()
-
-    # Lite companies have 1 computer/location (primary only) - include their primaries so Lite gets alerts
-    lite_primary_computers: list[m.Computer] = (
+    # Get all active Pro alternate computers offline > 3 hrs (exclude Lite and paused)
+    all_alternate_computers: list[m.Computer] = (
         m.Computer.query.join(m.Company)
         .filter(
             m.Computer.activated.is_(True),
-            m.Computer.device_role == m.DeviceRole.PRIMARY,
-            m.Company.is_trial.is_(True),
+            m.Computer.device_role == m.DeviceRole.ALTERNATE,
+            m.Computer.alerts_paused.is_(False),
+            m.Company.is_trial.is_(False),
             m.Computer.last_download_time.is_not(None),
             m.Computer.last_download_time < current_east_time - timedelta(hours=3),
         )
         .all()
     )
 
-    # Combine and dedupe by computer id (primary alert handles Pro primaries separately)
-    seen_ids: set[int] = set()
-    all_computers_to_alert: list[m.Computer] = []
-    for comp in all_alternate_computers + lite_primary_computers:
-        if comp.id not in seen_ids:
-            seen_ids.add(comp.id)
-            all_computers_to_alert.append(comp)
-
-    for computer in all_computers_to_alert:
+    for computer in all_alternate_computers:
         if not computer.location or not computer.company:
             continue
 
@@ -350,18 +347,15 @@ def send_alternate_computer_alert():
             )
             continue
         try:
-            is_lite_primary = (
-                computer.company.is_trial and computer.device_role == m.DeviceRole.PRIMARY
-            )
             send_email(
-                subject=f"ALERT! {'Computer' if is_lite_primary else 'Alternate computer'} {computer.computer_name} is down",
+                subject=f"ALERT! Alternate computer {computer.computer_name} is down",
                 sender=CFG.MAIL_DEFAULT_SENDER,
                 recipients=recipients,
                 html=render_template(
                     "email/alternate-computer-alert-email.html",
                     location=computer.location,
                     computer=computer,
-                    is_lite_primary=is_lite_primary,
+                    company=computer.company,
                 ),
             )
 
