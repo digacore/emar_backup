@@ -13,6 +13,18 @@ from .utils import has_access_to_company, has_access_to_computer, has_access_to_
 info_blueprint = Blueprint("info", __name__, url_prefix="/info")
 
 
+def _format_duration(delta: timedelta) -> str:
+    """Format timedelta like BackupLog.duration_as_str (e.g. '0 days 1 hours 25 minutes')."""
+    if delta.total_seconds() < 0:
+        delta = timedelta(0)
+    total_seconds = int(delta.total_seconds())
+    days = total_seconds // 86400
+    remainder = total_seconds % 86400
+    hours = remainder // 3600
+    minutes = (remainder % 3600) // 60
+    return f"{days} days {hours} hours {minutes} minutes"
+
+
 @info_blueprint.route("/computer/<int:computer_id>", methods=["GET"])
 @login_required
 def computer_info(computer_id):
@@ -61,6 +73,20 @@ def computer_info(computer_id):
 
     # Logs information for chart
     chart_days = request.args.get("chart_days", 7, type=int)
+
+    # Prefer computer live status for banner when machine has recent backup/heartbeat
+    banner_online_duration_str = None
+    if computer.logs_enabled and computer.activated and last_log is not None:
+        comp_status = computer.status
+        if comp_status in (
+            m.ComputerStatus.ONLINE,
+            m.ComputerStatus.ONLINE_NO_BACKUP,
+        ):
+            now_est = CFG.offset_to_est(datetime.utcnow(), True)
+            last_activity = computer.last_download_time or computer.last_time_online
+            if last_activity:
+                delta = now_est - last_activity
+                banner_online_duration_str = _format_duration(delta)
 
     logs_for_chart = (
         m.BackupLog.query.filter(
@@ -124,6 +150,7 @@ def computer_info(computer_id):
         "info/computer.html",
         computer=computer,
         last_log=last_log,
+        banner_online_duration_str=banner_online_duration_str,
         logs=logs,
         page=pagination,
         chart_days=chart_days,

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "emar"
-version = "1.0.211.622490"
+version = "1.0.217.1006284"
 description = "Emar runner"
 authors = ["Kostia <saintkos117@gmail.com>"]
 readme = "README.md"
@@ -14,6 +14,7 @@ requests = "^2.31.0"
 pyzipper = "^0.3.6"
 pyinstaller = "^6.3.0"
 pydantic = "^2.5.2"
+tzdata = "^2024.1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.7.1"

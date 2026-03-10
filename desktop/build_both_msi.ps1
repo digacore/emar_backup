@@ -5,13 +5,14 @@ if (Test-Path '.\msi\dist') {
 .\Inc-Version.ps1
 .\Inc-VersionUn.ps1
 
-pyinstaller --noconfirm --onefile --console `
+poetry run pyinstaller --noconfirm --onefile --console `
     --distpath "msi/dist"    `
     --collect-all "paramiko" `
     --collect-all "requests" `
     --collect-all "loguru"   `
     --collect-all "win32com" `
     --collect-all "pydantic" `
+    --collect-data "tzdata" `
     emar.py
 
 copy .\config.json .\msi\dist\

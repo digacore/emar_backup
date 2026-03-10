@@ -40,7 +40,16 @@
   >
     <span style="font-size: 25px; font-weight: bold">Logs are not enabled</span>
   </div>
-  {% elif last_log.error == "Longer than 2 hours without a backup" %}
+  {% elif banner_online_duration_str %}
+  <div
+    class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+    style="background-color: #1cc88a; padding: 10px 0"
+  >
+    <span style="font-size: 25px; font-weight: bold"
+      >Online - {{ banner_online_duration_str }}</span
+    >
+  </div>
+  {% elif last_log and last_log.error == "Longer than 2 hours without a backup" %}
   <div
     class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
     style="background-color: #e74a3b; padding: 10px 0"
@@ -49,7 +58,7 @@
       >Offline - {{ last_log.duration_as_str }}</span
     >
   </div>
-  {% elif last_log.error == "Longer than 1 hour without a backup" %}
+  {% elif last_log and last_log.error == "Longer than 1 hour without a backup" %}
   <div
     class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
     style="background-color: #f6c23e; padding: 10px 0"
@@ -58,7 +67,7 @@
       >Offline - {{ last_log.duration_as_str }}</span
     >
   </div>
-  {% elif not last_log.error %}
+  {% elif last_log and not last_log.error %}
   <div
     class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
     style="background-color: #1cc88a; padding: 10px 0"
@@ -66,6 +75,13 @@
     <span style="font-size: 25px; font-weight: bold"
       >Online - {{ last_log.duration_as_str }}</span
     >
+  </div>
+  {% else %}
+  <div
+    class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+    style="background-color: #848383; padding: 10px 0"
+  >
+    <span style="font-size: 25px; font-weight: bold">No backup log data</span>
   </div>
   {% endif %}
   <!-- End status header -->
