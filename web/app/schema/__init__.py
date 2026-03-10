@@ -27,3 +27,8 @@ from .location import LocationInfo
 from .printer_info import PrinterInfoDict, PrinterInfo
 from .agent_telemetry import AgentTelemetry, TelemetryRequestId
 from .download_credentials_info import ComputerCredentialsInfo
+from .active_companies import (
+    ActiveCompaniesResponse,
+    ActiveCompanyResponse,
+    ActiveFacilityResponse,
+)
