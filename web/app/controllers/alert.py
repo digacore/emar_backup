@@ -26,6 +26,19 @@ def _support_alert_recipients():
     return [e.strip() for e in raw.split(",") if e.strip()]
 
 
+def _offline_hours(last_download_time: datetime, current_east_time: datetime) -> int:
+    return int((current_east_time - last_download_time).total_seconds() // 3600)
+
+
+def _should_repeat_offline_alert(
+    last_download_time: datetime, current_east_time: datetime, minimum_hours: int
+) -> bool:
+    offline_hours = _offline_hours(last_download_time, current_east_time)
+    if offline_hours < minimum_hours:
+        return False
+    return (offline_hours - minimum_hours) % 2 == 0
+
+
 def send_critical_alert():
     """
     CLI command for celery worker.
@@ -69,14 +82,10 @@ def send_critical_alert():
             continue
 
         # Alert only every 2 hours
-        if (
-            with_prev_backups_comps
-            and (
-                current_east_time - with_prev_backups_comps[0].last_download_time
-            ).seconds
-            // 3600
-            % 2
-            != 0
+        if with_prev_backups_comps and not _should_repeat_offline_alert(
+            with_prev_backups_comps[0].last_download_time,
+            current_east_time,
+            minimum_hours=2,
         ):
             continue
 
@@ -122,6 +131,7 @@ def send_critical_alert():
         recipients = [
             user.email for user in connected_users if user.receive_alert_emails
         ]
+        recipients = list(set(recipients + _support_alert_recipients()))
         if not recipients:
             logger.debug(
                 "Critical alert email was not sent for location users of {}. Reason: no users for receive emails was found",
@@ -204,6 +214,10 @@ def send_primary_computer_alert():
 
     for computer in all_primary_computers:
         if not computer.location or not computer.company:
+            continue
+        if not _should_repeat_offline_alert(
+            computer.last_download_time, current_east_time, minimum_hours=3
+        ):
             continue
 
         # Get all the active users connected to the computer
@@ -307,6 +321,10 @@ def send_alternate_computer_alert():
 
     for computer in all_alternate_computers:
         if not computer.location or not computer.company:
+            continue
+        if not _should_repeat_offline_alert(
+            computer.last_download_time, current_east_time, minimum_hours=3
+        ):
             continue
 
         # Get all the active users connected to the computer

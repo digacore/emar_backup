@@ -1,15 +1,22 @@
 # file_api
 
-To install dependencies:
+Bun HTTP service for desktop agent APIs (`/last_time`, `/get_credentials`, etc.). Nginx proxies these paths from `app.emarvault.com` to this container.
+
+## Local development
 
 ```bash
 bun install
+export DATABASE_URL=postgresql://postgres:pass@127.0.0.1:5432/db
+bun run index.ts
+curl http://localhost:3000/health
 ```
 
-To run:
+## Production
+
+See [docs/production-ops.md](docs/production-ops.md). On the server:
 
 ```bash
-bun run index.ts
+cd web && bash scripts/file-api-recover.sh
 ```
 
-This project was created using `bun init` in bun v1.3.1. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+Requires Bun **1.2.3+** (uses `Bun.serve` routes API).
