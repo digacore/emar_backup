@@ -1,0 +1,105 @@
+--- a/web/app/views/info.py
++++ b/web/app/views/info.py
+@@ -12,6 +12,25 @@ from .utils import has_access_to_company, has_access_to_computer, has_access_to_lo
+ 
+ info_blueprint = Blueprint("info", __name__, url_prefix="/info")
+ 
+ 
++def _format_duration(delta: timedelta) -> str:
++    """Format timedelta like BackupLog.duration_as_str (e.g. '0 days 1 hours 25 minutes')."""
++    if delta.total_seconds() < 0:
++        delta = timedelta(0)
++    total_seconds = int(delta.total_seconds())
++    days = total_seconds // 86400
++    remainder = total_seconds % 86400
++    hours = remainder // 3600
++    minutes = (remainder % 3600) // 60
++    return f"{days} days {hours} hours {minutes} minutes"
++
++
+ @info_blueprint.route("/computer/<int:computer_id>", methods=["GET"])
+ @login_required
+ def computer_info(computer_id):
+@@ -72,6 +91,21 @@ def computer_info(computer_id):
+ 
+     # Logs information for chart
+     chart_days = request.args.get("chart_days", 7, type=int)
+ 
++    # Prefer computer live status for banner when machine has recent backup/heartbeat
++    banner_online_duration_str = None
++    if computer.logs_enabled and computer.activated and last_log is not None:
++        comp_status = computer.status
++        if comp_status in (
++            m.ComputerStatus.ONLINE,
++            m.ComputerStatus.ONLINE_NO_BACKUP,
++        ):
++            now_est = CFG.offset_to_est(datetime.utcnow(), True)
++            last_activity = computer.last_download_time or computer.last_time_online
++            if last_activity:
++                delta = now_est - last_activity
++                banner_online_duration_str = _format_duration(delta)
++
+     logs_for_chart = (
+         m.BackupLog.query.filter(
+             m.BackupLog.computer_id == computer_id,
+@@ -146,6 +170,7 @@ def computer_info(computer_id):
+     return render_template(
+         "info/computer.html",
+         computer=computer,
+         last_log=last_log,
++        banner_online_duration_str=banner_online_duration_str,
+         logs=logs,
+         page=pagination,
+         chart_days=chart_days,
+--- a/web/app/templates/info/computer.html
++++ b/web/app/templates/info/computer.html
+@@ -38,6 +38,14 @@
+     <span style="font-size: 25px; font-weight: bold">Logs are not enabled</span>
+   </div>
+   </div>
++  {% elif banner_online_duration_str %}
++  <div
++    class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
++    style="background-color: #1cc88a; padding: 10px 0"
++  >
++    <span style="font-size: 25px; font-weight: bold"
++      >Online - {{ banner_online_duration_str }}</span
++    >
++  </div>
++  {% elif last_log and last_log.error == "Longer than 2 hours without a backup" %}
+   <div
+     class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+@@ -45,19 +53,28 @@
+       >Offline - {{ last_log.duration_as_str }}</span
+     >
+   </div>
+-  {% elif last_log.error == "Longer than 1 hour without a backup" %}
++  {% elif last_log and last_log.error == "Longer than 1 hour without a backup" %}
+   <div
+     class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+     style="background-color: #f6c23e; padding: 10px 0"
+   >
+     <span style="font-size: 25px; font-weight: bold"
+       >Offline - {{ last_log.duration_as_str }}</span
+     >
+   </div>
+-  {% elif not last_log.error %}
++  {% elif last_log and not last_log.error %}
+   <div
+     class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
+     style="background-color: #1cc88a; padding: 10px 0"
+   >
+     <span style="font-size: 25px; font-weight: bold"
+       >Online - {{ last_log.duration_as_str }}</span
+     >
+   </div>
++  {% else %}
++  <div
++    class="d-flex align-items-center justify-content-center text-white w-100 rounded-pill border border-dark"
++    style="background-color: #848383; padding: 10px 0"
++  >
++    <span style="font-size: 25px; font-weight: bold">No backup log data</span>
++  </div>
+   {% endif %}
+   <!-- End status header -->
+ 
